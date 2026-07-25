@@ -363,29 +363,18 @@ export interface Client {
                     </span>
                   </div>
                 </td>
-                <td class="px-5 py-4 text-right whitespace-nowrap w-44">
-                  <div class="flex items-center justify-end gap-2">
-                    <button 
-                      (click)="openClientDetails(client)"
-                      class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs border border-indigo-200/80 shadow-2xs transition-all inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                    >
-                      <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                      </svg>
-                      <span>View Features</span>
-                    </button>
-
-                    <button 
-                      (click)="openClientDetails(client)"
-                      class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                      title="More Actions"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                      </svg>
-                    </button>
-                  </div>
+                <td class="px-5 py-4 text-right whitespace-nowrap">
+                  <button 
+                    (click)="openClientDetails(client)"
+                    class="group/btn p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-indigo-200/80 transition-all cursor-pointer inline-flex items-center gap-0 hover:gap-1.5 hover:px-3 hover:py-1.5"
+                    title="View Features"
+                  >
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    <span class="max-w-0 overflow-hidden group-hover/btn:max-w-24 transition-all duration-300 text-xs font-semibold text-indigo-700 whitespace-nowrap">View Features</span>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -716,7 +705,7 @@ export class ImplementationComponent {
   // UI Filters State
   searchQuery = signal<string>('');
   statusFilter = signal<string>('all'); // all, complete, in_progress, pending
-  viewMode = signal<'grid' | 'table'>('grid');
+  viewMode = signal<'grid' | 'table'>('table');
 
   // Drawer / Selected Client State
   selectedClient = signal<Client | null>(null);
