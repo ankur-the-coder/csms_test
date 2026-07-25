@@ -1,0 +1,152 @@
+import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
+@Component({
+  selector: 'app-navbar',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <header class="h-16 min-h-[4rem] bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs gap-3">
+      
+      <!-- Left: Breadcrumb & Title -->
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <div class="flex flex-col justify-center">
+          <div class="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold whitespace-nowrap">
+            <span>UBITECH CSMS</span>
+            <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-indigo-600 font-semibold">
+              {{ isImplementationRoute ? 'Implementation Module' : 'Executive Overview' }}
+            </span>
+          </div>
+          
+          <div class="flex items-center gap-2.5 mt-0.5">
+            <h1 class="text-sm md:text-base font-extrabold text-slate-900 whitespace-nowrap tracking-tight leading-none">
+              {{ isImplementationRoute ? 'All Organisations Implementation Status' : 'Customer Success Dashboard' }}
+            </h1>
+            <span class="px-2 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 rounded-md border border-indigo-200/80 whitespace-nowrap shrink-0">
+              {{ isImplementationRoute ? 'Live Prototype' : 'CS Portal' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Search Input -->
+      <div class="hidden md:flex items-center relative flex-1 max-w-sm mx-2">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input 
+          type="text" 
+          [value]="searchQuery"
+          (input)="onSearchInput($event)"
+          placeholder="Search organisation or feature..."
+          class="w-full bg-slate-50 hover:bg-slate-100 focus:bg-white text-slate-800 text-xs font-medium pl-9 pr-10 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+        />
+        <kbd class="absolute right-2.5 text-[10px] font-mono text-slate-400 bg-slate-200/80 px-1.5 py-0.5 rounded border border-slate-300 pointer-events-none">⌘K</kbd>
+      </div>
+
+      <!-- Right: Actions, Notifications & Profile -->
+      <div class="flex items-center gap-3 shrink-0">
+
+        <!-- Stage Filter Badge -->
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 whitespace-nowrap shrink-0">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Environment: Enterprise Prod</span>
+        </div>
+
+        <!-- Notification Bell -->
+        <div class="relative shrink-0">
+          <button 
+            (click)="showNotifications = !showNotifications"
+            class="relative p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div *ngIf="showNotifications" class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div class="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+              <span class="font-bold text-sm text-slate-800">Implementation Updates</span>
+              <span class="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer">Mark all read</span>
+            </div>
+            <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+              <div class="p-3 hover:bg-slate-50 transition-colors cursor-pointer">
+                <div class="flex items-start gap-2.5">
+                  <div class="h-7 w-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">✓</div>
+                  <div>
+                    <p class="text-xs font-medium text-slate-800">ABC Industries approved <span class="font-semibold">Shift</span> module</p>
+                    <span class="text-[10px] text-slate-400">10 mins ago · CS Team</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-3 hover:bg-slate-50 transition-colors cursor-pointer">
+                <div class="flex items-start gap-2.5">
+                  <div class="h-7 w-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0">!</div>
+                  <div>
+                    <p class="text-xs font-medium text-slate-800">Kestrel Logistics updated leave remarks</p>
+                    <span class="text-[10px] text-slate-400">1 hour ago · Vikram Singh</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-7 w-px bg-slate-200 mx-0.5 shrink-0"></div>
+
+        <!-- User Profile Card -->
+        <div class="flex items-center gap-2.5 cursor-pointer group shrink-0">
+          <div class="relative shrink-0">
+            <div class="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md shadow-indigo-500/20">
+              AS
+            </div>
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+          </div>
+          <div class="hidden sm:flex flex-col text-left whitespace-nowrap shrink-0 leading-none">
+            <span class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Anita Sharma</span>
+            <span class="text-[10px] font-semibold text-slate-400 mt-0.5">Senior CS Manager</span>
+          </div>
+        </div>
+
+      </div>
+
+    </header>
+  `
+})
+export class NavbarComponent implements OnInit {
+  private router = inject(Router);
+
+  @Input() searchQuery = '';
+  @Output() searchChange = new EventEmitter<string>();
+
+  showNotifications = false;
+  isImplementationRoute = true;
+
+  ngOnInit() {
+    this.checkRoute(this.router.url);
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.checkRoute(event.urlAfterRedirects || event.url);
+    });
+  }
+
+  private checkRoute(url: string) {
+    this.isImplementationRoute = url.includes('implementation');
+  }
+
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchChange.emit(value);
+  }
+}
