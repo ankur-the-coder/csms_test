@@ -357,18 +357,22 @@
       <!-- ========================================================================= -->
       <div 
         *ngIf="selectedClient()" 
-        class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex justify-end transition-opacity duration-300 animate-in fade-in"
+        class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-999 flex justify-end transition-opacity duration-300 ease-out"
+        [ngClass]="drawerOpen() ? 'opacity-100' : 'opacity-0'"
       >
         <!-- Backdrop Click to Close -->
         <div class="absolute inset-0" (click)="closeClientDetails()"></div>
 
         <!-- Drawer Content Container -->
-        <div class="relative w-full max-w-4xl bg-slate-50 h-full shadow-2xl flex flex-col z-10 border-l border-slate-200 animate-in slide-in-from-right duration-300">
+        <div 
+          class="relative w-full max-w-4xl bg-slate-50 h-full shadow-2xl flex flex-col z-10 border-l border-slate-200 transition-transform duration-300 ease-out will-change-transform"
+          [ngClass]="drawerOpen() ? 'translate-x-0' : 'translate-x-full'"
+        >
           
           <!-- Drawer Header -->
           <div class="bg-white px-6 py-5 border-b border-slate-200 flex items-center justify-between sticky top-0 z-20 shadow-xs">
             <div class="flex items-center gap-4">
-              <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-extrabold text-xl flex items-center justify-center shadow-md shadow-indigo-600/20">
+              <div class="h-12 w-12 rounded-2xl bg-linear-to-tr from-indigo-600 to-blue-600 text-white font-extrabold text-xl flex items-center justify-center shadow-md shadow-indigo-600/20">
                 {{ selectedClient()?.name?.charAt(0) }}
               </div>
               <div>

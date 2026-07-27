@@ -120,6 +120,11 @@ export class ImplementationComponent {
   // Drawer / Selected Client State
   selectedClient = signal<Client | null>(null);
   selectedModuleTab = signal<string>('all');
+  // Controls the slide/fade transition separately from the mount state so the
+  // drawer animates in/out smoothly instead of popping in/out instantly.
+  drawerOpen = signal<boolean>(false);
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Filter Tabs Config
   get filterTabs() {
@@ -321,12 +326,19 @@ export class ImplementationComponent {
 
   // Drawer / Interactive Handlers
   openClientDetails(client: Client) {
+    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = null; }
     this.selectedClient.set({ ...client });
     this.selectedModuleTab.set('all');
+    this.drawerOpen.set(false);
+    // Let the closed-state markup paint first, then trigger the transition to open.
+    this.openTimer = setTimeout(() => this.drawerOpen.set(true), 20);
   }
 
   closeClientDetails() {
-    this.selectedClient.set(null);
+    if (this.openTimer) { clearTimeout(this.openTimer); this.openTimer = null; }
+    this.drawerOpen.set(false);
+    // Wait for the slide/fade-out transition to finish before unmounting.
+    this.closeTimer = setTimeout(() => this.selectedClient.set(null), 300);
   }
 
   getDisplayModules(): Module[] {
