@@ -110,8 +110,8 @@
             <input 
               type="text" 
               [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
-              placeholder="Filter by name..."
+              (ngModelChange)="onSearchQueryChange($event)"
+              placeholder="Search by organisation, ID, CS lead..."
               class="w-full bg-slate-50 hover:bg-slate-100 focus:bg-white text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 transition-all"
             />
           </div>
@@ -297,9 +297,30 @@
           <table class="w-full text-left text-sm">
             <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase font-bold tracking-wider">
               <tr>
-                <th class="px-5 py-3.5">Organisation</th>
-                <th class="px-5 py-3.5">Org ID &amp; Health</th>
-                <th class="px-5 py-3.5">CS Lead</th>
+                <th class="px-5 py-3.5 cursor-pointer hover:bg-slate-100 transition-colors" (click)="toggleSort('organization')">
+                  <div class="flex items-center gap-1.5">
+                    <span>Organisation</span>
+                    <svg *ngIf="sortColumn() === 'organization'" class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="sortDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                    </svg>
+                  </div>
+                </th>
+                <th class="px-5 py-3.5 cursor-pointer hover:bg-slate-100 transition-colors" (click)="toggleSort('orgId')">
+                  <div class="flex items-center gap-1.5">
+                    <span>Org ID &amp; Health</span>
+                    <svg *ngIf="sortColumn() === 'orgId'" class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="sortDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                    </svg>
+                  </div>
+                </th>
+                <th class="px-5 py-3.5 cursor-pointer hover:bg-slate-100 transition-colors" (click)="toggleSort('csLead')">
+                  <div class="flex items-center gap-1.5">
+                    <span>CS Lead</span>
+                    <svg *ngIf="sortColumn() === 'csLead'" class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="sortDir() === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'"/>
+                    </svg>
+                  </div>
+                </th>
                 <th class="px-5 py-3.5">Overall Progress</th>
                 <th class="px-5 py-3.5">Active Modules</th>
                 <th class="px-5 py-3.5 text-right w-32 whitespace-nowrap">Actions</th>
@@ -380,6 +401,76 @@
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Pagination Footer Control -->
+      <div *ngIf="!isLoading() && !errorMessage() && clients().length > 0" class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        <!-- Record Info & Page Size Selector -->
+        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-600">
+          <div>
+            Showing <strong class="text-slate-900 font-bold">{{ startRecord() }}</strong> to <strong class="text-slate-900 font-bold">{{ endRecord() }}</strong> of <strong class="text-slate-900 font-bold">{{ totalRecords() | number }}</strong> entries
+          </div>
+
+          <div class="flex items-center gap-2 border-l border-slate-200 pl-4">
+            <span class="text-slate-500 font-medium">Per page:</span>
+            <select 
+              [ngModel]="pageSize()" 
+              (ngModelChange)="changePageSize($event)"
+              class="bg-slate-50 hover:bg-slate-100 font-semibold text-slate-800 text-xs px-2.5 py-1 rounded-lg border border-slate-200 outline-none focus:border-indigo-500 transition-colors"
+            >
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="25">25</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex items-center gap-1.5">
+          <!-- Previous Button -->
+          <button 
+            (click)="goToPage(currentPage() - 1)" 
+            [disabled]="currentPage() === 1"
+            class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            [ngClass]="currentPage() === 1 ? 'border-slate-200 text-slate-400 bg-slate-50' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300'"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span>Previous</span>
+          </button>
+
+          <!-- Page Numbers -->
+          <div class="flex items-center gap-1">
+            <button 
+              *ngFor="let page of visiblePageNumbers()"
+              (click)="goToPage(page)"
+              class="min-w-[32px] h-8 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              [ngClass]="{
+                'bg-indigo-600 text-white shadow-xs': currentPage() === page,
+                'bg-slate-100 text-slate-700 hover:bg-slate-200': currentPage() !== page
+              }"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <!-- Next Button -->
+          <button 
+            (click)="goToPage(currentPage() + 1)" 
+            [disabled]="currentPage() >= totalPages()"
+            class="px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            [ngClass]="currentPage() >= totalPages() ? 'border-slate-200 text-slate-400 bg-slate-50' : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300'"
+          >
+            <span>Next</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
       </div>
 
       <!-- ========================================================================= -->

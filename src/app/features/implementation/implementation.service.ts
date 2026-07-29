@@ -53,6 +53,14 @@ export interface CardDataResponse {
   data: CardData;
 }
 
+export interface FetchDataTablePayload {
+  start?: number;
+  length?: number;
+  search?: string;
+  sorting?: string;
+  filter?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -61,10 +69,8 @@ export class ImplementationService {
 
   constructor(private http: HttpClient) {}
 
-  fetchDataTable(): Observable<ApiClientRow[]> {
-    return this.http.post<ApiResponse>(`${this.baseUrl}/fetchDataTable`, {}).pipe(
-      map(res => res.data || [])
-    );
+  fetchDataTable(payload: FetchDataTablePayload = {}): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.baseUrl}/fetchDataTable`, payload);
   }
 
   fetchImpCardData(): Observable<CardData> {
