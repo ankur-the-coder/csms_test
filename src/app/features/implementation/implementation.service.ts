@@ -41,6 +41,14 @@ export interface ApiResponse {
   };
 }
 
+export interface DataTablePayload {
+  start: number;          // offset = (page) * pageSize
+  length: number;         // page size
+  search: string;         // free-text search
+  sorting: string;        // JSON string: { require: 0|1, col: string, dir: 'asc'|'desc' }
+  filter: string;         // JSON string of active filter key-value pairs
+}
+
 export interface CardData {
   totalAccounts: number;
   completed: number;
@@ -69,7 +77,7 @@ export class ImplementationService {
 
   constructor(private http: HttpClient) {}
 
-  fetchDataTable(payload: FetchDataTablePayload = {}): Observable<ApiResponse> {
+  fetchDataTable(payload: DataTablePayload): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.baseUrl}/fetchDataTable`, payload);
   }
 
