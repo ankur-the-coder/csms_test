@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ImplementationService, ApiClientRow, CardData } from './implementation.service';
 
 export interface Feature {
   mod_id: number;
@@ -32,6 +33,12 @@ export interface Client {
   cs_lead: string;
   health: string; // Good | Neutral | Risk | Excellent (display only)
   checklist: Record<number, FeatureChecklistRow>;
+  overallProgress: {
+    approved: number;
+    total: number;
+    percentage: number;
+  };
+  apiModules: Record<string, { completed: number; total: number }>;
 }
 
 @Component({
@@ -40,8 +47,10 @@ export interface Client {
   imports: [CommonModule, FormsModule],
   templateUrl: './implementation.component.html'
 })
-export class ImplementationComponent {
-  
+export class ImplementationComponent implements OnInit {
+
+  private readonly implService = inject(ImplementationService);
+
   // Master Modules Data Schema matching implementation_module.jsx
   readonly modules: Module[] = [
     {
@@ -76,16 +85,11 @@ export class ImplementationComponent {
     },
     {
       tab_id: 4,
-      key: 'payroll',
-      label: 'Payroll',
-      icon: 'bank',
+      key: 'salary',
+      label: 'Salary',
+      icon: 'wallet',
       features: [
-        { mod_id: 41, name: 'Salary Heads' },
-        { mod_id: 455, name: 'Payroll Heads' },
-        { mod_id: 474, name: 'EPF Settings' },
-        { mod_id: 478, name: 'ESIC Settings' },
-        { mod_id: 485, name: 'Professional Tax Settings' },
-        { mod_id: 509, name: 'Labour Welfare Fund' }
+        { mod_id: 41, name: 'Salary Heads' }
       ]
     },
     {
@@ -103,14 +107,43 @@ export class ImplementationComponent {
         { mod_id: 54, name: 'Company Policy' },
         { mod_id: 145, name: 'Hierarchy' }
       ]
+    },
+    {
+      tab_id: 6,
+      key: 'timesheet',
+      label: 'Timesheet',
+      icon: 'clock',
+      features: [
+        { mod_id: 188, name: 'Timesheet Settings' }
+      ]
+    },
+    {
+      tab_id: 7,
+      key: 'payroll',
+      label: 'Payroll',
+      icon: 'bank',
+      features: [
+        { mod_id: 455, name: 'Payroll Heads' },
+        { mod_id: 474, name: 'EPF Settings' },
+        { mod_id: 478, name: 'ESIC Settings' },
+        { mod_id: 485, name: 'Professional Tax Settings' },
+        { mod_id: 509, name: 'Labour Welfare Fund' }
+      ]
     }
   ];
 
-  // Helper Total Features count per organization (22)
+  // Helper Total Features count per organization
   readonly totalFeaturesCount = this.modules.reduce((acc, m) => acc + m.features.length, 0);
 
-  // Clients Seed State Signal
-  clients = signal<Client[]>(this.buildSeedClients());
+  // Clients Signal — initialized empty, populated via API
+  clients = signal<Client[]>([]);
+
+  // Loading & Error State
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
+
+  // Card Data from API
+  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
 
   // UI Filters State
   searchQuery = signal<string>('');
@@ -129,10 +162,10 @@ export class ImplementationComponent {
   // Filter Tabs Config
   get filterTabs() {
     return [
-      { id: 'all', label: 'All Organisations', count: this.clients().length },
-      { id: 'in_progress', label: 'In Progress', count: this.inProgressClientsCount() },
-      { id: 'complete', label: 'Completed', count: this.completedClientsCount() },
-      { id: 'pending', label: 'Not Started', count: this.pendingClientsCount() }
+      { id: 'all', label: 'All Organisations', count: this.cardData().totalAccounts },
+      { id: 'in_progress', label: 'In Progress', count: this.cardData().inProgress },
+      { id: 'complete', label: 'Completed', count: this.cardData().completed },
+      { id: 'pending', label: 'Not Started', count: this.cardData().notStarted }
     ];
   }
 
@@ -145,130 +178,109 @@ export class ImplementationComponent {
       const matchSearch = c.name.toLowerCase().includes(q) || c.org_id.toString().includes(q) || c.cs_lead.toLowerCase().includes(q);
       if (!matchSearch) return false;
 
-      const approvedCount = this.getClientApprovedCount(c);
-      if (sf === 'complete') return approvedCount === this.totalFeaturesCount;
-      if (sf === 'in_progress') return approvedCount > 0 && approvedCount < this.totalFeaturesCount;
-      if (sf === 'pending') return approvedCount === 0;
+      if (sf === 'complete') return c.overallProgress.percentage === 100;
+      if (sf === 'in_progress') return c.overallProgress.percentage > 0 && c.overallProgress.percentage < 100;
+      if (sf === 'pending') return c.overallProgress.percentage === 0;
 
       return true;
     });
   });
 
-  // Summary Metrics Computations
-  totalClients = computed(() => this.clients().length);
-  
-  completedClientsCount = computed(() => 
-    this.clients().filter(c => this.getClientApprovedCount(c) === this.totalFeaturesCount).length
-  );
+  // Card metrics — driven by API cardData
+  totalClients = computed(() => this.cardData().totalAccounts);
+  completedClientsCount = computed(() => this.cardData().completed);
+  inProgressClientsCount = computed(() => this.cardData().inProgress);
+  pendingClientsCount = computed(() => this.cardData().notStarted);
 
-  inProgressClientsCount = computed(() => 
-    this.clients().filter(c => {
-      const count = this.getClientApprovedCount(c);
-      return count > 0 && count < this.totalFeaturesCount;
-    }).length
-  );
+  // Lifecycle — fetch data on init
+  ngOnInit() {
+    this.loadData();
+  }
 
-  pendingClientsCount = computed(() => 
-    this.clients().filter(c => this.getClientApprovedCount(c) === 0).length
-  );
+  loadData() {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-  totalPossibleFeaturesCount = computed(() => this.clients().length * this.totalFeaturesCount);
+    // Fetch card stats
+    this.implService.fetchImpCardData().subscribe({
+      next: (data) => this.cardData.set(data),
+      error: (err) => console.error('Failed to load card data:', err)
+    });
 
-  totalApprovedFeaturesCount = computed(() => 
-    this.clients().reduce((sum, c) => sum + this.getClientApprovedCount(c), 0)
-  );
+    // Fetch table data
+    this.implService.fetchDataTable().subscribe({
+      next: (data) => {
+        const clients = this.mapApiDataToClients(data);
+        this.clients.set(clients);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load implementation data:', err);
+        this.errorMessage.set('Failed to load data. Please try again.');
+        this.isLoading.set(false);
+      }
+    });
+  }
 
-  overallCompletionPercentage = computed(() => {
-    const total = this.totalPossibleFeaturesCount();
-    if (total === 0) return 0;
-    return Math.round((this.totalApprovedFeaturesCount() / total) * 100);
-  });
+  // Map API response rows → Client[]
+  private mapApiDataToClients(data: ApiClientRow[]): Client[] {
+    return data.map((row, index) => {
+      const checklist = this.buildChecklistFromApi(row);
+      const apiModules: Record<string, { completed: number; total: number }> = {};
 
-  // Seed Initial Clients
-  private buildSeedClients(): Client[] {
-    const stamp = (hoursAgo = 0) => {
-      const d = new Date(Date.now() - hoursAgo * 3600 * 1000);
-      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-    };
+      // Store raw API module progress for display in badges
+      if (row.modules) {
+        Object.entries(row.modules).forEach(([key, val]) => {
+          apiModules[key] = { completed: val.completed, total: val.total };
+        });
+      }
 
-    const buildChecklist = (approvedModIds: number[]) => {
-      const map: Record<number, FeatureChecklistRow> = {};
-      this.modules.forEach(m => m.features.forEach(f => {
-        const isApproved = approvedModIds.includes(f.mod_id);
-        map[f.mod_id] = {
+      return {
+        id: index + 1,
+        org_id: row.orgId,
+        name: row.organization,
+        industry: '',
+        onboarding_date: this.formatDate(row.onboardedDate),
+        cs_lead: row.csLead || 'Unassigned',
+        health: row.health,
+        checklist,
+        overallProgress: {
+          approved: row.overallProgress?.approved || 0,
+          total: row.overallProgress?.total || 0,
+          percentage: row.overallProgress?.percentage || 0
+        },
+        apiModules
+      };
+    });
+  }
+
+  // Build feature-level checklist from API module-level progress
+  private buildChecklistFromApi(row: ApiClientRow): Record<number, FeatureChecklistRow> {
+    const checklist: Record<number, FeatureChecklistRow> = {};
+
+    this.modules.forEach(mod => {
+      const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
+      const completedCount = apiMod?.completed || 0;
+
+      mod.features.forEach((feat, idx) => {
+        const isApproved = idx < completedCount;
+        checklist[feat.mod_id] = {
           approval_status: isApproved ? 1 : 0,
           remark: isApproved ? 'Verified & approved' : '',
-          started_at: isApproved ? stamp(24) : null,
-          completed_at: isApproved ? stamp(2) : null
+          started_at: isApproved ? this.formatDate(row.onboardedDate) : null,
+          completed_at: isApproved ? this.formatDate(row.onboardedDate) : null
         };
-      }));
-      return map;
-    };
+      });
+    });
 
-    const allModIds = this.modules.flatMap(m => m.features.map(f => f.mod_id));
+    return checklist;
+  }
 
-    return [
-      {
-        id: 1,
-        org_id: 478190,
-        name: 'ABC Industries',
-        industry: 'Manufacturing',
-        onboarding_date: '10 Jan 2026',
-        cs_lead: 'Neha Singh',
-        health: 'Good',
-        checklist: buildChecklist([64, 42, 12, 13, 35, 41, 455, 31, 185])
-      },
-      {
-        id: 2,
-        org_id: 480581,
-        name: 'XYZ Ltd',
-        industry: 'Technology & SaaS',
-        onboarding_date: '15 Jan 2026',
-        cs_lead: 'Amit Sharma',
-        health: 'Neutral',
-        checklist: buildChecklist([64, 41, 455, 474])
-      },
-      {
-        id: 3,
-        org_id: 480606,
-        name: 'PQR Solutions',
-        industry: 'Logistics',
-        onboarding_date: '20 Jan 2026',
-        cs_lead: 'Rahul Verma',
-        health: 'Risk',
-        checklist: buildChecklist([])
-      },
-      {
-        id: 4,
-        org_id: 469812,
-        name: 'LMN Group',
-        industry: 'Healthcare',
-        onboarding_date: '02 Jan 2026',
-        cs_lead: 'Priya Patel',
-        health: 'Excellent',
-        checklist: buildChecklist([64, 42, 185, 186, 31, 193, 12, 13, 14, 32, 41, 455, 474, 478, 485])
-      },
-      {
-        id: 5,
-        org_id: 448120,
-        name: 'Kestrel Logistics',
-        industry: 'Supply Chain',
-        onboarding_date: '01 Dec 2025',
-        cs_lead: 'Vikram Singh',
-        health: 'Excellent',
-        checklist: buildChecklist(allModIds)
-      },
-      {
-        id: 6,
-        org_id: 492100,
-        name: 'Apex Fintech',
-        industry: 'Financial Services',
-        onboarding_date: '18 Jan 2026',
-        cs_lead: 'Ananya Roy',
-        health: 'Neutral',
-        checklist: buildChecklist([64, 42, 12, 13, 35, 31, 41, 455])
-      }
-    ];
+  private formatDate(isoDate: string): string {
+    if (!isoDate) return '';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   // Client Helper Methods
@@ -278,21 +290,40 @@ export class ImplementationComponent {
   }
 
   getClientProgressPercent(client: Client): number {
+    // Use API overallProgress.percentage if available, else compute from checklist
+    if (client.overallProgress && client.overallProgress.percentage > 0) {
+      return client.overallProgress.percentage;
+    }
+    if (this.totalFeaturesCount === 0) return 0;
     return Math.round((this.getClientApprovedCount(client) / this.totalFeaturesCount) * 100);
   }
 
   getModuleApprovedCount(client: Client, mod: Module): number {
+    // Use API module data if available
+    if (client.apiModules && client.apiModules[mod.key]) {
+      return client.apiModules[mod.key].completed;
+    }
     if (!client || !client.checklist) return 0;
     return mod.features.filter(f => client.checklist[f.mod_id]?.approval_status === 1).length;
   }
 
+  getModuleTotalCount(client: Client, mod: Module): number {
+    // Use API module total if available
+    if (client.apiModules && client.apiModules[mod.key]) {
+      return client.apiModules[mod.key].total;
+    }
+    return mod.features.length;
+  }
+
   isModuleFullyApproved(client: Client, mod: Module): boolean {
-    return this.getModuleApprovedCount(client, mod) === mod.features.length;
+    const total = this.getModuleTotalCount(client, mod);
+    if (total === 0) return false;
+    return this.getModuleApprovedCount(client, mod) === total;
   }
 
   isModuleInProgress(client: Client, mod: Module): boolean {
     const count = this.getModuleApprovedCount(client, mod);
-    return count > 0 && count < mod.features.length;
+    return count > 0 && count < this.getModuleTotalCount(client, mod);
   }
 
   isModuleNotStarted(client: Client, mod: Module): boolean {
