@@ -37,7 +37,7 @@ export class SidebarComponent implements OnInit {
     { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', badge: 'Active', route: '/onboarding' },
     { id: 'implementation', label: 'Implementation Status', icon: 'implementation', badge: 'Active', route: '/implementation' },
     { id: 'training', label: 'Training Center', icon: 'training' },
-    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings' },
+    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'health', label: 'Health Score', icon: 'health' },
     { id: 'support', label: 'Support Tickets', icon: 'support', badge: '34' },
     { id: 'settings', label: 'Settings & Master', icon: 'settings' }
@@ -76,8 +76,13 @@ export class SidebarComponent implements OnInit {
     } else if (id === 'implementation') {
       this.router.navigate(['/implementation']);
     }
+
     else if (id === 'onboarding') {
       this.router.navigate(['/onboarding']);
+
+    else if (id === 'meetings') {
+      this.router.navigate(['/meetings']);
+
     }
   }
 

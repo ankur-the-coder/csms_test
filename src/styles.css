@@ -1,7 +1,11 @@
 /* ===== Tailwind + Google Fonts ===== */
 /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap'); */
 @import 'tailwindcss';
+
 /* @import '@ngxpert/hot-toast/styles.css'; */
+
+
+
 
 /* ==========================================================================
    THEME SYSTEM (Single Theme)
@@ -88,35 +92,106 @@
   --z-index-toast: var(--z-index-toast-val);
   --z-index-tooltip: var(--z-index-tooltip-val);
 
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   @keyframes chart-load {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
+
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   @keyframes slide-right {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
+
   @keyframes zoom-in {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
+
   @keyframes flip-in {
-    from { opacity: 0; transform: perspective(1000px) rotateX(-90deg); }
-    to { opacity: 1; transform: perspective(1000px) rotateX(0deg); }
+    from {
+      opacity: 0;
+      transform: perspective(1000px) rotateX(-90deg);
+    }
+
+    to {
+      opacity: 1;
+      transform: perspective(1000px) rotateX(0deg);
+    }
   }
+
   @keyframes dropdown {
-    from { opacity: 0; transform: translateY(-10px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
+
   @keyframes tableLoader {
-    0% { transform: translateX(-120%); }
-    100% { transform: translateX(320%); }
+    0% {
+      transform: translateX(-120%);
+    }
+
+    100% {
+      transform: translateX(320%);
+    }
   }
 
   --animate-table-loader: tableLoader 1s ease-in-out infinite;
@@ -218,13 +293,16 @@ main {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.6);
 }
@@ -237,7 +315,7 @@ main {
     @apply p-6 w-full max-w-full;
   }
 
-  app-layout main > * {
+  app-layout main>* {
     @apply flex flex-col flex-1 min-h-0;
   }
 
@@ -273,9 +351,11 @@ main {
     @apply font-semibold text-text-primary;
   }
 
+
   .badge-pending   { background: #fef3c7; color: #92400e; }
   .badge-shortlist { background: #fce7f3; color: #9d174d; }
   .badge-selected  { background: #d1fae5; color: #065f46; }
   .badge-rejected  { background: #fee2e2; color: #991b1b; }
   .badge-interview { background: #dbeafe; color: #1e40af; }
 }
+
