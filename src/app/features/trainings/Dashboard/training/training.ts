@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DataTable } from '../../../../shared/components/Data-table/data-table';
+import { SmartTableConfig } from '../../../../shared/components/Data-table/data-table.types';
 import { Trainer } from '../../trainer/trainer';
 import { TrainingMaterials } from '../../training-materials/training-materials';
 import { MyTraining } from '../../my-training/my-training';
@@ -25,14 +27,13 @@ interface StatCard {
 
 @Component({
   selector: 'app-training',
-  imports: [CommonModule, FormsModule, Trainer, TrainingMaterials, MyTraining],
+  imports: [CommonModule, FormsModule, DataTable, Trainer, TrainingMaterials, MyTraining],
   templateUrl: './training.html',
   styleUrl: './training.css',
 })
 export class Training {
-   activeNavTab = 'Dashboard';
+  activeNavTab = 'Dashboard';
   activeFilterTab = 'All Sessions';
-  searchQuery = '';
   viewMode: 'list' | 'calendar' = 'list';
 
   navTabs = ['Dashboard', 'Trainers', 'Materials', 'My Trainings'];
@@ -87,9 +88,49 @@ export class Training {
       Completed: 'COMPLETED',
       Cancelled: 'CANCELLED',
     };
-    return this.sessions.filter(
-      (s) => s.status === statusMap[this.activeFilterTab]
-    );
+    return this.sessions.filter((s) => s.status === statusMap[this.activeFilterTab]);
+  }
+
+  get tableConfig(): SmartTableConfig<TrainingSession> {
+    return {
+      columns: [
+        { key: 'id', label: 'Training ID', sortable: true },
+        { key: 'sessionName', label: 'Session Name', sortable: true },
+        { key: 'customer', label: 'Customer', sortable: true },
+        { key: 'trainer', label: 'Trainer', sortable: true },
+        { key: 'date', label: 'Date', sortable: true },
+        { key: 'time', label: 'Time', sortable: true },
+        { key: 'mode', label: 'Mode', sortable: true, align: 'center' },
+        {
+          key: 'status',
+          label: 'Status',
+          sortable: true,
+          type: 'badge',
+          align: 'center',
+          badgeMap: {
+            SCHEDULED: { label: 'Scheduled', color: 'info' },
+            COMPLETED: { label: 'Completed', color: 'success' },
+            'IN-PROGRESS': { label: 'In Progress', color: 'warning' },
+            CANCELLED: { label: 'Cancelled', color: 'danger' },
+          },
+        },
+      ],
+      staticData: this.filteredSessions,
+      rowIdKey: 'id',
+      showSearch: true,
+      showPagination: true,
+      defaultPageSize: 10,
+      pageSizeOptions: [5, 10, 25],
+      emptyMessage: 'No training sessions found for this filter.',
+      toolbarButtons: [
+        { id: 'filter', type: 'filter', label: 'Filter' },
+        { id: 'export', type: 'export', label: 'Export' },
+        { id: 'refresh', type: 'refresh' },
+        { id: 'columns', type: 'columnPicker', label: 'Columns' },
+      ],
+      exportFileName: 'training-sessions',
+      clickable: false,
+    };
   }
 
   getStatusColor(status: string): string {
@@ -126,14 +167,18 @@ export class Training {
 
   getStatValueColor(index: number): string {
     switch (index) {
-      case 0: return 'text-gray-900';
-      case 1: return 'text-green-600';
-      case 2: return 'text-blue-600';
-      case 3: return 'text-orange-500';
-      case 4: return 'text-red-500';
-      case 5: return 'text-purple-600';
-      default: return 'text-gray-900';
+      case 0:
+        return 'text-gray-900';
+      case 1:
+        return 'text-green-600';
+      case 2:
+        return 'text-blue-600';
+      case 3:
+        return 'text-orange-500';
+      case 4:
+        return 'text-red-500';
+      default:
+        return 'text-gray-900';
     }
   }
-
 }
