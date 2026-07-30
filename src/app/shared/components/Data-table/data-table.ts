@@ -19,6 +19,7 @@ import {
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule, DatePipe, DecimalPipe, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import {
   SmartTableConfig,
@@ -35,6 +36,7 @@ import {
 } from './data-table.types';
 
 import { CustomColumnDirective } from './custom-column.directive';
+import { DataTableService } from './data-table.service';
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -56,7 +58,9 @@ export class DataTable<T extends object> implements AfterContentInit {
   customTemplates!: QueryList<CustomColumnDirective>;
 
   private http = inject(HttpClient);
+  private dataTableService = inject(DataTableService);
   private _lastFetchKey = '';
+  
 
   // ── Inputs ────────────────────────────────────────────────────────────────
   config = input.required<SmartTableConfig<T>>();
@@ -96,6 +100,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   dragOverKey = signal<string | null>(null);
   pageSizePopoverOpen = signal(false);
   private wasDragging = signal(false);
+  activeDropdownKey = signal<string | null>(null);
 
   // Modal open states (using native <dialog>)
   filterModalOpen = signal(false);
@@ -113,9 +118,26 @@ export class DataTable<T extends object> implements AfterContentInit {
     const cfgFilters = this.config().filters ?? [];
     const loaded = this.loadedFilters();
     const map = new Map<string, TableFilter>();
+    // loaded (from filterNames → DataTableService) first, then config.filters override
     loaded.forEach(f => map.set(f.key, f));
     cfgFilters.forEach(f => map.set(f.key, f));
     return Array.from(map.values());
+  });
+
+  // Resolves each name in `filterNames` (e.g. ['gender', 'qualification']) via
+  // DataTableService.getFilterOptions(name), which returns the full TableFilter
+  // (label + options) for that name — static or API-backed. Runs whenever the
+  // parent changes the filterNames input.
+  private loadFiltersEffect = effect(() => {
+    const names = this.filterNames();
+    if (!names.length) {
+      untracked(() => this.loadedFilters.set([]));
+      return;
+    }
+    untracked(() => {
+      forkJoin(names.map(n => this.dataTableService.getFilterOptions(n)))
+        .subscribe(filters => this.loadedFilters.set(filters));
+    });
   });
 
   // ── Computed ──────────────────────────────────────────────────────────────
@@ -148,17 +170,33 @@ export class DataTable<T extends object> implements AfterContentInit {
     }
   });
 
-  pageButtons = computed<(number | '...')[]>(() => {
-    if (this.config().showPagination === false) return [0];
-    const tp = this.totalPages(), cur = this.page();
-    if (tp <= 7) return Array.from({ length: tp }, (_, i) => i);
-    const btns: (number | '...')[] = [0];
-    if (cur > 2) btns.push('...');
-    for (let i = Math.max(1, cur - 1); i <= Math.min(tp - 2, cur + 1); i++) btns.push(i);
-    if (cur < tp - 3) btns.push('...');
-    btns.push(tp - 1);
-    return btns;
-  });
+  pageButtons = computed<number[]>(() => {
+  if (this.config().showPagination === false) return [0];
+  const tp = this.totalPages(), cur = this.page();
+  if (tp <= 0) return [0];
+
+  const maxVisible = 5; // Number of visible numeric buttons
+  let start = cur - 2;
+  let end = cur + 2;
+
+  // Adjust bounds when near the start
+  if (start < 0) {
+    start = 0;
+    end = Math.min(maxVisible - 1, tp - 1);
+  }
+
+  // Adjust bounds when near the end
+  if (end >= tp) {
+    end = tp - 1;
+    start = Math.max(0, tp - maxVisible);
+  }
+
+  const btns: number[] = [];
+  for (let i = start; i <= end; i++) {
+    btns.push(i);
+  }
+  return btns;
+});
 
   // Client-side mode
   private clientRows = computed<T[]>(() => {
@@ -166,12 +204,80 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (cfg.apiConfig) return this.rows();
     let data = cfg.staticData ?? [];
     const f = this.activeFilters();
+
     if (f.search) {
       const q = (f.search as string).toLowerCase();
       data = data.filter(row =>
         Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))
       );
     }
+
+    // Apply every other active filter from the modal (matched by TableFilter.key
+    // against `filter.key + '_min'/'_max'` for range, array for multiSelect, else
+    // a plain equality match).
+    const rangeKeys = new Set(
+      this.allFilters().filter(fl => fl.type === 'range').map(fl => fl.key)
+    );
+    const dateRangeKeys = new Set(
+      this.allFilters().filter(fl => fl.type === 'daterange').map(fl => fl.key)
+    );
+    Object.entries(f).forEach(([key, value]) => {
+      if (key === 'search') return;
+      if (value === null || value === undefined || value === '') return;
+      if (Array.isArray(value) && value.length === 0) return;
+
+      if (rangeKeys.has(key)) return; // handled separately below via _min/_max
+      if ([...dateRangeKeys].some(k => key === `${k}_from` || key === `${k}_to`)) return;
+
+      if (key.endsWith('_min') || key.endsWith('_max')) {
+        const baseKey = key.replace(/_(min|max)$/, '');
+        const isMin = key.endsWith('_min');
+        data = data.filter(row => {
+          const rowVal = Number((row as any)[baseKey]);
+          if (Number.isNaN(rowVal)) return false;
+          return isMin ? rowVal >= Number(value) : rowVal <= Number(value);
+        });
+        return;
+      }
+
+      if (key.endsWith('_from') || key.endsWith('_to')) {
+        const baseKey = key.replace(/_(from|to)$/, '');
+        const isFrom = key.endsWith('_from');
+        data = data.filter(row => {
+          const raw = (row as any)[baseKey];
+          if (!raw) return false;
+          const t = new Date(raw).getTime();
+          if (Number.isNaN(t)) return false;
+          const bound = new Date(String(value)).getTime();
+          return isFrom ? t >= bound : t <= bound;
+        });
+        return;
+      }
+
+      if (Array.isArray(value)) {
+        const set = new Set(value.map(v => String(v)));
+        data = data.filter(row => set.has(String((row as any)[key])));
+      } else {
+        data = data.filter(row => String((row as any)[key]) === String(value));
+      }
+    });
+
+    // Date range (if the row has a date-like field matching a configured column)
+    const from = this.dateFrom();
+    const to = this.dateTo();
+    if ((from || to) && cfg.dateRangeKey) {
+      const key = cfg.dateRangeKey;
+      data = data.filter(row => {
+        const raw = (row as any)[key];
+        if (!raw) return false;
+        const t = new Date(raw).getTime();
+        if (Number.isNaN(t)) return false;
+        if (from && t < new Date(from).getTime()) return false;
+        if (to && t > new Date(to).getTime()) return false;
+        return true;
+      });
+    }
+
     const { key, dir } = this.sort();
     if (key) {
       data = [...data].sort((a, b) => {
@@ -457,8 +563,21 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   removeChipFilter(key: string): void {
-    this.activeFilters.update(f => { const u = { ...f }; delete u[key]; return u; });
-    this.tempFilters.update(f => { const u = { ...f }; delete u[key]; return u; });
+    const filter = this.allFilters().find(f => f.key === key);
+    this.activeFilters.update(f => {
+      const u = { ...f };
+      delete u[key];
+      if (filter?.type === 'range') { delete u[key + '_min']; delete u[key + '_max']; }
+      if (filter?.type === 'daterange') { delete u[key + '_from']; delete u[key + '_to']; }
+      return u;
+    });
+    this.tempFilters.update(f => {
+      const u = { ...f };
+      delete u[key];
+      if (filter?.type === 'range') { delete u[key + '_min']; delete u[key + '_max']; }
+      if (filter?.type === 'daterange') { delete u[key + '_from']; delete u[key + '_to']; }
+      return u;
+    });
     this.page.set(0);
   }
 
@@ -466,7 +585,50 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.tempFilters.update(f => ({ ...f, [key]: value }));
   }
 
+  // ── Multi-select filter support (filter.multiSelect === true) ─────────────
+  isTempFilterValueChecked(key: string, value: any): boolean {
+    const v = this.tempFilters()[key];
+    return Array.isArray(v) && v.some(x => String(x) === String(value));
+  }
+
+  toggleTempMultiValue(key: string, value: any): void {
+    this.tempFilters.update(f => {
+      const current: any[] = Array.isArray(f[key]) ? [...f[key]] : [];
+      const idx = current.findIndex(x => String(x) === String(value));
+      if (idx > -1) current.splice(idx, 1); else current.push(value);
+      return { ...f, [key]: current };
+    });
+  }
+
+  hasFilterChip(filter: TableFilter): boolean {
+    if (filter.type === 'range') {
+      const min = this.activeFilters()[filter.key + '_min'];
+      const max = this.activeFilters()[filter.key + '_max'];
+      return !!(min || max);
+    }
+    if (filter.type === 'daterange') {
+      const from = this.activeFilters()[filter.key + '_from'];
+      const to = this.activeFilters()[filter.key + '_to'];
+      return !!(from || to);
+    }
+    const value = this.activeFilters()[filter.key];
+    if (Array.isArray(value)) return value.length > 0;
+    return value !== null && value !== undefined && value !== '';
+  }
+
   getFilterChipLabel(filter: TableFilter): string {
+    if (filter.type === 'range') {
+      const min = this.activeFilters()[filter.key + '_min'];
+      const max = this.activeFilters()[filter.key + '_max'];
+      if (!min && !max) return '';
+      return `${min || '…'} – ${max || '…'}`;
+    }
+    if (filter.type === 'daterange') {
+      const from = this.activeFilters()[filter.key + '_from'];
+      const to = this.activeFilters()[filter.key + '_to'];
+      if (!from && !to) return '';
+      return `${from || '…'} – ${to || '…'}`;
+    }
     const value = this.activeFilters()[filter.key];
     if (!value) return '';
     if (Array.isArray(value)) {
@@ -804,4 +966,54 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dragSrcKey.set(null);
     this.dragOverKey.set(null);
   }
+  toggleDropdown(key: string): void {
+  this.activeDropdownKey.update(current => (current === key ? null : key));
+}
+
+isDropdownOpen(key: string): boolean {
+  return this.activeDropdownKey() === key;
+}
+
+closeAllDropdowns(): void {
+  this.activeDropdownKey.set(null);
+}
+
+hasSelections(key: string): boolean {
+  const values = this.tempFilters()[key];
+  return Array.isArray(values) && values.length > 0;
+}
+
+/**
+ * Generates space-efficient label displays like "Hot, VIP +3 more"
+ */
+getMultiSelectDisplay(key: string): string {
+  const selectedValues = this.tempFilters()[key];
+  if (!Array.isArray(selectedValues) || selectedValues.length === 0) {
+    return '';
+  }
+
+  const filterDef = this.allFilters().find(f => f.key === key);
+  if (!filterDef || !filterDef.options) {
+    return `${selectedValues.length} selected`;
+  }
+
+  const selectedLabels = selectedValues.map(val => {
+    const option = filterDef.options!.find(o => o.value === val);
+    return option ? option.label : val;
+  });
+
+  if (selectedLabels.length <= 2) {
+    return selectedLabels.join(', ');
+  }
+
+  return `${selectedLabels.slice(0, 2).join(', ')} +${selectedLabels.length - 2} more`;
+}
+
+/**
+ * Placeholder for future server-side / client-side search filtering
+ */
+onDropdownSearch(filterKey: string, searchTerm: string): void {
+  // Logic to emit an event or filter filter.options dynamically
+  console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
+}
 }

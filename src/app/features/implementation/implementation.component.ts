@@ -146,6 +146,21 @@ export class ImplementationComponent implements OnInit {
   inProgressClientsCount = computed(() => this.cardData().inProgress);
   pendingClientsCount   = computed(() => this.cardData().notStarted);
 
+  // ── Filter option sources for the DataTable's built-in filter modal ───────
+  // 'csLead' options come from the data we already loaded — no extra endpoint
+  // needed. Recomputes automatically whenever `clients()` changes (e.g. after
+  // a refresh or a new page of data arrives).
+  csLeadFilterOptions = computed(() => {
+    const leads = new Set(
+      this.clients()
+        .map(c => c.cs_lead)
+        .filter((v): v is string => !!v)
+    );
+    return Array.from(leads)
+      .sort((a, b) => a.localeCompare(b))
+      .map(label => ({ label, value: label }));
+  });
+
   // ── DataTable config ──────────────────────────────────────────────────────
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
 
@@ -185,7 +200,8 @@ export class ImplementationComponent implements OnInit {
          * { start, length, search, sorting: "<JSON>", filter: "<JSON>" }
          */
         buildRequest: (ctx) => {
-          // Merge the active status-filter tab into the filter object.
+          // Merge the active status-filter tab AND the table's own filter
+          // modal selections (csLead, health, ...) into the filter object.
           const filterObj: Record<string, any> = { ...ctx.filters };
           if (statusFilter !== 'all') filterObj['status'] = statusFilter;
 
@@ -212,13 +228,17 @@ export class ImplementationComponent implements OnInit {
       showSearch:      true,
       showPagination:  true,
       defaultPageSize: 10,
-      pageSizeOptions: [10, 25, 50],
+      // selectable:true,
+      pageSizeOptions: [10, 25, 50,100,500],
       exportFileName:  'implementation-progress',
       emptyMessage:    'No implementation records found.',
       clickable:       false,
       toolbarButtons: [
+        { id: 'filter',  type: 'filter',  label: 'Filter' },
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
+        { id: 'columns', type: 'columnPicker', label: 'Columns' },
+        
       ],
       customRowActions: [
         {
@@ -228,7 +248,14 @@ export class ImplementationComponent implements OnInit {
           tooltip: 'Open detail drawer',
           onClick: (row: Client) => this.openClientDetails(row),
         }
-      ]
+      ],
+
+      // 'health' is resolved via filterNames + DataTableService (static enum).
+      // 'csLead' is defined here directly since its options come from data
+      // already loaded on the client (not a separate API call).
+      filters: [
+        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
+      ],
     };
   });
 

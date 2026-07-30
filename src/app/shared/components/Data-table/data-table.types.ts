@@ -58,7 +58,7 @@ export interface FilterState {
 export interface TableFilter {
   key: string;
   label: string;
-  type?: 'select' | 'multiselect' | 'range' | 'text';
+  type?: 'select' | 'multiselect' | 'range' | 'daterange' | 'text';
   options?: { label: string; value: any }[];
   multiSelect?: boolean;
   searchable?: boolean;
@@ -188,6 +188,9 @@ export interface SmartTableConfig<T> {
 
   // Export
   exportFileName?: string;
+
+  /** In static-data mode: which row field the Date Range filter checks against. */
+  dateRangeKey?: string;
 
   // UI
   emptyMessage?: string;

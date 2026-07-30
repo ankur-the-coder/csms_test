@@ -161,7 +161,7 @@
     <span class="st-filter-chips-label text-[12px] font-bold text-[--st-accent] uppercase tracking-[0.04em]">Active
       Filters:</span>
     @for (filter of allFilters(); track filter.key) {
-    @if (activeFilters()[filter.key] && activeFilters()[filter.key] !== '') {
+    @if (hasFilterChip(filter)) {
     <div
       class="st-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[--st-border] bg-[--st-surface] text-[12px] font-medium text-[--st-text]">
       <span>{{ filter.label }}: {{ getFilterChipLabel(filter) }}</span>
@@ -586,18 +586,19 @@
       <!-- Page size popover -->
       <!-- Page size popover -->
       @if (pageSizePopoverOpen()) {
-      <div
-        class="st-pagesize-popover absolute bottom-[calc(100%+8px)] left-0 bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-lg] z-[50] overflow-hidden min-w-[120px] animate-[st-dropdown_0.15s_ease-out] p-3 "
-        (click)="$event.stopPropagation()">
-        @for (size of pageSizeOptions().slice().reverse(); track size) {
-        <button
-          class="st-pagesize-btn w-full px-4 py-2.5 text-[13px] font-inherit text-left bg-none border-none cursor-pointer text-[--st-text2] font-medium transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] [&.active]:bg-[--st-accent] [&.active]:text-white"
-          [class.active]="pageSize() === size"
-          (click)="onPageSizeChange(size); pageSizePopoverOpen.set(false); $event.stopPropagation()" type="button">
-          {{ size }} Per Page
-        </button>
-        }
-      </div>
+     <div
+  class="st-pagesize-popover absolute bottom-[calc(100%+8px)] left-0 w-[165px] p-2.5 bg-[--st-surface] border border-[--st-border] rounded-[16px] shadow-xl z-[50] flex flex-col gap-1 animate-[st-dropdown_0.15s_ease-out]"
+  (click)="$event.stopPropagation()">
+  @for (size of pageSizeOptions().slice().reverse(); track size) {
+  <button
+    class="st-pagesize-btn w-full px-3.5 py-2 text-[13px] font-medium font-inherit text-left bg-transparent border-none cursor-pointer text-[--st-text2] rounded-[8px] transition-colors duration-150 hover:bg-[--st-row-hover] hover:text-[--st-text] [&.active]:bg-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
+    [class.active]="pageSize() === size"
+    (click)="onPageSizeChange(size); pageSizePopoverOpen.set(false); $event.stopPropagation()" 
+    type="button">
+    {{ size }} Per Page
+  </button>
+  }
+</div>
       }
       } @else {
       <span>Total <strong>{{ totalCount() }}</strong> records</span>
@@ -612,34 +613,72 @@
       }
     </div>
 
-    <!-- Pagination -->
     @if (config().showPagination !== false) {
-    <div class="st-pagination flex items-center gap-1">
-      <button
-        class="st-page-btn inline-flex items-center justify-center min-w-[32px] h-[32px] px-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-colors duration-150 font-inherit hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-35 disabled:cursor-not-allowed [&.active]:bg-[--st-accent] [&.active]:border-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
-        [disabled]="page() === 0" (click)="onPageChange(page() - 1)" type="button" aria-label="Previous page">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-      @for (btn of pageButtons(); track $index) {
-      @if (btn === '...') {
-      <span class="st-page-ellipsis px-1 text-[--st-text3] text-[13px] font-semibold">…</span>
-      } @else {
-      <button
-        class="st-page-btn inline-flex items-center justify-center min-w-[32px] h-[32px] px-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-colors duration-150 font-inherit hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-35 disabled:cursor-not-allowed [&.active]:bg-[--st-accent] [&.active]:border-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
-        [class.active]="btn === page()" (click)="onPageChange(+btn)" type="button">{{ +btn + 1 }}</button>
-      }
-      }
-      <button
-        class="st-page-btn inline-flex items-center justify-center min-w-[32px] h-[32px] px-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-colors duration-150 font-inherit hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-35 disabled:cursor-not-allowed [&.active]:bg-[--st-accent] [&.active]:border-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
-        [disabled]="page() >= totalPages() - 1" (click)="onPageChange(page() + 1)" type="button" aria-label="Next page">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
-    </div>
-    }
+<div class="st-pagination flex items-center gap-1.5">
+
+  <!-- First Page (<<) -->
+  <button
+    type="button"
+    class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+    [disabled]="page() === 0"
+    (click)="onPageChange(0)"
+    aria-label="First page">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="11 17 6 12 11 7" />
+      <polyline points="18 17 13 12 18 7" />
+    </svg>
+  </button>
+
+  <!-- Previous Page (<) -->
+  <button
+    type="button"
+    class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+    [disabled]="page() === 0"
+    (click)="onPageChange(page() - 1)"
+    aria-label="Previous page">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="14 17 9 12 14 7" />
+    </svg>
+  </button>
+
+  <!-- Sliding Page Numbers (e.g. 3 4 [5] 6 7) -->
+  @for (btn of pageButtons(); track btn) {
+  <button
+    type="button"
+    class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 [&.active]:bg-[--st-accent] [&.active]:border-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
+    [class.active]="btn === page()"
+    (click)="onPageChange(btn)">
+    {{ btn + 1 }}
+  </button>
+  }
+
+  <!-- Next Page (>) -->
+  <button
+    type="button"
+    class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+    [disabled]="page() >= totalPages() - 1"
+    (click)="onPageChange(page() + 1)"
+    aria-label="Next page">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="10 17 15 12 10 7" />
+    </svg>
+  </button>
+
+  <!-- Last Page (>>) -->
+  <button
+    type="button"
+    class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+    [disabled]="page() >= totalPages() - 1"
+    (click)="onPageChange(totalPages() - 1)"
+    aria-label="Last page">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="6 17 11 12 6 7" />
+      <polyline points="13 17 18 12 13 7" />
+    </svg>
+  </button>
+
+</div>
+}
 
   </div>
   }
@@ -665,7 +704,8 @@
         </svg>
       </button>
     </div>
-    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1">
+    <!-- UPDATE THIS LINE IN THE FILTER MODAL BODY -->
+<div class="st-modal-body px-5 py-4 overflow-y-auto flex-1" (click)="closeAllDropdowns()">
       <div class="st-filter-grid grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
         @for (filter of allFilters(); track filter.key) {
         <div class="st-filter-field flex flex-col gap-1.5">
@@ -683,7 +723,72 @@
               placeholder="Max" [ngModel]="tempFilters()[filter.key + '_max']"
               (ngModelChange)="updateTempFilter(filter.key + '_max', $event)" />
           </div>
-          } @else {
+          } @else if (filter.type === 'daterange') {
+          <div class="flex items-center gap-2">
+            <input type="date"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              [ngModel]="tempFilters()[filter.key + '_from']"
+              (ngModelChange)="updateTempFilter(filter.key + '_from', $event)" />
+            <span class="text-text-muted font-medium">–</span>
+            <input type="date"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              [ngModel]="tempFilters()[filter.key + '_to']"
+              (ngModelChange)="updateTempFilter(filter.key + '_to', $event)" />
+          </div>
+          } @else if (filter.multiSelect) {
+<div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+  <!-- Trigger Button -->
+  <button type="button"
+    class="st-filter-input w-full flex items-center justify-between px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] text-left"
+    (click)="toggleDropdown(filter.key)">
+    <span class="truncate block pr-2 text-[13px]" [class.text-[--st-text2]]="!hasSelections(filter.key)">
+      {{ getMultiSelectDisplay(filter.key) || '-- Select ' + filter.label + ' --' }}
+    </span>
+    <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200" 
+         [class.rotate-180]="isDropdownOpen(filter.key)" 
+         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  </button>
+
+  <!-- Dropdown Popover -->
+  @if (isDropdownOpen(filter.key)) {
+  <div class="absolute top-[calc(100%+4px)] left-0 w-full z-[2000] bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-xl] overflow-hidden flex flex-col max-h-[240px] animate-[st-dropdown_0.15s_ease-out]">
+    
+    <!-- Search Bar for API Filtering -->
+    <div class="p-2 border-b border-[--st-border] bg-[--st-surface] sticky top-0 z-10">
+      <div class="relative flex items-center">
+        <svg class="absolute left-2 w-3.5 h-3.5 text-[--st-text3]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" placeholder="Search..."
+          class="w-full pl-7 pr-2 py-1.5 text-[12px] font-inherit bg-[--st-search-bg] text-[--st-text] border border-transparent rounded-[--st-radius-sm] outline-none focus:border-[--st-accent] transition-colors"
+          (input)="onDropdownSearch(filter.key, $any($event.target).value)" />
+      </div>
+    </div>
+
+    <!-- Options List -->
+    <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[--st-border2]">
+      @for (opt of filter.options ?? []; track opt.value) {
+      <label class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-[4px] cursor-pointer text-[13px] text-[--st-text] transition-colors hover:bg-[--st-row-hover]">
+        <input type="checkbox"
+          class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent]"
+          [checked]="isTempFilterValueChecked(filter.key, opt.value)"
+          (change)="toggleTempMultiValue(filter.key, opt.value)" />
+        <span class="flex-1 truncate select-none">{{ opt.label }}</span>
+      </label>
+      }
+      
+      @if (!(filter.options ?? []).length) {
+      <div class="px-2.5 py-4 text-center text-[12px] text-[--st-text3]">
+        No options found
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+} @else {
           <select
             class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring]"
             [ngModel]="tempFilters()[filter.key]" (ngModelChange)="updateTempFilter(filter.key, $event)">
