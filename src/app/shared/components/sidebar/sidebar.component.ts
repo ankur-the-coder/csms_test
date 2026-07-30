@@ -36,7 +36,7 @@ export class SidebarComponent implements OnInit {
   csNavItems: NavItem[] = [
     { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', badge: 'Active', route: '/onboarding' },
     { id: 'implementation', label: 'Implementation Status', icon: 'implementation', badge: 'Active', route: '/implementation' },
-    { id: 'training', label: 'Training Center', icon: 'training' },
+    { id: 'training', label: 'Training', icon: 'training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'health', label: 'Health Score', icon: 'health' },
     { id: 'support', label: 'Support Tickets', icon: 'support', badge: '34' },
@@ -77,6 +77,11 @@ export class SidebarComponent implements OnInit {
       this.router.navigate(['/implementation']);
     }
 
+    else if (id === 'training') {
+      this.router.navigate(['/training']);
+    }
+
+
     else if (id === 'onboarding') {
       this.router.navigate(['/onboarding']);
 
@@ -84,6 +89,7 @@ export class SidebarComponent implements OnInit {
       this.router.navigate(['/meetings']);
 
     }else if (id === 'clients') {
+
       this.router.navigate(['/client']);
 
     }

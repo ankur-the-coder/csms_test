@@ -1,0 +1,98 @@
+<div class="min-h-screen bg-gray-50/50 p-6 font-sans">
+
+  <!-- Training Materials Section -->
+  <div class="max-w-7xl mx-auto">
+    <!-- Section Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-lg font-bold text-gray-900">Training Materials</h2>
+      <button
+        (click)="uploadMaterial()"
+        class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 
+               rounded-lg transition-colors duration-200 flex items-center gap-2 shadow-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Upload Material
+      </button>
+      <input
+        #fileInput
+        type="file"
+        multiple
+        accept=".pdf,.pptx,.docx,.mp4"
+        (change)="onFileSelected($event)"
+        class="hidden" />
+    </div>
+
+    <!-- Upload Zone -->
+    <div
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      [class]="isDragOver ? 'border-teal-400 bg-teal-50/50' : 'border-gray-200 bg-white'"
+      class="border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 mb-8 cursor-pointer"
+      (click)="uploadMaterial()">
+      
+      <div class="flex flex-col items-center">
+        <div class="w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <p class="text-sm font-semibold text-gray-900 mb-1">
+          Click to upload or drag & drop files here
+        </p>
+        <p class="text-xs text-gray-500">
+          PDF, PPTX, MP4 or DOCX up to 500MB
+        </p>
+      </div>
+    </div>
+
+    <!-- All Resources Section -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">All Resources</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Material Card -->
+        <div *ngFor="let material of materials" 
+             class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 hover:shadow-sm transition-all duration-200 group">
+          <div class="flex items-start gap-3">
+            <!-- File Type Icon -->
+            <div [class]="getTypeIconColor(material.type)"
+                 class="w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0">
+              <span class="text-xs font-bold">{{ material.type }}</span>
+            </div>
+            
+            <!-- File Info -->
+            <div class="flex-1 min-w-0">
+              <h4 class="text-sm font-semibold text-gray-900 truncate">{{ material.name }}</h4>
+              <p class="text-xs text-gray-500 mt-1">
+                {{ material.size }} • {{ material.date }}
+              </p>
+            </div>
+
+            <!-- Delete Button -->
+            <button
+              (click)="deleteMaterial(material.id)"
+              class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 cursor-pointer"
+              title="Delete">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="materials.length === 0" class="text-center py-12 text-gray-400">
+        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="text-sm">No materials uploaded yet.</p>
+      </div>
+    </div>
+  </div>
+</div>

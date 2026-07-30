@@ -1,3 +1,4 @@
+
 import { Component, computed, inject, signal, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -49,6 +50,7 @@ export interface Client {
   selector: 'app-dashboard',
   standalone: true,
 imports: [CommonModule, FormsModule, DataTable],
+
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -474,5 +476,6 @@ export class Dashboard {
     const updated = { ...client, checklist: updatedChecklist };
     this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
     this.selectedClient.set(updated);
+
   }
 }

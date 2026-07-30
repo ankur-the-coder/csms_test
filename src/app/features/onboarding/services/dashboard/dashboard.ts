@@ -1,11 +1,14 @@
+
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { DataTablePayload, Implementation, CardData, ImplementationCardData } from '../../../implementation/implentation.model';
 
+
 @Injectable({
   providedIn: 'root',
 })
+
 export class Dashboard {
 
 private readonly baseUrl = 'http://127.0.0.1:5000/imp';
@@ -23,3 +26,4 @@ private readonly baseUrl = 'http://127.0.0.1:5000/imp';
   }
 
 }
+
