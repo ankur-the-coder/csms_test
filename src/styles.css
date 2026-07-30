@@ -1,6 +1,10 @@
 /* ===== Tailwind + Google Fonts ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap'); */
 @import 'tailwindcss';
+
+/* @import '@ngxpert/hot-toast/styles.css'; */
+
+
 
 
 /* ==========================================================================
@@ -347,28 +351,11 @@ main {
     @apply font-semibold text-text-primary;
   }
 
-  .badge-pending {
-    background: #fef3c7;
-    color: #92400e;
-  }
 
-  .badge-shortlist {
-    background: #fce7f3;
-    color: #9d174d;
-  }
-
-  .badge-selected {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  .badge-rejected {
-    background: #fee2e2;
-    color: #991b1b;
-  }
-
-  .badge-interview {
-    background: #dbeafe;
-    color: #1e40af;
-  }
+  .badge-pending   { background: #fef3c7; color: #92400e; }
+  .badge-shortlist { background: #fce7f3; color: #9d174d; }
+  .badge-selected  { background: #d1fae5; color: #065f46; }
+  .badge-rejected  { background: #fee2e2; color: #991b1b; }
+  .badge-interview { background: #dbeafe; color: #1e40af; }
 }
+
