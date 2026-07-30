@@ -34,7 +34,7 @@ export class SidebarComponent implements OnInit {
   ];
 
   csNavItems: NavItem[] = [
-    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', badge: 'Active', route: '/onboarding' },
+    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
     { id: 'implementation', label: 'Implementation Status', icon: 'implementation', badge: 'Active', route: '/implementation' },
     { id: 'training', label: 'Training', icon: 'training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
