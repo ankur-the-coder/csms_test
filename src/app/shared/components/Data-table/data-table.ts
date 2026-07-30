@@ -35,6 +35,7 @@ import {
   TableFilter,
 } from './data-table.types';
 
+import { DatePicker } from "../inputs/date-picker/date-picker";
 import { CustomColumnDirective } from './custom-column.directive';
 import { DataTableService } from './data-table.service';
 
@@ -42,9 +43,8 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  standalone: true,
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, DatePicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe],
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
 })
@@ -60,7 +60,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   private http = inject(HttpClient);
   private dataTableService = inject(DataTableService);
   private _lastFetchKey = '';
-  
+
 
   // ── Inputs ────────────────────────────────────────────────────────────────
   config = input.required<SmartTableConfig<T>>();
