@@ -1,0 +1,95 @@
+<div class="min-h-screen bg-gray-50/50 p-6 font-sans">
+  <div class="space-y-6 pb-6">
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Training Center</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Track sessions, trainers, materials, and learner progress in one place.
+        </p>
+      </div>
+      <button class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors cursor-pointer flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Create Training
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 p-2">
+      <div class="flex flex-wrap gap-1">
+        @for (tab of navTabs; track tab) {
+          <button
+            (click)="activeNavTab = tab"
+            [class]="activeNavTab === tab
+              ? 'bg-teal-50 text-teal-700 font-medium'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+            class="px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer">
+            {{ tab }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (activeNavTab === 'Dashboard') {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        @for (stat of stats; track stat.label; let i = $index) {
+          <div class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+            <p class="text-[10px] font-semibold text-gray-400 tracking-wider uppercase mb-2">
+              {{ stat.label }}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl font-bold" [class]="getStatValueColor(i)">
+                {{ stat.value }}
+              </span>
+              @if (stat.badge) {
+                <span class="text-[10px] font-medium px-2 py-0.5 rounded-full" [class]="getBadgeColor(stat.badgeColor!)">
+                  {{ stat.badge }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="inline-flex flex-wrap items-center gap-1 bg-gray-50 p-1 rounded-2xl">
+          @for (tab of filterTabs; track tab) {
+            <button
+              (click)="activeFilterTab = tab"
+              [class]="activeFilterTab === tab
+                ? 'bg-white text-teal-700 shadow-sm border border-gray-200 font-medium'
+                : 'text-gray-600 hover:text-gray-900'"
+              class="px-4 py-2 rounded-xl text-sm transition-colors cursor-pointer whitespace-nowrap">
+              {{ tab }}
+            </button>
+          }
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            (click)="viewMode = 'list'"
+            [class]="viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-500'"
+            class="px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-lg border border-gray-200">
+            List
+          </button>
+          <button
+            (click)="viewMode = 'calendar'"
+            [class]="viewMode === 'calendar' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-500'"
+            class="px-3 py-2 text-sm font-medium transition-colors cursor-pointer rounded-lg border border-gray-200">
+            Calendar
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <app-data-table [config]="tableConfig"></app-data-table>
+      </div>
+    } @else if (activeNavTab === 'Trainers') {
+      <app-trainer />
+    } @else if (activeNavTab === 'Materials') {
+      <app-training-materials />
+    } @else if (activeNavTab === 'My Trainings') {
+      <app-my-training />
+    }
+  </div>
+</div>

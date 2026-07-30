@@ -1,0 +1,870 @@
+<div class="st-shell p-5">
+
+  <!-- ── Full cover loader ───────────────────────────────────────────────── -->
+  @if (isInitialLoading() || isSpinning()) {
+  <div class="st-loader-overlay">
+    <div class="st-loader-inner">
+      <div class="st-spinner"></div>
+      <p class="st-loader-text">Loading…</p>
+    </div>
+  </div>
+  }
+
+  <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
+  <div
+    class="st-toolbar flex items-center gap-2 p-3 border-b border-[--st-border] bg-[--st-surface] flex-wrap rounded-t-[--st-radius-xl]">
+
+    <!-- Search -->
+    @if (config().showSearch !== false) {
+    <div
+      class="st-search-wrap relative flex items-center bg-[--st-search-bg] rounded-[4px] border-[1.5px] border-transparent min-w-[200px] max-w-[280px]">
+      <svg class="st-search-icon absolute left-2.5 w-3.5 h-3.5 text-[--st-text3] pointer-events-none"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input
+        class="st-search flex-1 bg-transparent border-none outline-none py-1.5 px-8 text-[13px] text-[--st-text] font-inherit"
+        type="text" placeholder="Search…" [value]="searchRaw()" (input)="onSearch($any($event.target).value)" />
+      @if (searchRaw()) {
+      <button
+        class="st-search-clear absolute right-2 bg-none border-none cursor-pointer p-0.5 text-[--st-text3] flex rounded-[4px] transition-colors duration-150 hover:text-[--st-text] hover:bg-[--st-border]"
+        (click)="onSearch('')" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          class="w-3 h-3">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      }
+    </div>
+    }
+
+    <div class="st-spacer flex-1"></div>
+
+    <!-- Bulk action button -->
+    @if (config().bulkActions?.length && selectedCount() > 0) {
+    <button
+      class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+      (click)="openBulkActionModal()" type="button">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      {{ config().bulkActionButtonLabel ?? 'Actions' }} ({{ selectedCount() }})
+    </button>
+    }
+
+    <!-- Toolbar Buttons -->
+    @for (button of config().toolbarButtons ?? []; track button.id) {
+    @if (!isToolbarButtonHidden(button)) {
+
+    <!-- FILTER -->
+    @if (button.type === 'filter') {
+    <button
+      class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+      title="Filter" (click)="openFilterModal()" type="button">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+      </svg>
+      {{ button.label ?? 'Filter' }}
+    </button>
+    }
+
+    <!-- REFRESH -->
+    @else if (button.type === 'refresh') {
+    <button
+      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+      title="Refresh" (click)="refresh()" [disabled]="isRefreshing() || isSpinning()" type="button">
+      <svg class="w-4 h-4" [class.animate-spin]="isRefreshing() || isSpinning()" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      </svg>
+    </button>
+    }
+
+    <!-- EXPORT -->
+    @else if (button.type === 'export') {
+    <div class="relative" (click)="$event.stopPropagation()">
+      <button
+        class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+        title="Export" [disabled]="!hasData()" (click)="hasData() && toggleExportMenu()" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </button>
+      @if (exportMenuOpen()) {
+      <div
+        class="st-export-menu absolute right-0 top-[calc(100%+8px)] w-[168px] rounded-[--st-radius-lg] border border-[--st-border] bg-[--st-surface] shadow-[--st-shadow-lg] z-[999] overflow-hidden animate-[st-dropdown_0.15s_ease-out]">
+        <button
+          class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
+          (click)="exportCSV()" type="button">
+          <svg class="w-4 h-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 3v18M3 9h18" />
+          </svg>
+          Export CSV
+        </button>
+        <button
+          class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
+          (click)="printTable()" type="button">
+          <svg class="w-4 h-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          Print
+        </button>
+      </div>
+      }
+    </div>
+    }
+
+    <!-- COLUMN PICKER -->
+    @else if (button.type === 'columnPicker') {
+    <button
+      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+      title="Columns" (click)="toggleColPicker()" type="button">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="18" rx="1" />
+        <rect x="14" y="3" width="7" height="18" rx="1" />
+      </svg>
+    </button>
+    }
+
+
+    <!-- DATE PICKER -->
+    @else if (button.type === 'datePicker') {
+    <app-custom-date-selector></app-custom-date-selector>
+    }
+
+    <!-- CUSTOM BUTTON -->
+    @else {
+    <button class="st-btn {{ getButtonColorClass(button.color) }}" (click)="onToolbarButtonClick(button, $event)"
+      type="button">
+      @if (button.icon === 'plus') {
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      }
+      {{ button.label }}
+    </button>
+    }
+
+    }
+    }
+  </div>
+  <!-- /toolbar -->
+
+  <!-- ── Active filter chips ─────────────────────────────────────────────── -->
+  @if (hasActiveFilter()) {
+  <div
+    class="st-filter-chips flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[--st-border] bg-[--st-surface]">
+    <span class="st-filter-chips-label text-[12px] font-bold text-[--st-accent] uppercase tracking-[0.04em]">Active
+      Filters:</span>
+    @for (filter of allFilters(); track filter.key) {
+    @if (hasFilterChip(filter)) {
+    <div
+      class="st-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[--st-border] bg-[--st-surface] text-[12px] font-medium text-[--st-text]">
+      <span>{{ filter.label }}: {{ getFilterChipLabel(filter) }}</span>
+      <button (click)="removeChipFilter(filter.key)" type="button"
+        class="bg-none border-none cursor-pointer text-[--st-text3] flex p-0.5 rounded-full transition-colors duration-100 hover:text-[--st-danger]">
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    }
+    }
+    <button
+      class="st-chip-clear bg-none border-none cursor-pointer text-[12px] font-medium text-[--st-text3] font-inherit px-1.5 py-0.5 rounded-[--st-radius-sm] transition-colors duration-150 hover:text-[--st-danger]"
+      (click)="clearFilters()" type="button">Clear all</button>
+  </div>
+  }
+
+
+
+  <!-- ── Table area ─────────────────────────────────────────────────────── -->
+  <div
+    class="st-scroll-area flex-1 overflow-x-auto overflow-y-auto relative min-h-0 scrollbar-thin scrollbar-thumb-[--st-border2]">
+
+    @if (loadState() === 'error') {
+    <div class="st-error-state flex flex-col items-center justify-center py-20 px-6 gap-3">
+      <div
+        class="st-error-icon w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--st-danger)_14%,transparent)] border-2 border-[color-mix(in_srgb,var(--st-danger)_35%,transparent)] flex items-center justify-center text-[--st-danger]">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <div>
+        <p class="st-error-title text-[15px] font-semibold text-[--st-text]">Failed to load data</p>
+        <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">Something went wrong while
+          fetching data</p>
+      </div>
+      <button
+        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        (click)="refresh()" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        Retry
+      </button>
+    </div>
+    } @else {
+
+    <!-- Refresh bar -->
+    @if (isRefreshing()) {
+    <div
+      class="st-refresh-bar absolute top-0 left-0 right-0 h-[2px] z-[50] bg-[color-mix(in_srgb,var(--st-accent)_15%,transparent)] overflow-hidden">
+      <div
+        class="st-refresh-progress h-full w-[33.333%] bg-[--st-accent] rounded-full animate-[st-table-loader_1s_ease-in-out_infinite]">
+      </div>
+    </div>
+    }
+
+    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums"
+      [class.opacity-70]="isRefreshing()" role="grid">
+
+      <!-- ── Head ─────────────────────────────────────────────────────── -->
+      <thead class="st-thead sticky top-0 z-30">
+        <tr>
+          <!-- Checkbox -->
+          @if (config().selectable) {
+          <th
+            class="st-th st-check-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
+              <input type="checkbox"
+                class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                [checked]="allSelected()" (change)="toggleSelectAll()" />
+              <span
+                class="st-checkbox-check absolute pointer-events-none w-2.5 h-2.5 text-white opacity-0 scale-50 transition-all duration-150 flex checked:opacity-100 checked:scale-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+            </label>
+          </th>
+          }
+
+          @for (col of visibleColumns(); track col.key) {
+          <th
+            class="st-th sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150"
+            [class.st-th--sortable]="col.sortable" [class.st-th--sorted]="sort().key === col.key"
+            [class.st-th--right]="col.align === 'right'" [class.st-th--center]="col.align === 'center'"
+            [class.st-th--sticky]="col.sticky === true" [class.st-th--dragging]="dragSrcKey() === col.key.toString()"
+            [class.st-th--drag-over]="dragOverKey() === col.key.toString()"
+            [style.width.px]="colWidths()[col.key.toString()] ?? null"
+            [attr.draggable]="config().reorderColumns === true ? true : null"
+            (dragstart)="onDragStart($event, col.key.toString())" (dragend)="onDragEnd()"
+            (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
+            [title]="col.tooltip ?? ''">
+            <span class="st-th-inner inline-flex items-center gap-1">
+              {{ col.label }}
+              @if (col.sortable) {
+              <span class="st-sort-icon inline-flex items-center text-[--st-accent]">
+                @if (getSortIcon($any(col.key)) === 'up') {
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+                } @else if (getSortIcon($any(col.key)) === 'down') {
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+                } @else {
+                <svg class="w-3 h-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="18 15 12 9 6 15" />
+                  <polyline points="6 9 12 15 18 9" class="opacity-0" />
+                </svg>
+                }
+              </span>
+              }
+            </span>
+            @if (config().resizableColumns) {
+            <div
+              class="st-col-resizer absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize z-[1] bg-transparent transition-colors duration-100 hover:bg-[--st-accent]"
+              (mousedown)="startResize($event, col.key.toString())" (click)="$event.stopPropagation()"></div>
+            }
+          </th>
+          }
+
+          <!-- Actions header -->
+          @if (actions().length > 0 || config().customRowActions?.length) {
+          <th
+            class="st-th st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            Actions</th>
+          }
+        </tr>
+      </thead>
+
+      <!-- ── Body ─────────────────────────────────────────────────────── -->
+      <tbody class="st-tbody">
+
+        @for (row of groupedRows(); track trackById($index, row); let i = $index) {
+
+        <!-- Group header row -->
+        @if (row.__isGroupHeader) {
+        <tr>
+          <td
+            [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)"
+            class="st-group-header px-3.5 py-1.5 bg-[color-mix(in_srgb,var(--st-accent)_8%,var(--st-surface))] border-t border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] border-b border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] text-[12px] font-semibold text-[--st-accent-dark]">
+            <span>{{ row.__groupValue }}</span>
+          </td>
+        </tr>
+        } @else {
+
+        <!-- Data row -->
+        <tr
+          class="st-tr border-b border-[--st-border] transition-colors duration-100 animate-[st-row-in_0.2s_ease-out_both] hover:bg-[--st-row-hover]"
+          [class.st-tr--selected]="isRowSelected(row)" [class.st-tr--clickable]="config().clickable"
+          (click)="onRowClick(row)" [style.animation-delay]="i * 20 + 'ms'">
+
+          <!-- Checkbox cell -->
+          @if (config().selectable) {
+          <td
+            class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[48px]"
+            (click)="$event.stopPropagation()">
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer"
+              [class.cursor-not-allowed]="config().selectableWhen ? !config().selectableWhen!(row) : false">
+              <input type="checkbox"
+                class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                [checked]="isRowSelected(row)"
+                [disabled]="config().selectableWhen ? !config().selectableWhen!(row) : false"
+                (change)="config().selectableWhen ? config().selectableWhen!(row) && toggleRow(row) : toggleRow(row)" />
+              <span
+                class="st-checkbox-check absolute pointer-events-none w-2.5 h-2.5 text-white opacity-0 scale-50 transition-all duration-150 flex checked:opacity-100 checked:scale-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+            </label>
+          </td>
+          }
+
+          <!-- Data cells -->
+          @for (col of visibleColumns(); track col.key) {
+          <td
+            class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]"
+            [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
+            [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
+            [style.max-width.px]="colWidths()[col.key.toString()] ?? 200">
+
+            @switch (col.type) {
+
+            @case ('avatar') {
+            <div class="st-avatar-cell flex items-center gap-2">
+              <div
+                class="st-avatar w-[30px] h-[30px] rounded-full bg-[--st-accent-bg] text-[--st-accent] text-[11px] font-bold flex items-center justify-center flex-shrink-0 border-[1.5px] border-[color-mix(in_srgb,var(--st-accent)_30%,transparent)]">
+                {{ isString(getCellValue(row, col.key)) ? $any(getCellValue(row, col.key)).slice(0,2).toUpperCase() :
+                '?' }}
+              </div>
+              <span class="st-avatar-name font-medium text-[--st-text] truncate">{{ getCellValue(row, col.key) }}</span>
+            </div>
+            }
+
+            @case ('badge') {
+            <span
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              [ngClass]="getBadgeClass(col, getCellValue(row, col.key))">
+              {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
+            </span>
+            }
+
+            @case ('date') {
+            <span class="st-cell-mono font-mono text-[12px] font-variant-numeric-tabular-nums tracking-[0.01em]">{{
+              getCellValue(row, col.key) | date:'dd MMM yyyy' }}</span>
+            }
+
+            @case ('currency') {
+            <span class="st-cell-mono font-mono text-[12px] font-variant-numeric-tabular-nums tracking-[0.01em]">{{
+              $any(getCellValue(row, col.key)) | currency }}</span>
+            }
+
+            @case ('number') {
+            <span class="st-cell-mono font-mono text-[12px] font-variant-numeric-tabular-nums tracking-[0.01em]">{{
+              $any(getCellValue(row, col.key)) | number }}</span>
+            }
+
+            @case ('boolean') {
+            <span
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              [class]="getCellValue(row, col.key) ? 'badge-good' : 'badge-default'">
+              {{ getCellValue(row, col.key) ? 'Yes' : 'No' }}
+            </span>
+            }
+
+            @case ('template') {
+            @if (col.cellTemplate) {
+            <div class="st-cell-text truncate"
+              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              <ng-container *ngTemplateOutlet="asTemplate(col.cellTemplate); context: { $implicit: row }" />
+            </div>
+            }
+            }
+
+            @default {
+            @if (isImage(getCellValue(row, col.key))) {
+            <img [src]="getCellValue(row, col.key)" alt="image"
+              class="w-12 h-12 object-cover rounded-lg border border-card-border transition-colors duration-150 hover:border-[--st-accent] hover:scale-105" />
+            } @else if (getColumnTemplate(col.key.toString())) {
+            <div class="st-cell-text truncate"
+              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              <ng-container
+                *ngTemplateOutlet="getColumnTemplate(col.key.toString())!; context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
+            </div>
+            } @else if (col.allowHtml) {
+            <div class="st-cell-text truncate" [innerHTML]="formatCellValue(getCellValue(row, col.key))"></div>
+            } @else {
+            <span class="st-cell-text"
+              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              {{ truncateCellValue(getCellValue(row, col.key)) }}
+            </span>
+            }
+            }
+
+            }
+          </td>
+          }
+
+          <!-- Actions cell -->
+          @if (actions().length > 0 || config().customRowActions?.length) {
+          <td
+            class="st-td st-actions-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[100px] text-center"
+            (click)="$event.stopPropagation()">
+            <div class="st-row-actions flex items-center justify-center gap-1">
+
+              @for (action of actions(); track action.id) {
+              @if (!isActionHidden(action, row)) {
+              <button
+                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit"
+                [class.st-action-btn--danger]="action.color === 'danger'" [title]="action.label"
+                (click)="onRowAction(action.id, row, $event)" type="button">
+                @if (action.icon === 'view') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                } @else if (action.icon === 'edit') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                } @else if (action.icon === 'delete') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+                } @else if (action.icon === 'download') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                } @else {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
+                }
+              </button>
+              }
+              }
+
+              @for (action of config().customRowActions ?? []; track action.id) {
+              @if (!isCustomActionHidden(action, row)) {
+              <button
+                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit {{ getActionColorClass(action.color) }}"
+                [title]="action.tooltip ?? action.label" [disabled]="action.disabled && action.disabled(row)"
+                (click)="onCustomRowAction(action, row, $event)" type="button">
+                @if (action.icon === 'view') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                } @else if (action.icon === 'edit') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                } @else if (action.icon === 'delete') {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+                } @else {
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
+                }
+              </button>
+              }
+              }
+
+            </div>
+          </td>
+          }
+
+        </tr>
+        }
+        }
+
+        <!-- Empty state -->
+        @if ((config().apiConfig ? loadState() !== 'loading' : config().hasLoaded) && displayRows().length === 0) {
+        <tr>
+          <td class="border-0"
+            [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)">
+            <div class="st-empty-state flex flex-col items-center justify-center py-20 px-6 gap-3">
+              <div
+                class="st-empty-icon w-14 h-14 rounded-full bg-[--st-accent-bg] border-2 border-[color-mix(in_srgb,var(--st-accent)_25%,transparent)] flex items-center justify-center text-[--st-accent]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-6 h-6">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+              </div>
+              <p class="st-empty-title text-[15px] font-semibold text-[--st-text]">No data found</p>
+              <p class="st-empty-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">{{ config().emptyMessage
+                ?? 'There is no data to display at the moment.' }}</p>
+              @if (hasActiveFilter()) {
+              <button
+                class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white mt-2"
+                (click)="clearFilters()" type="button">Clear Filters</button>
+              }
+            </div>
+          </td>
+        </tr>
+        }
+
+      </tbody>
+    </table>
+
+    }
+  </div>
+  <!-- /scroll -->
+
+  <!-- ── Footer / Pagination ────────────────────────────────────────────── -->
+  @if (config().showFooter !== false) {
+  <div
+    class="st-footer flex items-center justify-between gap-3 px-4 py-2.5 border-t border-[--st-border] bg-[--st-surface] rounded-b-[--st-radius-xl] flex-wrap relative">
+
+    <div class="st-showing relative flex-1 cursor-pointer rounded-[--st-radius-sm] p-2"
+      (click)="togglePageSizePopover(); $event.stopPropagation()">
+      @if (totalCount() > 0) {
+      @if (config().showPagination !== false) {
+      <span class="st-showing-trigger text-[13px] font-medium text-[--st-text] select-none">
+        Showing <strong class="text-brand-500">{{ startRow() }}</strong> – <strong class="text-brand-500">{{ endRow()
+          }}</strong> of <strong class="text-brand-500">{{ totalCount() }}</strong> entries
+      </span>
+      <!-- Page size popover -->
+      <!-- Page size popover -->
+      @if (pageSizePopoverOpen()) {
+      <div
+        class="st-pagesize-popover absolute bottom-[calc(100%+8px)] left-0 w-[165px] p-2.5 bg-[--st-surface] border border-[--st-border] rounded-[16px] shadow-xl z-[50] flex flex-col gap-1 animate-[st-dropdown_0.15s_ease-out]"
+        (click)="$event.stopPropagation()">
+        @for (size of pageSizeOptions().slice().reverse(); track size) {
+        <button
+          class="st-pagesize-btn w-full px-3.5 py-2 text-[13px] font-medium font-inherit text-left bg-transparent border-none cursor-pointer text-[--st-text2] rounded-[8px] transition-colors duration-150 hover:bg-[--st-row-hover] hover:text-[--st-text] [&.active]:bg-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
+          [class.active]="pageSize() === size"
+          (click)="onPageSizeChange(size); pageSizePopoverOpen.set(false); $event.stopPropagation()" type="button">
+          {{ size }} Per Page
+        </button>
+        }
+      </div>
+      }
+      } @else {
+      <span>Total <strong>{{ totalCount() }}</strong> records</span>
+      }
+      @if (selectedCount() > 0) {
+      &nbsp;·&nbsp;<span
+        class="st-selection-badge text-[12px] font-semibold text-[--st-accent] bg-[--st-accent-bg] px-2 py-0.5 rounded-full">{{
+        selectedCount() }} selected</span>
+      }
+      } @else {
+      <span class="st-no-records text-[13px] text-[--st-text3]">No records</span>
+      }
+    </div>
+
+    @if (config().showPagination !== false) {
+    <div class="st-pagination flex items-center gap-1.5">
+
+      <!-- First Page (<<) -->
+      <button type="button"
+        class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+        [disabled]="page() === 0" (click)="onPageChange(0)" aria-label="First page">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="11 17 6 12 11 7" />
+          <polyline points="18 17 13 12 18 7" />
+        </svg>
+      </button>
+
+      <!-- Previous Page (<) -->
+      <button type="button"
+        class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+        [disabled]="page() === 0" (click)="onPageChange(page() - 1)" aria-label="Previous page">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="14 17 9 12 14 7" />
+        </svg>
+      </button>
+
+      <!-- Sliding Page Numbers (e.g. 3 4 [5] 6 7) -->
+      @for (btn of pageButtons(); track btn) {
+      <button type="button"
+        class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 [&.active]:bg-[--st-accent] [&.active]:border-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
+        [class.active]="btn === page()" (click)="onPageChange(btn)">
+        {{ btn + 1 }}
+      </button>
+      }
+
+      <!-- Next Page (>) -->
+      <button type="button"
+        class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+        [disabled]="page() >= totalPages() - 1" (click)="onPageChange(page() + 1)" aria-label="Next page">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="10 17 15 12 10 7" />
+        </svg>
+      </button>
+
+      <!-- Last Page (>>) -->
+      <button type="button"
+        class="st-page-btn inline-flex items-center justify-center min-w-[36px] h-[36px] px-2 rounded-[10px] border border-[--st-border] bg-[--st-surface] text-[--st-text2] text-[13px] font-medium cursor-pointer transition-all duration-150 font-inherit hover:bg-[--st-accent-bg] hover:text-[--st-accent] hover:border-[--st-accent]/30 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface] disabled:hover:border-[--st-border] disabled:hover:text-[--st-text2]"
+        [disabled]="page() >= totalPages() - 1" (click)="onPageChange(totalPages() - 1)" aria-label="Last page">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 17 11 12 6 7" />
+          <polyline points="13 17 18 12 13 7" />
+        </svg>
+      </button>
+
+    </div>
+    }
+
+  </div>
+  }
+
+</div>
+
+<!-- ── Filter Modal ──────────────────────────────────────────────────────── -->
+@if (filterModalOpen()) {
+<div
+  class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
+  (click)="closeFilterModal()">
+  <div
+    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    (click)="$event.stopPropagation()">
+    <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
+      <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Filters</h3>
+      <button
+        class="st-modal-close w-[32px] h-[32px] rounded-[--st-radius-sm] border-none bg-[--st-search-bg] text-[--st-text2] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-[--st-border] hover:text-[--st-text]"
+        (click)="closeFilterModal()" type="button">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <!-- UPDATE THIS LINE IN THE FILTER MODAL BODY -->
+    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1" (click)="closeAllDropdowns()">
+      <div class="st-filter-grid grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+        @for (filter of allFilters(); track filter.key) {
+        <div class="st-filter-field flex flex-col gap-1.5">
+          <label class="st-filter-label text-[11px] font-semibold uppercase tracking-[0.06em] text-[--st-text2]">{{
+            filter.label }}</label>
+          @if (filter.type === 'range') {
+          <div class="flex items-center gap-2">
+            <input type="number"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              placeholder="Min" [ngModel]="tempFilters()[filter.key + '_min']"
+              (ngModelChange)="updateTempFilter(filter.key + '_min', $event)" />
+            <span class="text-text-muted font-medium">–</span>
+            <input type="number"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              placeholder="Max" [ngModel]="tempFilters()[filter.key + '_max']"
+              (ngModelChange)="updateTempFilter(filter.key + '_max', $event)" />
+          </div>
+          } @else if (filter.type === 'daterange') {
+          <div class="flex items-center gap-2">
+            <input type="date"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              [ngModel]="tempFilters()[filter.key + '_from']"
+              (ngModelChange)="updateTempFilter(filter.key + '_from', $event)" />
+            <span class="text-text-muted font-medium">–</span>
+            <input type="date"
+              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              [ngModel]="tempFilters()[filter.key + '_to']"
+              (ngModelChange)="updateTempFilter(filter.key + '_to', $event)" />
+          </div>
+          } @else if (filter.multiSelect) {
+          <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+            <!-- Trigger Button -->
+            <button type="button"
+              class="st-filter-input w-full flex items-center justify-between px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] text-left"
+              (click)="toggleDropdown(filter.key)">
+              <span class="truncate block pr-2 text-[13px]" [class.text-[--st-text2]]="!hasSelections(filter.key)">
+                {{ getMultiSelectDisplay(filter.key) || '-- Select ' + filter.label + ' --' }}
+              </span>
+              <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200"
+                [class.rotate-180]="isDropdownOpen(filter.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Popover -->
+            @if (isDropdownOpen(filter.key)) {
+            <div
+              class="absolute top-[calc(100%+4px)] left-0 w-full z-[2000] bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-xl] overflow-hidden flex flex-col max-h-[240px] animate-[st-dropdown_0.15s_ease-out]">
+
+              <!-- Search Bar for API Filtering -->
+              <div class="p-2 border-b border-[--st-border] bg-[--st-surface] sticky top-0 z-10">
+                <div class="relative flex items-center">
+                  <svg class="absolute left-2 w-3.5 h-3.5 text-[--st-text3]" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input type="text" placeholder="Search..."
+                    class="w-full pl-7 pr-2 py-1.5 text-[12px] font-inherit bg-[--st-search-bg] text-[--st-text] border border-transparent rounded-[--st-radius-sm] outline-none focus:border-[--st-accent] transition-colors"
+                    (input)="onDropdownSearch(filter.key, $any($event.target).value)" />
+                </div>
+              </div>
+
+              <!-- Options List -->
+              <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[--st-border2]">
+                @for (opt of filter.options ?? []; track opt.value) {
+                <label
+                  class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-[4px] cursor-pointer text-[13px] text-[--st-text] transition-colors hover:bg-[--st-row-hover]">
+                  <input type="checkbox"
+                    class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent]"
+                    [checked]="isTempFilterValueChecked(filter.key, opt.value)"
+                    (change)="toggleTempMultiValue(filter.key, opt.value)" />
+                  <span class="flex-1 truncate select-none">{{ opt.label }}</span>
+                </label>
+                }
+
+                @if (!(filter.options ?? []).length) {
+                <div class="px-2.5 py-4 text-center text-[12px] text-[--st-text3]">
+                  No options found
+                </div>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          } @else {
+          <select
+            class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring]"
+            [ngModel]="tempFilters()[filter.key]" (ngModelChange)="updateTempFilter(filter.key, $event)">
+            <option value="">-- Select {{ filter.label }} --</option>
+            @for (opt of filter.options ?? []; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+          }
+        </div>
+        }
+      </div>
+    </div>
+    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+      <button
+        class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+        (click)="clearModalFilters()" type="button">Clear</button>
+      <button
+        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        (click)="applyFilters()" type="button">Apply Filters</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── Column Picker Modal ────────────────────────────────────────────────── -->
+@if (colPickerModalOpen()) {
+<div
+  class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
+  (click)="closeColPicker()">
+  <div
+    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    (click)="$event.stopPropagation()">
+    <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
+      <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Visible Columns</h3>
+      <button
+        class="st-modal-close w-[32px] h-[32px] rounded-[--st-radius-sm] border-none bg-[--st-search-bg] text-[--st-text2] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-[--st-border] hover:text-[--st-text]"
+        (click)="closeColPicker()" type="button">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1">
+      <div class="st-col-picker-grid grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
+        @for (col of config().columns; track col.key) {
+        <label
+          class="st-col-picker-item flex items-center gap-2 text-[13px] text-[--st-text] cursor-pointer px-2.5 py-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] transition-colors duration-150 hover:border-[--st-accent] hover:bg-[--st-accent-bg]">
+          <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent] cursor-pointer"
+            [checked]="colVisibility()[col.key.toString()] !== false"
+            (change)="toggleColVisibility(col.key.toString(), $any($event.target).checked)" />
+          <span>{{ col.label }}</span>
+        </label>
+        }
+      </div>
+    </div>
+    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+      <button
+        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        (click)="closeColPicker()" type="button">Done</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── Bulk Action Modal ──────────────────────────────────────────────────── -->
+@if (bulkActionModalOpen()) {
+<div
+  class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
+  (click)="closeBulkActionModal()">
+  <div
+    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[480px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    (click)="$event.stopPropagation()">
+    <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
+      <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Bulk Actions <span class="text-brand-500">({{
+          selectedCount() }} selected)</span></h3>
+      <button
+        class="st-modal-close w-[32px] h-[32px] rounded-[--st-radius-sm] border-none bg-[--st-search-bg] text-[--st-text2] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-[--st-border] hover:text-[--st-text]"
+        (click)="closeBulkActionModal()" type="button">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1">
+      <p class="text-sm text-text-secondary mb-4">Choose an action to apply to {{ selectedCount() }} selected record(s).
+      </p>
+      <div class="flex flex-col gap-2">
+        @for (action of config().bulkActions ?? []; track action.id) {
+        <button
+          class="st-btn w-full inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+          (click)="closeBulkActionModal()" type="button">{{ action.label }}</button>
+        }
+      </div>
+    </div>
+    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+      <button
+        class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+        (click)="closeBulkActionModal()" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+}

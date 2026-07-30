@@ -1,0 +1,120 @@
+<aside
+  class="h-screen bg-white text-slate-600 flex flex-col border-r border-slate-200 transition-all
+  duration-300 select-none shrink-0"
+  [ngClass]="{'w-64': !collapsed, 'w-20': collapsed}"
+>
+  <!-- Brand Logo Header -->
+  <div
+    class="h-16 flex items-center border-b border-slate-200 bg-white transition-all"
+    [ngClass]="{'px-5 justify-start': !collapsed, 'px-2 justify-center': collapsed}"
+  >
+    <div
+      class="flex items-center gap-3 overflow-hidden cursor-pointer"
+      (click)="selectNav('dashboard')"
+      [title]="collapsed ? 'UBITECH CSMS Platform' : ''"
+    >
+      <div class="h-9 w-9 rounded-2xl flex items-center justify-center
+       font-extrabold text-lg shadow-lg shadow-indigo-500/20 shrink-0">
+        <img src="onlyLogo.png" alt="logo" class="h-9 pb-2" />
+      </div>
+      <div *ngIf="!collapsed" class="flex flex-col min-w-0">
+        <span class="font-extrabold text-emerald-600 tracking-wide text-md leading-tight">UBICSMS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Links -->
+  <div
+    class="flex-1 py-4 px-2 space-y-6"
+    [ngClass]="{'overflow-y-auto': !collapsed, 'overflow-hidden': collapsed}"
+  >
+
+    <!-- Main Navigation Section -->
+    <div>
+      <div *ngIf="!collapsed" class="px-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">
+        Main Menu
+      </div>
+      <nav class="space-y-1">
+        <button
+          *ngFor="let item of mainNavItems"
+          (click)="selectNav(item.id)"
+          class="w-full flex rounded-xl text-sm font-medium transition-all group relative cursor-pointer"
+          [ngClass]="{
+            'bg-emerald-600 text-white font-semibold shadow-md shadow-indigo-600/30': activeNav === item.id,
+            'text-slate-500 hover:text-slate-900 hover:bg-slate-100': activeNav !== item.id,
+            'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
+            'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
+          }"
+        >
+          <div class="w-5 h-5 flex items-center justify-center shrink-0" [innerHTML]="getSvgIcon(item.icon)"></div>
+
+          <span
+            class="truncate text-left"
+            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'"
+          >{{ item.label }}</span>
+
+          <span
+            *ngIf="item.badge && !collapsed"
+            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200"
+          >
+            {{ item.badge }}
+          </span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- CS Management Section -->
+    <div>
+      <div *ngIf="!collapsed" class="px-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">
+        Customer Success
+      </div>
+      <nav class="space-y-1">
+        <button
+          *ngFor="let item of csNavItems"
+          (click)="selectNav(item.id)"
+          class="w-full flex rounded-xl text-sm font-medium transition-all group relative cursor-pointer"
+          [ngClass]="{
+            'bg-emerald-600 text-white font-semibold shadow-md shadow-indigo-600/30': activeNav === item.id,
+            'text-slate-500 hover:text-slate-900 hover:bg-slate-100': activeNav !== item.id,
+            'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
+            'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
+          }"
+        >
+          <div class="w-5 h-5 flex items-center justify-center shrink-0" [innerHTML]="getSvgIcon(item.icon)"></div>
+
+          <span
+            class="truncate text-left"
+            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'"
+          >{{ item.label }}</span>
+
+          <span
+            *ngIf="item.badge && !collapsed"
+            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
+          >
+            {{ item.badge }}
+          </span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Footer / Bottom Collapse Control -->
+  <div class="p-3 bg-white flex justify-end">
+    <button
+      (click)="toggleCollapse()"
+      class="h-10 w-10 flex items-center justify-center rounded-2xl bg-white text-slate-600 hover:text-slate-900 transition-all duration-200 cursor-pointer shadow-[4px_4px_10px_rgba(0,0,0,0.07),-4px_-4px_10px_rgba(255,255,255,0.9)] hover:shadow-[inset_2px_2px_6px_rgba(0,0,0,0.06),inset_-2px_-2px_6px_rgba(255,255,255,0.7)]"
+      [title]="collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4 text-slate-600 transition-transform duration-300"
+        [ngClass]="{'rotate-180': collapsed}"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+      </svg>
+    </button>
+  </div>
+</aside>

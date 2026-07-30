@@ -1,11 +1,294 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* ===== Tailwind + Google Fonts ===== */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap'); */
 @import 'tailwindcss';
 
-:root {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+/* @import '@ngxpert/hot-toast/styles.css'; */
+
+
+
+
+/* ==========================================================================
+   THEME SYSTEM (Single Theme)
+   Tokens registered via @theme inline → Tailwind utilities reference CSS vars.
+   ========================================================================== */
+
+@theme inline {
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  --color-surface-50: var(--surface-50);
+  --color-surface-100: var(--surface-100);
+  --color-surface-200: var(--surface-200);
+  --color-surface-300: var(--surface-300);
+
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-text-active: var(--sidebar-text-active);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-body-bg: var(--body-bg);
+  --color-header-bg: var(--header-bg);
+  --color-header-border: var(--header-border);
+
+  --color-search-bg: var(--search-bg);
+  --color-toggle-bg: var(--toggle-bg);
+
+  --color-table-header-bg: var(--table-header-bg);
+  --color-table-row-hover: var(--table-row-hover);
+  --color-table-border: var(--table-border);
+
+  --color-btn-success: var(--btn-success);
+  --color-btn-success-hover: var(--btn-success-hover);
+  --color-btn-success-subtle: var(--btn-success-subtle);
+
+  --color-btn-danger: var(--btn-danger);
+  --color-btn-danger-hover: var(--btn-danger-hover);
+  --color-btn-danger-subtle: var(--btn-danger-subtle);
+
+  --color-btn-warning: var(--btn-warning);
+  --color-btn-warning-hover: var(--btn-warning-hover);
+  --color-btn-warning-subtle: var(--btn-warning-subtle);
+
+  --color-btn-info: var(--btn-info);
+  --color-btn-info-hover: var(--btn-info-hover);
+  --color-btn-info-subtle: var(--btn-info-subtle);
+
+  --shadow-dropdown: var(--dropdown-shadow);
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-slide-right: slide-right 0.5s ease-out;
+  --animate-zoom-in: zoom-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-flip-in: flip-in 0.6s ease-out;
+  --animate-dropdown: dropdown 0.2s ease-out;
+  --animate-spin: spin 1s linear infinite;
+  --animate-chart-load: chart-load 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --z-index-negative: -1;
+  --z-index-base: 0;
+  --z-index-header: var(--z-index-header-val);
+  --z-index-sticky: var(--z-index-sticky-val);
+  --z-index-sidebar: var(--z-index-sidebar-val);
+  --z-index-overlay: var(--z-index-overlay-val);
+  --z-index-dropdown: var(--z-index-dropdown-val);
+  --z-index-modal: var(--z-index-modal-val);
+  --z-index-toast: var(--z-index-toast-val);
+  --z-index-tooltip: var(--z-index-tooltip-val);
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes chart-load {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-right {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes zoom-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes flip-in {
+    from {
+      opacity: 0;
+      transform: perspective(1000px) rotateX(-90deg);
+    }
+
+    to {
+      opacity: 1;
+      transform: perspective(1000px) rotateX(0deg);
+    }
+  }
+
+  @keyframes dropdown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes tableLoader {
+    0% {
+      transform: translateX(-120%);
+    }
+
+    100% {
+      transform: translateX(320%);
+    }
+  }
+
+  --animate-table-loader: tableLoader 1s ease-in-out infinite;
 }
 
-/* Custom scrollbar styling */
+/* ==========================================================================
+   BRAND COLORS (Single Theme — Emerald)
+   ========================================================================== */
+:root {
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-200: #a7f3d0;
+  --brand-300: #6ee7b7;
+  --brand-400: #34d399;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-800: #065f46;
+  --brand-900: #064e3b;
+  --sidebar-active: #059669;
+}
+
+/* ==========================================================================
+   LIGHT MODE (Default)
+   ========================================================================== */
+:root,
+[data-mode='light'] {
+  --surface-50: #f8fafc;
+  --surface-100: #f1f5f9;
+  --surface-200: #e2e8f0;
+  --surface-300: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --body-bg: #f1f5f9;
+  --header-bg: #ffffff;
+  --header-border: #e2e8f0;
+
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f1f5f9;
+  --sidebar-text: #475569;
+  --sidebar-text-active: #0f172a;
+
+  --search-bg: #f1f5f9;
+  --toggle-bg: #f1f5f9;
+
+  --table-header-bg: #ffffff;
+  --table-row-hover: #f1f5f9;
+  --table-border: #e2e8f0;
+
+  --dropdown-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+
+  --btn-success: #10b981;
+  --btn-success-hover: #059669;
+  --btn-success-subtle: #ecfdf5;
+
+  --btn-danger: #ef4444;
+  --btn-danger-hover: #dc2626;
+  --btn-danger-subtle: #fef2f2;
+
+  --btn-warning: #f59e0b;
+  --btn-warning-hover: #d97706;
+  --btn-warning-subtle: #fffbeb;
+
+  --btn-info: #0ea5e9;
+  --btn-info-hover: #0284c7;
+  --btn-info-subtle: #f0f9ff;
+
+  --z-index-base-val: 0;
+  --z-index-header-val: 1000;
+  --z-index-sticky-val: 1100;
+  --z-index-sidebar-val: 1300;
+  --z-index-overlay-val: 1200;
+  --z-index-dropdown-val: 1400;
+  --z-index-modal-val: 1500;
+  --z-index-toast-val: 1600;
+  --z-index-tooltip-val: 1700;
+}
+
+/* ==========================================================================
+   GLOBAL STYLES
+   ========================================================================== */
+
+main {
+  position: relative;
+  z-index: var(--z-index-base-val);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -23,3 +306,56 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.6);
 }
+
+/* ==========================================================================
+   STANDARD LAYOUT UTILITIES
+   ========================================================================== */
+@layer components {
+  .page-container {
+    @apply p-6 w-full max-w-full;
+  }
+
+  app-layout main>* {
+    @apply flex flex-col flex-1 min-h-0;
+  }
+
+  .page-grid {
+    @apply grid gap-6;
+  }
+
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-text-primary tracking-tight;
+  }
+
+  .form-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+  }
+
+  .form-group {
+    @apply flex flex-col gap-2;
+  }
+
+  .card {
+    @apply bg-card-bg rounded-xl border border-card-border p-6 shadow;
+  }
+
+  .card-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .card-title {
+    @apply font-semibold text-text-primary;
+  }
+
+
+  .badge-pending   { background: #fef3c7; color: #92400e; }
+  .badge-shortlist { background: #fce7f3; color: #9d174d; }
+  .badge-selected  { background: #d1fae5; color: #065f46; }
+  .badge-rejected  { background: #fee2e2; color: #991b1b; }
+  .badge-interview { background: #dbeafe; color: #1e40af; }
+}
+
