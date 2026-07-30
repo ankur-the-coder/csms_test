@@ -1,6 +1,8 @@
-import { Component, signal, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MeetingService, Organization } from './meetings.service'; // adjust path to your actual services folder
 
 interface Meeting {
   id: number;
@@ -60,7 +62,7 @@ interface AgendaItem {
     }
   `]
 })
-export class MeetingsComponent {
+export class MeetingsComponent implements OnInit {
   // ============ UI State ============
   activeView = 'table';
   timeRange = 'Week';
@@ -91,6 +93,42 @@ export class MeetingsComponent {
 
   // Selected meeting for detail drawer
   selectedMeeting: Meeting | null = null;
+
+  // ============ Organizations (fetched from API) ============
+  organizations: Organization[] = [];
+  loadingOrganizations = false;
+
+  constructor(private router: Router, private meetingService: MeetingService) {}
+
+  ngOnInit(): void {
+    this.fetchOrganizations();
+  }
+
+  fetchOrganizations(): void {
+    this.loadingOrganizations = true;
+    this.meetingService.getOrganizations().subscribe({
+      next: (orgs) => {
+        this.organizations = orgs;
+        this.loadingOrganizations = false;
+      },
+      error: (err) => {
+        console.error('Failed to fetch organizations', err);
+        this.loadingOrganizations = false;
+      }
+    });
+  }
+
+  // Called from the Schedule Meeting modal when the user picks an organization
+  onOrganizationSelect(orgIdValue: string): void {
+    const orgId = Number(orgIdValue);
+    const org = this.organizations.find(o => o.orgId === orgId);
+
+    this.newMeeting.orgId = org ? org.orgId : null;
+    this.newMeeting.customer = org ? org.name : '';
+
+    // For the time being: just console log the selected orgId
+    console.log('Selected Organization orgId:', this.newMeeting.orgId);
+  }
 
   // ============ Mock Data ============
   meetings: Meeting[] = [
@@ -159,6 +197,7 @@ export class MeetingsComponent {
   newMeeting = {
     title: '',
     customer: '',
+    orgId: null as number | null,
     type: '',
     date: '',
     time: '',
@@ -170,7 +209,8 @@ export class MeetingsComponent {
   };
 
   // Dropdown options
-  customers = ['TechNova Solutions', 'BrightWave LLC', 'GreenLeaf Corp', 'InnoSoft Systems', 'Alpha Digital', 'DataCore Inc.', 'CloudSphere', 'DataVault'];
+  // NOTE: `customers` used to be a static list; organizations now come from
+  // ImplementationService.fetchOrganizations() -> this.organizations
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Renewal', 'Go Live'];
   hosts = ['Rohit S.', 'Anita P.', 'Neha K.', 'Vikram S.', 'Priya M.', 'Amit R.'];
 
@@ -604,16 +644,7 @@ export class MeetingsComponent {
   // ============ Modal Operations ============
 
   openScheduleModal(): void {
-    this.showScheduleModal = true;
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
-    if (!this.newMeeting.date) {
-      this.newMeeting.date = today;
-    }
-    // Set default host
-    if (!this.newMeeting.host) {
-      this.newMeeting.host = this.hosts[0];
-    }
+    this.router.navigate(['/meetings/schedule']);
   }
 
   closeScheduleModal(): void {
@@ -625,6 +656,7 @@ export class MeetingsComponent {
     this.newMeeting = {
       title: '',
       customer: '',
+      orgId: null,
       type: '',
       date: '',
       time: '',

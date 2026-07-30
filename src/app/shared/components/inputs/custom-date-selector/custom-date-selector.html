@@ -1,0 +1,210 @@
+<div class="relative w-full">
+    <!-- Label -->
+    @if(label){
+    <div class="flex items-center space-x-2  mb-1">
+        <label class="block text-[13px] text-text-secondary ">
+            {{ label }}
+        </label>
+        @if(required){
+        <span class="text-red-500 text-xs font-bold" aria-hidden="true">*</span>
+        }
+    </div>
+    }
+
+    <!-- Trigger Button -->
+    <div (click)="toggleDatePicker($event)"
+        class="flex justify-between items-center  text-text-secondary py-1 px-3 rounded-lg border border-card-border cursor-pointer transition-all duration-200"
+        [class.border-brand-500]="showDatePicker" [class.bg-brand-500/5]="showDatePicker" [class.opacity-60]="disabled"
+        [class.cursor-not-allowed]="disabled">
+
+        <!-- Left Shift -->
+        <button type="button" (click)="shiftDateRange(-1, $event)"
+            class="p-1 rounded-full hover:bg-brand-500/10 text-text-muted hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            [disabled]="!canShiftDate(-1) || disabled">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+
+        <!-- Date Range Text -->
+  <span class="text-[11px] min-[360px]:text-[12px] min-[400px]:text-[13px] font-medium px-1 sm:px-2 flex-1 text-center leading-tight"
+  [ngClass]="(!submittedStartDate && !submittedEndDate) ? 'text-text-muted' : 'text-text-secondary'">
+  {{ getFormattedDateRange() }}
+</span>
+
+        <!-- Right Shift -->
+        <button type="button" (click)="shiftDateRange(1, $event)"
+            class="p-1 rounded-full hover:bg-brand-500/10 text-text-muted hover:text-brand-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            [disabled]="!canShiftDate(1) || disabled">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Modal Backdrop & Panel -->
+    @if(showDatePicker){
+    <div [id]="id + '-overlay'" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-modal flex items-center justify-center p-4" (click)="cancelSelection()">
+
+        <!-- Modal Panel -->
+        <div class="bg-card-bg text-text-secondary rounded-[20px] shadow-2xl border border-card-border p-6 max-w-[540px] w-full animate-zoom-in overflow-hidden"
+            (click)="$event.stopPropagation()">
+
+            <div class="flex flex-col sm:flex-row gap-6">
+                <!-- Presets Column -->
+                <div class="w-full sm:w-40 flex-shrink-0">
+                    <div class="grid grid-cols-1 gap-1">
+                        @for (preset of ['today', 'yesterday', 'lastWeek', 'lastMonth', 'currentMonth', 'last90days',
+                        'custom']; track preset) {
+                        <button type="button" (click)="selectPreset(preset)"
+                            class="text-left px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all" [ngClass]="{
+                                'bg-brand-600 text-white shadow-md': isActivePreset(preset),
+                                'hover:bg-surface-200 text-text-secondary': !isActivePreset(preset)
+                            }">
+                         preset
+                        </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Calendar Column -->
+                <div class="flex-1 min-w-0">
+                    <!-- Calendar Header -->
+                    <div class="flex items-center justify-between mb-6 px-1">
+                        <button type="button" (click)="prevMonth()"
+                            class="p-2 rounded-full hover:bg-surface-200 transition-colors text-text-muted">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        <div class="flex items-center gap-3 text-text-secondary text-[17px] ">
+                            <div class="relative">
+                                <button type="button" (click)="toggleMonthDropdown($event)"
+                                    class="px-2 py-1 rounded hover:bg-surface-200 transition-colors">
+                                    {{ getCurrentMonth(currentMonth) }}
+                                </button>
+                                @if(showMonthDropdown){
+                                <div #monthDropdown
+                                    class="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-card-bg border border-card-border shadow-dropdown rounded-xl z-[1401] w-36 max-h-60 overflow-y-auto scrollbar-hide py-1">
+                                    @for(month of months; track $index){
+                                    <div (click)="selectMonth($index)"
+                                        class="px-4 py-2 cursor-pointer text-[14px] transition-colors text-center"
+                                        [ngClass]="currentMonth.getMonth() === $index ? 'bg-brand-600 text-white font-medium' : 'text-text-secondary hover:bg-surface-200'">
+                                       month
+                                    </div>
+                                    }
+                                </div>
+                                }
+                            </div>
+                            <div class="relative">
+                                <button type="button" (click)="toggleYearDropdown($event)"
+                                    class="px-2 py-1 rounded hover:bg-surface-200 transition-colors">
+                                    {{ currentMonth.getFullYear() }}
+                                </button>
+                                @if(showYearDropdown){
+                                <div #yearDropdown
+                                    class="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-card-bg border border-card-border shadow-dropdown rounded-xl z-[1401] w-28 max-h-60 overflow-y-auto scrollbar-hide py-1">
+                                    @for(year of yearRange; track year){
+                                    <div (click)="selectYear(year)"
+                                        class="px-4 py-2 cursor-pointer text-[14px] transition-colors text-center"
+                                        [ngClass]="currentMonth.getFullYear() === year ? 'bg-brand-600 text-white font-medium' : 'text-text-secondary hover:bg-surface-200'">
+                                        {{ year  }}
+                                    </div>
+                                    }
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <button type="button" (click)="nextMonth()"
+                            class="p-2 rounded-full hover:bg-surface-200 transition-colors text-text-muted">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Days Header -->
+                    <div class="grid grid-cols-7 mb-4">
+                        @for (day of ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']; track day) {
+                        <div class="text-center text-[12px] font-bold text-text-muted capitalize">
+                           day
+                        </div>
+                        }
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div class="grid grid-cols-7 gap-y-0.5">
+                        @for(_ of emptyDays; track $index){
+                        <div class="h-10"></div>
+                        }
+
+                        @for(date of monthDates; track date.getTime()){
+                        <div (click)="selectDate(date)" (mouseenter)="hoverDate(date)" (mouseleave)="clearHover()"
+                            class="h-10 flex items-center justify-center text-[14px] relative cursor-pointer group"
+                            [ngClass]="[
+                                (selectedStartDate && isSameDate(date, selectedStartDate)) || (selectedEndDate && isSameDate(date, selectedEndDate))
+                                ? 'text-white z-10'
+                                : isDateInRange(date) || isDateHovered(date)
+                                ? 'text-brand-600'
+                                : ''
+                            ]">
+
+                            <!-- Range Background -->
+                            @if(isDateInRange(date) || isDateHovered(date)){
+                            <div class="absolute inset-0 bg-brand-600/10 z-0 mx-[-1px] transition-all duration-200" [ngClass]="{
+                                    'rounded-l-full': (selectedStartDate && isSameDate(date, selectedStartDate)) || (isDateHovered(date) && hoveredDate && isSameDate(date, hoveredDate) && (!selectedStartDate || date < selectedStartDate)),
+                                    'rounded-r-full': (selectedEndDate && isSameDate(date, selectedEndDate)) || (isDateHovered(date) && hoveredDate && isSameDate(date, hoveredDate) && (!selectedEndDate || date > selectedEndDate))
+                                }"></div>
+                            }
+
+                            <!-- Selection Circles -->
+                            @if((selectedStartDate && isSameDate(date, selectedStartDate)) || (selectedEndDate && isSameDate(date, selectedEndDate)) || (hoveredDate && isSameDate(date, hoveredDate))){
+                            <div class="absolute inset-0 flex items-center justify-center z-0">
+                                <div class="w-8 h-8 rounded-full shadow-sm transition-all duration-300" [ngClass]="{
+                                        'bg-brand-600 scale-105 shadow-md': (selectedStartDate && isSameDate(date, selectedStartDate)) || (selectedEndDate && isSameDate(date, selectedEndDate)),
+                                        'bg-brand-200/60': hoveredDate && isSameDate(date, hoveredDate) && !isSameDate(date, selectedStartDate) && !isSameDate(date, selectedEndDate)
+                                    }">
+                                </div>
+                            </div>
+                            }
+
+                            <span class="relative z-10" [ngClass]="{
+                                'opacity-40': (setMaxDate && date > setMaxDate) || (setMinDate && date < setMinDate)
+                            }">{{ date.getDate() }}</span>
+                        </div>
+                        }
+
+                        <!-- Trailing empty days to fill 6 rows -->
+                        @for(_ of trailingDays; track $index){
+                        <div class="h-10"></div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+        <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-card-border">
+  <button type="button" (click)="cancelSelection()"
+    class="px-6 py-2.5 rounded-lg text-[14px]  bg-surface-200 text-text-secondary border border-surface-300 hover:bg-surface-300 transition-all">
+ cancel
+  </button>
+
+  <!-- NEW: Clear button -->
+  <button type="button" (click)="clearDates()"
+    class="px-6 py-2.5 rounded-lg text-[14px]  bg-red-50 text-red-500 hover:bg-red-100 transition-all">
+   clear
+  </button>
+
+  <button type="button" (click)="applySelection()"
+    class="px-8 py-2.5 rounded-lg text-[14px]  bg-brand-600 text-white shadow-lg hover:bg-brand-700 hover:-translate-y-0.5 transition-all">
+     apply
+  </button>
+</div>
+        </div>
+    </div>
+    }
+</div>
