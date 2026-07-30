@@ -38,12 +38,13 @@ import {
 import { DatePicker } from "../inputs/date-picker/date-picker";
 import { CustomColumnDirective } from './custom-column.directive';
 import { DataTableService } from './data-table.service';
+import { CustomDateSelector } from '../inputs/custom-date-selector/custom-date-selector';
 
 type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, DatePicker],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe,CustomDateSelector],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',

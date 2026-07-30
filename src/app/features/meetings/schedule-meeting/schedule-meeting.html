@@ -1,0 +1,350 @@
+<div class="min-h-screen bg-[#FAFBFC] flex flex-col">
+
+  <!-- Header -->
+  <div class="px-8 py-5 bg-white border-b border-slate-100 sticky top-0 z-30 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <button (click)="goBack()"
+        class="w-9 h-9 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center transition-colors duration-150">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div>
+        <div class="flex items-center gap-2.5">
+          <h2 class="text-lg font-semibold text-slate-900 tracking-tight">Schedule meeting</h2>
+          <span
+            class="px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-semibold rounded-md flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span> Live
+          </span>
+        </div>
+        <p class="text-sm text-slate-400 mt-0.5">Configure session details and host assignment</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button (click)="goBack()"
+        class="px-4 py-2 text-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors duration-150">
+        Cancel
+      </button>
+      <button (click)="saveAsDraft()"
+        class="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors duration-150">
+        Save draft
+      </button>
+      <button (click)="saveMeeting()" [disabled]="!isFormValid()"
+        class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150">
+        Schedule meeting
+      </button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="flex-1 px-8 py-8 max-w-5xl w-full mx-auto">
+    <form #meetingForm="ngForm" class="space-y-6">
+
+      <!-- Live summary strip -->
+      <div class="bg-white border border-slate-100 rounded-xl px-6 py-4 flex flex-wrap items-center gap-x-8 gap-y-3">
+        <div class="min-w-[160px]">
+          <p class="text-[11px] text-slate-400 font-medium mb-0.5">Meeting</p>
+          <p class="text-sm font-semibold text-slate-900">{{ newMeeting.title || 'Untitled meeting' }}</p>
+        </div>
+        <div class="w-px h-8 bg-slate-100"></div>
+        <div>
+          <p class="text-[11px] text-slate-400 font-medium mb-0.5">Client</p>
+          <p class="text-sm font-medium text-slate-700">
+            <ng-container *ngFor="let org of organizations">
+              <ng-container *ngIf="org.orgId === newMeeting.orgId">{{ org.name }}</ng-container>
+            </ng-container>
+            <ng-container *ngIf="!newMeeting.orgId">Not selected</ng-container>
+          </p>
+        </div>
+        <div class="w-px h-8 bg-slate-100"></div>
+        <div>
+          <p class="text-[11px] text-slate-400 font-medium mb-0.5">When</p>
+          <p class="text-sm font-medium text-slate-700">{{ newMeeting.date || '--' }} at {{ newMeeting.time || '--:--'
+            }}</p>
+        </div>
+        <div class="w-px h-8 bg-slate-100"></div>
+        <div>
+          <p class="text-[11px] text-slate-400 font-medium mb-0.5">Host</p>
+          <p class="text-sm font-medium text-slate-700">{{ newMeeting.host || 'Unassigned' }}</p>
+        </div>
+        <div class="ml-auto">
+          <span class="px-2.5 py-1 rounded-md text-xs font-semibold"
+            [class.bg-emerald-50]="newMeeting.priority === 'Low'"
+            [class.text-emerald-700]="newMeeting.priority === 'Low'"
+            [class.bg-amber-50]="newMeeting.priority === 'Medium'"
+            [class.text-amber-700]="newMeeting.priority === 'Medium'"
+            [class.bg-rose-50]="newMeeting.priority === 'High'" [class.text-rose-700]="newMeeting.priority === 'High'"
+            [class.bg-slate-50]="!newMeeting.priority" [class.text-slate-500]="!newMeeting.priority">
+            {{ newMeeting.priority ? (newMeeting.priority + ' priority') : 'Priority not set' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT: Meeting details -->
+        <div class="lg:col-span-7 bg-white border border-slate-100 rounded-xl">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-800">Meeting details</h3>
+            <span class="text-[11px] text-rose-500 font-medium">* Required</span>
+          </div>
+
+          <div class="divide-y divide-slate-100">
+
+            <!-- Title -->
+            <div class="px-6 py-4 flex items-start gap-3.5 hover:bg-slate-50/60 transition-colors duration-150">
+              <svg class="text-slate-300 mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16M4 12h10M4 18h7" />
+              </svg>
+              <div class="flex-1">
+                <label class="block text-xs font-medium text-slate-400 mb-1">
+                  Meeting title <span class="text-rose-400">*</span>
+                </label>
+                <input type="text" [(ngModel)]="newMeeting.title" name="title" required
+                  class="w-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none bg-transparent border-0 p-0"
+                  placeholder="e.g., QBR Q2 2025, Implementation Review">
+              </div>
+            </div>
+
+            <!-- Organization -->
+            <div class="px-6 py-4 flex items-start gap-3.5 hover:bg-slate-50/60 transition-colors duration-150">
+              <svg class="text-slate-300 mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18M6 21V7l6-4 6 4v14M9 9h1m-1 4h1m4-4h1m-1 4h1M9 21v-4h6v4" />
+              </svg>
+              <div class="flex-1">
+                <label class="block text-xs font-medium text-slate-400 mb-1">
+                  Organization / client <span class="text-rose-400">*</span>
+                </label>
+                <select [ngModel]="newMeeting.orgId" (ngModelChange)="onOrganizationSelect($event)" name="organization"
+                  required
+                  class="w-full text-sm font-medium text-slate-900 focus:outline-none bg-transparent border-0 p-0 appearance-none">
+                  <option value="" disabled>{{ loadingOrganizations ? 'Loading organizations...' : 'Select
+                    organization...' }}</option>
+                  <option *ngFor="let org of organizations" [value]="org.orgId">{{ org.name }}</option>
+                </select>
+              </div>
+              <svg class="text-slate-300 mt-3 shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </div>
+
+            <!-- Type + Duration -->
+            <div class="px-6 py-4 grid grid-cols-2 gap-6 hover:bg-slate-50/60 transition-colors duration-150">
+              <div class="flex items-start gap-3.5">
+                <svg class="text-slate-300 mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M20.59 13.41L11 3.83A2 2 0 009.59 3.24H4a1 1 0 00-1 1v5.59a2 2 0 00.59 1.41l9.58 9.59a2 2 0 002.83 0l4.59-4.59a2 2 0 000-2.83z" />
+                  <circle cx="7" cy="7" r="1" />
+                </svg>
+                <div class="flex-1">
+                  <label class="block text-xs font-medium text-slate-400 mb-1">
+                    Type <span class="text-rose-400">*</span>
+                  </label>
+                  <select [(ngModel)]="newMeeting.type" name="type" required
+                    class="w-full text-sm font-medium text-slate-900 focus:outline-none bg-transparent border-0 p-0 appearance-none">
+                    <option value="">Select type...</option>
+                    <option *ngFor="let t of meetingTypesList" [value]="t">{{ t }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex items-start gap-3.5">
+                <svg class="text-slate-300 mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 3" />
+                </svg>
+                <div class="flex-1">
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Duration</label>
+                  <select [(ngModel)]="newMeeting.duration" name="duration"
+                    class="w-full text-sm font-medium text-slate-900 focus:outline-none bg-transparent border-0 p-0 appearance-none">
+                    <option>15 minutes</option>
+                    <option>30 minutes</option>
+                    <option>45 minutes</option>
+                    <option>1 hour</option>
+                    <option>1.5 hours</option>
+                    <option>2 hours</option>
+                    <option>2.5 hours</option>
+                    <option>3 hours</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Agenda -->
+            <div class="px-6 py-4">
+              <div class="flex items-start gap-3.5">
+                <svg class="text-slate-300 mt-2.5 shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M17 10H3M21 6H3M21 14H3M17 18H3" />
+                </svg>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-medium text-slate-400">Agenda & description</label>
+                    <span class="text-[10px] text-slate-400">Markdown supported</span>
+                  </div>
+                  <textarea [(ngModel)]="newMeeting.description" name="description" rows="5"
+                    class="w-full text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none bg-transparent border-0 p-0 resize-none"
+                    placeholder="Outline discussion items, goals, or preparation requirements..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Timing, priority, host -->
+        <div class="lg:col-span-5 space-y-6">
+
+          <div class="bg-white border border-slate-100 rounded-xl">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h3 class="text-sm font-semibold text-slate-800">Timing & priority</h3>
+            </div>
+            <div class="p-6 space-y-5">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1.5">
+                    Date <span class="text-rose-400">*</span>
+                  </label>
+                  <input type="date" [(ngModel)]="newMeeting.date" name="date" required
+                    class="w-full text-sm font-medium text-slate-900 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 transition-all duration-150">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1.5">
+                    Time <span class="text-rose-400">*</span>
+                  </label>
+                  <input type="time" [(ngModel)]="newMeeting.time" name="time" required
+                    class="w-full text-sm font-medium text-slate-900 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 transition-all duration-150">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-2">Priority</label>
+                <div class="flex gap-2">
+                  <button type="button" (click)="newMeeting.priority = 'Low'"
+                    class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors duration-150 flex items-center justify-center gap-1.5"
+                    [class.border-emerald-300]="newMeeting.priority === 'Low'"
+                    [class.bg-emerald-50]="newMeeting.priority === 'Low'"
+                    [class.text-emerald-700]="newMeeting.priority === 'Low'"
+                    [class.border-slate-200]="newMeeting.priority !== 'Low'"
+                    [class.text-slate-500]="newMeeting.priority !== 'Low'">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Low
+                  </button>
+                  <button type="button" (click)="newMeeting.priority = 'Medium'"
+                    class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors duration-150 flex items-center justify-center gap-1.5"
+                    [class.border-amber-300]="newMeeting.priority === 'Medium'"
+                    [class.bg-amber-50]="newMeeting.priority === 'Medium'"
+                    [class.text-amber-700]="newMeeting.priority === 'Medium'"
+                    [class.border-slate-200]="newMeeting.priority !== 'Medium'"
+                    [class.text-slate-500]="newMeeting.priority !== 'Medium'">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Medium
+                  </button>
+                  <button type="button" (click)="newMeeting.priority = 'High'"
+                    class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors duration-150 flex items-center justify-center gap-1.5"
+                    [class.border-rose-300]="newMeeting.priority === 'High'"
+                    [class.bg-rose-50]="newMeeting.priority === 'High'"
+                    [class.text-rose-700]="newMeeting.priority === 'High'"
+                    [class.border-slate-200]="newMeeting.priority !== 'High'"
+                    [class.text-slate-500]="newMeeting.priority !== 'High'">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> High
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-100 rounded-xl">
+            <div class="px-6 py-4 border-b border-slate-100">
+              <h3 class="text-sm font-semibold text-slate-800">Host & participants</h3>
+            </div>
+            <div class="p-6 space-y-5">
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-2">Host source</label>
+                <div class="flex gap-2">
+                  <label (click)="onHostTypeChange('lead')"
+                    class="cursor-pointer flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors duration-150 flex items-center justify-center gap-1.5"
+                    [class.border-teal-500]="hostType === 'lead'" [class.bg-teal-50]="hostType === 'lead'"
+                    [class.text-teal-700]="hostType === 'lead'" [class.border-slate-200]="hostType !== 'lead'"
+                    [class.text-slate-500]="hostType !== 'lead'">
+                    <input type="radio" name="hostType" value="lead" [checked]="hostType === 'lead'" class="sr-only">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Lead owner
+                  </label>
+                  <label (click)="onHostTypeChange('support')"
+                    class="cursor-pointer flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors duration-150 flex items-center justify-center gap-1.5"
+                    [class.border-teal-500]="hostType === 'support'" [class.bg-teal-50]="hostType === 'support'"
+                    [class.text-teal-700]="hostType === 'support'" [class.border-slate-200]="hostType !== 'support'"
+                    [class.text-slate-500]="hostType !== 'support'">
+                    <input type="radio" name="hostType" value="support" [checked]="hostType === 'support'"
+                      class="sr-only">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 18v-6a9 9 0 0118 0v6" />
+                      <path d="M21 19a2 2 0 01-2 2h-1v-4h3v2zM3 19a2 2 0 002 2h1v-4H3v2z" />
+                    </svg>
+                    Support
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">
+                  Assigned host <span class="text-rose-400">*</span>
+                </label>
+                <select [(ngModel)]="newMeeting.host" name="host" required [disabled]="!hostType"
+                  class="w-full text-sm font-medium text-slate-900 border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 appearance-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150">
+                  <option value="" disabled>{{ loadingHosts ? 'Loading hosts...' : (hostType ? 'Select host...' :
+                    'Please select host type first') }}</option>
+                  <option *ngFor="let h of hosts" [value]="h">{{ h }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-2">Standard attendees</label>
+                <div class="flex flex-wrap gap-1.5">
+                  <span *ngFor="let attendee of getDefaultAttendees()"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600">
+                    {{ attendee }}
+                    <button type="button" class="text-slate-300 hover:text-rose-400 transition-colors duration-150">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                  <button type="button"
+                    class="inline-flex items-center gap-1 px-2.5 py-1 border border-dashed border-slate-300 rounded-lg text-xs font-medium text-slate-500 hover:border-teal-400 hover:text-teal-600 transition-colors duration-150">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1.5">Video meeting link</label>
+                <div
+                  class="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2.5 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/10 transition-all duration-150">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    class="text-slate-300 shrink-0">
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                  </svg>
+                  <input type="url" [(ngModel)]="newMeeting.link" name="link"
+                    placeholder="Paste Zoom, Google Meet, or Teams URL"
+                    class="flex-1 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none bg-transparent border-0 p-0">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
