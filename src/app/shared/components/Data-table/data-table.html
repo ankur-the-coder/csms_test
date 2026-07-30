@@ -17,7 +17,7 @@
     <!-- Search -->
     @if (config().showSearch !== false) {
     <div
-      class="st-search-wrap relative flex items-center bg-[--st-search-bg] rounded-[4px] border-[1.5px] border-transparent min-w-[200px] max-w-[280px]">
+      class="bg-gray-100 relative flex items-center  rounded-xl border-2px border-transparent min-w-50 max-w-70">
       <svg class="st-search-icon absolute left-2.5 w-3.5 h-3.5 text-[--st-text3] pointer-events-none"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
         stroke-linejoin="round">
@@ -29,7 +29,7 @@
         type="text" placeholder="Search…" [value]="searchRaw()" (input)="onSearch($any($event.target).value)" />
       @if (searchRaw()) {
       <button
-        class="st-search-clear absolute right-2 bg-none border-none cursor-pointer p-0.5 text-[--st-text3] flex rounded-[4px] transition-colors duration-150 hover:text-[--st-text] hover:bg-[--st-border]"
+        class="st-search-clear absolute right-2 bg-none border-none cursor-pointer p-0.5 text-[--st-text3] flex rounded-sm transition-colors duration-150 hover:text-[--st-text] hover:bg-[--st-border]"
         (click)="onSearch('')" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
           class="w-3 h-3">
@@ -74,7 +74,7 @@
     <!-- REFRESH -->
     @else if (button.type === 'refresh') {
     <button
-      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+      class="st-icon-btn inline-flex items-center justify-center w-8.5 h-8.5 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
       title="Refresh" (click)="refresh()" [disabled]="isRefreshing() || isSpinning()" type="button">
       <svg class="w-4 h-4" [class.animate-spin]="isRefreshing() || isSpinning()" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2">
@@ -88,7 +88,7 @@
     @else if (button.type === 'export') {
     <div class="relative" (click)="$event.stopPropagation()">
       <button
-        class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+        class="st-icon-btn inline-flex items-center justify-center w-8.5 h-8.5 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
         title="Export" [disabled]="!hasData()" (click)="hasData() && toggleExportMenu()" type="button">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -98,7 +98,7 @@
       </button>
       @if (exportMenuOpen()) {
       <div
-        class="st-export-menu absolute right-0 top-[calc(100%+8px)] w-[168px] rounded-[--st-radius-lg] border border-[--st-border] bg-[--st-surface] shadow-[--st-shadow-lg] z-[999] overflow-hidden animate-[st-dropdown_0.15s_ease-out]">
+        class="st-export-menu absolute right-0 top-[calc(100%+8px)] w-42 rounded-[--st-radius-lg] border border-[--st-border] bg-[--st-surface] shadow-[--st-shadow-lg] z-999 overflow-hidden animate-[st-dropdown_0.15s_ease-out]">
         <button
           class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
           (click)="exportCSV()" type="button">
@@ -126,7 +126,7 @@
     <!-- COLUMN PICKER -->
     @else if (button.type === 'columnPicker') {
     <button
-      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+      class="st-icon-btn inline-flex items-center justify-center w-8.5 h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
       title="Columns" (click)="toggleColPicker()" type="button">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="7" height="18" rx="1" />
@@ -138,7 +138,9 @@
 
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
-    <app-custom-date-selector></app-custom-date-selector>
+    <app-custom-date-selector
+    
+    ></app-custom-date-selector>
     }
 
     <!-- CUSTOM BUTTON -->
@@ -205,7 +207,7 @@
       </div>
       <div>
         <p class="st-error-title text-[15px] font-semibold text-[--st-text]">Failed to load data</p>
-        <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">Something went wrong while
+        <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-75">Something went wrong while
           fetching data</p>
       </div>
       <button

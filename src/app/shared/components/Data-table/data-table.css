@@ -1308,3 +1308,13 @@
 .st-filter-field:focus-within {
   z-index: 50; /* Brings the currently active field to the top of the stack */
 }
+
+/* The date-range selector defaults to full-width (for use as a standalone
+   form field elsewhere). Inside this toolbar it should sit compact and
+   inline alongside search / filter / refresh / export, matching their
+   height, instead of wrapping onto its own full-width row. */
+.st-toolbar app-custom-date-selector {
+  display: inline-flex;
+  width: auto;
+  flex-shrink: 0;
+}

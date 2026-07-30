@@ -236,11 +236,12 @@ export class ImplementationComponent implements OnInit {
       emptyMessage:    'No implementation records found.',
       clickable:       false,
       toolbarButtons: [
+        { id: 'date', type: 'datePicker', label: 'Date' },
         { id: 'filter',  type: 'filter',  label: 'Filter' },
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
-        { id: 'date', type: 'datePicker', label: 'Date' }
+        
       ],
       customRowActions: [
         {
