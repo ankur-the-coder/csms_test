@@ -1,205 +1,145 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, signal, computed, OnInit, inject, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
-import { ImplementationService } from './implementation.service';
-import {
-  Datum,
-  Modules,
-  CardData,
-  DataTablePayload
-} from './implentation.model';
+import { ImplementationService, ApiClientRow, ApiResponse, CardData } from './implementation.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
-import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
-import { SmartTableConfig, SmartColumn } from '../../shared/components/Data-table/data-table.types';
+import { SmartTableConfig, RowAction, RowActionEvent, CustomRowAction } from '../../shared/components/Data-table/data-table.types';
 
-type ModuleKey = keyof Modules;
+export interface Feature {
+  mod_id: number;
+  name: string;
+  description?: string;
+}
 
-// Module keys available in the API response
-const MODULE_KEYS: ModuleKey[] = [
-  'employee', 'attendance', 'leave', 'salary', 'organization', 'timesheet', 'payroll'
-];
+export interface Module {
+  tab_id: number;
+  key: string;
+  label: string;
+  icon: string;
+  features: Feature[];
+}
+
+export interface FeatureChecklistRow {
+  approval_status: number; // 1 = approved, 0 = pending
+  remark: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface Client {
+  id: number;
+  org_id: number;
+  name: string;
+  industry: string;
+  onboarding_date: string;
+  cs_lead: string;
+  health: string;
+  checklist: Record<number, FeatureChecklistRow>;
+  overallProgress: {
+    approved: number;
+    total: number;
+    percentage: number;
+  };
+  apiModules: Record<string, { completed: number; total: number }>;
+}
 
 @Component({
   selector: 'app-implementation',
   standalone: true,
-  imports: [FormsModule, DatePipe, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable],
   templateUrl: './implementation.component.html'
 })
-export class ImplementationComponent {
-  private readonly implementationService = inject(ImplementationService);
-  readonly moduleKeys: ModuleKey[] = MODULE_KEYS;
+export class ImplementationComponent implements OnInit {
 
+  @ViewChild('progressCell') progressCellTemplate!: TemplateRef<any>;
+  @ViewChild('moduleCell')   moduleCellTemplate!: TemplateRef<any>;
+  @ViewChild('healthCell')   healthCellTemplate!: TemplateRef<any>;
+  @ViewChild('nameCell')     nameCellTemplate!: TemplateRef<any>;
 
-  getDisplayModuleKeys(): ModuleKey[] {
-    const tab = this.selectedModuleTab();
-    if (tab === 'all') return MODULE_KEYS;
-    const key = MODULE_KEYS.find(k => k === tab);
-    return key ? [key] : MODULE_KEYS;
-  }
+  private readonly implService = inject(ImplementationService);
 
- 
-  cardData = signal<CardData | null>(null);
-  cardLoading = signal<boolean>(false);
-  cardError = signal<string | null>(null);
-  clients = signal<Datum[]>([]);
-  tableLoading = signal<boolean>(false);
-  tableError = signal<string | null>(null);
-  searchQuery = signal<string>('');
-  statusFilter = signal<string>('all');
-  viewMode = signal<'grid' | 'table'>('table');
-  selectedClient = signal<Datum | null>(null);
-  drawerOpen = signal<boolean>(false);
-  private closeTimer: ReturnType<typeof setTimeout> | null = null;
-  private openTimer: ReturnType<typeof setTimeout> | null = null;
-  selectedModuleTab = signal<string>('all');
-
-
-  clientsResource = {
-    reload: () => this.retryAll()
-  };
-
-  constructor() {
-    this.loadCardData();
-    this.loadClients();
-  }
-
- isLoading = computed(() => this.cardLoading() || this.tableLoading());
- loadError = computed(() => this.cardError() || this.tableError());
-
- 
-  loadCardData(): void {
-    this.cardLoading.set(true);
-    this.cardError.set(null);
-    this.implementationService.fetchImpCardData().subscribe({
-      next: data => {
-        this.cardData.set(data);
-        this.cardLoading.set(false);
-      },
-      error: () => {
-        this.cardError.set("Couldn't load summary card data.");
-        this.cardLoading.set(false);
-      }
-    });
-  }
-
-
-  private readonly apiBaseUrl = 'http://127.0.0.1:5000/imp';
-
-  tableColumns: SmartColumn<Datum>[] = [
-    { key: 'organization', label: 'Organisation', sortable: true, type: 'template' },
-    { key: 'orgId',        label: 'Org ID & Health', sortable: false, type: 'template' },
-    { key: 'csLead',       label: 'CS Lead', sortable: false, type: 'template' },
-    { key: 'overallProgress', label: 'Overall Progress', sortable: false, type: 'template' },
-    { key: 'modules',     label: 'Active Modules', type: 'template' },
-    { key: 'actions',     label: 'Actions', align: 'right', type: 'template' }
+  readonly modules: Module[] = [
+    { tab_id: 1, key: 'employee',     label: 'Employee',     icon: 'users',   features: [{ mod_id: 64, name: 'Onboard Employees' }] },
+    { tab_id: 2, key: 'attendance',   label: 'Attendance',   icon: 'calendar',features: [
+        { mod_id: 42,  name: 'Shift' },
+        { mod_id: 185, name: 'Projects' },
+        { mod_id: 186, name: 'Tasks' },
+        { mod_id: 187, name: 'Settings of Timesheet' },
+        { mod_id: 502, name: 'Regularization Settings' }
+      ]
+    },
+    { tab_id: 3, key: 'leave',        label: 'Leave',        icon: 'leave',   features: [
+        { mod_id: 31,  name: 'Leave Type Settings' },
+        { mod_id: 193, name: 'Import Leave Balance' }
+      ]
+    },
+    { tab_id: 4, key: 'salary',       label: 'Salary',       icon: 'wallet',  features: [{ mod_id: 41, name: 'Salary Heads' }] },
+    { tab_id: 5, key: 'organization', label: 'Organization', icon: 'network', features: [
+        { mod_id: 12,  name: 'Departments' },
+        { mod_id: 13,  name: 'Designations' },
+        { mod_id: 14,  name: 'Divisions' },
+        { mod_id: 29,  name: 'Holidays' },
+        { mod_id: 32,  name: 'Locations' },
+        { mod_id: 35,  name: 'Company Details' },
+        { mod_id: 54,  name: 'Company Policy' },
+        { mod_id: 145, name: 'Hierarchy' }
+      ]
+    },
+    { tab_id: 6, key: 'timesheet',    label: 'Timesheet',    icon: 'clock',   features: [{ mod_id: 188, name: 'Timesheet Settings' }] },
+    { tab_id: 7, key: 'payroll',      label: 'Payroll',      icon: 'bank',    features: [
+        { mod_id: 455, name: 'Payroll Heads' },
+        { mod_id: 474, name: 'EPF Settings' },
+        { mod_id: 478, name: 'ESIC Settings' },
+        { mod_id: 485, name: 'Professional Tax Settings' },
+        { mod_id: 509, name: 'Labour Welfare Fund' }
+      ]
+    }
   ];
 
-  tableConfig = computed<SmartTableConfig<Datum>>(() => {
-    const sf = this.statusFilter();
-    const q  = this.searchQuery();
+  readonly totalFeaturesCount = this.modules.reduce((acc, m) => acc + m.features.length, 0);
 
-    return {
-      columns: this.tableColumns,
-      rowIdKey: 'orgId' as any,
-      apiConfig: {
-        endpoint: `${this.apiBaseUrl}/fetchDataTable`,
-        dataPath: 'data',
-        totalPath: 'meta.total',
-        buildRequest: (ctx) => {
-          const payload: DataTablePayload = {
-            start: ctx.page * ctx.pageSize,
-            length: ctx.pageSize,
-            search: q,
-            sorting: JSON.stringify({
-              require: 0,
-              col: ctx.sortKey ?? 'organization',
-              dir: ctx.sortDir
-            }),
-            filter: JSON.stringify(
-              sf !== 'all' ? { health: sf === 'complete' ? 'Good' : sf === 'in_progress' ? 'In Progress' : sf } : {}
-            )
-          };
-          return { method: 'POST', body: payload };
-        }
-      },
-      showPagination: true,
-      defaultPageSize: 10,
-      pageSizeOptions: [10, 25, 50, 100],
-      showSearch: false,
-      clickable: true,
-      emptyMessage: 'No client organizations found matching your criteria.'
-    };
-  });
+  clients    = signal<Client[]>([]);
+  isLoading  = signal<boolean>(false);
+  errorMessage = signal<string>('');
+  cardData   = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
 
-  loadClients(): void {
-    this.tableLoading.set(true);
-    this.tableError.set(null);
+  // UI state
+  searchQuery  = signal<string>('');
+  statusFilter = signal<string>('all');
+  viewMode     = signal<'grid' | 'table'>('table');
 
-    const payload: DataTablePayload = {
-      start: 0,
-      length: 50,
-      search: this.searchQuery(),
-      sorting: JSON.stringify({ require: 0, col: 'organization', dir: 'asc' }),
-      filter: JSON.stringify({})
-    };
+  // Drawer
+  selectedClient    = signal<Client | null>(null);
+  selectedModuleTab = signal<string>('all');
+  drawerOpen        = signal<boolean>(false);
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openTimer:  ReturnType<typeof setTimeout> | null = null;
 
-    this.implementationService.fetchDataTable(payload).subscribe({
-      next: res => {
-        this.clients.set(res?.data ?? []);
-        this.tableLoading.set(false);
-      },
-      error: () => {
-        this.clients.set([]);
-        this.tableError.set("Couldn't connect to server. Please check the backend is running.");
-        this.tableLoading.set(false);
-      }
-    });
-  }
-
-  retryAll(): void {
-    this.loadCardData();
-    this.loadClients();
-  }
-
- 
+  // Filter tabs
   get filterTabs() {
-    const card = this.cardData();
-    const rows = this.clients();
     return [
-      { id: 'all',         label: 'All Organisations', count: card?.totalAccounts ?? rows.length },
-      { id: 'in_progress', label: 'In Progress',       count: card?.inProgress    ?? rows.filter(r => this.isInProgress(r)).length },
-      { id: 'complete',    label: 'Completed',          count: card?.completed     ?? rows.filter(r => this.isComplete(r)).length },
-      { id: 'pending',     label: 'Not Started',        count: card?.notStarted   ?? rows.filter(r => this.isNotStarted(r)).length }
+      { id: 'all',         label: 'All Organisations', count: this.cardData().totalAccounts },
+      { id: 'in_progress', label: 'In Progress',       count: this.cardData().inProgress },
+      { id: 'complete',    label: 'Completed',         count: this.cardData().completed },
+      { id: 'pending',     label: 'Not Started',       count: this.cardData().notStarted }
     ];
   }
 
   filteredClients = computed(() => {
     const q  = this.searchQuery().toLowerCase().trim();
     const sf = this.statusFilter();
-
     return this.clients().filter(c => {
-      const matchSearch =
-        (c.organization?.toLowerCase().includes(q) || false) ||
-        (c.orgId?.toString().includes(q) || false) ||
-        (c.csLead?.toLowerCase().includes(q) || false);
-      if (!matchSearch) return false;
-
-      if (sf === 'complete')    return this.isComplete(c);
-      if (sf === 'in_progress') return this.isInProgress(c);
-      if (sf === 'pending')     return this.isNotStarted(c);
-
+      const match = c.name.toLowerCase().includes(q) ||
+                    c.org_id.toString().includes(q) ||
+                    c.cs_lead.toLowerCase().includes(q);
+      if (!match) return false;
+      if (sf === 'complete')    return c.overallProgress.percentage === 100;
+      if (sf === 'in_progress') return c.overallProgress.percentage > 0 && c.overallProgress.percentage < 100;
+      if (sf === 'pending')     return c.overallProgress.percentage === 0;
       return true;
     });
   });
 
-tatus(status: string) {
-    this.statusFilter.set(status);
-d data error:'
-        this.errorMessage.set('Failed to load data. Please try again.');
-        this.isLoading.set(f<<<<<<< HEAD
-  setFilterStatus(status: string) {
-    this.statusFilter.set(status);
-=======
   // Card computed
   totalClients          = computed(() => this.cardData().totalAccounts);
   completedClientsCount = computed(() => this.cardData().completed);
@@ -346,34 +286,73 @@ d data error:'
         this.clients.set(this.mapApiDataToClients(res.data ?? []));
         this.isLoading.set(false);
       },
-     data error:', err);
+      error: (err) => {
+        console.error('Grid data error:', err);
         this.errorMessage.set('Failed to load data. Please try again.');
         this.isLoading.set(false);
       }
     });
->>>>>>> cb2dd819f68c95769f32c82b5a47dc01c7f52cec
-t p = client.overallProgress;
-    return (p?.approved ?? 0) > 0 && (p?.approved ?? 0) < (p?.total ?? 0);
   }
 
-  isNotStarted(client: Datum): boolean {
-    return (client.overallProgress?.approved ?? 0) === 0;
-  }
-
-  getClientProgressPercent(client: Datum): number {
-    if (client.overallProgress?.percentage !== undefined && client.overallProgress.percentage > 0) {
-      return client.overallProgress.percentage;
+  private mapApiRowToClient(row: ApiClientRow): Client {
+    const checklist  = this.buildChecklistFromApi(row);
+    const apiModules: Record<string, { completed: number; total: number }> = {};
+    if (row.modules) {
+      Object.entries(row.modules).forEach(([key, val]) => {
+        apiModules[key] = { completed: val.completed, total: val.total };
+      });
     }
-    const total    = client.overallProgress?.total ?? 0;
-    const approved = client.overallProgress?.approved ?? 0;
-    return total === 0 ? 0 : Math.round((approved / total) * 100);
+    return {
+      id:              row.orgId,
+      org_id:          row.orgId,
+      name:            row.organization,
+      industry:        '',
+      onboarding_date: this.formatDate(row.onboardedDate),
+      cs_lead:         row.csLead || 'Unassigned',
+      health:          row.health,
+      checklist,
+      overallProgress: {
+        approved:   row.overallProgress?.approved   || 0,
+        total:      row.overallProgress?.total      || 0,
+        percentage: row.overallProgress?.percentage || 0,
+      },
+      apiModules,
+    };
   }
 
- 
-  getActiveModuleCount(client: Datum): number {
-    if (!client.modules) return 0;
-    return (Object.values(client.modules) as { completed: number; total: number }[])
-      .filter(m => m.completed > 0).length;
+  private mapApiDataToClients(data: ApiClientRow[]): Client[] {
+    return data.map(row => this.mapApiRowToClient(row));
+  }
+
+  private buildChecklistFromApi(row: ApiClientRow): Record<number, FeatureChecklistRow> {
+    const checklist: Record<number, FeatureChecklistRow> = {};
+    this.modules.forEach(mod => {
+      const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
+      const completedCount = apiMod?.completed || 0;
+      mod.features.forEach((feat, idx) => {
+        const isApproved = idx < completedCount;
+        checklist[feat.mod_id] = {
+          approval_status: isApproved ? 1 : 0,
+          remark: isApproved ? 'Verified & approved' : '',
+          started_at:   isApproved ? this.formatDate(row.onboardedDate) : null,
+          completed_at: isApproved ? this.formatDate(row.onboardedDate) : null
+        };
+      });
+    });
+    return checklist;
+  }
+
+  private formatDate(isoDate: string): string {
+    if (!isoDate) return '';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── Client helpers ────────────────────────────────────────────────────────
+  getClientApprovedCount(client: Client): number {
+    if (!client?.checklist) return 0;
+    return Object.values(client.checklist).filter(r => r.approval_status === 1).length;
   }
 
   getClientProgressPercent(client: Client): number {
@@ -388,10 +367,9 @@ t p = client.overallProgress;
     return mod.features.filter(f => client.checklist[f.mod_id]?.approval_status === 1).length;
   }
 
- 
-  getModuleStats(client: Datum, key: keyof Datum['modules']): { completed: number; total: number } {
-    const m = client.modules?.[key];
-    return { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+  getModuleTotalCount(client: Client, mod: Module): number {
+    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].total;
+    return mod.features.length;
   }
 
   isModuleFullyApproved(client: Client, mod: Module): boolean {
@@ -409,13 +387,8 @@ t p = client.overallProgress;
   setFilterStatus(status: string) { this.statusFilter.set(status); }
 
   getInitials(name: string): string {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map(p => p.charAt(0))
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+    if (!name) return '';
+    return name.split(' ').map(p => p.charAt(0)).join('').slice(0, 2).toUpperCase();
   }
 
   getHealthBadgeClasses(health: string): string {
@@ -428,10 +401,17 @@ t p = client.overallProgress;
     }
   }
 
+  getProgressColor(pct: number): string {
+    if (pct === 100) return 'var(--brand-500)';
+    if (pct >= 50)   return 'var(--brand-400)';
+    if (pct > 0)     return '#f59e0b';
+    return '#e2e8f0';
+  }
 
-  openClientDetails(client: Datum) {
+  // ── Drawer ────────────────────────────────────────────────────────────────
+  openClientDetails(client: Client) {
     if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = null; }
-    this.selectedClient.set(client);
+    this.selectedClient.set({ ...client });
     this.selectedModuleTab.set('all');
     this.drawerOpen.set(false);
     this.openTimer = setTimeout(() => this.drawerOpen.set(true), 20);
@@ -441,5 +421,53 @@ t p = client.overallProgress;
     if (this.openTimer) { clearTimeout(this.openTimer); this.openTimer = null; }
     this.drawerOpen.set(false);
     this.closeTimer = setTimeout(() => this.selectedClient.set(null), 300);
+  }
+
+  getDisplayModules(): Module[] {
+    const tabKey = this.selectedModuleTab();
+    if (tabKey === 'all') return this.modules;
+    return this.modules.filter(m => m.key === tabKey);
+  }
+
+  toggleFeatureStatus(client: Client, modId: number) {
+    const current = client.checklist[modId]?.approval_status || 0;
+    const next    = current === 1 ? 0 : 1;
+    const stamp   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const updatedChecklist = {
+      ...client.checklist,
+      [modId]: {
+        ...client.checklist[modId],
+        approval_status: next,
+        started_at:   next === 1 ? client.checklist[modId]?.started_at || stamp : null,
+        completed_at: next === 1 ? stamp : null
+      }
+    };
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
+  }
+
+  updateRemark(client: Client, modId: number, event: Event) {
+    const remark = (event.target as HTMLInputElement).value;
+    const updatedChecklist = { ...client.checklist, [modId]: { ...client.checklist[modId], remark } };
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
+  }
+
+  markAllApproved(client: Client) {
+    const stamp = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const updatedChecklist = { ...client.checklist };
+    this.modules.forEach(m => m.features.forEach(f => {
+      updatedChecklist[f.mod_id] = {
+        approval_status: 1,
+        remark: updatedChecklist[f.mod_id]?.remark || 'Batch approved by CS Manager',
+        started_at:   updatedChecklist[f.mod_id]?.started_at || stamp,
+        completed_at: stamp
+      };
+    }));
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    this.selectedClient.set(updated);
   }
 }
