@@ -1,1719 +1,409 @@
-<div class="app">
-  <div class="main">
+<div class="space-y-6 pb-12">
 
-
-    <main class="ct">
-      <!-- DASHBOARD VIEW -->
-      <section class="v" [class.act]="activeView === 'dash'">
-        <div class="ph">
-          <div>
-            <h2>Onboarding Dashboard</h2>
-            <p>Every onboarding in progress. Switch views, filter, and act on bottlenecks.</p>
-          </div>
-          <div class="ph-acts">
-            <!-- <div class="vt">
-              <button [class.act]="dashSubView === 'list'" (click)="dashSubView = 'list'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>List
-              </button>
-              <button [class.act]="dashSubView === 'kanban'" (click)="dashSubView = 'kanban'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>Kanban
-              </button>
-              <button [class.act]="dashSubView === 'calendar'" (click)="dashSubView = 'calendar'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar
-              </button>
-              <button [class.act]="dashSubView === 'split'" (click)="dashSubView = 'split'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>Split
-              </button>
-            </div> -->
-
-            <button class="btn btn-p" (click)="openModal()">+ New Onboarding</button>
-          </div>
-        </div>
-
-        <div class="kg">
-          <div class="kc" style="--kc:#111827">
-            <div class="kl">Total Onboardings</div>
-            <div class="kv">24</div><span class="kt kt-n">YTD 2026</span>
-          </div>
-          <div class="kc" style="--kc:#0D7C66">
-            <div class="kl">In Progress</div>
-            <div class="kv">14</div><span class="kt kt-u">▲ 3 this week</span>
-          </div>
-          <div class="kc" style="--kc:#0D7C66">
-            <div class="kl">On Track</div>
-            <div class="kv">9</div><span class="kt kt-u">78% rate</span>
-          </div>
-          <div class="kc" style="--kc:#DC2626">
-            <div class="kl">Delayed</div>
-            <div class="kv">3</div><span class="kt kt-d">needs action</span>
-          </div>
-          <div class="kc" style="--kc:#F59E0B">
-            <div class="kl">Completed · July</div>
-            <div class="kv">7</div><span class="kt kt-u">▲ 2 vs June</span>
-          </div>
-        </div>
-
-        <!-- SUB VIEW: LIST -->
-        <div *ngIf="dashSubView === 'list'">
-          <div class="filter-bar">
-            <button class="filter-btn" [class.active]="selectedStageFilter === 'all'"
-              (click)="setStageFilter('all')">All Stages</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '1'" (click)="setStageFilter('1')">1 ·
-              Initiated</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '2'" (click)="setStageFilter('2')">2 ·
-              Kickoff</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '3'" (click)="setStageFilter('3')">3 ·
-              Requirements</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '4'" (click)="setStageFilter('4')">4 ·
-              Configuration</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '5'" (click)="setStageFilter('5')">5 ·
-              Data Migration</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '6'" (click)="setStageFilter('6')">6 ·
-              Training</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '7'" (click)="setStageFilter('7')">7 ·
-              UAT / Readiness</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '8'" (click)="setStageFilter('8')">8 ·
-              Go-Live</button>
-            <button class="filter-btn" [class.active]="selectedStageFilter === '9'" (click)="setStageFilter('9')">9 ·
-              Handover</button>
-            <div class="filter-right">
-              <button class="filter-btn" (click)="showToast('Filtering by Owner', 'info')">All Owners</button>
-              <button class="filter-btn" (click)="showToast('Filtering by Date', 'info')">Last 30 days</button>
-              <button class="filter-btn" (click)="showToast('Bulk Actions Menu', 'info')">⚡ Bulk Actions</button>
-            </div>
-          </div>
-
-          <div class="tc">
-            <table>
-              <thead>
-                <tr>
-                  <th>CUSTOMER</th>
-                  <th>STAGE</th>
-                  <th>PROGRESS</th>
-                  <th>SLA</th>
-                  <th>OWNER</th>
-                  <th>TARGET GO-LIVE</th>
-                  <th>STATUS</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of filteredOnboardings" (click)="openDrawer(item)">
-                  <td>
-                    <div class="cust-cell">
-                      <span class="cust-av" [style.background]="item.bg">{{ item.av }}</span>
-                      <span class="cust-info">
-                        <b>{{ item.name }}</b>
-                        <span>{{ item.id }}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="stage-pill {{ item.stageClass }}"><span class="dot"></span>{{ item.stage }} · {{
-                      item.stageName }}</span>
-                  </td>
-                  <td>
-                    <div class="progress-cell">
-                      <div class="mini-bar"><i [style.width.%]="item.progress"></i></div>
-                      <span class="progress-pct">{{ item.progress }}%</span>
-                    </div>
-                  </td>
-                  <td><span class="sla {{ item.slaClass }}">{{ item.sla }}</span></td>
-                  <td>{{ item.owner }}</td>
-                  <td>{{ item.targetDate }}</td>
-                  <td><span class="status-pill {{ item.statusClass }}"><span class="dot"></span>{{ item.status }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- SUB VIEW: KANBAN -->
-        <div *ngIf="dashSubView === 'kanban'">
-          <div class="kb">
-            <div class="kb-col">
-              <div class="kb-h"><span class="kb-dot" style="background:#6B7280"></span><b>Initiated</b><span
-                  class="ct2">1</span></div>
-              <div class="kb-list">
-                <div class="kb-card"><b>Cascade Freight</b><small>ONB-2026-049 · Kickoff stage</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#6B7280">AD</span><span
-                      class="sla sla-warn" style="font-size:10px">⏱ 52d</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="kb-col">
-              <div class="kb-h"><span class="kb-dot" style="background:#3B82F6"></span><b>Requirements</b><span
-                  class="ct2">1</span></div>
-              <div class="kb-list">
-                <div class="kb-card"><b>BlueRiver Foods</b><small>ONB-2026-046 · At risk</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#3B82F6">PS</span><span
-                      class="sla sla-warn" style="font-size:10px">⏱ 39d</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="kb-col">
-              <div class="kb-h"><span class="kb-dot" style="background:#0D7C66"></span><b>In Progress</b><span
-                  class="ct2">4</span></div>
-              <div class="kb-list">
-                <div class="kb-card"><b>Helios Energy</b><small>Configuration · 45%</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#B07508">DO</span><span
-                      class="sla sla-warn" style="font-size:10px">⏱ 27d</span></div>
-                </div>
-                <div class="kb-card"><b>Orion Healthcare</b><small>Migration · OVERDUE</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#B03A3E">DO</span><span
-                      class="sla sla-danger" style="font-size:10px">⚠ 3d</span></div>
-                </div>
-                <div class="kb-card"><b>Northwind Logistics</b><small>Training · 68%</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#1B6E58">PS</span><span
-                      class="sla sla-warn" style="font-size:10px">⏱ 14d</span></div>
-                </div>
-                <div class="kb-card"><b>Vertex Retail Group</b><small>UAT · 82%</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#145247">AD</span><span
-                      class="sla sla-warn" style="font-size:10px">⏱ 5d</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="kb-col">
-              <div class="kb-h"><span class="kb-dot" style="background:#10B981"></span><b>Go-Live</b><span
-                  class="ct2">1</span></div>
-              <div class="kb-list">
-                <div class="kb-card"><b>Maple & Main Retail</b><small>Go-live today!</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#0D9488">PS</span><span
-                      class="sla sla-today" style="font-size:10px"> today</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="kb-col">
-              <div class="kb-h"><span class="kb-dot" style="background:#7C3AED"></span><b>Completed</b><span
-                  class="ct2">7</span></div>
-              <div class="kb-list">
-                <div class="kb-card" style="opacity:.7"><b>Apex Manufacturing</b><small>Completed Jul 18</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#1B6E58">PS</span><span
-                      class="status-pill status-on-track" style="font-size:10px"><span class="dot"></span>Done</span>
-                  </div>
-                </div>
-                <div class="kb-card" style="opacity:.7"><b>Summit Health</b><small>Completed Jul 12</small>
-                  <div class="kb-foot"><span class="kb-av" style="background:#B07508">DO</span><span
-                      class="status-pill status-on-track" style="font-size:10px"><span class="dot"></span>Done</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SUB VIEW: CALENDAR -->
-        <div *ngIf="dashSubView === 'calendar'">
-          <div class="cal">
-            <div class="cal-h">
-              <h3>July 2026</h3>
-              <div class="cal-nav">
-                <button><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg></button>
-                <button>Today</button>
-                <button><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg></button>
-              </div>
-            </div>
-            <div class="cal-grid">
-              <div class="cal-dh">Sun</div>
-              <div class="cal-dh">Mon</div>
-              <div class="cal-dh">Tue</div>
-              <div class="cal-dh">Wed</div>
-              <div class="cal-dh">Thu</div>
-              <div class="cal-dh">Fri</div>
-              <div class="cal-dh">Sat</div>
-              <div class="cal-d other">
-                <div class="cal-dn">28</div>
-              </div>
-              <div class="cal-d other">
-                <div class="cal-dn">29</div>
-              </div>
-              <div class="cal-d other">
-                <div class="cal-dn">30</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">1</div>
-                <div class="cal-ev p">Vertex · UAT start</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">2</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">3</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">4</div>
-                <div class="cal-ev a">Northwind · UAT Q&A</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">5</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">6</div>
-                <div class="cal-ev v">Vertex · Go-live prep</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">7</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">8</div>
-                <div class="cal-ev p">Northwind · Go-live</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">9</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">10</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">11</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">12</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">13</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">14</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">15</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">16</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">17</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">18</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">19</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">20</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">21</div>
-              </div>
-              <div class="cal-d today">
-                <div class="cal-dn">27</div>
-                <div class="cal-ev a">Vertex · Go-live</div>
-                <div class="cal-ev b">Orion · Migration review</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">28</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">29</div>
-                <div class="cal-ev a">Northwind · Training</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">30</div>
-                <div class="cal-ev v">Vertex · Handover</div>
-              </div>
-              <div class="cal-d">
-                <div class="cal-dn">31</div>
-                <div class="cal-ev a">Northwind · Training</div>
-              </div>
-              <div class="cal-d other">
-                <div class="cal-dn">1</div>
-              </div>
-              <div class="cal-d other">
-                <div class="cal-dn">2</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SUB VIEW: SPLIT -->
-        <div *ngIf="dashSubView === 'split'">
-          <div class="split">
-            <div class="split-list">
-              <div class="tc">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Stage</th>
-                      <th>Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let item of onboardings"
-                      [style.background]="selectedSplitItem.id === item.id ? '#F0FDF9' : ''"
-                      (click)="showSplitDetail(item)">
-                      <td>
-                        <div class="cust-cell"><span class="cust-av" [style.background]="item.bg">{{ item.av
-                            }}</span><span class="cust-info"><b>{{ item.name }}</b></span></div>
-                      </td>
-                      <td><span class="stage-pill {{ item.stageClass }}"><span class="dot"></span>{{ item.stageName
-                          }}</span></td>
-                      <td>{{ item.progress }}%</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="split-detail" id="splitDetail">
-              <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-                <div class="cust-av" style="width:48px;height:48px;font-size:18px"
-                  [style.background]="selectedSplitItem.bg">{{ selectedSplitItem.av }}</div>
-                <div>
-                  <h3 style="font-size:18px;font-weight:700">{{ selectedSplitItem.name }}</h3>
-                  <p style="font-size:11px;color:#8B95A5;font-family:'JetBrains Mono',monospace">{{ selectedSplitItem.id
-                    }} · Stage {{ selectedSplitItem.stage }} of 9</p>
-                </div>
-              </div>
-              <div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;margin-bottom:10px">
-                <div style="height:100%;background:linear-gradient(90deg,#0D7C66,#10B981);border-radius:5px"
-                  [style.width.%]="selectedSplitItem.progress"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:16px"><span><b
-                    style="font-size:18px">{{ selectedSplitItem.progress }}%</b> complete</span><span>Target: <b>{{
-                    selectedSplitItem.targetDate }}</b></span></div>
-              <div style="padding:12px;background:#F8FAFB;border-radius:8px;margin-bottom:12px">
-                <div
-                  style="font-size:11px;font-weight:600;color:#8B95A5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">
-                  Next Action</div>
-                <div style="font-size:13px">Deliver End-User Training Session 1 · Jul 29</div>
-              </div>
-              <div
-                style="font-size:11px;font-weight:600;color:#8B95A5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
-                Team</div>
-              <div style="display:flex;gap:6px;margin-bottom:16px">
-                <div class="cust-av" style="background:linear-gradient(135deg,#1B6E58,#145247)">PS</div>
-                <div class="cust-av" style="background:linear-gradient(135deg,#0D7C66,#0A5E4D)">DO</div>
-                <div class="cust-av" style="background:linear-gradient(135deg,#B07508,#8A5C06)">MC</div>
-              </div>
-              <button class="btn btn-p" style="width:100%" (click)="go('rec')">Open Full Record →</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- RECORD OVERVIEW VIEW -->
-      <section class="v" [class.act]="activeView === 'rec'">
-        <div
-          style="background:#fff;border:1px solid #E5E8EC;border-radius:16px;padding:28px 32px 36px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:16px">
-              <div
-                style="width:56px;height:56px;border-radius:14px;background:#0D7C66;color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px">
-                NL</div>
-              <div>
-                <h1 style="font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px">Northwind Logistics
-                </h1>
-                <div
-                  style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;color:#8B95A5;letter-spacing:.02em">
-                  ONB-2026-041 · ENTERPRISE PLAN · CONTRACT SIGNED JUN 12, 2026</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <span class="stage-pill stage-6" style="padding:7px 14px;font-size:13px"><span class="dot"></span>Stage 6
-                of 9 · Training</span>
-              <button class="btn btn-d"
-                (click)="showToast('⚠ Account flagged as At Risk · Management notified', 'warn')">🚩 Flag at
-                risk</button>
-            </div>
-          </div>
-
-          <div class="drawer-stepper" style="margin-top:36px">
-            <div class="d-step done">
-              <div class="d-circle">✓</div><span class="d-label">1. Initiated</span>
-            </div>
-            <div class="d-step done">
-              <div class="d-circle">✓</div><span class="d-label">2. Kickoff</span>
-            </div>
-            <div class="d-step done">
-              <div class="d-circle">✓</div><span class="d-label">3. Requirements</span>
-            </div>
-            <div class="d-step done">
-              <div class="d-circle">✓</div><span class="d-label">4. Configuration</span>
-            </div>
-            <div class="d-step done">
-              <div class="d-circle">✓</div><span class="d-label">5. Migration</span>
-            </div>
-            <div class="d-step current">
-              <div class="d-circle">6</div><span class="d-label">6. Training</span>
-            </div>
-            <div class="d-step upcoming">
-              <div class="d-circle">7</div><span class="d-label">7. UAT</span>
-            </div>
-            <div class="d-step upcoming">
-              <div class="d-circle">8</div><span class="d-label">8. Go-Live</span>
-            </div>
-            <div class="d-step upcoming">
-              <div class="d-circle">9</div><span class="d-label">9. Handover</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:20px">
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div
-              style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-              <h3 style="font-size:14px;font-weight:600">Onboarding Progress</h3>
-              <a style="font-size:12px;color:#0D7C66;font-weight:600;text-decoration:none;cursor:pointer"
-                (click)="go('gantt')">View full timeline →</a>
-            </div>
-            <div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden;margin-bottom:10px">
-              <div style="height:100%;width:68%;background:linear-gradient(90deg,#0D7C66,#10B981);border-radius:5px">
-              </div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:16px"><span><b
-                  style="font-size:22px">68%</b> complete</span><span>Target go-live · <b>Aug 8</b></span></div>
-            <div
-              style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-top:16px;border-top:1px dashed #E5E8EC">
-              <div><label
-                  style="display:block;font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Kickoff</label><b
-                  style="font-size:13px;font-weight:600">Jun 18, 2026</b></div>
-              <div><label
-                  style="display:block;font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Target
-                  Go-Live</label><b style="font-size:13px;font-weight:600">Aug 8, 2026</b></div>
-              <div><label
-                  style="display:block;font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Actual
-                  Go-Live</label><b style="font-size:13px;font-weight:600;color:#8B95A5">— pending</b></div>
-            </div>
-          </div>
-
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h3 style="font-size:14px;font-weight:600">Assigned Team</h3>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-              <div class="cust-av" style="background:linear-gradient(135deg,#1B6E58,#145247)">PS</div>
-              <div><b style="display:block;font-size:13px;font-weight:600">Priya Sharma</b><span
-                  style="font-size:11px;color:#8B95A5">Customer Success Manager</span></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-              <div class="cust-av" style="background:linear-gradient(135deg,#0D7C66,#0A5E4D)">DO</div>
-              <div><b style="display:block;font-size:13px;font-weight:600">Daniel Okafor</b><span
-                  style="font-size:11px;color:#8B95A5">Implementation Owner</span></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-              <div class="cust-av" style="background:linear-gradient(135deg,#B07508,#8A5C06)">MC</div>
-              <div><b style="display:block;font-size:13px;font-weight:600">Mia Chen</b><span
-                  style="font-size:11px;color:#8B95A5">Trainer</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px;margin-top:20px">
-          <div
-            style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-            <h3 style="font-size:14px;font-weight:600">Recent Activity</h3>
-            <a style="font-size:12px;color:#0D7C66;font-weight:600;text-decoration:none;cursor:pointer"
-              (click)="go('audit')">View audit log →</a>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;gap:10px;padding:10px;border-radius:8px;background:#F8FAFB">
-              <div style="width:6px;height:6px;border-radius:50%;background:#0D7C66;margin-top:7px;flex-shrink:0"></div>
-              <div>
-                <p style="font-size:12px;margin-bottom:2px">Mia Chen scheduled <b>End-User Training · Session 1</b> for
-                  Jul 29</p><time style="font-size:11px;color:#8B95A5">2 hours ago</time>
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;padding:10px;border-radius:8px;background:#F8FAFB">
-              <div style="width:6px;height:6px;border-radius:50%;background:#0D7C66;margin-top:7px;flex-shrink:0"></div>
-              <div>
-                <p style="font-size:12px;margin-bottom:2px">Data migration sign-off received — <b>12,480 records</b>
-                  reconciled</p><time style="font-size:11px;color:#8B95A5">yesterday</time>
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;padding:10px;border-radius:8px;background:#F8FAFB">
-              <div style="width:6px;height:6px;border-radius:50%;background:#0D7C66;margin-top:7px;flex-shrink:0"></div>
-              <div>
-                <p style="font-size:12px;margin-bottom:2px">Daniel Okafor completed <b>Configure roles & permissions</b>
-                </p><time style="font-size:11px;color:#8B95A5">2 days ago</time>
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;padding:10px;border-radius:8px;background:#F8FAFB">
-              <div style="width:6px;height:6px;border-radius:50%;background:#0D7C66;margin-top:7px;flex-shrink:0"></div>
-              <div>
-                <p style="font-size:12px;margin-bottom:2px">Stage advanced: <b>Migration → Training</b></p><time
-                  style="font-size:11px;color:#8B95A5">3 days ago</time>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TASKS & CHECKLIST VIEW -->
-      <section class="v" [class.act]="activeView === 'tasks'">
-        <div class="ph">
-          <div>
-            <h2>Tasks & Checklist</h2>
-            <p>Stage-grouped tasks with owners, due dates, dependencies, and team comments.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s">Filter</button>
-            <button class="btn btn-p" (click)="showToast('✓ Task added', 'info')">+ Add Task</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start">
-          <div
-            style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:24px;text-align:center;position:sticky;top:90px">
-            <div style="position:relative;width:140px;margin:0 auto 16px">
-              <svg width="140" height="140" style="transform:rotate(-90deg)">
-                <circle cx="70" cy="70" r="55" fill="none" stroke="#F3F4F6" stroke-width="10" />
-                <circle cx="70" cy="70" r="55" fill="none" stroke="#0D7C66" stroke-width="10" stroke-linecap="round"
-                  stroke-dasharray="345.6" stroke-dashoffset="145" style="transition:.6s" />
-              </svg>
-              <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center">
-                <div><b style="font-size:24px;font-weight:700;letter-spacing:-.02em;display:block">58%</b><small
-                    style="font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Complete</small>
-                </div>
-              </div>
-            </div>
-            <div style="font-size:12px;color:#8B95A5"><span>7</span> of <span>12</span> tasks done</div>
-            <div style="margin-top:14px;padding-top:14px;border-top:1px dashed #E5E8EC"><span
-                class="status-pill status-delayed" style="font-size:11px"><span class="dot"></span>1 overdue</span>
-            </div>
-          </div>
-
-          <div>
-            <div style="margin-bottom:20px">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px"><span
-                  style="font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Stage
-                  4</span><b style="font-size:14px;font-weight:600">Configuration & Setup</b><span
-                  class="status-pill status-on-track" style="margin-left:auto;font-size:11px">3/3</span></div>
-              <div class="task-item done">
-                <div class="task-check">✓</div>
-                <div class="task-title">Configure roles & permissions</div>
-                <div class="task-owner">Daniel Okafor</div>
-                <div class="task-due">Done</div>
-              </div>
-              <div class="task-item done">
-                <div class="task-check">✓</div>
-                <div class="task-title">Set up ERP integration (SAP)</div>
-                <div class="task-owner">Daniel Okafor</div>
-                <div class="task-due">Done</div>
-              </div>
-              <div class="task-item done">
-                <div class="task-check">✓</div>
-                <div class="task-title">Apply branding & email templates</div>
-                <div class="task-owner">Daniel Okafor</div>
-                <div class="task-due">Done</div>
-              </div>
-            </div>
-            <div style="margin-bottom:20px">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 4px"><span
-                  style="font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Stage
-                  6</span><b style="font-size:14px;font-weight:600">Training</b><span class="status-pill status-at-risk"
-                  style="margin-left:auto;font-size:11px">1/4</span></div>
-              <div class="task-item done">
-                <div class="task-check">✓</div>
-                <div class="task-title">Schedule admin & end-user sessions</div>
-                <div class="task-owner">Mia Chen</div>
-                <div class="task-due">Done</div>
-              </div>
-              <div class="task-item">
-                <div class="task-check">✓</div>
-                <div class="task-title">Deliver end-user training · Session 1</div>
-                <div class="task-owner">Mia Chen</div>
-                <div class="task-due">Jul 29</div>
-              </div>
-              <div class="task-item">
-                <div class="task-check">✓</div>
-                <div class="task-title">Share training materials & recordings</div>
-                <div class="task-owner">Mia Chen</div>
-                <div class="task-due">Jul 30</div>
-              </div>
-              <div class="task-item" style="border-color:#FEE2E2;background:#FEF2F2">
-                <div class="task-check">✓</div>
-                <div class="task-title">Collect attendance roster & feedback</div>
-                <div class="task-owner">Mia Chen</div>
-                <div class="task-due overdue">Jul 22 · 3d</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- KICKOFF SCHEDULER VIEW -->
-      <section class="v" [class.act]="activeView === 'kickoff'">
-        <div class="ph">
-          <div>
-            <h2>Kickoff Meeting Scheduler</h2>
-            <p>Schedule and document the kickoff call that formally starts implementation.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s">Reschedule</button>
-            <button class="btn btn-p"
-              (click)="showToast('✓ Kickoff marked complete · stage advanced to Requirements', 'info')">Mark
-              Complete</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h3 style="font-size:14px;font-weight:600">Meeting Details</h3>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-              <div class="field"><label>Date & Time</label><input type="datetime-local" value="2026-06-18T10:00"></div>
-              <div class="field"><label>Duration</label><select>
-                  <option>60 minutes</option>
-                  <option>90 minutes</option>
-                </select></div>
-              <div class="field"><label>Location</label><select>
-                  <option>Google Meet</option>
-                  <option>Zoom</option>
-                  <option>In-person</option>
-                </select></div>
-              <div class="field"><label>Status</label><select>
-                  <option>Scheduled</option>
-                  <option>Completed</option>
-                </select></div>
-            </div>
-            <div class="field"><label>Meeting Link</label><input value="https://meet.google.com/nlw-kickoff-2026"
-                readonly></div>
-            <div class="field"><label>Agenda</label><textarea>Welcome & introductions
-Project scope and objectives
-Timeline and milestones review
-Roles and responsibilities
-Data requirements overview
-Training plan
-Q&A and next steps</textarea></div>
-          </div>
-
-          <div>
-            <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px;margin-bottom:16px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-size:14px;font-weight:600">Attendees</h3><a
-                  style="font-size:12px;color:#0D7C66;font-weight:600;text-decoration:none;cursor:pointer">+ Invite</a>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-                <div class="cust-av" style="background:linear-gradient(135deg,#1B6E58,#145247)">PS</div>
-                <div style="flex:1"><b style="display:block;font-size:13px;font-weight:600">Priya Sharma</b><span
-                    style="font-size:11px;color:#8B95A5">CSM · Internal</span></div><span
-                  class="status-pill status-on-track" style="font-size:11px">Confirmed</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-                <div class="cust-av" style="background:linear-gradient(135deg,#0D7C66,#0A5E4D)">DO</div>
-                <div style="flex:1"><b style="display:block;font-size:13px;font-weight:600">Daniel Okafor</b><span
-                    style="font-size:11px;color:#8B95A5">Implementation · Internal</span></div><span
-                  class="status-pill status-on-track" style="font-size:11px">Confirmed</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-                <div class="cust-av" style="background:#3B82F6">JM</div>
-                <div style="flex:1"><b style="display:block;font-size:13px;font-weight:600">James Mitchell</b><span
-                    style="font-size:11px;color:#8B95A5">VP Operations · Customer</span></div><span
-                  class="status-pill status-on-track" style="font-size:11px">Confirmed</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px">
-                <div class="cust-av" style="background:#7C3AED">SR</div>
-                <div style="flex:1"><b style="display:block;font-size:13px;font-weight:600">Sarah Rodriguez</b><span
-                    style="font-size:11px;color:#8B95A5">Project Lead · Customer</span></div><span
-                  class="status-pill status-at-risk" style="font-size:11px">Pending</span>
-              </div>
-            </div>
-            <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <h3 style="font-size:14px;font-weight:600">Meeting Notes</h3>
-              </div>
-              <div class="field"><label>Decisions</label><textarea>• Target go-live: Aug 8, 2026
-• Primary contact: Sarah Rodriguez
-• ERP integration scope: SAP S/4HANA only
-• Data migration: 12,480 customer records</textarea></div>
-              <div class="field"><label>Recording Link</label><input
-                  value="https://drive.google.com/recording-nlw-kickoff" readonly></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- REQUIREMENTS VIEW -->
-      <section class="v" [class.act]="activeView === 'req'">
-        <div class="ph">
-          <div>
-            <h2>Requirements & Configuration</h2>
-            <p>Structured capture of what the customer needs configured.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s">View History</button>
-            <span class="status-pill status-at-risk" style="padding:6px 12px">Draft</span>
-            <button class="btn btn-p"
-              (click)="showToast('✓ Requirements submitted for approval', 'info')">Submit</button>
-          </div>
-        </div>
-
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h3 style="font-size:14px;font-weight:600">Users & Roles</h3>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-            <div class="field"><label>Total Users</label><input type="number" value="45"></div>
-            <div class="field"><label>Admin Users</label><input type="number" value="4"></div>
-            <div class="field"><label>SSO Required</label><select>
-                <option>Yes — SAML 2.0</option>
-                <option>No</option>
-              </select></div>
-          </div>
-          <div class="field"><label>Custom Roles</label><textarea>• Operations Manager (read + approve)
-• Dispatcher (full access)
-• Driver (mobile only, limited)</textarea></div>
-        </div>
-
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px;margin-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h3 style="font-size:14px;font-weight:600">Integrations</h3>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div class="field"><label>ERP System</label><select>
-                <option>SAP S/4HANA</option>
-                <option>Oracle NetSuite</option>
-                <option>Microsoft Dynamics</option>
-              </select></div>
-            <div class="field"><label>Integration Type</label><select>
-                <option>API (REST)</option>
-                <option>Webhook</option>
-                <option>File-based</option>
-              </select></div>
-            <div class="field"><label>CRM System</label><select>
-                <option>Salesforce</option>
-                <option>HubSpot</option>
-              </select></div>
-            <div class="field"><label>Sync Frequency</label><select>
-                <option>Real-time</option>
-                <option>Hourly</option>
-                <option>Daily</option>
-              </select></div>
-          </div>
-        </div>
-
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px;margin-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <h3 style="font-size:14px;font-weight:600">Branding</h3>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-            <div class="field"><label>Company Logo</label><input type="file"></div>
-            <div class="field"><label>Primary Color</label><input type="color" value="#1B6E58"></div>
-            <div class="field"><label>Custom Domain</label><input value="logistics.northwind.com"></div>
-            <div class="field"><label>Email From Address</label><input value="noreply@northwind.com"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- DOCUMENTS VIEW -->
-      <section class="v" [class.act]="activeView === 'docs'">
-        <div class="ph">
-          <div>
-            <h2>Document & Data Collection</h2>
-            <p>Central place to request, upload, and track documents and legacy data.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s" (click)="showToast('⚠ Reminder sent for 2 outstanding documents', 'warn')">Send
-              Reminders</button>
-            <button class="btn btn-p">+ Request Document</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h3 style="font-size:14px;font-weight:600">Upload Area</h3>
-            </div>
-            <div
-              style="border:2px dashed #E5E8EC;border-radius:12px;padding:32px;text-align:center;background:#F8FAFB;transition:.15s;cursor:pointer"
-              (click)="showToast('Upload dialog opened', 'info')">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8B95A5" stroke-width="1.5"
-                style="margin:0 auto 10px">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-              </svg>
-              <b style="display:block;font-size:13px;font-weight:600;margin-bottom:4px">Drop files here or click to
-                upload</b>
-              <small style="font-size:11px;color:#8B95A5">PDF, XLSX, CSV up to 50MB · Secure & encrypted</small>
-            </div>
-            <div style="margin-top:16px;padding:12px;background:#D1FAE5;border-radius:8px;font-size:12px;color:#065F46">
-              <b>📊 Data Mapping Summary</b><br>
-              12,480 records imported · 0 critical errors · 3 warnings
-            </div>
-          </div>
-
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-              <h3 style="font-size:14px;font-weight:600">Documents Checklist</h3><span
-                class="status-pill status-at-risk" style="font-size:11px">5/7 received</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div
-                style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #E5E8EC;border-radius:8px;cursor:pointer">
-                <div
-                  style="width:36px;height:36px;border-radius:8px;background:#D1FAE5;color:#065F46;display:grid;place-items:center;flex-shrink:0">
-                  ✓</div>
-                <div style="flex:1;min-width:0"><b
-                    style="display:block;font-size:13px;font-weight:600;margin-bottom:2px">Customer Data Export</b><span
-                    style="font-size:11px;color:#8B95A5">customer_data.xlsx · 2.4MB · Jul 20</span></div><span
-                  style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#D1FAE5;color:#065F46">Verified</span>
-              </div>
-              <div
-                style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #E5E8EC;border-radius:8px;cursor:pointer">
-                <div
-                  style="width:36px;height:36px;border-radius:8px;background:#D1FAE5;color:#065F46;display:grid;place-items:center;flex-shrink:0">
-                  ✓</div>
-                <div style="flex:1;min-width:0"><b
-                    style="display:block;font-size:13px;font-weight:600;margin-bottom:2px">Company Logo (SVG)</b><span
-                    style="font-size:11px;color:#8B95A5">northwind_logo.svg · 48KB · Jun 19</span></div><span
-                  style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#D1FAE5;color:#065F46">Verified</span>
-              </div>
-              <div
-                style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border:1px solid #E5E8EC;border-radius:8px;cursor:pointer">
-                <div
-                  style="width:36px;height:36px;border-radius:8px;background:#D1FAE5;color:#065F46;display:grid;place-items:center;flex-shrink:0">
-                  ✓</div>
-                <div style="flex:1;min-width:0"><b
-                    style="display:block;font-size:13px;font-weight:600;margin-bottom:2px">SSO Configuration</b><span
-                    style="font-size:11px;color:#8B95A5">sso_config.pdf · 320KB · Jun 22</span></div><span
-                  style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#D1FAE5;color:#065F46">Verified</span>
-              </div>
-              <div
-                style="display:flex;align-items:center;gap:12px;padding:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px">
-                <div
-                  style="width:36px;height:36px;border-radius:8px;background:#FEF3C7;color:#92400E;display:grid;place-items:center;flex-shrink:0">
-                  ⏳</div>
-                <div style="flex:1;min-width:0"><b
-                    style="display:block;font-size:13px;font-weight:600;margin-bottom:2px">Updated Price List</b><span
-                    style="font-size:11px;color:#8B95A5">Requested Jul 22 · Due Jul 28</span></div><span
-                  style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#FEF3C7;color:#92400E">Pending</span>
-              </div>
-              <div
-                style="display:flex;align-items:center;gap:12px;padding:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px">
-                <div
-                  style="width:36px;height:36px;border-radius:8px;background:#FEE2E2;color:#991B1B;display:grid;place-items:center;flex-shrink:0">
-                  ⚠</div>
-                <div style="flex:1;min-width:0"><b
-                    style="display:block;font-size:13px;font-weight:600;margin-bottom:2px">Compliance
-                    Certificate</b><span style="font-size:11px;color:#8B95A5">Requested Jul 15 · 5 days overdue</span>
-                </div><span
-                  style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:#FEE2E2;color:#991B1B">Overdue</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- GANTT TIMELINE VIEW -->
-      <section class="v" [class.act]="activeView === 'gantt'">
-        <div class="ph">
-          <div>
-            <h2>Milestone & Timeline Tracker</h2>
-            <p>Northwind Logistics — planned vs. actual against the Aug 8 target go-live.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s" (click)="showToast('Timeline exported as PDF', 'info')">Export PDF</button>
-            <button class="btn btn-p">+ Add Milestone</button>
-          </div>
-        </div>
-
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:24px">
-          <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;margin-bottom:12px">
-            <span
-              style="font-size:10px;color:#8B95A5;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Stage</span>
-            <div style="display:grid;grid-template-columns:repeat(10,1fr)"><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUN
-                15</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUN
-                22</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUN
-                29</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUL
-                6</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUL
-                13</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUL
-                20</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">JUL
-                27</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">AUG
-                3</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">AUG
-                10</span><span
-                style="font-size:10px;color:#8B95A5;font-weight:500;border-left:1px solid #F3F4F6;padding-left:6px;font-family:'JetBrains Mono',monospace">AUG
-                17</span></div>
-          </div>
-          <div style="position:relative;padding-top:26px">
-            <div
-              style="position:absolute;top:-20px;bottom:0;width:2px;background:#DC2626;z-index:2;left:calc(160px + (100% - 174px) * 0.57)">
-              <span
-                style="position:absolute;top:-2px;left:8px;font-size:9px;font-weight:700;color:#991B1B;background:#FEE2E2;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em">TODAY</span>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Initiated<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jun 12 – Jun 15</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:linear-gradient(90deg,#0A5E4D,#0D7C66);left:0%;width:6%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Kickoff<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jun 18 ✓</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:linear-gradient(90deg,#0A5E4D,#0D7C66);left:3%;width:9%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Requirements<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jun 19 – Jul 1 ✓</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:linear-gradient(90deg,#0A5E4D,#0D7C66);left:8%;width:15%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Configuration<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jun 29 – Jul 17 ✓</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:linear-gradient(90deg,#0A5E4D,#0D7C66);left:17%;width:22%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Data Migration<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jul 8 – Jul 24 ✓</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:linear-gradient(90deg,#0A5E4D,#0D7C66);left:30%;width:19%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Training<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Jul 20 – Aug 3 · in progress</small>
-              </div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:repeating-linear-gradient(45deg,#F59E0B 0 5px,#FBBF24 5px 10px);left:46%;width:19%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">UAT / Readiness<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Aug 1 – Aug 6</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:#fff;border:1.5px dashed #D1D5DB;left:64%;width:12%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Go-Live<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">target Aug 8</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:#fff;border:1.5px dashed #D1D5DB;left:76%;width:8%">
-                </div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center;padding:6px 0">
-              <div style="font-size:12px;font-weight:500">Handover + Hyper-care<small
-                  style="display:block;font-size:10px;color:#8B95A5;margin-top:2px">Aug 10 – Aug 22</small></div>
-              <div
-                style="position:relative;height:24px;background:repeating-linear-gradient(90deg,#F3F4F6 0 1px,transparent 1px 10%);border-radius:4px">
-                <div
-                  style="position:absolute;top:5px;height:14px;border-radius:4px;background:#fff;border:1.5px dashed #D1D5DB;left:84%;width:15%">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TRAINING VIEW -->
-      <section class="v" [class.act]="activeView === 'train'">
-        <div class="ph">
-          <div>
-            <h2>Training Scheduling</h2>
-            <p>Plan and track admin and end-user training sessions.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-p" (click)="showToast('✓ New training session created', 'info')">+ Schedule
-              Session</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
-          <div class="kc" style="--kc:#0D7C66">
-            <div class="kl">Total Sessions</div>
-            <div class="kv">6</div><span class="kt kt-n">Planned</span>
-          </div>
-          <div class="kc" style="--kc:#10B981">
-            <div class="kl">Completed</div>
-            <div class="kv">2</div><span class="kt kt-u">33%</span>
-          </div>
-          <div class="kc" style="--kc:#F59E0B">
-            <div class="kl">Upcoming</div>
-            <div class="kv">4</div><span class="kt kt-n">Next: Jul 29</span>
-          </div>
-          <div class="kc" style="--kc:#3B82F6">
-            <div class="kl">Attendees</div>
-            <div class="kv">41</div><span class="kt kt-u">38 confirmed</span>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:16px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-              <div
-                style="width:48px;height:52px;border-radius:8px;background:#D1FAE5;display:grid;place-items:center;text-align:center">
-                <b style="font-size:18px;font-weight:700;color:#065F46;display:block;line-height:1">18</b><small
-                  style="font-size:9px;color:#0D7C66;font-weight:700;letter-spacing:.08em">JUN</small></div>
-              <div style="flex:1"><b style="font-size:13px;font-weight:600;display:block;margin-bottom:2px">Admin
-                  Training · Session 1</b><span style="font-size:11px;color:#8B95A5">10:00 AM – 12:00 PM · Live</span>
-              </div>
-              <span class="status-pill status-on-track" style="margin-left:auto">Completed</span>
-            </div>
-            <div style="font-size:12px;color:#6B7280;margin-bottom:10px">For system administrators · 4 attendees · Mia
-              Chen</div>
-            <div style="font-size:12px;color:#6B7280"><b style="color:#111827">📹 Recording:</b> <a
-                style="color:#0D7C66;font-weight:600;text-decoration:none;cursor:pointer">Watch (48 min)</a></div>
-          </div>
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:16px">
-            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-              <div
-                style="width:48px;height:52px;border-radius:8px;background:#D1FAE5;display:grid;place-items:center;text-align:center">
-                <b style="font-size:18px;font-weight:700;color:#065F46;display:block;line-height:1">22</b><small
-                  style="font-size:9px;color:#0D7C66;font-weight:700;letter-spacing:.08em">JUN</small></div>
-              <div style="flex:1"><b style="font-size:13px;font-weight:600;display:block;margin-bottom:2px">Admin
-                  Training · Session 2</b><span style="font-size:11px;color:#8B95A5">2:00 PM – 4:00 PM · Live</span>
-              </div>
-              <span class="status-pill status-on-track" style="margin-left:auto">Completed</span>
-            </div>
-            <div style="font-size:12px;color:#6B7280;margin-bottom:10px">Advanced configuration · 4 attendees · Mia Chen
-            </div>
-            <div style="font-size:12px;color:#6B7280"><b style="color:#111827">📹 Recording:</b> <a
-                style="color:#0D7C66;font-weight:600;text-decoration:none;cursor:pointer">Watch (52 min)</a></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- GO-LIVE GATE VIEW -->
-      <section class="v" [class.act]="activeView === 'golive'">
-        <div class="ph">
-          <div>
-            <h2>Go-Live Readiness</h2>
-            <p>Final gate before production access is granted. Nothing ships until this is 100%.</p>
-          </div>
-          <span class="status-pill status-at-risk" style="padding:6px 14px;font-size:12px">{{ goLiveComplete ? 'Gate
-            Completed' : 'Gate in progress' }}</span>
-        </div>
-
-        <div
-          style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-          <div style="flex:1;min-width:240px">
-            <div style="height:10px;background:#F3F4F6;border-radius:5px;overflow:hidden">
-              <div style="height:100%;background:linear-gradient(90deg,#0D7C66,#10B981);border-radius:5px"
-                [style.width.%]="goLiveComplete ? 100 : 56"></div>
-            </div>
-            <div style="font-size:12px;color:#8B95A5;margin-top:6px"><span>{{ goLiveComplete ? 9 : 5 }}</span> of
-              <span>9</span> items complete</div>
-          </div>
-          <button class="btn btn-p" [disabled]="!signatureText && !goLiveComplete" (click)="confirmGL()">🚀 Confirm
-            Go-Live · Jul 30</button>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span
-                style="width:26px;height:26px;border-radius:6px;background:#D1FAE5;color:#065F46;display:inline-grid;place-items:center;font-size:12px">⚙</span>
-              <h3 style="font-size:14px;font-weight:600">Configuration</h3>
-            </div>
-            <div
-              style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed #F3F4F6;font-size:13px">
-              <div class="task-check" style="background:#0D7C66;border-color:#0D7C66;color:#fff">✓</div><span
-                style="text-decoration:line-through;color:#8B95A5">Roles & permissions verified against
-                requirements</span>
-            </div>
-            <div
-              style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed #F3F4F6;font-size:13px">
-              <div class="task-check" style="background:#0D7C66;border-color:#0D7C66;color:#fff">✓</div><span
-                style="text-decoration:line-through;color:#8B95A5">ERP integration tested — 240 test transactions
-                passed</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 0;font-size:13px">
-              <div class="task-check" style="background:#0D7C66;border-color:#0D7C66;color:#fff">✓</div><span
-                style="text-decoration:line-through;color:#8B95A5">Branding & notification templates applied</span>
-            </div>
-          </div>
-          <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:20px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span
-                style="width:26px;height:26px;border-radius:6px;background:#FEE2E2;color:#991B1B;display:inline-grid;place-items:center;font-size:12px">✍</span>
-              <h3 style="font-size:14px;font-weight:600">Sign-off</h3>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <input type="text" [(ngModel)]="signatureText" placeholder="Customer e-signature — type full name"
-                style="flex:1;padding:10px 12px;border:1px solid #E5E8EC;border-radius:8px;font-family:'Brush Script MT',cursive;font-size:18px">
-            </div>
-            <div
-              style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed #F3F4F6;font-size:13px;margin-top:6px">
-              <div class="task-check">✓</div><span>Implementation Lead approval — Daniel Okafor</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 0;font-size:13px">
-              <div class="task-check">✓</div><span>Go-live date confirmed with customer (Jul 30)</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- HANDOVER VIEW -->
-      <section class="v" [class.act]="activeView === 'hand'">
-        <div class="ph">
-          <div>
-            <h2>Handover & Closure Summary</h2>
-            <p>Formal close-out that packages the onboarding outcome for steady-state CS.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s">Save Draft</button>
-            <button class="btn btn-p"
-              (click)="showToast('🎉 Onboarding closed · account handed to CS · health score set', 'info')">Close
-              Onboarding</button>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
-          <div class="kc" style="--kc:#0D7C66">
-            <div class="kl">Duration</div>
-            <div class="kv">47<span style="font-size:14px;color:#8B95A5">d</span></div><span class="kt kt-u">▼ 3d vs
-              target</span>
-          </div>
-          <div class="kc" style="--kc:#10B981">
-            <div class="kl">Tasks Completed</div>
-            <div class="kv">38/38</div><span class="kt kt-u">100%</span>
-          </div>
-          <div class="kc" style="--kc:#3B82F6">
-            <div class="kl">Documents</div>
-            <div class="kv">12</div><span class="kt kt-n">All received</span>
-          </div>
-          <div class="kc" style="--kc:#F59E0B">
-            <div class="kl">Training Hours</div>
-            <div class="kv">14</div><span class="kt kt-n">Across 6 sessions</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- AUTOMATIONS VIEW -->
-      <section class="v" [class.act]="activeView === 'auto'">
-        <div class="ph">
-          <div>
-            <h2>Automation Rules</h2>
-            <p>Configure triggers and actions to automate repetitive onboarding tasks.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-p" (click)="showToast('✓ New automation rule created', 'info')">+ New Rule</button>
-          </div>
-        </div>
-        <div style="background:#fff;border:1px solid #E5E8EC;border-radius:12px;padding:24px">
-          <h3>Welcome Email Automation</h3>
-          <p style="font-size:12px;color:#8B95A5;margin-top:4px">Triggered 24 times this month · 100% success rate</p>
-        </div>
-      </section>
-
-      <!-- TEMPLATES VIEW -->
-      <section class="v" [class.act]="activeView === 'templates'">
-        <div class="ph">
-          <div>
-            <h2>Onboarding Templates</h2>
-            <p>Pre-built workflows for different customer segments.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-p" (click)="showToast('Template builder opened', 'info')">+ Create Template</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- AUDIT LOG VIEW -->
-      <section class="v" [class.act]="activeView === 'audit'">
-        <div class="ph">
-          <div>
-            <h2>Audit Log</h2>
-            <p>Complete history of every action, change, and transition.</p>
-          </div>
-          <div class="ph-acts">
-            <button class="btn btn-s" (click)="showToast('Audit log exported as CSV', 'info')">Export</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ANALYTICS VIEW -->
-      <section class="v" [class.act]="activeView === 'analytics'">
-        <div class="ph">
-          <div>
-            <h2>Onboarding Analytics</h2>
-            <p>Process performance across all customers — Q2 2026.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- CUSTOMER PORTAL VIEWS -->
-      <section class="v" [class.act]="activeView === 'ptrack'">
-        <div class="ph">
-          <div>
-            <h2>My Progress (Customer Portal)</h2>
-            <p>Track your organization's onboarding status in real-time.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="v" [class.act]="activeView === 'ptrain'">
-        <div class="ph">
-          <div>
-            <h2>Training Hub (Customer Portal)</h2>
-            <p>Access recorded sessions, user manuals, and sign up for upcoming live training.</p>
-          </div>
-        </div>
-      </section>
-
-    </main>
-  </div>
-</div>
-
-<!-- FLOATING AI ASSISTANT -->
-<div class="ai-fab" (click)="toggleAi()" title="CSMS AI Assistant">✨</div>
-
-<div class="ai-panel" [class.open]="isAiOpen">
-  <div class="ai-h">
-    <div class="ai-ic">✨</div>
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
     <div>
-      <b>CSMS Copilot</b>
-      <small>Onboarding Intelligence</small>
+      <h1 class="page-title">Onboarding Dashboard</h1>
+      <p>Every onboarding in progress. Switch views, filter, and act on bottlenecks.</p>
     </div>
-    <button style="margin-left:auto;font-size:16px;color:#6B7280" (click)="toggleAi()">✕</button>
+
   </div>
-  <div class="ai-body">
-    <div class="ai-msg ai">
-      <div class="ai-msg-av" style="background:#D1FAE5;color:#065F46">✨</div>
-      <div class="ai-msg-b">
-        Hello Priya! I analyzed your onboardings. <b>Orion Healthcare</b> is 3 days past target go-live. Would you like
-        me to draft an escalation email or generate a summary report?
+
+  <!-- ── Stat Cards ────────────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Total Accounts -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">Total Onboardings</span>
+        <div class="text-2xl font-extrabold text-text-primary mt-1">{{ totalClients() }}</div>
+        <!-- <div class="text-xs font-medium text-text-muted mt-1">Active CS Portfolio</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
       </div>
     </div>
-  </div>
-  <div class="ai-in">
-    <input placeholder="Ask Copilot anything...">
-    <button>➔</button>
-  </div>
-</div>
 
-<!-- COMMAND PALETTE (CMD+K) -->
-<div class="cmd-ov" [class.open]="isCmdOpen" (click)="closeCmd()">
-  <div class="cmd" (click)="$event.stopPropagation()">
-    <div class="cmd-in">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="7" />
-        <path d="M21 21l-4.3-4.3" />
+    <!-- Completed -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">In Progress</span>
+        <div class="text-2xl font-extrabold text-brand-500 mt-1">{{ completedClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-brand-500 mt-1">100% Approved</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">On Track</span>
+        <div class="text-2xl font-extrabold text-amber-600 mt-1">{{ inProgressClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-amber-600 mt-1">Active Milestones</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Not Started -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">Completed </span>
+        <div class="text-2xl font-extrabold text-text-muted mt-1">{{ pendingClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-text-muted mt-1">Pending Kickoff</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-surface-100 text-text-muted flex items-center justify-center border border-surface-200 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Filter / Controls Bar ─────────────────────────────────────────────── -->
+  <!-- <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"> -->
+    <!-- Status Tabs -->
+    <!-- <div class="inline-flex flex-wrap items-center gap-1 bg-surface-100 p-1 rounded-2xl">
+      @for (tab of filterTabs; track tab.id) {
+      <button (click)="setFilterStatus(tab.id)" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+        [ngClass]="{
+          'bg-card-bg text-text-primary shadow-sm border border-card-border': statusFilter() === tab.id,
+          'text-text-secondary hover:text-text-primary': statusFilter() !== tab.id
+        }">
+        {{ tab.label }}
+      </button>
+      }
+    </div> -->
+
+    <!-- View toggle -->
+    <!-- <div class="flex items-center gap-3">
+      <div class="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200">
+        <button (click)="viewMode.set('grid')" title="Grid View" class="p-1.5 rounded-lg transition-colors"
+          [ngClass]="viewMode() === 'grid' ? 'bg-card-bg shadow-sm text-brand-500' : 'text-text-muted hover:text-text-primary'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        <button (click)="viewMode.set('table')" title="Table View" class="p-1.5 rounded-lg transition-colors"
+          [ngClass]="viewMode() === 'table' ? 'bg-card-bg shadow-sm text-brand-500' : 'text-text-muted hover:text-text-primary'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div> -->
+  <!-- </div> -->
+
+
+  <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
+  @if (viewMode() === 'table') {
+  <div class="card p-0 overflow-hidden">
+    <app-data-table [config]="tableConfig()" [filterNames]="['leadOwner', 'supportOwner',
+     'rating', 'country'
+    , 'dateRange']">
+
+      <!-- Custom progress cell template -->
+      <ng-template appCustomColumn="overallProgress" let-row>
+        <div class="flex items-center gap-2 min-w-[120px]">
+          <div class="flex-1 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" [style.width.%]="getClientProgressPercent(row)"
+              [style.background]="getProgressColor(getClientProgressPercent(row))">
+            </div>
+          </div>
+          <span class="text-xs font-bold w-8 text-right"
+            [style.color]="getProgressColor(getClientProgressPercent(row))">
+            {{ getClientProgressPercent(row) }}%
+          </span>
+        </div>
+      </ng-template>
+
+      <!-- Custom modules cell template -->
+      <ng-template appCustomColumn="modules" let-row>
+        <div class="flex flex-wrap items-center justify-center gap-1 max-w-[320px]">
+          @for (mod of modules; track mod.key) {
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap" [ngClass]="{
+                  'bg-brand-100 text-brand-700 border-brand-200': isModuleFullyApproved(row, mod),
+                  'bg-amber-100 text-amber-700 border-amber-200': isModuleInProgress(row, mod),
+                  'bg-surface-100 text-text-muted border-surface-200': isModuleNotStarted(row, mod)
+                }">
+            {{ mod.label }}: {{ getModuleApprovedCount(row, mod) }}/{{ getModuleTotalCount(row, mod) }}
+          </span>
+          }
+        </div>
+      </ng-template>
+
+    </app-data-table>
+  </div>
+  }
+
+  <!-- ── GRID VIEW ──────────────────────────────────────────────────────────── -->
+  @if (viewMode() === 'grid') {
+
+  @if (isLoading()) {
+  <div class="flex flex-col items-center justify-center py-20">
+    <div class="h-10 w-10 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="text-sm text-text-muted mt-4 font-medium">Loading implementation data...</p>
+  </div>
+  } @else if (filteredClients().length === 0) {
+  <div class="card flex flex-col items-center justify-center py-20 gap-4">
+    <div
+      class="w-14 h-14 rounded-full bg-brand-50 border-2 border-brand-200 flex items-center justify-center text-brand-400">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <input placeholder="Type a command or search..." autofocus>
-      <kbd>ESC</kbd>
     </div>
-    <div class="cmd-res">
-      <div class="cmd-sec">Navigation</div>
-      <div class="cmd-it" (click)="go('dash'); closeCmd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2">
-          <rect x="3" y="3" width="7" height="9" rx="1.5" />
-          <rect x="14" y="3" width="7" height="5" rx="1.5" />
-          <rect x="14" y="12" width="7" height="9" rx="1.5" />
-          <rect x="3" y="16" width="7" height="5" rx="1.5" />
-        </svg> Go to Dashboard <span class="kb">G D</span></div>
-      <div class="cmd-it" (click)="go('tasks'); closeCmd()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="3" />
-          <path d="M8 12l3 3 5-6" />
-        </svg> Go to Tasks & Checklist <span class="kb">G T</span></div>
-    </div>
-    <div class="cmd-foot">
-      <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
-      <span><kbd>↵</kbd> to select</span>
-    </div>
+    <p class="text-base font-semibold text-text-primary">No clients found</p>
+    <p class="text-sm text-text-muted">Try adjusting your search or filter.</p>
   </div>
-</div>
-
-<!-- NEW ONBOARDING MODAL -->
-<div class="ov" [class.open]="isModalOpen" (click)="closeModal()">
-  <div class="md" (click)="$event.stopPropagation()">
-
-    <!-- Header -->
-    <div class="mh">
-      <div>
-        <small>Customer Onboarding</small>
-        <h3>Create Onboarding Record</h3>
+  } @else {
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    @for (client of filteredClients(); track client.id) {
+    <div class="card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+      (click)="openClientDetails(client)">
+      <!-- Card top -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 text-sm font-bold">
+            {{ getInitials(client.name) }}
+          </div>
+          <div>
+            <p class="font-semibold text-text-primary text-sm group-hover:text-brand-500 transition-colors">{{
+              client.name }}</p>
+            <p class="text-xs text-text-muted">Org #{{ client.org_id }}</p>
+          </div>
+        </div>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border"
+          [ngClass]="getHealthBadgeClasses(client.health)">
+          {{ client.health }}
+        </span>
       </div>
-      <button class="x" (click)="closeModal()">✕</button>
+
+      <!-- Progress bar -->
+      <div class="mb-3">
+        <div class="flex justify-between text-xs mb-1.5">
+          <span class="font-medium text-text-secondary">Overall Progress</span>
+          <span class="font-bold" [style.color]="getProgressColor(getClientProgressPercent(client))">{{
+            getClientProgressPercent(client) }}%</span>
+        </div>
+        <div class="h-2 bg-surface-200 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700"
+            [style.width.%]="getClientProgressPercent(client)"
+            [style.background]="getProgressColor(getClientProgressPercent(client))">
+          </div>
+        </div>
+      </div>
+
+      <!-- Module badges -->
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        @for (mod of modules; track mod.key) {
+        <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold" [ngClass]="{
+                'bg-brand-100 text-brand-700': isModuleFullyApproved(client, mod),
+                'bg-amber-100 text-amber-700': isModuleInProgress(client, mod),
+                'bg-surface-100 text-text-muted': isModuleNotStarted(client, mod)
+              }">
+          {{ mod.label }}
+          {{ getModuleApprovedCount(client, mod) }}/{{ getModuleTotalCount(client, mod) }}
+        </span>
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-card-border">
+        <div class="flex items-center gap-1.5 text-xs text-text-muted">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          {{ client.onboarding_date || '—' }}
+        </div>
+        <div class="text-xs text-text-secondary font-medium">{{ client.cs_lead }}</div>
+      </div>
     </div>
-
-    <!-- Body -->
-   <div class="mb">
-
-  <h4 class="section-title">Company Details</h4>
-
-  <!-- Company -->
-  <div class="form-grid">
-    <div class="field">
-      <label>Company Name <span>*</span></label>
-      <input type="text" placeholder="Enter company name">
-    </div>
-
-    <div class="field">
-      <label>Company Number</label>
-      <input type="text" placeholder="Enter company number">
-    </div>
+    }
   </div>
-
-  <!-- Address -->
-  <div class="field">
-    <label>Company Address <span>*</span></label>
-    <input type="text" placeholder="Enter company address">
-  </div>
-
-  <!-- Country & State -->
-  <div class="form-grid">
-    <div class="field">
-      <label>Country</label>
-      <select>
-        <option>Select Country</option>
-        <option>India</option>
-        <option>Australia</option>
-        <option>United States</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>State</label>
-      <select>
-        <option>Select State</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- City & Postal -->
-  <div class="form-grid">
-    <div class="field">
-      <label>City</label>
-      <input type="text" placeholder="Enter city">
-    </div>
-
-    <div class="field">
-      <label>Postal Code</label>
-      <input type="text" placeholder="Postal Code">
-    </div>
-  </div>
-
-  <!-- Phone -->
-  <div class="field">
-    <label>Business Phone</label>
-    <input type="tel" placeholder="+91 9876543210">
-  </div>
-
-  <hr>
-
-  <h4 class="section-title">Contact Details</h4>
-
-  <!-- Name -->
-  <div class="form-grid">
-    <div class="field">
-      <label>First Name <span>*</span></label>
-      <input type="text" placeholder="First Name">
-    </div>
-
-    <div class="field">
-      <label>Last Name <span>*</span></label>
-      <input type="text" placeholder="Last Name">
-    </div>
-  </div>
-
-  <!-- Mobile & Email -->
-  <div class="form-grid">
-    <div class="field">
-      <label>Mobile <span>*</span></label>
-      <input type="tel" placeholder="+91 9876543210">
-    </div>
-
-    <div class="field">
-      <label>Email <span>*</span></label>
-      <input type="email" placeholder="example@email.com">
-    </div>
-  </div>
+  }
+  }
 
 </div>
 
-    <!-- Footer -->
-    <div class="mf">
-      <button class="btn btn-s" (click)="closeModal()">
-        Cancel
+<!-- ── Detail Drawer ──────────────────────────────────────────────────────── -->
+@if (selectedClient()) {
+<div class="fixed inset-0 z-[1200] flex justify-end" (click)="closeClientDetails()">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+    [class.opacity-0]="!drawerOpen()" [class.opacity-100]="drawerOpen()"></div>
+
+  <!-- Drawer panel -->
+  <div
+    class="relative w-full max-w-2xl h-full bg-card-bg shadow-2xl flex flex-col transition-transform duration-300 ease-in-out overflow-hidden"
+    [class.translate-x-full]="!drawerOpen()" [class.translate-x-0]="drawerOpen()" (click)="$event.stopPropagation()">
+
+    <!-- Drawer header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center font-bold text-brand-600 text-sm">
+          {{ getInitials(selectedClient()!.name) }}
+        </div>
+        <div>
+          <h2 class="font-bold text-text-primary text-base">{{ selectedClient()!.name }}</h2>
+          <p class="text-xs text-text-muted">Org #{{ selectedClient()!.org_id }} · {{ selectedClient()!.cs_lead }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+          [ngClass]="getHealthBadgeClasses(selectedClient()!.health)">
+          {{ selectedClient()!.health }}
+        </span>
+        <button (click)="closeClientDetails()"
+          class="w-8 h-8 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center text-text-secondary transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress summary bar -->
+    <div class="px-6 py-3 bg-brand-50 border-b border-brand-100">
+      <div class="flex items-center justify-between text-xs mb-1.5">
+        <span class="font-semibold text-brand-700">Overall Implementation Progress</span>
+        <span class="font-bold text-brand-600">{{ getClientProgressPercent(selectedClient()!) }}%</span>
+      </div>
+      <div class="h-2.5 bg-brand-100 rounded-full overflow-hidden">
+        <div class="h-full bg-brand-500 rounded-full transition-all duration-700"
+          [style.width.%]="getClientProgressPercent(selectedClient()!)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Module tab filter -->
+    <div class="px-6 py-3 border-b border-card-border bg-card-bg overflow-x-auto">
+      <div class="flex items-center gap-1 min-w-max">
+        <button (click)="selectedModuleTab.set('all')"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          [ngClass]="selectedModuleTab() === 'all' ? 'bg-brand-500 text-white' : 'bg-surface-100 text-text-secondary hover:bg-surface-200'">
+          All Modules
+        </button>
+        @for (mod of modules; track mod.key) {
+        <button (click)="selectedModuleTab.set(mod.key)"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
+          [ngClass]="selectedModuleTab() === mod.key ? 'bg-brand-500 text-white' : 'bg-surface-100 text-text-secondary hover:bg-surface-200'">
+          {{ mod.label }}
+        </button>
+        }
+      </div>
+    </div>
+
+    <!-- Module list -->
+    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      @for (mod of getDisplayModules(); track mod.key) {
+      <div class="rounded-xl border border-card-border overflow-hidden">
+        <!-- Module header -->
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-100 border-b border-card-border">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-text-primary">{{ mod.label }}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [ngClass]="{
+                    'bg-brand-100 text-brand-700': isModuleFullyApproved(selectedClient()!, mod),
+                    'bg-amber-100 text-amber-700': isModuleInProgress(selectedClient()!, mod),
+                    'bg-surface-200 text-text-muted': isModuleNotStarted(selectedClient()!, mod)
+                  }">
+              {{ getModuleApprovedCount(selectedClient()!, mod) }} / {{ getModuleTotalCount(selectedClient()!, mod) }}
+            </span>
+          </div>
+          <!-- Mini progress bar -->
+          <div class="flex items-center gap-2">
+            <div class="w-20 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+              <div class="h-full bg-brand-500 rounded-full transition-all" [style.width.%]="getModuleTotalCount(selectedClient()!, mod) > 0
+                     ? (getModuleApprovedCount(selectedClient()!, mod) / getModuleTotalCount(selectedClient()!, mod)) * 100
+                     : 0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature rows -->
+        <div class="divide-y divide-card-border">
+          @for (feat of mod.features; track feat.mod_id) {
+          <div class="px-4 py-3 flex items-center gap-3 hover:bg-surface-50 transition-colors">
+            <!-- Toggle checkbox -->
+            <button (click)="toggleFeatureStatus(selectedClient()!, feat.mod_id)"
+              class="w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-all" [ngClass]="{
+                'bg-brand-500 border-brand-500': selectedClient()!.checklist[feat.mod_id]?.approval_status === 1,
+                'border-surface-300 hover:border-brand-400': selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1
+              }">
+              @if (selectedClient()!.checklist[feat.mod_id]?.approval_status === 1) {
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              }
+            </button>
+
+            <!-- Feature info -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-text-primary truncate">{{ feat.name }}</p>
+              @if (selectedClient()!.checklist[feat.mod_id]?.completed_at) {
+              <p class="text-xs text-text-muted">Completed: {{ selectedClient()!.checklist[feat.mod_id]?.completed_at }}
+              </p>
+              }
+            </div>
+
+            <!-- Remark input -->
+            <input type="text"
+              class="hidden md:block text-xs px-2 py-1 rounded-lg border border-card-border bg-surface-50 text-text-secondary focus:outline-none focus:border-brand-500 w-32"
+              placeholder="Remark..." [value]="selectedClient()!.checklist[feat.mod_id]?.remark || ''"
+              (blur)="updateRemark(selectedClient()!, feat.mod_id, $event)" />
+
+            <!-- Status badge -->
+            <span class="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="{
+                    'bg-brand-100 text-brand-700': selectedClient()!.checklist[feat.mod_id]?.approval_status === 1,
+                    'bg-surface-200 text-text-muted': selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1
+                  }">
+              {{ selectedClient()!.checklist[feat.mod_id]?.approval_status === 1 ? 'Done' : 'Pending' }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Drawer footer -->
+    <div class="px-6 py-4 border-t border-card-border bg-card-bg flex justify-between items-center">
+      <div class="text-xs text-text-muted">
+        {{ getClientApprovedCount(selectedClient()!) }} of {{ totalFeaturesCount }} features approved
+      </div>
+      <button (click)="markAllApproved(selectedClient()!)"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <polyline stroke-width="2.5" points="20 6 9 17 4 12" />
+        </svg>
+        Mark All Approved
       </button>
-
-      <button class="btn btn-p"
-        (click)="closeModal(); showToast('✓ New Onboarding Record created!', 'info')">
-        Create Onboarding
-      </button>
     </div>
 
   </div>
 </div>
-
-<!-- DRAWER FOR RECORD DETAILS -->
-<div class="drawer-overlay" [class.open]="isDrawerOpen" (click)="closeDrawer()"></div>
-<div class="drawer" [class.open]="isDrawerOpen">
-  <div class="drawer-head">
-    <div class="drawer-head-left">
-      <div class="av" [style.background]="drawerItem.bg">{{ drawerItem.av }}</div>
-      <div>
-        <h2>{{ drawerItem.name }}</h2>
-        <div class="meta">{{ drawerItem.id }} · ENTERPRISE PLAN · CONTRACT SIGNED 2026-06-12</div>
-      </div>
-    </div>
-    <button class="drawer-close" (click)="closeDrawer()">✕</button>
-  </div>
-  <div class="drawer-body">
-    <!-- ONBOARDING STAGE STEPPER -->
-    <div class="form-section">
-      <div class="form-section-title">ONBOARDING STAGE</div>
-      <div class="drawer-stepper">
-        <div class="d-step done">
-          <div class="d-circle">✓</div><span class="d-label">Initiated</span>
-        </div>
-        <div class="d-step current">
-          <div class="d-circle">2</div><span class="d-label">Kickoff</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">3</div><span class="d-label">Requirements</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">4</div><span class="d-label">Configuration</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">5</div><span class="d-label">Data Migration</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">6</div><span class="d-label">Training</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">7</div><span class="d-label">UAT / Readiness</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">8</div><span class="d-label">Go-Live</span>
-        </div>
-        <div class="d-step upcoming">
-          <div class="d-circle">9</div><span class="d-label">Handover</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- CUSTOMER DETAILS FORM -->
-    <div class="form-section">
-      <div class="form-section-title">CUSTOMER DETAILS</div>
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Customer Name</label>
-          <input type="text" [value]="drawerItem.name">
-        </div>
-        <div class="field">
-          <label>Onboarding ID</label>
-          <input type="text" [value]="drawerItem.id" readonly style="background:#F8FAFB">
-        </div>
-      </div>
-
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Plan / Package</label>
-          <select>
-            <option selected>Enterprise</option>
-            <option>Standard</option>
-            <option>Custom</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Onboarding Template</label>
-          <select>
-            <option selected>Enterprise (45 days)</option>
-            <option>Standard (30 days)</option>
-            <option>Fast-Track (14 days)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Contract Start Date</label>
-          <input type="date" value="2026-06-12">
-        </div>
-        <div class="field">
-          <label>Target Go-Live Date</label>
-          <input type="date" value="2026-08-08">
-        </div>
-      </div>
-
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Actual Go-Live Date</label>
-          <input type="date" value="2026-07-02">
-        </div>
-        <div class="field">
-          <label>Risk Flag</label>
-          <select>
-            <option selected>On Track</option>
-            <option>At Risk</option>
-            <option>Delayed</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- ASSIGNED TEAM -->
-    <div class="form-section">
-      <div class="form-section-title">👥 ASSIGNED TEAM</div>
-      <div class="form-grid f3">
-        <div class="field">
-          <label>Assigned CSM</label>
-          <select>
-            <option selected>Priya Sharma</option>
-            <option>Daniel Okafor</option>
-            <option>Amara Diallo</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Implementation Owner</label>
-          <select>
-            <option selected>Daniel Okafor</option>
-            <option>Priya Sharma</option>
-            <option>Mia Chen</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Trainer</label>
-          <select>
-            <option selected>Mia Chen</option>
-            <option>Daniel Okafor</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- PRIMARY CUSTOMER CONTACT -->
-    <div class="form-section">
-      <div class="form-section-title">PRIMARY CUSTOMER CONTACT</div>
-      <div class="form-grid" style="margin-bottom:14px">
-        <div class="field">
-          <label>Contact Name</label>
-          <input type="text" value="Sarah Rodriguez">
-        </div>
-        <div class="field">
-          <label>Contact Email</label>
-          <input type="email" value="sarah@northwind.com">
-        </div>
-      </div>
-      <div class="form-grid">
-        <div class="field">
-          <label>Contact Role</label>
-          <input type="text" value="Project Lead">
-        </div>
-        <div class="field">
-          <label>Contact Phone</label>
-          <input type="text" value="+1 (555) 234-5678">
-        </div>
-      </div>
-    </div>
-
-    <!-- TASKS & CHECKLIST -->
-    <div class="form-section">
-      <div class="form-section-title">☑ TASKS & CHECKLIST</div>
-      <div class="task-item done">
-        <div class="task-check">✓</div>
-        <div class="task-title">Configure roles & permissions</div>
-        <div class="task-owner">Daniel Okafor</div>
-        <div class="task-due">Jul 22</div>
-      </div>
-      <div class="task-item done">
-        <div class="task-check">✓</div>
-        <div class="task-title">Set up ERP integration (SAP)</div>
-        <div class="task-owner">Daniel Okafor</div>
-        <div class="task-due">Jul 21</div>
-      </div>
-      <div class="task-item done">
-        <div class="task-check">✓</div>
-        <div class="task-title">Apply branding & email templates</div>
-        <div class="task-owner">Daniel Okafor</div>
-        <div class="task-due">Jul 20</div>
-      </div>
-      <div class="task-item done">
-        <div class="task-check">✓</div>
-        <div class="task-title">Import legacy data</div>
-        <div class="task-owner">Daniel Okafor</div>
-        <div class="task-due">Jul 23</div>
-      </div>
-      <div class="task-item done">
-        <div class="task-check">✓</div>
-        <div class="task-title">Schedule admin & end-user sessions</div>
-        <div class="task-owner">Mia Chen</div>
-        <div class="task-due">Jul 24</div>
-      </div>
-      <div class="task-item">
-        <div class="task-check">✓</div>
-        <div class="task-title">Deliver end-user training · Session 1</div>
-        <div class="task-owner">Mia Chen</div>
-        <div class="task-due">Jul 29</div>
-      </div>
-      <div class="task-item">
-        <div class="task-check">✓</div>
-        <div class="task-title">Share training materials & recordings</div>
-        <div class="task-owner">Mia Chen</div>
-        <div class="task-due">Jul 30</div>
-      </div>
-      <div class="task-item" style="border-color:#FEE2E2;background:#FEF2F2">
-        <div class="task-check">✓</div>
-        <div class="task-title">Collect attendance roster & feedback</div>
-        <div class="task-owner">Mia Chen</div>
-        <div class="task-due overdue">Jul 22</div>
-      </div>
-      <button class="btn btn-s" style="margin-top:8px" (click)="showToast('✓ New Task added', 'info')">+ Add
-        Task</button>
-    </div>
-
-    <!-- NOTES & COMMENTS -->
-    <div class="form-section">
-      <div class="form-section-title">📝 NOTES & COMMENTS</div>
-      <div class="field">
-        <textarea
-          placeholder="Enter internal notes or comments...">Customer is highly engaged. Sarah Rodriguez is the primary POC.</textarea>
-      </div>
-    </div>
-  </div>
-
-  <div class="drawer-foot">
-    <button class="btn btn-d" (click)="showToast('🚩 Flagged as At Risk', 'warn')">🚩 Flag at Risk</button>
-    <button class="btn btn-s" (click)="closeDrawer()">Cancel</button>
-    <button class="btn btn-p" (click)="closeDrawer(); showToast('💾 Changes saved successfully!', 'info')">💾 Save
-      Changes</button>
-  </div>
-</div>
-
-<!-- TOAST CONTAINER -->
-<div class="toast-container">
-  <div *ngFor="let t of toasts" class="toast" [class.warn]="t.type === 'warn'" [class.error]="t.type === 'error'"
-    [class.out]="t.isOut">
-    <span>{{ t.message }}</span>
-  </div>
-</div>
+}
