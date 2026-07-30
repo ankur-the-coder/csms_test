@@ -1,7 +1,9 @@
 import { Component, signal, computed, OnInit, inject, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ImplementationService, ApiClientRow, CardData } from './implementation.service';
+import { ImplementationService, ApiClientRow, ApiResponse, CardData } from './implementation.service';
+import { DataTable } from '../../shared/components/Data-table/data-table';
+import { SmartTableConfig, RowAction, RowActionEvent, CustomRowAction } from '../../shared/components/Data-table/data-table.types';
 
 export interface Feature {
   mod_id: number;
@@ -101,17 +103,15 @@ export class ImplementationComponent implements OnInit {
   errorMessage = signal<string>('');
   cardData   = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
 
-  // UI Filters State
-  searchQuery = signal<string>('');
-  statusFilter = signal<string>('all'); // all, complete, in_progress, pending
-  viewMode = signal<'grid' | 'table'>('table');
+  // UI state
+  searchQuery  = signal<string>('');
+  statusFilter = signal<string>('all');
+  viewMode     = signal<'grid' | 'table'>('table');
 
   // Drawer
   selectedClient    = signal<Client | null>(null);
   selectedModuleTab = signal<string>('all');
-  // Controls the slide/fade transition separately from the mount state so the
-  // drawer animates in/out smoothly instead of popping in/out instantly.
-  drawerOpen = signal<boolean>(false);
+  drawerOpen        = signal<boolean>(false);
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
 
@@ -125,19 +125,17 @@ export class ImplementationComponent implements OnInit {
     ];
   }
 
-  // Filtered Clients Computed
   filteredClients = computed(() => {
-    const q = this.searchQuery().toLowerCase().trim();
+    const q  = this.searchQuery().toLowerCase().trim();
     const sf = this.statusFilter();
-
     return this.clients().filter(c => {
-      const matchSearch = c.name.toLowerCase().includes(q) || c.org_id.toString().includes(q) || c.cs_lead.toLowerCase().includes(q);
-      if (!matchSearch) return false;
-
-      if (sf === 'complete') return c.overallProgress.percentage === 100;
+      const match = c.name.toLowerCase().includes(q) ||
+                    c.org_id.toString().includes(q) ||
+                    c.cs_lead.toLowerCase().includes(q);
+      if (!match) return false;
+      if (sf === 'complete')    return c.overallProgress.percentage === 100;
       if (sf === 'in_progress') return c.overallProgress.percentage > 0 && c.overallProgress.percentage < 100;
-      if (sf === 'pending') return c.overallProgress.percentage === 0;
-
+      if (sf === 'pending')     return c.overallProgress.percentage === 0;
       return true;
     });
   });
@@ -146,7 +144,7 @@ export class ImplementationComponent implements OnInit {
   totalClients          = computed(() => this.cardData().totalAccounts);
   completedClientsCount = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
-  pendingClientsCount = computed(() => this.cardData().notStarted);
+  pendingClientsCount   = computed(() => this.cardData().notStarted);
 
   // ── DataTable config ──────────────────────────────────────────────────────
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
@@ -172,6 +170,8 @@ export class ImplementationComponent implements OnInit {
         },
         { key: 'onboarding_date',  label: 'Onboarded', sortable: true },
         { key: 'overallProgress',  label: 'Progress',  type: 'template', align: 'center' },
+        { key: 'modules',          label: 'Modules',   type: 'template', align: 'center' },
+
       ],
 
       // ── Server-side config ────────────────────────────────────────────────
@@ -215,7 +215,7 @@ export class ImplementationComponent implements OnInit {
       pageSizeOptions: [10, 25, 50],
       exportFileName:  'implementation-progress',
       emptyMessage:    'No implementation records found.',
-      clickable:       true,
+      clickable:       false,
       toolbarButtons: [
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
@@ -239,17 +239,24 @@ export class ImplementationComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    // Fetch card stats
+    // Card data (always fetched separately)
     this.implService.fetchImpCardData().subscribe({
       next: (data) => this.cardData.set(data),
       error: (err) => console.error('Card data error:', err)
     });
 
-    // Fetch table data
-    this.implService.fetchDataTable().subscribe({
-      next: (data) => {
-        const clients = this.mapApiDataToClients(data);
-        this.clients.set(clients);
+    // Grid view — fetch a full page with default params
+    const defaultPayload = {
+      start:   0,
+      length:  1000,
+      search:  '',
+      sorting: JSON.stringify({ require: 0, col: 'orgId', dir: 'desc' }),
+      filter:  JSON.stringify({}),
+    };
+
+    this.implService.fetchDataTable(defaultPayload).subscribe({
+      next: (res: ApiResponse) => {
+        this.clients.set(this.mapApiDataToClients(res.data ?? []));
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -260,75 +267,36 @@ export class ImplementationComponent implements OnInit {
     });
   }
 
-  // Filter, Search, Pagination Handlers
-  setFilterStatus(status: string) {
-    this.statusFilter.set(status);
-    this.currentPage.set(1);
-    this.loadTableData();
-  }
-
-  onSearchQueryChange(query: string) {
-    this.searchQuery.set(query);
-    this.currentPage.set(1);
-    this.loadTableData();
-  }
-
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
-      this.currentPage.set(page);
-      this.loadTableData();
+  private mapApiRowToClient(row: ApiClientRow): Client {
+    const checklist  = this.buildChecklistFromApi(row);
+    const apiModules: Record<string, { completed: number; total: number }> = {};
+    if (row.modules) {
+      Object.entries(row.modules).forEach(([key, val]) => {
+        apiModules[key] = { completed: val.completed, total: val.total };
+      });
     }
+    return {
+      id:              row.orgId,
+      org_id:          row.orgId,
+      name:            row.organization,
+      industry:        '',
+      onboarding_date: this.formatDate(row.onboardedDate),
+      cs_lead:         row.csLead || 'Unassigned',
+      health:          row.health,
+      checklist,
+      overallProgress: {
+        approved:   row.overallProgress?.approved   || 0,
+        total:      row.overallProgress?.total      || 0,
+        percentage: row.overallProgress?.percentage || 0,
+      },
+      apiModules,
+    };
   }
 
-  changePageSize(size: number) {
-    this.pageSize.set(size);
-    this.currentPage.set(1);
-    this.loadTableData();
-  }
-
-  toggleSort(column: string) {
-    if (this.sortColumn() === column) {
-      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
-    } else {
-      this.sortColumn.set(column);
-      this.sortDir.set('asc');
-    }
-    this.loadTableData();
-  }
-
-  // Map API response rows → Client[]
   private mapApiDataToClients(data: ApiClientRow[]): Client[] {
-    return data.map((row, index) => {
-      const checklist = this.buildChecklistFromApi(row);
-      const apiModules: Record<string, { completed: number; total: number }> = {};
-
-      // Store raw API module progress for display in badges
-      if (row.modules) {
-        Object.entries(row.modules).forEach(([key, val]) => {
-          apiModules[key] = { completed: val.completed, total: val.total };
-        });
-      }
-
-      return {
-        id: index + 1,
-        org_id: row.orgId,
-        name: row.organization,
-        industry: '',
-        onboarding_date: this.formatDate(row.onboardedDate),
-        cs_lead: row.csLead || 'Unassigned',
-        health: row.health,
-        checklist,
-        overallProgress: {
-          approved: row.overallProgress?.approved || 0,
-          total: row.overallProgress?.total || 0,
-          percentage: row.overallProgress?.percentage || 0
-        },
-        apiModules
-      };
-    });
+    return data.map(row => this.mapApiRowToClient(row));
   }
 
-  // Build feature-level checklist from API module-level progress
   private buildChecklistFromApi(row: ApiClientRow): Record<number, FeatureChecklistRow> {
     const checklist: Record<number, FeatureChecklistRow> = {};
     this.modules.forEach(mod => {
@@ -361,28 +329,19 @@ export class ImplementationComponent implements OnInit {
   }
 
   getClientProgressPercent(client: Client): number {
-    // Use API overallProgress.percentage if available, else compute from checklist
-    if (client.overallProgress && client.overallProgress.percentage > 0) {
-      return client.overallProgress.percentage;
-    }
+    if (client.overallProgress?.percentage > 0) return client.overallProgress.percentage;
     if (this.totalFeaturesCount === 0) return 0;
     return Math.round((this.getClientApprovedCount(client) / this.totalFeaturesCount) * 100);
   }
 
   getModuleApprovedCount(client: Client, mod: Module): number {
-    // Use API module data if available
-    if (client.apiModules && client.apiModules[mod.key]) {
-      return client.apiModules[mod.key].completed;
-    }
-    if (!client || !client.checklist) return 0;
+    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].completed;
+    if (!client?.checklist) return 0;
     return mod.features.filter(f => client.checklist[f.mod_id]?.approval_status === 1).length;
   }
 
   getModuleTotalCount(client: Client, mod: Module): number {
-    // Use API module total if available
-    if (client.apiModules && client.apiModules[mod.key]) {
-      return client.apiModules[mod.key].total;
-    }
+    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].total;
     return mod.features.length;
   }
 
@@ -398,11 +357,8 @@ export class ImplementationComponent implements OnInit {
     return this.getModuleApprovedCount(client, mod) === 0;
   }
 
-  setFilterStatus(status: string) {
-    this.statusFilter.set(status);
-  }
+  setFilterStatus(status: string) { this.statusFilter.set(status); }
 
-  // Display-only helpers (UI presentation, no functional/business logic change)
   getInitials(name: string): string {
     if (!name) return '';
     return name.split(' ').map(p => p.charAt(0)).join('').slice(0, 2).toUpperCase();
@@ -459,14 +415,9 @@ export class ImplementationComponent implements OnInit {
         completed_at: next === 1 ? stamp : null
       }
     };
-
-    const updatedClient = { ...client, checklist: updatedChecklist };
-
-    // Update state signals
-    this.clients.update(list => list.map(c => c.id === client.id ? updatedClient : c));
-    if (this.selectedClient()?.id === client.id) {
-      this.selectedClient.set(updatedClient);
-    }
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
   }
 
   updateRemark(client: Client, modId: number, event: Event) {

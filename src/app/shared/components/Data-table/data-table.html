@@ -1,7 +1,7 @@
 <div class="st-shell">
 
   <!-- ── Full cover loader ───────────────────────────────────────────────── -->
-  @if (isInitialLoading() || isRefreshing() || isSpinning()) {
+  @if (isInitialLoading() || isSpinning()) {
   <div class="st-loader-overlay">
     <div class="st-loader-inner">
       <div class="st-spinner"></div>
@@ -156,7 +156,7 @@
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
       </div>
-      <div>
+      <div class="text-center flex flex-col items-center">
         <p class="st-error-title">Failed to load data</p>
         <p class="st-error-sub">Something went wrong while fetching data</p>
       </div>
@@ -319,9 +319,9 @@
             }
 
             @case ('template') {
-            @if (col.cellTemplate) {
-            <div class="st-cell-text truncate" [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
-              <ng-container *ngTemplateOutlet="asTemplate(col.cellTemplate); context: { $implicit: row }" />
+            @if (col.cellTemplate || getColumnTemplate(col.key.toString())) {
+            <div class="st-cell-text" [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              <ng-container *ngTemplateOutlet="(col.cellTemplate ? asTemplate(col.cellTemplate) : getColumnTemplate(col.key.toString())!); context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
             </div>
             }
             }
@@ -429,7 +429,7 @@
   <!-- /scroll -->
 
   <!-- ── Footer / Pagination ────────────────────────────────────────────── -->
-  @if (config().showFooter !== false) {
+  @if (config().showFooter !== false && loadState() !== 'error') {
   <div class="st-footer">
 
     <div class="st-showing" (click)="togglePageSizePopover(); $event.stopPropagation()">
