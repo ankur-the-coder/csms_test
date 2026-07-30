@@ -1,0 +1,246 @@
+
+<div class="min-h-screen  font-sans">
+  <!-- Header Card -->
+  <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center">
+        <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 14l9-5-9-5-9 5 9 5zm0 0v6.5" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Training Center</h1>
+    </div>
+    <p class="text-gray-500 text-sm ml-[52px]">
+      Overview of training performance, materials directory, trainer capacity, and client certification.
+    </p>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-white rounded-xl border border-gray-200 p-2 mb-6 flex gap-1">
+    <button
+      *ngFor="let tab of navTabs"
+      (click)="activeNavTab = tab"
+      [class]="activeNavTab === tab
+        ? 'bg-teal-50 text-teal-700 font-medium'
+        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+      class="px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer">
+      {{ tab }}
+    </button>
+  </div>
+
+  @if (activeNavTab === 'Dashboard') {
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div *ngFor="let stat of stats; let i = index"
+        class="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+        <p class="text-[10px] font-semibold text-gray-400 tracking-wider uppercase mb-2">
+          {{ stat.label }}
+        </p>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl font-bold" [class]="getStatValueColor(i)">
+            {{ stat.value }}
+          </span>
+          <span *ngIf="stat.badge"
+            class="text-[10px] font-medium px-2 py-0.5 rounded-full"
+            [class]="getBadgeColor(stat.badgeColor!)">
+            {{ stat.badge }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Actions Bar -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+      <div class="relative w-full sm:w-96">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search sessions, customers, trainers..."
+          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm
+                 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent
+                 bg-white" />
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- View Toggle -->
+        <div class="flex border border-gray-200 rounded-lg overflow-hidden">
+          <button
+            (click)="viewMode = 'list'"
+            [class]="viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-500'"
+            class="px-3 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            List
+          </button>
+          <button
+            (click)="viewMode = 'calendar'"
+            [class]="viewMode === 'calendar' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-500'"
+            class="px-3 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Calendar
+          </button>
+        </div>
+
+        <!-- Create Training Button -->
+        <button
+          class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-5 py-2.5
+                 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Training
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-1 mb-4 overflow-x-auto pb-1">
+      <button
+        *ngFor="let tab of filterTabs"
+        (click)="activeFilterTab = tab"
+        [class]="activeFilterTab === tab
+          ? 'bg-teal-50 text-teal-700 border-teal-200 font-medium'
+          : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50'"
+        class="px-4 py-1.5 rounded-lg text-sm border transition-colors cursor-pointer whitespace-nowrap">
+        {{ tab }}
+      </button>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Training ID
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Session Name
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Customer
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Trainer
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Date
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Time
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Mode
+              </th>
+              <th class="text-left px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="text-center px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let session of filteredSessions"
+              class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+              <td class="px-6 py-4 font-semibold text-gray-900">{{ session.id }}</td>
+              <td class="px-6 py-4 font-medium text-gray-900">{{ session.sessionName }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ session.customer }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ session.trainer }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ session.date }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ session.time }}</td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium
+                             bg-gray-100 text-gray-700 border border-gray-200">
+                  {{ session.mode }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold
+                             border"
+                      [class]="getStatusColor(session.status)">
+                  {{ session.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-3">
+                  <!-- View -->
+                  <button class="text-gray-400 hover:text-teal-600 transition-colors cursor-pointer"
+                    title="View">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <!-- Edit -->
+                  <button class="text-gray-400 hover:text-blue-600 transition-colors cursor-pointer"
+                    title="Edit">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                  <!-- Copy/Clone -->
+                  <button class="text-gray-400 hover:text-purple-600 transition-colors cursor-pointer"
+                    title="Clone">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                  <!-- Approve/Check -->
+                  <button class="text-gray-400 hover:text-green-600 transition-colors cursor-pointer"
+                    title="Approve">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  <!-- Delete -->
+                  <button class="text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                    title="Delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredSessions.length === 0" class="text-center py-12 text-gray-400">
+        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <p class="text-sm">No sessions found for this filter.</p>
+      </div>
+    </div>
+  } @else if (activeNavTab === 'Trainers') {
+    <app-trainer />
+  } @else if (activeNavTab === 'Materials') {
+    <app-training-materials />
+  } @else if (activeNavTab === 'My Trainings') {
+    <app-my-training />
+  }
+</div>
