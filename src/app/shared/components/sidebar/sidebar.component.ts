@@ -30,7 +30,7 @@ export class SidebarComponent implements OnInit {
 
   mainNavItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { id: 'clients', label: 'Clients Directory', icon: 'clients', badge: '256' },
+    { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   ];
 
   csNavItems: NavItem[] = [
@@ -82,6 +82,9 @@ export class SidebarComponent implements OnInit {
 
     }else if (id === 'meetings') {
       this.router.navigate(['/meetings']);
+
+    }else if (id === 'clients') {
+      this.router.navigate(['/client']);
 
     }
   }
