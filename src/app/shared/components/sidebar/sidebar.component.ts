@@ -17,156 +17,7 @@ export interface NavItem {
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <aside 
-      class="h-screen bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-all duration-300 select-none shrink-0"
-      [ngClass]="{'w-64': !collapsed, 'w-20': collapsed}"
-    >
-      <!-- Brand Logo Header (100% Clean - No Toggle Button Here) -->
-      <div 
-        class="h-16 flex items-center border-b border-slate-800 bg-slate-950/80 transition-all"
-        [ngClass]="{'px-5 justify-start': !collapsed, 'px-2 justify-center': collapsed}"
-      >
-        <div 
-          class="flex items-center gap-3 overflow-hidden cursor-pointer" 
-          (click)="selectNav('dashboard')"
-          [title]="collapsed ? 'UBITECH CSMS Platform' : ''"
-        >
-          <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-indigo-500/20 shrink-0">
-            C
-          </div>
-          <div *ngIf="!collapsed" class="flex flex-col min-w-0">
-            <span class="font-extrabold text-white tracking-wide text-sm leading-tight">UBITECH</span>
-            <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">CSMS Platform</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Navigation Links -->
-      <div class="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-        
-        <!-- Main Navigation Section -->
-        <div>
-          <div *ngIf="!collapsed" class="px-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">
-            Main Menu
-          </div>
-          <nav class="space-y-1">
-            <button 
-              *ngFor="let item of mainNavItems"
-              (click)="selectNav(item.id)"
-              class="w-full flex items-center rounded-xl text-sm font-medium transition-all group relative cursor-pointer"
-              [ngClass]="{
-                'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30': activeNav === item.id,
-                'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60': activeNav !== item.id,
-                'px-3 py-2.5 gap-3 justify-start': !collapsed,
-                'p-2.5 justify-center': collapsed
-              }"
-            >
-              <div class="w-5 h-5 flex items-center justify-center shrink-0" [innerHTML]="getSvgIcon(item.icon)"></div>
-              
-              <span *ngIf="!collapsed" class="truncate flex-1 text-left">{{ item.label }}</span>
-
-              <span 
-                *ngIf="item.badge && !collapsed" 
-                class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-              >
-                {{ item.badge }}
-              </span>
-
-              <!-- Hover Tooltip on Collapsed Sidebar -->
-              <div 
-                *ngIf="collapsed" 
-                class="absolute left-full ml-3 px-3 py-1.5 bg-slate-950 text-white text-xs font-semibold rounded-lg shadow-2xl border border-slate-800 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 flex items-center gap-2"
-              >
-                <span>{{ item.label }}</span>
-                <span *ngIf="item.badge" class="px-1.5 py-0.2 text-[9px] bg-indigo-500/30 text-indigo-200 rounded font-bold">{{ item.badge }}</span>
-              </div>
-            </button>
-          </nav>
-        </div>
-
-        <!-- CS Management Section -->
-        <div>
-          <div *ngIf="!collapsed" class="px-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-2">
-            Customer Success
-          </div>
-          <nav class="space-y-1">
-            <button 
-              *ngFor="let item of csNavItems"
-              (click)="selectNav(item.id)"
-              class="w-full flex items-center rounded-xl text-sm font-medium transition-all group relative cursor-pointer"
-              [ngClass]="{
-                'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30': activeNav === item.id,
-                'text-slate-400 hover:text-slate-100 hover:bg-slate-800/60': activeNav !== item.id,
-                'px-3 py-2.5 gap-3 justify-start': !collapsed,
-                'p-2.5 justify-center': collapsed
-              }"
-            >
-              <div class="w-5 h-5 flex items-center justify-center shrink-0" [innerHTML]="getSvgIcon(item.icon)"></div>
-              
-              <span *ngIf="!collapsed" class="truncate flex-1 text-left">{{ item.label }}</span>
-
-              <span 
-                *ngIf="item.badge && !collapsed" 
-                class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-              >
-                {{ item.badge }}
-              </span>
-
-              <div 
-                *ngIf="collapsed" 
-                class="absolute left-full ml-3 px-3 py-1.5 bg-slate-950 text-white text-xs font-semibold rounded-lg shadow-2xl border border-slate-800 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 flex items-center gap-2"
-              >
-                <span>{{ item.label }}</span>
-                <span *ngIf="item.badge" class="px-1.5 py-0.2 text-[9px] bg-emerald-500/30 text-emerald-200 rounded font-bold">{{ item.badge }}</span>
-              </div>
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      <!-- Footer / Bottom Collapse Control & System Info -->
-      <div class="p-3 border-t border-slate-800 bg-slate-950/80 space-y-2">
-        
-        <!-- Primary Collapse / Expand Button ONLY at Bottom -->
-        <button 
-          (click)="toggleCollapse()"
-          class="w-full flex items-center rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700/60 cursor-pointer shadow-xs group"
-          [ngClass]="{'px-3 py-2 justify-between': !collapsed, 'h-10 w-10 mx-auto justify-center': collapsed}"
-          [title]="collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'"
-        >
-          <span *ngIf="!collapsed" class="text-xs font-bold text-slate-300">Collapse Sidebar</span>
-          <div class="h-6 w-6 rounded-lg bg-slate-700/50 group-hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-all">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              class="h-4 w-4 text-slate-300 transition-transform duration-300"
-              [ngClass]="{'rotate-180': collapsed}"
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            </svg>
-          </div>
-        </button>
-
-        <!-- System Health Status Indicator -->
-        <div 
-          class="flex items-center rounded-xl bg-slate-800/30 border border-slate-700/40"
-          [ngClass]="{'px-3 py-2 gap-3': !collapsed, 'p-1.5 justify-center border-none bg-transparent': collapsed}"
-        >
-          <div class="h-7 w-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          </div>
-          <div *ngIf="!collapsed" class="flex flex-col min-w-0">
-            <span class="text-[11px] font-bold text-slate-200 truncate">CSMS Engine</span>
-            <span class="text-[9px] font-medium text-slate-400">Status: v2.4 Active</span>
-          </div>
-        </div>
-
-      </div>
-    </aside>
-  `
+  templateUrl: `./sidebar.component.html`
 })
 export class SidebarComponent implements OnInit {
   private sanitizer = inject(DomSanitizer);
@@ -186,7 +37,7 @@ export class SidebarComponent implements OnInit {
     { id: 'onboarding', label: 'Onboarding', icon: 'onboarding' },
     { id: 'implementation', label: 'Implementation Status', icon: 'implementation', badge: 'Active', route: '/implementation' },
     { id: 'training', label: 'Training Center', icon: 'training' },
-    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings' },
+    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'health', label: 'Health Score', icon: 'health' },
     { id: 'support', label: 'Support Tickets', icon: 'support', badge: '34' },
     { id: 'settings', label: 'Settings & Master', icon: 'settings' }
@@ -221,6 +72,9 @@ export class SidebarComponent implements OnInit {
       this.router.navigate(['/dashboard']);
     } else if (id === 'implementation') {
       this.router.navigate(['/implementation']);
+    }
+    else if (id === 'meetings') {
+      this.router.navigate(['/meetings']);
     }
   }
 
