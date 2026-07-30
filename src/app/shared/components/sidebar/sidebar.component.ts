@@ -34,7 +34,7 @@ export class SidebarComponent implements OnInit {
   ];
 
   csNavItems: NavItem[] = [
-    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding' },
+    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', badge: 'Active', route: '/onboarding' },
     { id: 'implementation', label: 'Implementation Status', icon: 'implementation', badge: 'Active', route: '/implementation' },
     { id: 'training', label: 'Training Center', icon: 'training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
@@ -55,6 +55,9 @@ export class SidebarComponent implements OnInit {
   private updateActiveFromRoute(url: string) {
     if (url.includes('implementation')) {
       this.activeNav = 'implementation';
+    }
+    if (url.includes('onboarding')) {
+      this.activeNav = 'onboarding';
     } else if (url.includes('dashboard')) {
       this.activeNav = 'dashboard';
     }
@@ -72,6 +75,10 @@ export class SidebarComponent implements OnInit {
       this.router.navigate(['/dashboard']);
     } else if (id === 'implementation') {
       this.router.navigate(['/implementation']);
+    }
+
+    else if (id === 'onboarding') {
+      this.router.navigate(['/onboarding']);
     }
     else if (id === 'meetings') {
       this.router.navigate(['/meetings']);
@@ -95,3 +102,8 @@ export class SidebarComponent implements OnInit {
     return this.sanitizer.bypassSecurityTrustHtml(icons[type] || '');
   }
 }
+
+
+
+
+//implementation,training,uses
