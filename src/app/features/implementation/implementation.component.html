@@ -163,43 +163,23 @@
 
   </div>
 
-  <!-- ===== GRID VIEW ===== -->
-  @if (viewMode() === 'grid') {
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+ 
+  <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
+  @if (viewMode() === 'table') {
+  <div class="card p-0 overflow-hidden">
+    <app-data-table
+      [config]="tableConfig()"
+      [filterNames]="['leadOwner', 'supportOwner',
+     'rating', 'country'
+    , 'dateRange']">
 
-    @for (client of filteredClients(); track $index) {
-    <div
-      (click)="openClientDetails(client)"
-      class="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-indigo-300 transition-all duration-300 flex flex-col justify-between cursor-pointer group overflow-hidden relative"
-    >
-      <!-- Top Colored Edge -->
-      <div
-        class="h-1.5 w-full transition-all"
-        [class.bg-emerald-500]="isComplete(client)"
-        [class.bg-amber-500]="isInProgress(client)"
-        [class.bg-slate-300]="isNotStarted(client)"
-      ></div>
-
-      <div class="p-5">
-        <!-- Header -->
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-2">
-              {{ client.organization }}
-              <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </h3>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                #{{ client.orgId }}
-              </span>
-              <span
-                class="px-2 py-0.5 rounded-full text-[11px] font-bold border"
-                [class]="getHealthBadgeClasses(client.health)"
-              >
-                {{ client.health }}
-              </span>
+      <!-- Custom progress cell template -->
+      <ng-template appCustomColumn="overallProgress" let-row>
+        <div class="flex items-center gap-2 min-w-[120px]">
+          <div class="flex-1 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500"
+                 [style.width.%]="getClientProgressPercent(row)"
+                 [style.background]="getProgressColor(getClientProgressPercent(row))">
             </div>
           </div>
           <!-- Progress % badge -->

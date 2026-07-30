@@ -52,11 +52,9 @@
 
 /* Consistent, visible keyboard focus everywhere interactive */
 .st-shell button:focus-visible,
-.st-shell input:focus-visible,
 .st-shell select:focus-visible,
 .st-shell [tabindex]:focus-visible {
   outline: none;
-  box-shadow: var(--st-focus-ring);
 }
 
 /* ── Shell ───────────────────────────────────────────────────────────────── */
@@ -1296,4 +1294,17 @@
   .st-th {
     position: static;
   }
+}
+
+/* Allow dropdowns inside modal grid to pop over cleanly */
+.st-modal-body {
+  overflow-y: visible !important; /* Prevents modal body from clipping absolute popovers */
+}
+
+.st-filter-field {
+  position: relative; /* Ensures z-index stacking works per field */
+}
+
+.st-filter-field:focus-within {
+  z-index: 50; /* Brings the currently active field to the top of the stack */
 }
