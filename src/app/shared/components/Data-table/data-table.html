@@ -218,25 +218,20 @@
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <<<<<<< Updated upstream <div class="text-center flex flex-col items-center">
-        <p class="st-error-title">Failed to load data</p>
-        <p class="st-error-sub">Something went wrong while fetching data</p>
-        =======
-        <div>
-          <p class="st-error-title text-[15px] font-semibold text-[--st-text]">Failed to load data</p>
-          <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">Something went wrong while
-            fetching data</p>
-          >>>>>>> Stashed changes
-        </div>
-        <button
-          class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
-          (click)="refresh()" type="button">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Retry
-        </button>
+      <div>
+        <p class="st-error-title text-[15px] font-semibold text-[--st-text]">Failed to load data</p>
+        <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">Something went wrong while
+          fetching data</p>
+      </div>
+      <button
+        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        (click)="refresh()" type="button">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        Retry
+      </button>
     </div>
     } @else {
 
@@ -422,42 +417,35 @@
             }
 
             @case ('template') {
-            <<<<<<< Updated upstream @if (col.cellTemplate || getColumnTemplate(col.key.toString())) { <div
-              class="st-cell-text"
+            @if (col.cellTemplate) {
+            <div class="st-cell-text truncate"
+              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              <ng-container *ngTemplateOutlet="asTemplate(col.cellTemplate); context: { $implicit: row }" />
+            </div>
+            }
+            }
+
+            @default {
+            @if (isImage(getCellValue(row, col.key))) {
+            <img [src]="getCellValue(row, col.key)" alt="image"
+              class="w-12 h-12 object-cover rounded-lg border border-card-border transition-colors duration-150 hover:border-[--st-accent] hover:scale-105" />
+            } @else if (getColumnTemplate(col.key.toString())) {
+            <div class="st-cell-text truncate"
               [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
               <ng-container
-                *ngTemplateOutlet="(col.cellTemplate ? asTemplate(col.cellTemplate) : getColumnTemplate(col.key.toString())!); context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
-              =======
-              @if (col.cellTemplate) {
-              <div class="st-cell-text truncate"
-                [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
-                <ng-container *ngTemplateOutlet="asTemplate(col.cellTemplate); context: { $implicit: row }" />
-                >>>>>>> Stashed changes
-              </div>
-              }
-              }
+                *ngTemplateOutlet="getColumnTemplate(col.key.toString())!; context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
+            </div>
+            } @else if (col.allowHtml) {
+            <div class="st-cell-text truncate" [innerHTML]="formatCellValue(getCellValue(row, col.key))"></div>
+            } @else {
+            <span class="st-cell-text"
+              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+              {{ truncateCellValue(getCellValue(row, col.key)) }}
+            </span>
+            }
+            }
 
-              @default {
-              @if (isImage(getCellValue(row, col.key))) {
-              <img [src]="getCellValue(row, col.key)" alt="image"
-                class="w-12 h-12 object-cover rounded-lg border border-card-border transition-colors duration-150 hover:border-[--st-accent] hover:scale-105" />
-              } @else if (getColumnTemplate(col.key.toString())) {
-              <div class="st-cell-text truncate"
-                [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
-                <ng-container
-                  *ngTemplateOutlet="getColumnTemplate(col.key.toString())!; context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
-              </div>
-              } @else if (col.allowHtml) {
-              <div class="st-cell-text truncate" [innerHTML]="formatCellValue(getCellValue(row, col.key))"></div>
-              } @else {
-              <span class="st-cell-text"
-                [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
-                {{ truncateCellValue(getCellValue(row, col.key)) }}
-              </span>
-              }
-              }
-
-              }
+            }
           </td>
           }
 
