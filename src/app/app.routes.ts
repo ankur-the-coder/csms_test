@@ -22,8 +22,6 @@ export const routes: Routes = [
   { path: 'add-onboarding', component: AddOnboarding },
   { path: 'meetings', component: MeetingsComponent },
 
-
-
   { path: 'client', component: Client },
   { path: 'meetings/schedule', component: ScheduleMeeting },
 
