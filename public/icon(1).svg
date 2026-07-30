@@ -1,0 +1,15 @@
+<svg viewBox="0 0 512 512" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Clean White Background -->
+  <rect width="512" height="512" rx="40" fill="#FFFFFF"/>
+  <rect x="16" y="16" width="480" height="480" rx="32" fill="none" stroke="#F1F5F9" stroke-width="8"/>
+  
+  <!-- Bold Two-Tone UC Monogram -->
+  <text x="256" y="325" 
+        font-family="'Inter', 'Arial Black', sans-serif" 
+        font-weight="900" 
+        font-size="270" 
+        text-anchor="middle" 
+        letter-spacing="-12">
+    <tspan fill="#0F172A">U</tspan><tspan fill="#2563EB">C</tspan>
+  </text>
+</svg>
