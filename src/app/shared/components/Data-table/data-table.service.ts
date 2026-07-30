@@ -18,10 +18,167 @@ export class DataTableService {
    * Returns an empty TableFilter on error so the UI doesn't break.
    */
   getFilterOptions(name: string): Observable<TableFilter> {
-    return this.http.get<any>(`/api/filters/${name}`).pipe(
-      map((res) => res as TableFilter),
-      catchError(() => of({ key: name, label: name, options: [] } as TableFilter))
-    );
+    switch (name) {
+      case 'health':
+        return of({
+          key: 'health',
+          label: 'Health',
+          options: [
+            { label: 'Excellent', value: 'Excellent' },
+            { label: 'Good',      value: 'Good' },
+            { label: 'Neutral',   value: 'Neutral' },
+            { label: 'Risk',      value: 'Risk' },
+          ],
+        });
+
+      case 'gender':
+        return of({
+          key: 'gender',
+          label: 'Gender',
+          multiSelect: true,
+          options: [
+            { label: 'Male',   value: 'Male' },
+            { label: 'Female', value: 'Female' },
+          ],
+        });
+
+      case 'leadOwner':
+        return of({
+          key: 'leadOwner',
+          label: 'Lead Owner',
+          searchable: true,
+          options: [
+            { label: 'Amit Sharma', value: 'amit' },
+            { label: 'Priya Singh', value: 'priya' },
+            { label: 'Rahul Verma', value: 'rahul' },
+          ],
+        });
+        // TODO: replace with a real endpoint, e.g.:
+        // return this.http.get<any>('/api/users?role=lead_owner').pipe(
+        //   map(res => ({
+        //     key: 'leadOwner', label: 'Lead Owner', searchable: true,
+        //     options: res.data.map((u: any) => ({ label: u.name, value: String(u.id) })),
+        //   }))
+        // );
+
+      case 'supportOwner':
+        return of({
+          key: 'supportOwner',
+          label: 'Support Owner',
+          searchable: true,
+          options: [
+            { label: 'Sneha Iyer',  value: 'sneha' },
+            { label: 'Karan Mehta', value: 'karan' },
+          ],
+        });
+
+      case 'renewalOwner':
+        return of({
+          key: 'renewalOwner',
+          label: 'Renewal Owner',
+          searchable: true,
+          options: [
+            { label: 'Anita Rao',  value: 'anita' },
+            { label: 'Vikram Nair', value: 'vikram' },
+          ],
+        });
+
+      case 'leadSource':
+        return of({
+          key: 'leadSource',
+          label: 'Lead Source',
+          options: [
+            { label: 'Website',   value: 'website' },
+            { label: 'Referral',  value: 'referral' },
+            { label: 'Cold Call', value: 'cold_call' },
+            { label: 'Social',    value: 'social' },
+          ],
+        });
+
+      case 'reseller':
+        return of({
+          key: 'reseller',
+          label: 'Reseller',
+          searchable: true,
+          options: [
+            { label: 'Partner A', value: 'partner_a' },
+            { label: 'Partner B', value: 'partner_b' },
+          ],
+        });
+
+      case 'tags':
+        return of({
+          key: 'tags',
+          label: 'Tags',
+          multiSelect: true,
+          searchable: true,
+          options: [
+            { label: 'Hot',  value: 'hot' },
+            { label: 'Cold', value: 'cold' },
+            { label: 'VIP',  value: 'vip' },
+          ],
+        });
+
+      case 'rating':
+        return of({
+          key: 'rating',
+          label: 'Rating',
+          options: [
+            { label: 'Hot',  value: 'Hot' },
+            { label: 'Warm', value: 'Warm' },
+            { label: 'Cold', value: 'Cold' },
+          ],
+        });
+
+      case 'country':
+        return of({
+          key: 'country',
+          label: 'Country',
+          searchable: true,
+          options: [
+            { label: 'India', value: 'India' },
+            { label: 'USA',   value: 'USA' },
+            { label: 'UK',    value: 'UK' },
+          ],
+        });
+
+      case 'emailStatus':
+        return of({
+          key: 'emailStatus',
+          label: 'Email Status',
+          options: [
+            { label: 'Verified',   value: 'verified' },
+            { label: 'Bounced',    value: 'bounced' },
+            { label: 'Unverified', value: 'unverified' },
+          ],
+        });
+
+      case 'stage':
+        return of({
+          key: 'stage',
+          label: 'Stages',
+          options: [
+            { label: 'New',        value: 'new' },
+            { label: 'Contacted',  value: 'contacted' },
+            { label: 'Qualified',  value: 'qualified' },
+            { label: 'Closed Won', value: 'closed_won' },
+          ],
+        });
+
+      case 'dateRange':
+        return of({
+          key: 'dateRange',
+          label: 'Date Range',
+          type: 'daterange',
+          options: [],
+        });
+
+      default:
+        return this.http.get<any>(`/api/filters/${name}`).pipe(
+          map((res) => res as TableFilter),
+          catchError(() => of({ key: name, label: name, options: [] } as TableFilter))
+        );
+    }
   }
 
   /**

@@ -1,3 +1,4 @@
+
 <div class="space-y-6 pb-12">
 
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
@@ -112,7 +113,10 @@
   @if (viewMode() === 'table') {
   <div class="card p-0 overflow-hidden">
     <app-data-table
-      [config]="tableConfig()">
+      [config]="tableConfig()"
+      [filterNames]="['leadOwner', 'supportOwner',
+     'rating', 'country'
+    , 'dateRange']">
 
       <!-- Custom progress cell template -->
       <ng-template appCustomColumn="overallProgress" let-row>

@@ -1,9 +1,10 @@
 import { Component, signal, computed, OnInit, inject, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ImplementationService, ApiClientRow, ApiResponse, CardData } from './implementation.service';
+import { ImplementationService} from './implementation.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
-import { SmartTableConfig, RowAction, RowActionEvent, CustomRowAction } from '../../shared/components/Data-table/data-table.types';
+import { SmartTableConfig, RequestContext } from '../../shared/components/Data-table/data-table.types';
+import { Implementation, Datum, CardData, DataTablePayload } from './implentation.model';
 
 export interface Feature {
   mod_id: number;
@@ -146,6 +147,21 @@ export class ImplementationComponent implements OnInit {
   inProgressClientsCount = computed(() => this.cardData().inProgress);
   pendingClientsCount   = computed(() => this.cardData().notStarted);
 
+  // ── Filter option sources for the DataTable's built-in filter modal ───────
+  // 'csLead' options come from the data we already loaded — no extra endpoint
+  // needed. Recomputes automatically whenever `clients()` changes (e.g. after
+  // a refresh or a new page of data arrives).
+  csLeadFilterOptions = computed(() => {
+    const leads = new Set(
+      this.clients()
+        .map(c => c.cs_lead)
+        .filter((v): v is string => !!v)
+    );
+    return Array.from(leads)
+      .sort((a, b) => a.localeCompare(b))
+      .map(label => ({ label, value: label }));
+  });
+
   // ── DataTable config ──────────────────────────────────────────────────────
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
 
@@ -184,12 +200,13 @@ export class ImplementationComponent implements OnInit {
          * Builds the POST body in the exact format the API expects:
          * { start, length, search, sorting: "<JSON>", filter: "<JSON>" }
          */
-        buildRequest: (ctx) => {
-          // Merge the active status-filter tab into the filter object.
+        buildRequest: (ctx: RequestContext) => {
+          // Merge the active status-filter tab AND the table's own filter
+          // modal selections (csLead, health, ...) into the filter object.
           const filterObj: Record<string, any> = { ...ctx.filters };
           if (statusFilter !== 'all') filterObj['status'] = statusFilter;
 
-          const body = {
+          const body: DataTablePayload = {
             start:   ctx.page * ctx.pageSize,          // offset
             length:  ctx.pageSize,                     // page size
             search:  ctx.search ?? '',
@@ -199,26 +216,31 @@ export class ImplementationComponent implements OnInit {
               dir: ctx.sortDir ?? 'desc',
             }),
             filter: JSON.stringify(filterObj),
+            tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0
           };
 
           return { method: 'POST' as const, body };
         },
 
         /** Maps each raw API row to the Client shape the rest of the UI uses. */
-        transformRow: (row: any) => this.mapApiRowToClient(row as ApiClientRow),
+        transformRow: (row: any) => this.mapApiRowToClient(row as Datum),
       },
 
       rowIdKey:        'id',
       showSearch:      true,
       showPagination:  true,
       defaultPageSize: 10,
-      pageSizeOptions: [10, 25, 50],
+      // selectable:true,
+      pageSizeOptions: [10, 25, 50,100,500],
       exportFileName:  'implementation-progress',
       emptyMessage:    'No implementation records found.',
       clickable:       false,
       toolbarButtons: [
+        { id: 'filter',  type: 'filter',  label: 'Filter' },
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
+        { id: 'columns', type: 'columnPicker', label: 'Columns' },
+        
       ],
       customRowActions: [
         {
@@ -228,7 +250,14 @@ export class ImplementationComponent implements OnInit {
           tooltip: 'Open detail drawer',
           onClick: (row: Client) => this.openClientDetails(row),
         }
-      ]
+      ],
+
+      // 'health' is resolved via filterNames + DataTableService (static enum).
+      // 'csLead' is defined here directly since its options come from data
+      // already loaded on the client (not a separate API call).
+      filters: [
+        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
+      ],
     };
   });
 
@@ -245,17 +274,17 @@ export class ImplementationComponent implements OnInit {
       error: (err) => console.error('Card data error:', err)
     });
 
-    // Grid view — fetch a full page with default params
-    const defaultPayload = {
-      start:   0,
-      length:  1000,
-      search:  '',
+    const payload: DataTablePayload = {
+      start: 0,
+      length: 100,
+      search: '',
       sorting: JSON.stringify({ require: 0, col: 'orgId', dir: 'desc' }),
-      filter:  JSON.stringify({}),
+      filter: JSON.stringify({}),
+      tabSts: 0
     };
 
-    this.implService.fetchDataTable(defaultPayload).subscribe({
-      next: (res: ApiResponse) => {
+    this.implService.fetchDataTable(payload).subscribe({
+      next: (res: Implementation) => {
         this.clients.set(this.mapApiDataToClients(res.data ?? []));
         this.isLoading.set(false);
       },
@@ -267,12 +296,13 @@ export class ImplementationComponent implements OnInit {
     });
   }
 
-  private mapApiRowToClient(row: ApiClientRow): Client {
+  private mapApiRowToClient(row: Datum): Client {
     const checklist  = this.buildChecklistFromApi(row);
     const apiModules: Record<string, { completed: number; total: number }> = {};
     if (row.modules) {
       Object.entries(row.modules).forEach(([key, val]) => {
-        apiModules[key] = { completed: val.completed, total: val.total };
+        const m = val as { completed: number; total: number };
+        apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
       });
     }
     return {
@@ -280,7 +310,7 @@ export class ImplementationComponent implements OnInit {
       org_id:          row.orgId,
       name:            row.organization,
       industry:        '',
-      onboarding_date: this.formatDate(row.onboardedDate),
+      onboarding_date: this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
       cs_lead:         row.csLead || 'Unassigned',
       health:          row.health,
       checklist,
@@ -293,11 +323,11 @@ export class ImplementationComponent implements OnInit {
     };
   }
 
-  private mapApiDataToClients(data: ApiClientRow[]): Client[] {
+  private mapApiDataToClients(data: Datum[]): Client[] {
     return data.map(row => this.mapApiRowToClient(row));
   }
 
-  private buildChecklistFromApi(row: ApiClientRow): Record<number, FeatureChecklistRow> {
+  private buildChecklistFromApi(row: Datum): Record<number, FeatureChecklistRow> {
     const checklist: Record<number, FeatureChecklistRow> = {};
     this.modules.forEach(mod => {
       const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
@@ -307,8 +337,8 @@ export class ImplementationComponent implements OnInit {
         checklist[feat.mod_id] = {
           approval_status: isApproved ? 1 : 0,
           remark: isApproved ? 'Verified & approved' : '',
-          started_at:   isApproved ? this.formatDate(row.onboardedDate) : null,
-          completed_at: isApproved ? this.formatDate(row.onboardedDate) : null
+          started_at:   isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null,
+          completed_at: isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null
         };
       });
     });
