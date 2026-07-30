@@ -95,11 +95,12 @@ export interface CustomRowAction<T> {
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 export type ToolbarButtonType =
+   | 'datePicker'
   | 'filter'
   | 'refresh'
   | 'export'
   | 'columnPicker'
-  | 'datePicker'
+  
   | 'custom';
 
 export interface ToolbarButton<T = any> {
