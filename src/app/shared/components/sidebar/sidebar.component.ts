@@ -76,16 +76,22 @@ export class SidebarComponent implements OnInit {
     } else if (id === 'implementation') {
       this.router.navigate(['/implementation']);
     }
+
     else if (id === 'training') {
       this.router.navigate(['/training']);
     }
+
+
     else if (id === 'onboarding') {
       this.router.navigate(['/onboarding']);
-    }
-    else if (id === 'meetings') {
+
+    }else if (id === 'meetings') {
       this.router.navigate(['/meetings']);
-    } else if (id === 'clients') {
+
+    }else if (id === 'clients') {
+
       this.router.navigate(['/client']);
+
     }
   }
 

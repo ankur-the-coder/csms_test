@@ -240,7 +240,7 @@ export class ImplementationComponent implements OnInit {
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
-        
+        { id: 'date', type: 'datePicker', label: 'Date' }
       ],
       customRowActions: [
         {
