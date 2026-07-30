@@ -18,6 +18,7 @@ export interface DataTablePayload {
   search: string; 
   sorting: string; 
   filter: string; 
+  tabSts: number;
 }
 
 
