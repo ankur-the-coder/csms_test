@@ -5,6 +5,7 @@ import { ImplementationComponent } from './features/implementation/implementatio
 import { Dashboard } from './features/onboarding/components/dashboard/dashboard';
 
 import { MeetingsComponent } from './features/meetings/meetings';
+import { Client } from './features/client/client/client';
 
 
 export const routes: Routes = [
@@ -15,6 +16,6 @@ export const routes: Routes = [
   { path: 'onboarding', component: Dashboard },
 
   { path: 'meetings', component: MeetingsComponent },
-
+  { path: 'client', component: Client },
   { path: '**', redirectTo: 'dashboard' }
 ];

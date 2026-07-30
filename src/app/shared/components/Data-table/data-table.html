@@ -154,6 +154,9 @@
   </div>
   <!-- /toolbar -->
 
+
+  <app-date-picker></app-date-picker>
+
   <!-- ── Active filter chips ─────────────────────────────────────────────── -->
   @if (hasActiveFilter()) {
   <div
@@ -593,7 +596,7 @@
   <button
     class="st-pagesize-btn w-full px-3.5 py-2 text-[13px] font-medium font-inherit text-left bg-transparent border-none cursor-pointer text-[--st-text2] rounded-[8px] transition-colors duration-150 hover:bg-[--st-row-hover] hover:text-[--st-text] [&.active]:bg-[--st-accent] [&.active]:text-white [&.active]:font-semibold"
     [class.active]="pageSize() === size"
-    (click)="onPageSizeChange(size); pageSizePopoverOpen.set(false); $event.stopPropagation()" 
+    (click)="onPageSizeChange(size); pageSizePopoverOpen.set(false); $event.stopPropagation()"
     type="button">
     {{ size }} Per Page
   </button>
@@ -744,8 +747,8 @@
     <span class="truncate block pr-2 text-[13px]" [class.text-[--st-text2]]="!hasSelections(filter.key)">
       {{ getMultiSelectDisplay(filter.key) || '-- Select ' + filter.label + ' --' }}
     </span>
-    <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200" 
-         [class.rotate-180]="isDropdownOpen(filter.key)" 
+    <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200"
+         [class.rotate-180]="isDropdownOpen(filter.key)"
          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="6 9 12 15 18 9"/>
     </svg>
@@ -754,7 +757,7 @@
   <!-- Dropdown Popover -->
   @if (isDropdownOpen(filter.key)) {
   <div class="absolute top-[calc(100%+4px)] left-0 w-full z-[2000] bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-xl] overflow-hidden flex flex-col max-h-[240px] animate-[st-dropdown_0.15s_ease-out]">
-    
+
     <!-- Search Bar for API Filtering -->
     <div class="p-2 border-b border-[--st-border] bg-[--st-surface] sticky top-0 z-10">
       <div class="relative flex items-center">
@@ -778,7 +781,7 @@
         <span class="flex-1 truncate select-none">{{ opt.label }}</span>
       </label>
       }
-      
+
       @if (!(filter.options ?? []).length) {
       <div class="px-2.5 py-4 text-center text-[12px] text-[--st-text3]">
         No options found

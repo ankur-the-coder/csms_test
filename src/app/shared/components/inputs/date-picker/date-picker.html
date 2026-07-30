@@ -1,0 +1,232 @@
+<div class="custom-select-container relative">
+  <!-- Label -->
+  @if(label){
+<div class="flex items-center space-x-2  mb-1">
+    <label class="block text-[13px]  text-text-secondary">{{ label }}</label>
+    @if(required){
+      <span class="text-red-600 font-bold text-xs" aria-hidden="true">*</span>
+    }
+  </div>
+  }
+  @if(navigationButtons){
+    <div class="flex items-center justify-center border border-card-border rounded-md bg-card-bg sm:w-auto px-1">
+      <!-- Back Button -->
+      <button
+      type="button"
+      (click)="navigateDate('back')"
+      [disabled]="disabled || !canNavigateBack()"
+      [ngClass]="{'opacity-50': disabled || !canNavigateBack(), 'cursor-not-allowed': disabled || !canNavigateBack()}"
+                  class="p-1.5 text-text-muted hover:text-brand-600 hover:bg-brand-500/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"></path>
+            </svg>
+    </button>
+
+      <!-- Date Display (centered) -->
+      <div
+        (click)="toggleDatepicker()"
+        [ngClass]="{'opacity-50': disabled, 'text-text-secondary': selectedDate, 'text-text-muted': !selectedDate}"
+        class="py-1.5 px-4 block w-full text-center bg-card-bg border-card-border rounded-md text-sm disabled:bg-body-bg disabled:border-transparent cursor-pointer">
+        {{ selectedDate ? (selectedDate | date : 'dd MMM, yyyy') : placeHolder }}
+      </div>
+
+      <!-- Forward Button -->
+      <button
+        type="button"
+        (click)="navigateDate('forward')"
+        [disabled]="disabled || !canNavigateForward()"
+        [ngClass]="{'opacity-50': disabled || !canNavigateForward(), 'cursor-not-allowed': disabled || !canNavigateForward()}"
+       class="p-1.5 text-text-muted hover:text-brand-600 hover:bg-brand-500/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"></path>
+            </svg>
+      </button>
+    </div>
+  }@else{
+    <input
+    type="text"
+    [value]="selectedDate | date : 'dd MMMM, yyyy'"
+    (click)="toggleDatepicker()"
+    [placeholder]="placeHolder"
+    readonly
+    [disabled]="disabled"
+    [ngClass]="addClass"
+    class="py-1.5 px-2 block w-full text-text-secondary bg-card-bg placeholder-text-muted border border-card-border rounded-md text-sm disabled:bg-body-bg disabled:border-transparent cursor-pointer"
+  />
+  }
+
+<div
+  *ngIf="isOpen"
+  [ngClass]="useFixedPosition ? 'fixed z-[9999]' : {
+    'absolute z-[1400] mt-2': true,
+    'top-full left-1/2 transform -translate-x-1/2': dropdownPosition === 'bottom',
+    'bottom-full left-1/2 transform -translate-x-1/2 mb-2': dropdownPosition === 'top',
+    'top-0 left-full ml-2': dropdownPosition === 'right',
+    'top-0 right-full mr-2': dropdownPosition === 'left'
+  }"
+  [ngStyle]="useFixedPosition ? dropdownStyles : {}"
+>
+    <div
+      class="bg-card-bg border border-card-border rounded-xl shadow-[var(--shadow-dropdown)] p-2 w-max min-w-[220px]"
+    >
+      <div class="space-y-1">
+        <!-- Months and Year Selection -->
+        <div class="flex items-center pb-2 justify-between text-text-secondary border-b border-card-border mb-2">
+          <!-- Prev Button -->
+          <div class="flex justify-start">
+            <button
+              type="button"
+              (click)="prevMonth()"
+              [disabled]="isPrevMonthDisabled()"
+              class="size-6 flex justify-center items-center text-text-secondary hover:bg-table-row-hover rounded-full transition-colors disabled:opacity-50"
+            >
+              <svg
+                class="flex-shrink-0 size-4"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Month / Year -->
+          <div class="flex justify-center items-center gap-x-1 w-36">
+
+            <!-- Custom Month Dropdown -->
+            <div class="relative">
+              <button
+                type="button"
+                (click)="toggleMonthDropdown()"
+                class="block py-1 px-1.5 w-20 font-medium text-text-secondary text-center border border-transparent hover:border-card-border rounded-md text-sm focus:border-brand-500 focus:ring-brand-500 bg-transparent cursor-pointer transition-all"
+              >
+                {{ months[currentMonth] | slice:0:3 }}
+              </button>
+
+              <div *ngIf="isMonthDropdownOpen" class="month-dropdown absolute top-full left-0 mt-1 w-24 max-h-36 overflow-y-auto bg-card-bg border border-card-border rounded-md shadow-lg z-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <button
+                  *ngFor="let month of months; let i = index"
+                  type="button"
+                  [disabled]="isMonthDisabled(i)"
+                  (click)="currentMonth = i; generateCalendar(); isMonthDropdownOpen = false"
+                  [ngClass]="{'bg-brand-500 text-white font-medium': i === currentMonth, 'opacity-50 cursor-not-allowed': isMonthDisabled(i), 'text-text-secondary hover:bg-table-row-hover': i !== currentMonth}"
+                  class="block w-full text-center px-2 py-1.5 text-xs transition-colors"
+                >
+                  {{ month }}
+                </button>
+              </div>
+            </div>
+
+            <span class="text-text-muted font-light">/</span>
+
+            <!-- Custom Year Dropdown -->
+            <div class="relative">
+              <button
+                type="button"
+                (click)="toggleYearDropdown()"
+                class="block py-1 px-1 w-14 font-medium text-text-secondary text-center border border-transparent hover:border-card-border rounded-md text-sm focus:border-brand-500 focus:ring-brand-500 bg-transparent cursor-pointer transition-all"
+              >
+                {{ currentYear }}
+              </button>
+
+              <div *ngIf="isYearDropdownOpen" class="year-dropdown absolute top-full right-0 mt-1 w-20 max-h-[130px] overflow-y-auto bg-card-bg border border-card-border rounded-md shadow-lg z-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <button
+                  *ngFor="let year of years"
+                  type="button"
+                  [disabled]="isYearDisabled(year)"
+                  (click)="currentYear = year; generateCalendar(); isYearDropdownOpen = false"
+                  [ngClass]="{'bg-brand-500 text-white font-medium': year === currentYear, 'opacity-50 cursor-not-allowed': isYearDisabled(year), 'text-text-secondary hover:bg-table-row-hover': year !== currentYear}"
+                  class="block w-full text-center px-2 py-1.5 text-xs transition-colors"
+                >
+                  {{ year }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next Button -->
+          <div class="flex justify-end">
+            <button
+              type="button"
+              (click)="nextMonth()"
+              [disabled]="isNextMonthDisabled()"
+              class="size-6 flex justify-center items-center text-text-secondary hover:bg-table-row-hover rounded-full transition-colors disabled:opacity-50"
+            >
+              <svg
+                class="flex-shrink-0 size-4"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="relative group ml-2 border-l border-card-border pl-2">
+            <button
+              *ngIf="showClearButton"
+              type="button"
+              (click)="clear()"
+              class="size-6 flex justify-center items-center hover:bg-red-50 text-text-muted hover:text-red-500 rounded-full transition-colors"
+              title="Clear Date"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 cursor-pointer">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <line x1="10" x2="10" y1="11" y2="17"></line>
+                <line x1="14" x2="14" y1="11" y2="17"></line>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Days of Week -->
+        <div class="grid grid-cols-7 gap-1 pb-1.5">
+          <span
+            *ngFor="let day of daysOfWeek"
+            class="block text-center text-[10px]  uppercase tracking-wider text-text-muted"
+          >
+            {{ day }}
+          </span>
+        </div>
+
+        <!-- Calendar Days -->
+        <div class="grid grid-cols-7 gap-1 animate-fade-in-down" *ngFor="let week of calendarDays" (click)="isYearDropdownOpen = false; isMonthDropdownOpen = false">
+          <div *ngFor="let day of week" class="flex justify-center items-center aspect-square">
+            <button
+              *ngIf="day !== null"
+              type="button"
+              (click)="selectDate(day)"
+              [disabled]="isDateDisabled(day)"
+              [ngClass]="{
+                'bg-brand-500 text-white font-medium shadow-md hover:bg-brand-600': isSelected(day),
+                'text-text-secondary hover:bg-table-row-hover': !isSelected(day),
+                'opacity-30 cursor-not-allowed hover:bg-transparent': isDateDisabled(day)
+              }"
+              class="w-full h-full max-h-6 max-w-6 flex justify-center items-center text-xs rounded-full transition-all duration-200">
+              {{ day }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
