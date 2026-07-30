@@ -1,16 +1,29 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// data-table.service.ts
-// Minimal service for DataTable — filter option loading
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { TableFilter } from './data-table.types';
 
+interface OwnerApiRow {
+  // Adjust these field names to match your actual API response
+  id?: number | string;
+  Id?: number | string;
+  userId?: number | string;
+  name?: string;
+  Name?: string;
+  userName?: string;
+  [key: string]: any;
+}
+
+interface OwnerApiResponse {
+  status: boolean;
+  data: OwnerApiRow[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class DataTableService {
+  private readonly baseUrl = 'http://127.0.0.1:5000';
+
   constructor(private http: HttpClient) {}
 
   /**
@@ -43,34 +56,32 @@ export class DataTableService {
         });
 
       case 'leadOwner':
-        return of({
-          key: 'leadOwner',
-          label: 'Lead Owner',
-          searchable: true,
-          options: [
-            { label: 'Amit Sharma', value: 'amit' },
-            { label: 'Priya Singh', value: 'priya' },
-            { label: 'Rahul Verma', value: 'rahul' },
-          ],
-        });
-        // TODO: replace with a real endpoint, e.g.:
-        // return this.http.get<any>('/api/users?role=lead_owner').pipe(
-        //   map(res => ({
-        //     key: 'leadOwner', label: 'Lead Owner', searchable: true,
-        //     options: res.data.map((u: any) => ({ label: u.name, value: String(u.id) })),
-        //   }))
-        // );
+        return this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchLeadOwner`).pipe(
+          map((res) => ({
+            key: 'leadOwner',
+            label: 'Lead Owner',
+            searchable: true,
+            options: (res?.data || []).map((u) => ({
+              label: u.name ?? u.Name ?? u.userName ?? '',
+              value: String(u.id ?? u.Id ?? u.userId ?? ''),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'leadOwner', label: 'Lead Owner', searchable: true, options: [] } as TableFilter))
+        );
 
       case 'supportOwner':
-        return of({
-          key: 'supportOwner',
-          label: 'Support Owner',
-          searchable: true,
-          options: [
-            { label: 'Sneha Iyer',  value: 'sneha' },
-            { label: 'Karan Mehta', value: 'karan' },
-          ],
-        });
+        return this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchSupportOwner`).pipe(
+          map((res) => ({
+            key: 'supportOwner',
+            label: 'Support Owner',
+            searchable: true,
+            options: (res?.data || []).map((u) => ({
+              label: u.name ?? u.Name ?? u.userName ?? '',
+              value: String(u.id ?? u.Id ?? u.userId ?? ''),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'supportOwner', label: 'Support Owner', searchable: true, options: [] } as TableFilter))
+        );
 
       case 'renewalOwner':
         return of({
