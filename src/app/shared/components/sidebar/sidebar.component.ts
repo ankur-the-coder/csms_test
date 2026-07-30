@@ -79,7 +79,7 @@ export class SidebarComponent implements OnInit {
 
     else if (id === 'onboarding') {
       this.router.navigate(['/onboarding']);
-
+    }
     else if (id === 'meetings') {
       this.router.navigate(['/meetings']);
 
