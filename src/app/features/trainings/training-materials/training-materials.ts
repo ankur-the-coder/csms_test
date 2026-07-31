@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 interface Material {
   id: string;
@@ -8,6 +9,7 @@ interface Material {
   date: string;
   type: 'PDF' | 'PPT' | 'DOC' | 'MP4';
   module: string;
+  category: string;
 }
 
 interface TrainingModuleOption {
@@ -17,7 +19,7 @@ interface TrainingModuleOption {
 
 @Component({
   selector: 'app-training-materials',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './training-materials.html',
   styleUrl: './training-materials.css',
 })
@@ -26,6 +28,10 @@ export class TrainingMaterials {
   tabs = ['Dashboard', 'Trainers', 'Materials', 'Feedback', 'My Trainings'];
 
   selectedModule = 'employee';
+  isUploadModalOpen = false;
+  selectedFile: File | null = null;
+  materialTitle = '';
+  materialCategory = 'Onboarding Guide';
 
   trainingModules: TrainingModuleOption[] = [
     { key: 'employee', label: 'Employee' },
@@ -37,6 +43,8 @@ export class TrainingMaterials {
     { key: 'payroll', label: 'Payroll' },
   ];
 
+  categories = ['Onboarding Guide', 'Process Document', 'Reference Material', 'Video Tutorial'];
+
   materials: Material[] = [
     {
       id: '1',
@@ -45,6 +53,7 @@ export class TrainingMaterials {
       date: '2026-07-20',
       type: 'PDF',
       module: 'employee',
+      category: 'Onboarding Guide',
     },
     {
       id: '2',
@@ -53,6 +62,7 @@ export class TrainingMaterials {
       date: '2026-07-18',
       type: 'PDF',
       module: 'attendance',
+      category: 'Process Document',
     },
     {
       id: '3',
@@ -61,6 +71,7 @@ export class TrainingMaterials {
       date: '2026-07-15',
       type: 'PPT',
       module: 'payroll',
+      category: 'Reference Material',
     },
   ];
 
@@ -76,6 +87,46 @@ export class TrainingMaterials {
 
   getVisibleMaterials(): Material[] {
     return this.materials.filter((material) => material.module === this.selectedModule);
+  }
+
+  openUploadModal(): void {
+    this.isUploadModalOpen = true;
+    this.resetUploadForm();
+  }
+
+  closeUploadModal(): void {
+    this.isUploadModalOpen = false;
+    this.resetUploadForm();
+  }
+
+  selectFile(files: FileList): void {
+    if (!files || files.length === 0) {
+      return;
+    }
+    this.selectedFile = files[0];
+    this.materialTitle = this.materialTitle || files[0].name;
+  }
+
+  confirmUpload(): void {
+    if (!this.selectedFile || !this.materialTitle.trim()) {
+      return;
+    }
+
+    const extension = this.selectedFile.name.split('.').pop()?.toUpperCase() || 'PDF';
+    const type = extension === 'PPTX' ? 'PPT' : (extension as Material['type']);
+
+    const newMaterial: Material = {
+      id: Date.now().toString(),
+      name: this.materialTitle.trim(),
+      size: this.formatFileSize(this.selectedFile.size),
+      date: new Date().toISOString().split('T')[0],
+      type,
+      module: this.selectedModule,
+      category: this.materialCategory,
+    };
+
+    this.materials = [newMaterial, ...this.materials];
+    this.closeUploadModal();
   }
 
   addMaterial(material: Material): void {
@@ -116,33 +167,19 @@ export class TrainingMaterials {
 
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      this.handleFiles(files);
+      this.selectFile(files);
     }
   }
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.handleFiles(input.files);
+      this.selectFile(input.files);
     }
   }
 
   handleFiles(files: FileList): void {
-    Array.from(files).forEach((file) => {
-      const extension = file.name.split('.').pop()?.toUpperCase() || 'PDF';
-      const type = extension === 'PPTX' ? 'PPT' : (extension as Material['type']);
-
-      const newMaterial: Material = {
-        id: Date.now().toString(),
-        name: file.name,
-        size: this.formatFileSize(file.size),
-        date: new Date().toISOString().split('T')[0],
-        type,
-        module: this.selectedModule,
-      };
-
-      this.addMaterial(newMaterial);
-    });
+    this.selectFile(files);
   }
 
   formatFileSize(bytes: number): string {
@@ -154,8 +191,14 @@ export class TrainingMaterials {
   }
 
   uploadMaterial(): void {
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    fileInput?.click();
+    this.openUploadModal();
+  }
+
+  resetUploadForm(): void {
+    this.selectedFile = null;
+    this.materialTitle = '';
+    this.materialCategory = 'Onboarding Guide';
+    this.isDragOver = false;
   }
 
   deleteMaterial(id: string): void {
@@ -164,3 +207,4 @@ export class TrainingMaterials {
     }
   }
 }
+  

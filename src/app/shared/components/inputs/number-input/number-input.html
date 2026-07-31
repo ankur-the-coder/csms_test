@@ -1,0 +1,84 @@
+<div class="custom-number-input-container w-full relative">
+  <!-- Label -->
+  @if (label()) {
+    <div class="flex items-center gap-2 mb-1">
+      <label for="numberInput" class="text-[13px] text-text-secondary">
+        {{ label() }}
+      </label>
+      @if (isRequired) {
+        <span class="text-red-500 font-bold text-xs leading-none">*</span>
+      }
+    </div>
+  }
+
+  <!-- Input -->
+  <div class="relative flex gap-2">
+    <input
+      #inputRef
+      id="numberInput"
+      type="number"
+      [attr.min]="min()"
+      [attr.max]="max()"
+      [attr.step]="step()"
+      [attr.placeholder]="placeholder()"
+      [disabled]="isEffectivelyDisabled"
+      [readOnly]="readOnly()"
+      [value]="value() ?? ''"
+      (input)="onInput($event)"
+      (keydown)="onKeyDown($event)"
+      (blur)="onBlur()"
+      (wheel)="disableScroll($event)"
+      [ngClass]="[inputClasses(), addClass()]"
+    />
+
+    <!-- Suffix -->
+    @if (suffix()) {
+      <span class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-[10px] font-bold text-slate-400">
+        {{ suffix() }}
+      </span>
+    }
+
+    <!-- Stepper -->
+    @if (showStep() && !isEffectivelyDisabled && !readOnly()) {
+      <div class="absolute inset-y-0 right-2 flex flex-col justify-center gap-0.5 z-10">
+        <button type="button" (click)="increment()" class="p-0.5 text-text-secondary hover:text-text-primary" aria-label="Increase">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        <button type="button" (click)="decrement()" class="p-0.5 text-text-secondary hover:text-text-primary" aria-label="Decrease">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Right Icon (ng-content slot) -->
+    <div
+      class="absolute inset-y-0 flex items-center pointer-events-none"
+      [class.right-6]="showStep()"
+      [class.right-3]="!showStep()"
+    >
+      <ng-content />
+    </div>
+  </div>
+
+  <!-- Error -->
+  @if (isError()) {
+    @if (control; as ctrl) {
+        <p class="mt-1 text-xs text-red-500">
+        @if (ctrl.errors?.['required']) {
+          {{ 'thisfieldisrequired' }}.
+        } @else if (ctrl.errors?.['min']) {
+          {{ 'mustbeatleast' }} {{ ctrl.errors?.['min']?.min }}.
+        } @else if (ctrl.errors?.['max']) {
+          {{ 'mustbeatmost' }} {{ ctrl.errors?.['max']?.max }}.
+        } @else {
+          {{ 'pleaseenteravalidnumber' }}.
+        }
+        <ng-content select="[error]" />
+      </p>
+    }
+  }
+</div>
