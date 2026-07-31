@@ -31,8 +31,5 @@ export class NavbarComponent implements OnInit {
     this.isImplementationRoute = url.includes('implementation');
   }
 
-  onSearchInput(event: Event) {
-    const value = (event.target as HTMLInputElement).value;
-    this.searchChange.emit(value);
-  }
+
 }

@@ -1,5 +1,4 @@
-
-import { CommonModule, DatePipe, NgClass } from '@angular/common';
+import { CommonModule, DatePipe, NgClass, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -11,7 +10,9 @@ import {
   OnInit,
   AfterContentInit,
   OnDestroy,
-  OnChanges
+  OnChanges,
+  Inject,
+  PLATFORM_ID
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -85,9 +86,16 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   closing: boolean = false;
   isSelectingRange: boolean = false;
 
+  // SSR-safety helpers
+  private isBrowser: boolean;
+
   constructor(
     private elementRef: ElementRef,
-  ) { }
+    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(DOCUMENT) private document: Document,
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
     this.generateYearRange();
@@ -149,8 +157,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   ngOnDestroy(): void {
-    const overlay = document.getElementById(this.id + '-overlay');
-    if (overlay) overlay.remove();
+    if (this.isBrowser) {
+      const overlay = this.document.getElementById(this.id + '-overlay');
+      if (overlay) overlay.remove();
+    }
     this.onApplyDate.complete();
   }
 
@@ -195,18 +205,23 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       if (event) {
         this.calculatePosition(event);
       }
-      setTimeout(() => {
-        const overlay = document.getElementById(this.id + '-overlay');
-        if (overlay) {
-          document.body.appendChild(overlay);
-        }
-      }, 10);
+
+      if (this.isBrowser) {
+        setTimeout(() => {
+          const overlay = this.document.getElementById(this.id + '-overlay');
+          if (overlay) {
+            this.document.body.appendChild(overlay);
+          }
+        }, 10);
+      }
     } else {
       this.closeDatePicker();
     }
   }
 
   private calculatePosition(event: MouseEvent): void {
+    if (!this.isBrowser) return;
+
     const buttonElement = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const pickerWidth = 460; // Approximate modal width
@@ -228,8 +243,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.closeDatePicker();
   }
   closeDatePicker(): void {
-    const overlay = document.getElementById(this.id + '-overlay');
-    if (overlay) overlay.remove();
+    if (this.isBrowser) {
+      const overlay = this.document.getElementById(this.id + '-overlay');
+      if (overlay) overlay.remove();
+    }
     this.showDatePicker = false;
     this.showMonthDropdown = false;
     this.showYearDropdown = false;
@@ -238,7 +255,9 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event) {
-    const overlay = document.getElementById(this.id + '-overlay');
+    if (!this.isBrowser) return;
+
+    const overlay = this.document.getElementById(this.id + '-overlay');
     if (!this.elementRef.nativeElement.contains(event.target as Node) &&
       overlay && !overlay.contains(event.target as Node)) {
       if (this.showDatePicker) {
@@ -394,7 +413,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.showMonthDropdown = !this.showMonthDropdown;
     this.showYearDropdown = false;
 
-    if (this.showMonthDropdown) {
+    if (this.showMonthDropdown && this.isBrowser) {
       setTimeout(() => {
         const selectedMonthElement = this.monthDropdownElement.nativeElement.querySelector('.bg-brand-100');
         if (selectedMonthElement) {
@@ -409,7 +428,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.showYearDropdown = !this.showYearDropdown;
     this.showMonthDropdown = false;
 
-    if (this.showYearDropdown) {
+    if (this.showYearDropdown && this.isBrowser) {
       setTimeout(() => {
         const selectedYearElement = this.yearDropdownElement.nativeElement.querySelector('.bg-brand-100');
         if (selectedYearElement) {
