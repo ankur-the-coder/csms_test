@@ -200,19 +200,34 @@ export class ImplementationComponent implements OnInit {
           const filterObj: Record<string, any> = { ...ctx.filters };
           if (statusFilter !== 'all') filterObj['status'] = statusFilter;
 
+          const today = this.getTodayDateString();
+          const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
+          const toDate = ctx.dateTo ? ctx.dateTo : today;
+
+          const sortColMap: Record<string, string> = {
+            'name': 'orgName',
+            'cs_lead': 'csLead',
+            'support_owner': 'suppOwner',
+            'country': 'country',
+            'health': 'health',
+            'onboarding_date': 'onboardedDate',
+            'orgId': 'orgId'
+          };
+          const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgName';
+
           const body: DataTablePayload = {
             start:   ctx.page * ctx.pageSize,
             length:  ctx.pageSize,
             search:  ctx.search ?? '',
             sorting: JSON.stringify({
               require: 0,
-              col: ctx.sortKey ?? 'orgId',
+              col: sortCol,
               dir: ctx.sortDir ?? 'desc',
             }),
             filter: JSON.stringify(filterObj),
             tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0,
-            fromDate: ctx.dateFrom,
-            toDate: ctx.dateTo
+            fromDate: fromDate,
+            toDate: toDate
           };
 
           return { method: 'POST' as const, body };
@@ -247,10 +262,18 @@ export class ImplementationComponent implements OnInit {
       ],
 
       filters: [
-        { key: 'cs_lead', label: 'CS Lead', options: this.csLeadFilterOptions() },
+        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
       ],
     };
   });
+
+  private getTodayDateString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() { this.loadData(); }

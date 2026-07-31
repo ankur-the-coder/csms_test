@@ -104,6 +104,11 @@ export class DataTable<T extends object> implements AfterContentInit {
   pageSizePopoverOpen = signal(false);
   private wasDragging = signal(false);
   activeDropdownKey = signal<string | null>(null);
+  // Viewport-relative coordinates for the currently open dropdown popover.
+  // Computed from the trigger button's own bounding rect so the popover can
+  // render with position:fixed and escape the modal body's overflow-y-auto
+  // clipping (view-only fix — no filter/search behaviour changes).
+  dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
 
   // Modal open states (using native <dialog>)
   filterModalOpen = signal(false);
@@ -983,8 +988,15 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dragSrcKey.set(null);
     this.dragOverKey.set(null);
   }
-  toggleDropdown(key: string): void {
+  toggleDropdown(key: string, event?: MouseEvent): void {
+  const opening = this.activeDropdownKey() !== key;
   this.activeDropdownKey.update(current => (current === key ? null : key));
+  if (opening && event) {
+    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dropdownPosition.set({ top: trigger.bottom + 6, left: trigger.left, width: trigger.width });
+  } else {
+    this.dropdownPosition.set(null);
+  }
 }
 
 isDropdownOpen(key: string): boolean {
@@ -993,6 +1005,7 @@ isDropdownOpen(key: string): boolean {
 
 closeAllDropdowns(): void {
   this.activeDropdownKey.set(null);
+  this.dropdownPosition.set(null);
 }
 
 hasSelections(key: string): boolean {
@@ -1053,5 +1066,6 @@ selectStarRating(key: string, value: any): void {
   const next = String(current ?? '') === String(value) ? '' : value;
   this.updateTempFilter(key, next);
   this.activeDropdownKey.set(null);
+  this.dropdownPosition.set(null);
 }
 }
