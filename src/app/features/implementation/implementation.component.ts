@@ -169,6 +169,8 @@ export class ImplementationComponent implements OnInit {
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
 
   tableConfig = computed<SmartTableConfig<Client>>(() => {
+    const statusFilter = this.statusFilter();
+
     return {
       columns: [
         { key: 'name',             label: 'Organisation',   sortable: true },
@@ -189,7 +191,35 @@ export class ImplementationComponent implements OnInit {
         { key: 'modules',          label: 'Modules',     align: 'center', tooltip: 'Module-wise completion status' },
       ],
 
-      staticData: this.filteredClients(),
+      apiConfig: {
+        endpoint:  this.tableEndpoint,
+        dataPath:  'data',
+        totalPath: 'meta.total',
+
+        buildRequest: (ctx: RequestContext) => {
+          const filterObj: Record<string, any> = { ...ctx.filters };
+          if (statusFilter !== 'all') filterObj['status'] = statusFilter;
+
+          const body: DataTablePayload = {
+            start:   ctx.page * ctx.pageSize,
+            length:  ctx.pageSize,
+            search:  ctx.search ?? '',
+            sorting: JSON.stringify({
+              require: 0,
+              col: ctx.sortKey ?? 'orgId',
+              dir: ctx.sortDir ?? 'desc',
+            }),
+            filter: JSON.stringify(filterObj),
+            tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0,
+            fromDate: ctx.dateFrom,
+            toDate: ctx.dateTo
+          };
+
+          return { method: 'POST' as const, body };
+        },
+
+        transformRow: (row: any) => this.mapApiRowToClient(row as Datum),
+      },
 
       rowIdKey:        'id',
       showSearch:      true,

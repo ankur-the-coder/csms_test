@@ -37,14 +37,13 @@ export class Training {
   viewMode: 'list' | 'calendar' = 'list';
 
   navTabs = ['Dashboard', 'Trainers', 'Materials', 'My Trainings'];
-  filterTabs = ['All Sessions', 'Scheduled', 'In Progress', 'Completed', 'Cancelled'];
+  filterTabs = ['All Sessions', 'Scheduled', 'In Progress', 'Completed'];
 
   stats: StatCard[] = [
-    { label: 'TOTAL TRAININGS', value: 3, badge: '+12%', badgeColor: 'green' },
-    { label: 'COMPLETED', value: 1, badge: '81%', badgeColor: 'green' },
-    { label: 'UPCOMING', value: 2, badge: 'Active', badgeColor: 'blue' },
-    { label: "TODAY'S SESSIONS", value: 1, badge: 'Today', badgeColor: 'orange' },
-    { label: 'CANCELLED', value: 0, badge: '-2%', badgeColor: 'red' },
+    { label: 'Total Trainings', value: 3, badge: '+12%', badgeColor: 'green' },
+    { label: 'Completed', value: 1, badge: '81%', badgeColor: 'green' },
+    { label: 'Upcoming', value: 2, badge: 'Active', badgeColor: 'blue' },
+    { label: "Today's Sessions", value: 1, badge: 'Today', badgeColor: 'orange' },
   ];
 
   sessions: TrainingSession[] = [

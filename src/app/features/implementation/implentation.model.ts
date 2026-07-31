@@ -19,6 +19,8 @@ export interface DataTablePayload {
   sorting: string; 
   filter: string; 
   tabSts: number;
+  fromDate?: string;
+  toDate?: string;
 }
 
 
