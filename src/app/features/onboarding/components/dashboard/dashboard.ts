@@ -178,7 +178,7 @@ export class Dashboard {
       columns: [
         // { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
         { key: 'name',             label: 'Organisation', sortable: true, type: 'avatar' },
-        { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
+        // { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
