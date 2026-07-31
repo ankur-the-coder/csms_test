@@ -139,7 +139,7 @@
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
     <app-custom-date-selector
-    
+      (onApplyDate)="onDateApplied($event.from, $event.to)"
     ></app-custom-date-selector>
     }
 
