@@ -19,6 +19,8 @@ export interface DataTablePayload {
   sorting: string; 
   filter: string; 
   tabSts: number;
+  fromDate?: string;
+  toDate?: string;
 }
 
 
@@ -33,18 +35,17 @@ export interface Implementation {
 }
 
 export interface Datum {
-    orgId:           number;
+     orgId:           number;
     organization:    string;
     onboardedDate:   Date;
-    csLead:          string;
-    health:          Health;
+    csLead:          null | string;
+    supportOwner:    null | string;
+    health:          string;
     overallProgress: OverallProgress;
     modules:         Modules;
 }
 
-export enum Health {
-    Risk = "Risk",
-}
+
 
 export interface Modules {
     employee:     Attendance;
@@ -71,4 +72,16 @@ export interface Meta {
     total:      number;
     first_page: number;
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

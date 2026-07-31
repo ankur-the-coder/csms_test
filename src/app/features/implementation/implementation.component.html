@@ -113,37 +113,47 @@
   <div class="card p-0 overflow-hidden">
     <app-data-table
       [config]="tableConfig()"
+      (onRefresh)="loadData()"
       [filterNames]="['leadOwner', 'supportOwner',
-     'rating', 'country'
-    , 'dateRange']">
+     'rating', 'country']">
 
       <!-- Custom progress cell template -->
       <ng-template appCustomColumn="overallProgress" let-row>
-        <div class="flex items-center gap-2 min-w-[120px]">
-          <div class="flex-1 h-1.5 bg-surface-200 rounded-full overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500"
+        <div class="flex flex-col gap-1.5" style="min-width:180px">
+          <!-- Top row: big % + approved count -->
+          <div class="flex items-center gap-2">
+            <span class="text-base font-extrabold"
+                  [style.color]="getProgressColor(getClientProgressPercent(row))">
+              {{ getClientProgressPercent(row) }}%
+            </span>
+            <span class="text-[11px] text-text-muted font-medium">
+              {{ row.overallProgress?.approved ?? 0 }}/{{ row.overallProgress?.total ?? 0 }} Approved
+            </span>
+          </div>
+          <!-- Progress bar -->
+          <div class="h-2 rounded-full overflow-hidden" style="background:#e2e8f0">
+            <div class="h-full rounded-full transition-all duration-700"
                  [style.width.%]="getClientProgressPercent(row)"
                  [style.background]="getProgressColor(getClientProgressPercent(row))">
             </div>
           </div>
-          <span class="text-xs font-bold w-8 text-right" [style.color]="getProgressColor(getClientProgressPercent(row))">
-            {{ getClientProgressPercent(row) }}%
-          </span>
         </div>
       </ng-template>
 
       <!-- Custom modules cell template -->
       <ng-template appCustomColumn="modules" let-row>
-        <div class="flex flex-wrap items-center justify-center gap-1 max-w-[320px]">
+        <div class="flex flex-wrap gap-1" style="max-width:320px">
           @for (mod of modules; track mod.key) {
-          <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap"
-                [ngClass]="{
-                  'bg-brand-100 text-brand-700 border-brand-200': isModuleFullyApproved(row, mod),
-                  'bg-amber-100 text-amber-700 border-amber-200': isModuleInProgress(row, mod),
-                  'bg-surface-100 text-text-muted border-surface-200': isModuleNotStarted(row, mod)
-                }">
-            {{ mod.label }}: {{ getModuleApprovedCount(row, mod) }}/{{ getModuleTotalCount(row, mod) }}
-          </span>
+            @if (getModuleTotalCount(row, mod) > 0) {
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border-emerald-200':  isModuleFullyApproved(row, mod),
+                      'bg-amber-50  text-amber-700  border-amber-200':  isModuleInProgress(row, mod),
+                      'bg-slate-50  text-slate-500  border-slate-200':  isModuleNotStarted(row, mod)
+                    }">
+                {{ mod.label }}: {{ getModuleApprovedCount(row, mod) }}/{{ getModuleTotalCount(row, mod) }}
+              </span>
+            }
           }
         </div>
       </ng-template>

@@ -46,7 +46,7 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, CustomDateSelector, SingleInput],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, CustomDateSelector, CustomColumnDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
@@ -353,11 +353,13 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.loadState() === 'loading' && this.initialLoadDone()
   );
 
-  templateMap = computed(() => {
+  templateMap = signal<Map<string, TemplateRef<any>>>(new Map());
+
+  private buildTemplateMap(): void {
     const map = new Map<string, TemplateRef<any>>();
     this.customTemplates?.forEach(t => map.set(t.columnName, t.template));
-    return map;
-  });
+    this.templateMap.set(map);
+  }
 
   hasData = computed(() => this.displayRows().length > 0);
   pageSizeOptions = computed(() => this.config().pageSizeOptions ?? [10, 25, 50, 100]);
@@ -525,6 +527,11 @@ export class DataTable<T extends object> implements AfterContentInit {
       this.colVisibility.set(vis);
       this.colOrder.set(cfg.columns.map(c => String(c.key)));
     });
+
+    // Build template map from projected ng-template[appCustomColumn] directives
+    // and keep it in sync if templates are added/removed dynamically.
+    this.buildTemplateMap();
+    this.customTemplates.changes.subscribe(() => this.buildTemplateMap());
   }
 
   // ── Date filter ────────────────────────────────────────────────────────────

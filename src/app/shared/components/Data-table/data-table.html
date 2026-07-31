@@ -137,7 +137,7 @@
 
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
-    <app-custom-date-selector></app-custom-date-selector>
+    <app-custom-date-selector (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
     }
 
     <!-- CUSTOM BUTTON -->
@@ -354,7 +354,8 @@
             class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
-            [style.max-width.px]="colWidths()[col.key.toString()] ?? 200">
+            [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
+            [style.overflow]="getColumnTemplate(col.key.toString()) ? 'visible' : 'hidden'">
 
             @switch (col.type) {
 
@@ -414,8 +415,7 @@
             <img [src]="getCellValue(row, col.key)" alt="image"
               class="w-12 h-12 object-cover rounded-lg border border-card-border transition-colors duration-150 hover:border-[--st-accent] hover:scale-105" />
             } @else if (getColumnTemplate(col.key.toString())) {
-            <div class="st-cell-text truncate"
-              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+            <div class="st-cell-custom-template">
               <ng-container
                 *ngTemplateOutlet="getColumnTemplate(col.key.toString())!; context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
             </div>
@@ -816,12 +816,9 @@
             }
           </div>
           } @else {
-          <app-single-input
-            [options]="getFilterSelectOptions(filter)"
-            [placeHolder]="'-- Select ' + filter.label + ' --'"
-            [ngModel]="tempFilters()[filter.key]"
-            (ngModelChange)="updateTempFilter(filter.key, $event)"
-            [enableSearch]="filter.searchable ?? true">
+          <app-single-input [options]="getFilterSelectOptions(filter)"
+            [placeHolder]="'-- Select ' + filter.label + ' --'" [ngModel]="tempFilters()[filter.key]"
+            (ngModelChange)="updateTempFilter(filter.key, $event)" [enableSearch]="filter.searchable ?? true">
           </app-single-input>
           }
         </div>
