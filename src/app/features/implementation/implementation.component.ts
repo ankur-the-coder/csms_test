@@ -5,6 +5,7 @@ import { ImplementationService} from './implementation.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { SmartTableConfig, RequestContext } from '../../shared/components/Data-table/data-table.types';
 import { Implementation, Datum, CardData, DataTablePayload } from './implentation.model';
+import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 
 export interface Feature {
   mod_id: number;
@@ -34,6 +35,8 @@ export interface Client {
   industry: string;
   onboarding_date: string;
   cs_lead: string;
+  support_owner: string;
+  country: string;
   health: string;
   checklist: Record<number, FeatureChecklistRow>;
   overallProgress: {
@@ -47,7 +50,7 @@ export interface Client {
 @Component({
   selector: 'app-implementation',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTable],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
   templateUrl: './implementation.component.html'
 })
 export class ImplementationComponent implements OnInit {
@@ -166,15 +169,12 @@ export class ImplementationComponent implements OnInit {
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
 
   tableConfig = computed<SmartTableConfig<Client>>(() => {
-    // Reading statusFilter here makes tableConfig reactive to tab changes.
-    // When the tab changes → new buildRequest body → new fetchKey → re-fetch.
-    const statusFilter = this.statusFilter();
-
     return {
       columns: [
-        { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
-        { key: 'name',             label: 'Organisation', sortable: true, type: 'avatar' },
-        { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
+        { key: 'name',             label: 'Organisation',   sortable: true },
+        { key: 'cs_lead',          label: 'CS Lead',        sortable: true },
+        { key: 'support_owner',    label: 'Support Owner',  sortable: true },
+        { key: 'country',          label: 'Country',        sortable: true },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
@@ -184,54 +184,18 @@ export class ImplementationComponent implements OnInit {
             'Risk':      { label: 'Risk' },
           }
         },
-        { key: 'onboarding_date',  label: 'Onboarded', sortable: true },
-        { key: 'overallProgress',  label: 'Progress',  type: 'template', align: 'center' },
-        { key: 'modules',          label: 'Modules',   type: 'template', align: 'center' },
-
+        { key: 'onboarding_date',  label: 'Onboarded',   sortable: false },
+        { key: 'overallProgress',  label: 'Progress',    align: 'center', tooltip: 'Overall implementation progress' },
+        { key: 'modules',          label: 'Modules',     align: 'center', tooltip: 'Module-wise completion status' },
       ],
 
-      // ── Server-side config ────────────────────────────────────────────────
-      apiConfig: {
-        endpoint:  this.tableEndpoint,
-        dataPath:  'data',        // res.data
-        totalPath: 'meta.total',  // res.meta.total
-
-        /**
-         * Builds the POST body in the exact format the API expects:
-         * { start, length, search, sorting: "<JSON>", filter: "<JSON>" }
-         */
-        buildRequest: (ctx: RequestContext) => {
-          // Merge the active status-filter tab AND the table's own filter
-          // modal selections (csLead, health, ...) into the filter object.
-          const filterObj: Record<string, any> = { ...ctx.filters };
-          if (statusFilter !== 'all') filterObj['status'] = statusFilter;
-
-          const body: DataTablePayload = {
-            start:   ctx.page * ctx.pageSize,          // offset
-            length:  ctx.pageSize,                     // page size
-            search:  ctx.search ?? '',
-            sorting: JSON.stringify({
-              require: 0,
-              col: ctx.sortKey ?? 'orgId',
-              dir: ctx.sortDir ?? 'desc',
-            }),
-            filter: JSON.stringify(filterObj),
-            tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0
-          };
-
-          return { method: 'POST' as const, body };
-        },
-
-        /** Maps each raw API row to the Client shape the rest of the UI uses. */
-        transformRow: (row: any) => this.mapApiRowToClient(row as Datum),
-      },
+      staticData: this.filteredClients(),
 
       rowIdKey:        'id',
       showSearch:      true,
       showPagination:  true,
       defaultPageSize: 10,
-      // selectable:true,
-      pageSizeOptions: [10, 25, 50,100,500],
+      pageSizeOptions: [10, 25, 50, 100, 500],
       exportFileName:  'implementation-progress',
       emptyMessage:    'No implementation records found.',
       clickable:       false,
@@ -241,7 +205,6 @@ export class ImplementationComponent implements OnInit {
         { id: 'export',  type: 'export',  label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
-        
       ],
       customRowActions: [
         {
@@ -253,11 +216,8 @@ export class ImplementationComponent implements OnInit {
         }
       ],
 
-      // 'health' is resolved via filterNames + DataTableService (static enum).
-      // 'csLead' is defined here directly since its options come from data
-      // already loaded on the client (not a separate API call).
       filters: [
-        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
+        { key: 'cs_lead', label: 'CS Lead', options: this.csLeadFilterOptions() },
       ],
     };
   });
@@ -277,7 +237,7 @@ export class ImplementationComponent implements OnInit {
 
     const payload: DataTablePayload = {
       start: 0,
-      length: 100,
+      length: 10,
       search: '',
       sorting: JSON.stringify({ require: 0, col: 'orgId', dir: 'desc' }),
       filter: JSON.stringify({}),
@@ -312,7 +272,9 @@ export class ImplementationComponent implements OnInit {
       name:            row.organization,
       industry:        '',
       onboarding_date: this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
-      cs_lead:         row.csLead || 'Unassigned',
+      cs_lead:         row.csLead         || '-',
+      support_owner:   row.supportOwner   || '—',
+      country:         (row as any).country || '—',
       health:          row.health,
       checklist,
       overallProgress: {
