@@ -150,20 +150,7 @@ export class ImplementationComponent implements OnInit {
   inProgressClientsCount = computed(() => this.cardData().inProgress);
   pendingClientsCount   = computed(() => this.cardData().notStarted);
 
-  // ── Filter option sources for the DataTable's built-in filter modal ───────
-  // 'csLead' options come from the data we already loaded — no extra endpoint
-  // needed. Recomputes automatically whenever `clients()` changes (e.g. after
-  // a refresh or a new page of data arrives).
-  csLeadFilterOptions = computed(() => {
-    const leads = new Set(
-      this.clients()
-        .map(c => c.cs_lead)
-        .filter((v): v is string => !!v)
-    );
-    return Array.from(leads)
-      .sort((a, b) => a.localeCompare(b))
-      .map(label => ({ label, value: label }));
-  });
+ 
 
   // ── DataTable config ──────────────────────────────────────────────────────
   private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
@@ -174,9 +161,9 @@ export class ImplementationComponent implements OnInit {
     return {
       columns: [
         { key: 'name',             label: 'Organisation',   sortable: true },
-        { key: 'cs_lead',          label: 'CS Lead',        sortable: true },
-        { key: 'support_owner',    label: 'Support Owner',  sortable: true },
-        { key: 'country',          label: 'Country',        sortable: true },
+        { key: 'cs_lead',          label: 'Lead Owner',        sortable: false },
+        { key: 'support_owner',    label: 'Support Owner',  sortable: false },
+        { key: 'country',          label: 'Country',        sortable: false },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
@@ -261,9 +248,7 @@ export class ImplementationComponent implements OnInit {
         }
       ],
 
-      filters: [
-        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
-      ],
+      
     };
   });
 
