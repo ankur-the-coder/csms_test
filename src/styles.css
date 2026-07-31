@@ -281,7 +281,6 @@
 
 main {
   position: relative;
-  z-index: var(--z-index-base-val);
 }
 
 *:focus-visible {
