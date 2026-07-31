@@ -62,6 +62,8 @@ export interface TableFilter {
   options?: { label: string; value: any }[];
   multiSelect?: boolean;
   searchable?: boolean;
+  /** Renders this filter as a single-select star-rating picker instead of a plain <select>. */
+  starRating?: boolean;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────

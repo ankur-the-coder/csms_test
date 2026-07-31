@@ -134,24 +134,29 @@ export class DataTableService {
         return of({
           key: 'rating',
           label: 'Rating',
+          starRating: true,
           options: [
-            { label: 'Hot',  value: 'Hot' },
-            { label: 'Warm', value: 'Warm' },
-            { label: 'Cold', value: 'Cold' },
+            { label: '1 Star',  value: '1' },
+            { label: '2 Stars', value: '2' },
+            { label: '3 Stars', value: '3' },
+            { label: '4 Stars', value: '4' },
+            { label: '5 Stars', value: '5' },
           ],
         });
 
       case 'country':
-        return of({
-          key: 'country',
-          label: 'Country',
-          searchable: true,
-          options: [
-            { label: 'India', value: 'India' },
-            { label: 'USA',   value: 'USA' },
-            { label: 'UK',    value: 'UK' },
-          ],
-        });
+  return this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchAllCountry`).pipe(
+    map((res) => ({
+      key: 'country',
+      label: 'Country',
+      searchable: true,
+      options: (res?.data || []).map((c) => ({
+        label: c.name ?? c.Name ?? c['countryName'] ?? '',
+        value: String(c.id ?? c.Id ?? c['countryId'] ?? c.name ?? c.Name ?? ''),
+      })),
+    } as TableFilter)),
+    catchError(() => of({ key: 'country', label: 'Country', searchable: true, options: [] } as TableFilter))
+  );
 
       case 'emailStatus':
         return of({

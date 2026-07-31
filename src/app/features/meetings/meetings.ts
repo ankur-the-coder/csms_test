@@ -36,10 +36,12 @@ interface AgendaItem {
   completed: boolean;
 }
 
+import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
+
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SingleInput],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -213,6 +215,32 @@ export class MeetingsComponent implements OnInit {
   // ImplementationService.fetchOrganizations() -> this.organizations
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Renewal', 'Go Live'];
   hosts = ['Rohit S.', 'Anita P.', 'Neha K.', 'Vikram S.', 'Priya M.', 'Amit R.'];
+
+  get filterTypeOptions(): SelectOption[] {
+    return [
+      { label: 'All Types', value: '' },
+      ...this.meetingTypesList.map(t => ({ label: t, value: t }))
+    ];
+  }
+
+  get filterPriorityOptions(): SelectOption[] {
+    return [
+      { label: 'All Priorities', value: '' },
+      { label: 'High', value: 'High' },
+      { label: 'Medium', value: 'Medium' },
+      { label: 'Low', value: 'Low' }
+    ];
+  }
+
+  get filterStatusOptions(): SelectOption[] {
+    return [
+      { label: 'All Status', value: '' },
+      { label: 'Scheduled', value: 'Scheduled' },
+      { label: 'InProgress', value: 'InProgress' },
+      { label: 'Pending', value: 'Pending' },
+      { label: 'Completed', value: 'Completed' }
+    ];
+  }
 
   // ============ Computed Properties ============
 
