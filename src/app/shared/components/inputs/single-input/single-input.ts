@@ -101,6 +101,7 @@ export class SingleInput implements ControlValueAccessor {
 
   searchTerm = '';
   dropdownPosition: 'bottom' | 'top' = 'bottom';
+  dropdownCoords: { top?: number; bottom?: number; left: number; width: number } | null = null;
   isClosing: boolean = false;
 
   constructor(private eRef: ElementRef, private cdr: ChangeDetectorRef) { }
@@ -188,6 +189,12 @@ export class SingleInput implements ControlValueAccessor {
       // If neither has enough space, choose the side with more space
       this.dropdownPosition = spaceBelow > spaceAbove ? 'bottom' : 'top';
     }
+
+    // Exact viewport coordinates so the dropdown can render with position:fixed
+    // and escape any ancestor's overflow clipping (e.g. a scrollable modal body).
+    this.dropdownCoords = this.dropdownPosition === 'bottom'
+      ? { top: triggerRect.bottom + 6, left: triggerRect.left, width: triggerRect.width }
+      : { bottom: viewportHeight - triggerRect.top + 6, left: triggerRect.left, width: triggerRect.width };
   }
 
   selectOption(option: SelectOption) {

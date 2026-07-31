@@ -1,0 +1,5 @@
+:host button:focus-visible,
+:host input:focus-visible,
+:host [tabindex]:focus-visible {
+  outline: none;
+}

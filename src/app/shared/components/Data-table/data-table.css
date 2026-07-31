@@ -51,9 +51,10 @@
 }
 
 /* Consistent, visible keyboard focus everywhere interactive */
-.st-shell button:focus-visible,
-.st-shell select:focus-visible,
-.st-shell [tabindex]:focus-visible {
+:host button:focus-visible,
+:host select:focus-visible,
+:host input:focus-visible,
+:host [tabindex]:focus-visible {
   outline: none;
 }
 
