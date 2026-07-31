@@ -1,0 +1,37 @@
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Number input styling to match project tokens */
+
+.number-input,
+input[type='number'] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card-bg);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.number-input:focus,
+input[type='number']:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.06);
+}
+
+.number-input .btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+}

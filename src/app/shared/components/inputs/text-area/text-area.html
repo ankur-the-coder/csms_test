@@ -1,0 +1,58 @@
+<div class="w-full">
+
+    @if (label()) {
+    <div class="flex items-center space-x-2 mb-1">
+
+        <label class="text-[13px] text-text-secondary">
+            {{ label() }}
+        </label>
+
+        @if (required()) {
+        <span class="text-red-500 text-xs">*</span>
+        }
+
+    </div>
+    }
+
+    <div class="relative group">
+
+        <textarea [id]="id()" style="outline: none !important; box-shadow: none !important;" class="w-full p-3 pb-6 rounded-lg border border-card-border text-sm bg-card-bg text-text-primary shadow-inner resize-none
+             text-text-secondary focus:outline-none focus-visible:outline-none focus:ring-0 focus:shadow-none
+             disabled:bg-surface-100 disabled:cursor-not-allowed" [rows]="rows()" [placeholder]="placeholder()"
+            [disabled]="disabled()" [readonly]="readonly()" [value]="internalValue()" (input)="onInput($event)"
+            (blur)="onBlur()" (keydown)="onKeyDown($event)" [ngClass]="[
+        hasError()
+          ? 'border-red-500'
+          : 'border-card-border'
+      ]">
+    </textarea>
+
+        <div class="absolute bottom-1 mb-1 right-2 text-[10px] font-medium" [ngClass]="
+        hasError()
+          ? 'text-red-500'
+          : 'text-gray-400'
+      ">
+
+            @if (maxLength()) {
+            {{ length() }} / {{ maxLength() }}
+            } @else {
+            {{ length() }}
+            }
+
+        </div>
+
+    </div>
+
+    @if (hint()) {
+    <p class="mt-1 text-[11px] text-gray-400">
+        {{ hint() }}
+    </p>
+    }
+
+    @if (hasError()) {
+    <p class=" text-xs -mt-1 text-red-500">
+        {{ error() }}
+    </p>
+    }
+
+</div>

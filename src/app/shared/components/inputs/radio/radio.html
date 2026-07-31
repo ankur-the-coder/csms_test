@@ -1,0 +1,14 @@
+<label class="inline-flex items-center gap-2 cursor-pointer select-none" [class.opacity-50]="disabled" [class.cursor-not-allowed]="disabled">
+    <input 
+        type="radio" 
+        [id]="value" 
+        [name]="name" 
+        [value]="value" 
+        (change)="onInputChange(value)"
+        [disabled]="disabled" 
+        class="custom-radio"
+        [ngClass]="class"
+        [checked]="checked" 
+    />
+    <span class="text-[13px]  text-text-secondary">{{ label }}</span>
+</label>

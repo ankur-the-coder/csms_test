@@ -1,0 +1,51 @@
+<label class="inline-flex items-center gap-2 cursor-pointer select-none" [class.cursor-not-allowed]="disabled" [class.opacity-60]="disabled">
+    
+    <!-- Checkbox wrapper: flex centers the SVG, input fills the box absolutely -->
+    <div class="relative flex-shrink-0 h-3.5 w-3.5 flex items-center justify-center">
+        
+        <!-- The actual checkbox input, covers the full box -->
+        <input
+            type="checkbox"
+            [disabled]="disabled"
+            [checked]="checked"
+            [indeterminate]="indeterminate"
+            (change)="onInputChange($event)"
+            class="peer absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-sm border border-card-border bg-card-bg transition-all
+                   checked:border-brand-600 checked:bg-brand-600
+                   disabled:cursor-not-allowed"
+        />
+
+        <!-- Checkmark SVG — sits in center via parent flex, hidden until checked -->
+        <svg *ngIf="!indeterminate"
+            class="relative z-10 pointer-events-none text-white opacity-0 transition-opacity peer-checked:opacity-100"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            width="9"
+            height="9">
+            <polyline points="10 3 5 9 2 6"></polyline>
+        </svg>
+
+        <!-- Minus SVG for indeterminate state -->
+        <svg *ngIf="indeterminate"
+            class="relative z-10 pointer-events-none text-white opacity-100"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            width="9"
+            height="9">
+            <line x1="2" y1="6" x2="10" y2="6"></line>
+        </svg>
+    </div>
+
+    <!-- Optional label -->
+    <span *ngIf="label" class="text-xs text-sidebar-text">{{ label }}</span>
+</label>
