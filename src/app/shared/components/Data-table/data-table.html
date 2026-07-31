@@ -16,8 +16,7 @@
 
     <!-- Search -->
     @if (config().showSearch !== false) {
-    <div
-      class="bg-gray-100 relative flex items-center  rounded-xl border-2px border-transparent min-w-50 max-w-70">
+    <div class="bg-gray-100 relative flex items-center  rounded-xl border-2px border-transparent min-w-50 max-w-70">
       <svg class="st-search-icon absolute left-2.5 w-3.5 h-3.5 text-[--st-text3] pointer-events-none"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
         stroke-linejoin="round">
@@ -138,9 +137,7 @@
 
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
-    <app-custom-date-selector
-    
-    ></app-custom-date-selector>
+    <app-custom-date-selector></app-custom-date-selector>
     }
 
     <!-- CUSTOM BUTTON -->
@@ -707,6 +704,60 @@
               [ngModel]="tempFilters()[filter.key + '_to']"
               (ngModelChange)="updateTempFilter(filter.key + '_to', $event)" />
           </div>
+          } @else if (filter.starRating) {
+          <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+            <!-- Trigger Button -->
+            <button type="button"
+              class="st-filter-input w-full flex items-center justify-between px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] text-left"
+              (click)="toggleDropdown(filter.key)">
+              @if (selectedStarValue(filter.key) > 0) {
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"
+                  stroke="currentColor" stroke-width="1.5">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span class="text-[--st-text2] truncate">{{ selectedStarValue(filter.key) }} Star{{
+                  selectedStarValue(filter.key) > 1 ? 's' : '' }}</span>
+              </span>
+              } @else {
+              <span class="text-[--st-text2] truncate">-- Select Rating --</span>
+              }
+              <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200"
+                [class.rotate-180]="isDropdownOpen(filter.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Popover -->
+            @if (isDropdownOpen(filter.key)) {
+            <div
+              class="absolute top-[calc(100%+4px)] left-0 w-full z-[2000] bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-xl] overflow-hidden flex flex-col animate-[st-dropdown_0.15s_ease-out]">
+              <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[--st-border2]">
+                @for (opt of filter.options ?? []; track opt.value) {
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] text-[13px] text-[--st-text] font-inherit bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-[--st-row-hover] text-left"
+                  [class.bg-[--st-accent-bg]]="isStarSelected(filter.key, opt.value)"
+                  (click)="selectStarRating(filter.key, opt.value)">
+                  <svg class="w-4 h-4 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"
+                    stroke="currentColor" stroke-width="1.5">
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span class="text-[--st-text2] flex-1 truncate">{{ opt.value }}</span>
+                  @if (isStarSelected(filter.key, opt.value)) {
+                  <svg class="w-3.5 h-3.5 text-[--st-accent] flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  }
+                </button>
+                }
+              </div>
+            </div>
+            }
+          </div>
           } @else if (filter.multiSelect) {
           <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
             <!-- Trigger Button -->
@@ -765,20 +816,20 @@
             }
           </div>
           } @else {
-          <select
-            class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring]"
-            [ngModel]="tempFilters()[filter.key]" (ngModelChange)="updateTempFilter(filter.key, $event)">
-            <option value="">-- Select {{ filter.label }} --</option>
-            @for (opt of filter.options ?? []; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-            }
-          </select>
+          <app-single-input
+            [options]="getFilterSelectOptions(filter)"
+            [placeHolder]="'-- Select ' + filter.label + ' --'"
+            [ngModel]="tempFilters()[filter.key]"
+            (ngModelChange)="updateTempFilter(filter.key, $event)"
+            [enableSearch]="filter.searchable ?? true">
+          </app-single-input>
           }
         </div>
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
       <button
         class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
         (click)="clearModalFilters()" type="button">Clear</button>
@@ -822,7 +873,8 @@
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
       <button
         class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
         (click)="closeColPicker()" type="button">Done</button>
@@ -862,7 +914,8 @@
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
       <button
         class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
         (click)="closeBulkActionModal()" type="button">Cancel</button>

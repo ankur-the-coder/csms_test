@@ -1298,15 +1298,18 @@
 
 /* Allow dropdowns inside modal grid to pop over cleanly */
 .st-modal-body {
-  overflow-y: visible !important; /* Prevents modal body from clipping absolute popovers */
+  overflow-y: visible !important;
+  /* Prevents modal body from clipping absolute popovers */
 }
 
 .st-filter-field {
-  position: relative; /* Ensures z-index stacking works per field */
+  position: relative;
+  /* Ensures z-index stacking works per field */
 }
 
 .st-filter-field:focus-within {
-  z-index: 50; /* Brings the currently active field to the top of the stack */
+  z-index: 50;
+  /* Brings the currently active field to the top of the stack */
 }
 
 /* The date-range selector defaults to full-width (for use as a standalone

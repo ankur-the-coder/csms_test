@@ -40,11 +40,13 @@ import { CustomColumnDirective } from './custom-column.directive';
 import { DataTableService } from './data-table.service';
 import { CustomDateSelector } from '../inputs/custom-date-selector/custom-date-selector';
 
+import { SingleInput, SelectOption } from '../inputs/single-input/single-input';
+
 type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe,CustomDateSelector],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, CustomDateSelector, SingleInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
@@ -554,6 +556,13 @@ export class DataTable<T extends object> implements AfterContentInit {
 
   clearModalFilters(): void { this.tempFilters.set({}); }
 
+  getFilterSelectOptions(filter: TableFilter): SelectOption[] {
+    return (filter.options || []).map(opt => ({
+      label: String(opt.label),
+      value: opt.value
+    }));
+  }
+
   clearFilters(): void {
     this.searchRaw.set('');
     this.activeFilters.set({ search: '' });
@@ -1016,5 +1025,26 @@ getMultiSelectDisplay(key: string): string {
 onDropdownSearch(filterKey: string, searchTerm: string): void {
   // Logic to emit an event or filter filter.options dynamically
   console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
+}
+
+// ── Star rating filter helpers ───────────────────────────
+starArray(value: number | string | null | undefined, max = 5): boolean[] {
+  const n = Number(value) || 0;
+  return Array.from({ length: max }, (_, i) => i < n);
+}
+
+selectedStarValue(key: string): number {
+  return Number(this.tempFilters()[key]) || 0;
+}
+
+isStarSelected(key: string, value: any): boolean {
+  return String(this.tempFilters()[key] ?? '') === String(value);
+}
+
+selectStarRating(key: string, value: any): void {
+  const current = this.tempFilters()[key];
+  const next = String(current ?? '') === String(value) ? '' : value;
+  this.updateTempFilter(key, next);
+  this.activeDropdownKey.set(null);
 }
 }
