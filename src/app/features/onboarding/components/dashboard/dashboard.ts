@@ -176,7 +176,7 @@ export class Dashboard {
 
     return {
       columns: [
-        { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
+        // { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
         { key: 'name',             label: 'Organisation', sortable: true, type: 'avatar' },
         { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
         {
