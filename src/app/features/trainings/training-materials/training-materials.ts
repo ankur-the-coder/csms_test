@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 
 interface Material {
   id: string;
@@ -8,6 +7,12 @@ interface Material {
   size: string;
   date: string;
   type: 'PDF' | 'PPT' | 'DOC' | 'MP4';
+  module: string;
+}
+
+interface TrainingModuleOption {
+  key: string;
+  label: string;
 }
 
 @Component({
@@ -17,9 +22,20 @@ interface Material {
   styleUrl: './training-materials.css',
 })
 export class TrainingMaterials {
-
-    activeTab = 'Materials';
+  activeTab = 'Materials';
   tabs = ['Dashboard', 'Trainers', 'Materials', 'Feedback', 'My Trainings'];
+
+  selectedModule = 'employee';
+
+  trainingModules: TrainingModuleOption[] = [
+    { key: 'employee', label: 'Employee' },
+    { key: 'attendance', label: 'Attendance' },
+    { key: 'leave', label: 'Leave' },
+    { key: 'salary', label: 'Salary' },
+    { key: 'organization', label: 'Organization' },
+    { key: 'timesheet', label: 'Timesheet' },
+    { key: 'payroll', label: 'Payroll' },
+  ];
 
   materials: Material[] = [
     {
@@ -28,6 +44,7 @@ export class TrainingMaterials {
       size: '2.4 MB',
       date: '2026-07-20',
       type: 'PDF',
+      module: 'employee',
     },
     {
       id: '2',
@@ -35,6 +52,7 @@ export class TrainingMaterials {
       size: '1.1 MB',
       date: '2026-07-18',
       type: 'PDF',
+      module: 'attendance',
     },
     {
       id: '3',
@@ -42,10 +60,27 @@ export class TrainingMaterials {
       size: '8.1 MB',
       date: '2026-07-15',
       type: 'PPT',
+      module: 'payroll',
     },
   ];
 
   isDragOver = false;
+
+  selectModule(moduleKey: string): void {
+    this.selectedModule = moduleKey;
+  }
+
+  getSelectedModuleLabel(): string {
+    return this.trainingModules.find((module) => module.key === this.selectedModule)?.label ?? 'Selected Module';
+  }
+
+  getVisibleMaterials(): Material[] {
+    return this.materials.filter((material) => material.module === this.selectedModule);
+  }
+
+  addMaterial(material: Material): void {
+    this.materials = [material, ...this.materials];
+  }
 
   getTypeIconColor(type: string): string {
     switch (type) {
@@ -93,19 +128,20 @@ export class TrainingMaterials {
   }
 
   handleFiles(files: FileList): void {
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file) => {
       const extension = file.name.split('.').pop()?.toUpperCase() || 'PDF';
-      const type = extension === 'PPTX' ? 'PPT' : extension as any;
-      
+      const type = extension === 'PPTX' ? 'PPT' : (extension as Material['type']);
+
       const newMaterial: Material = {
         id: Date.now().toString(),
         name: file.name,
         size: this.formatFileSize(file.size),
         date: new Date().toISOString().split('T')[0],
-        type: type,
+        type,
+        module: this.selectedModule,
       };
 
-      this.materials.unshift(newMaterial);
+      this.addMaterial(newMaterial);
     });
   }
 
@@ -124,7 +160,7 @@ export class TrainingMaterials {
 
   deleteMaterial(id: string): void {
     if (confirm('Are you sure you want to delete this material?')) {
-      this.materials = this.materials.filter(m => m.id !== id);
+      this.materials = this.materials.filter((material) => material.id !== id);
     }
   }
 }
