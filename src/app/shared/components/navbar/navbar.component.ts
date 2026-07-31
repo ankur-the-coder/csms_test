@@ -14,6 +14,7 @@ export class NavbarComponent implements OnInit {
 
   @Input() searchQuery = '';
   @Output() searchChange = new EventEmitter<string>();
+  @Output() menuToggle = new EventEmitter<void>();
 
   showNotifications = false;
   isImplementationRoute = true;

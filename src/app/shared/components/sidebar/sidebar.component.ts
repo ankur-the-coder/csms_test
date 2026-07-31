@@ -24,7 +24,9 @@ export class SidebarComponent implements OnInit {
   private router = inject(Router);
 
   @Input() activeNav = 'dashboard';
+  @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
+  @Output() closeMobile = new EventEmitter<void>();
 
   collapsed = false;
 
@@ -70,6 +72,7 @@ export class SidebarComponent implements OnInit {
   selectNav(id: string) {
     this.activeNav = id;
     this.navChange.emit(id);
+    this.closeMobile.emit();
 
     if (id === 'dashboard') {
       this.router.navigate(['/dashboard']);
