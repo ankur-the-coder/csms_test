@@ -1,5 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { signal } from '@angular/core';
+
 
 interface Training {
   id: string;
@@ -12,17 +16,53 @@ interface Training {
   status: 'SCHEDULED' | 'IN-PROGRESS' | 'COMPLETED' | 'CANCELLED';
 }
 
+const EMPTY_FORM = {
+  customer: '',
+  title: '',
+  trainingType: '',
+  mode: 'Online',
+  startDate: '',
+  endDate: '',
+  startTime: '',
+  endTime: '',
+  meetingLink: '',
+  description: '',
+  participants: '',
+  status: 'SCHEDULED',
+};
+
+
+
 @Component({
   selector: 'app-my-training',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './my-training.html',
   styleUrl: './my-training.css',
 })
 export class MyTraining {
+  [x: string]: any;
+
+
+
 
   activeTab = 'My Trainings';
   tabs = ['Dashboard', 'Trainers', 'Materials', 'Feedback', 'My Trainings'];
   organisation = 'ABC Industries';
+
+  constructor(private router: Router) { }
+
+  readonly isCreateModalOpen = signal(false);
+  readonly selectedMaterials = signal<File[]>([]);
+
+  navigateToMyTraining(): void {
+    this.router.navigate(['/trainings/materials']);
+  }
+
+  navigateToDashboard(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+
 
   trainings: Training[] = [
     {
@@ -46,6 +86,12 @@ export class MyTraining {
       status: 'IN-PROGRESS',
     },
   ];
+
+  readonly formModel = signal({
+    ...EMPTY_FORM
+  });
+
+
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
@@ -72,4 +118,68 @@ export class MyTraining {
     // Implement materials view logic
   }
 
+  readonly statusOptions = [
+    'SCHEDULED',
+    'IN-PROGRESS',
+    'COMPLETED',
+    'CANCELLED'
+  ] as const;
+
+  readonly customerOptions = [
+    'ABC Industries',
+    'XYZ Pvt Ltd'
+  ];
+
+  readonly trainingTypeOptions = [
+    'Platform Onboarding',
+    'Admin Configuration'
+  ];
+
+  updateFormField(field: string, value: any): void {
+    this.formModel.update(form => ({
+      ...form,
+      [field]: value
+    }));
+  }
+
+  getStatusLabel(status: string): string {
+    return status.replace('-', ' ');
+  }
+
+  onMaterialsSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (input.files) {
+      this.selectedMaterials.set(Array.from(input.files));
+    }
+  }
+
+
+  isCreateFormValid(): boolean {
+    return true;
+  }
+
+  createTraining(): void {
+    console.log(this.formModel());
+    this.closeCreateModal();
+  }
+
+
+  openCreateModal(): void {
+    this.formModel.set({ ...EMPTY_FORM });
+    this.selectedMaterials.set([]);
+    this.isCreateModalOpen.set(true);
+  }
+
+  closeCreateModal(): void {
+    this.isCreateModalOpen.set(false);
+    this.formModel.set({ ...EMPTY_FORM });
+    this.selectedMaterials.set([]);
+  }
+
+
+
+
 }
+
+

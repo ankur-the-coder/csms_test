@@ -7,6 +7,9 @@ import { AddOnboarding } from './features/onboarding/components/add-onboarding/a
 import { Client } from './features/client/client/client';
 import { Training } from './features/trainings/Dashboard/training/training';
 import { ScheduleMeeting } from './features/meetings/schedule-meeting/schedule-meeting';
+import { MyTraining } from './features/trainings/my-training/my-training';
+import { TrainingMaterials } from './features/trainings/training-materials/training-materials';
+;
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -18,5 +21,7 @@ export const routes: Routes = [
   { path: 'meetings', component: MeetingsComponent },
   { path: 'client', component: Client },
   { path: 'meetings/schedule', component: ScheduleMeeting },
+  { path: 'trainings/my-training', component: MyTraining },
+  { path: 'trainings/materials', component: TrainingMaterials },
   { path: '**', redirectTo: 'dashboard' }
 ];
