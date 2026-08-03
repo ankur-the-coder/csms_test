@@ -298,7 +298,7 @@
           <!-- Actions header -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <th
-            class="st-th st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
             Actions</th>
           }
         </tr>
@@ -314,7 +314,7 @@
         <tr>
           <td
             [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)"
-            class="st-group-header px-3.5 py-1.5 bg-[color-mix(in_srgb,var(--st-accent)_8%,var(--st-surface))] border-t border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] border-b border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] text-[12px] font-semibold text-[--st-accent-dark]">
+            class=" px-3.5 py-1.5  border-t text-[12px] font-semibold text-text-primary">
             <span>{{ row.__groupValue }}</span>
           </td>
         </tr>

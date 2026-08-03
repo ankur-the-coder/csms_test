@@ -483,7 +483,8 @@ export class DataTable<T extends object> implements AfterContentInit {
           if (stale) return;
           this._lastFetchKey = fetchKey;
           const rawData = getByPath(res, dp) as any[] ?? [];
-          const data = transformRow ? rawData.map(transformRow) : rawData as T[];
+          const mapped = transformRow ? rawData.map(transformRow) : rawData as T[];
+          const data = mapped.filter((r): r is T => r !== null && r !== undefined);
           const total = getByPath(res, tp) as number ?? data.length;
           this.rows.set(data);
           this.selectedIds.set(new Set());

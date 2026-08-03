@@ -303,10 +303,16 @@ export class Dashboard {
   private mapApiRowToClient(row: Datum): Client {
     const checklist  = this.buildChecklistFromApi(row);
     const apiModules: Record<string, { completed: number; total: number }> = {};
-    if (row.modules) {
-      Object.entries(row.modules).forEach(([key, val]) => {
-        const m = val as { completed: number; total: number };
-        apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+    if (row.modules && typeof row.modules === 'object') {
+      Object.entries(row.modules).forEach(([key, modData]) => {
+        if (modData && Array.isArray(modData.features)) {
+          const completed = modData.features.filter(f => f.approval_status === 1).length;
+          const total = modData.features.length;
+          apiModules[key] = { completed, total };
+        } else if (modData && typeof modData === 'object') {
+          const m = modData as any;
+          apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+        }
       });
     }
     return {
@@ -333,19 +339,20 @@ export class Dashboard {
 
   private buildChecklistFromApi(row: Datum): Record<number, FeatureChecklistRow> {
     const checklist: Record<number, FeatureChecklistRow> = {};
-    this.modules.forEach(mod => {
-      const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
-      const completedCount = apiMod?.completed || 0;
-      mod.features.forEach((feat, idx) => {
-        const isApproved = idx < completedCount;
-        checklist[feat.mod_id] = {
-          approval_status: isApproved ? 1 : 0,
-          remark: isApproved ? 'Verified & approved' : '',
-          started_at:   isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null,
-          completed_at: isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null
-        };
+    if (row.modules && typeof row.modules === 'object') {
+      Object.values(row.modules).forEach(modData => {
+        if (modData && Array.isArray(modData.features)) {
+          modData.features.forEach(feat => {
+            checklist[feat.mod_id] = {
+              approval_status: feat.approval_status ?? 0,
+              remark: feat.remark ?? '',
+              started_at: feat.started_at ? this.formatDate(feat.started_at.toString()) : null,
+              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null
+            };
+          });
+        }
       });
-    });
+    }
     return checklist;
   }
 

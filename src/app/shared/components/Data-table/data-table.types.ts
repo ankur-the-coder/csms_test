@@ -158,7 +158,7 @@ export interface ApiConfig<T> {
   dataPath?: string;
   totalPath?: string;
   buildRequest?: (ctx: RequestContext) => ApiRequest;
-  transformRow?: (raw: any) => T;
+  transformRow?: (raw: any) => T | null;
 }
 
 // ── Main Config ───────────────────────────────────────────────────────────────
