@@ -37,6 +37,9 @@ export interface Client {
   cs_lead: string;
   support_owner: string;
   country: string;
+  rating: number;
+  licence_start_date: string;
+  licence_end_date: string;
   health: string;
   checklist: Record<number, FeatureChecklistRow>;
   overallProgress: {
@@ -130,10 +133,11 @@ export class ImplementationComponent implements OnInit {
 
     return {
       columns: [
-        { key: 'name',             label: 'Organisation',   sortable: true },
-        { key: 'cs_lead',          label: 'Lead Owner',        sortable: false },
-        { key: 'support_owner',    label: 'Support Owner',  sortable: false },
-        { key: 'country',          label: 'Country',        sortable: false },
+        { key: 'name',               label: 'Organisation',   sortable: true },
+        { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
+        { key: 'support_owner',      label: 'Support Owner',  sortable: false },
+        { key: 'country',            label: 'Country',        sortable: false },
+        { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
@@ -143,10 +147,12 @@ export class ImplementationComponent implements OnInit {
             'Risk':      { label: 'Risk' },
           }
         },
+        { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
+        { key: 'licence_start_date', label: 'Start Date',  sortable: false },
+        { key: 'licence_end_date',   label: 'End Date',    sortable: false },
+        { key: 'overallProgress',    label: 'Progress',       align: 'center', tooltip: 'Overall implementation progress' },
+        { key: 'modules',            label: 'Modules',        align: 'center', tooltip: 'Module-wise completion status' },
         
-        { key: 'onboarding_date',  label: 'Onboarded',   sortable: false },
-        { key: 'overallProgress',  label: 'Progress',    align: 'center', tooltip: 'Overall implementation progress' },
-        { key: 'modules',          label: 'Modules',     align: 'center', tooltip: 'Module-wise completion status' },
       ],
 
       apiConfig: {
@@ -159,7 +165,7 @@ export class ImplementationComponent implements OnInit {
 
           const today = this.getTodayDateString();
           const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
-          const toDate = ctx.dateTo ? ctx.dateTo : today;
+          const toDate   = ctx.dateTo   ? ctx.dateTo   : today;
 
           const sortColMap: Record<string, string> = {
             'name': 'orgName',
@@ -184,7 +190,7 @@ export class ImplementationComponent implements OnInit {
             filter: JSON.stringify(filterObj),
             tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0,
             fromDate: fromDate,
-            toDate: toDate
+            toDate:   toDate,
           };
 
           return { method: 'POST' as const, body };
@@ -329,15 +335,18 @@ export class ImplementationComponent implements OnInit {
     }
 
     return {
-      id:              row.orgId,
-      org_id:          row.orgId,
-      name:            row.organization,
-      industry:        '',
-      onboarding_date: this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
-      cs_lead:         row.csLead         || '-',
-      support_owner:   row.supportOwner   || '—',
-      country:         row.country        || '—',
-      health:          row.health,
+      id:                  row.orgId,
+      org_id:              row.orgId,
+      name:                row.organization,
+      industry:            '',
+      onboarding_date:     this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
+      cs_lead:             row.csLead         || '-',
+      support_owner:       row.supportOwner   || '—',
+      country:             row.country        || '—',
+      rating:              row.rating         ?? 0,
+      licence_start_date:  this.formatDate(row.licenceStartDate ? row.licenceStartDate.toString() : ''),
+      licence_end_date:    this.formatDate(row.licenceEndDate   ? row.licenceEndDate.toString()   : ''),
+      health:              row.health,
       checklist,
       overallProgress: {
         approved:   row.overallProgress?.approved   || 0,

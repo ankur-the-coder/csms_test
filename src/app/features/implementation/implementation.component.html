@@ -83,33 +83,11 @@
       </button>
       }
     </div>
-
-    <!-- View toggle -->
-    <div class="flex items-center gap-3">
-      <div class="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200">
-        <button (click)="viewMode.set('grid')" title="Grid View"
-          class="icon-btn"
-          [class.icon-btn-active]="viewMode() === 'grid'"
-          [class.icon-btn-inactive]="viewMode() !== 'grid'">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-          </svg>
-        </button>
-        <button (click)="viewMode.set('table')" title="Table View"
-          class="icon-btn"
-          [class.icon-btn-active]="viewMode() === 'table'"
-          [class.icon-btn-inactive]="viewMode() !== 'table'">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
+</div>
 
 
   <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
-  @if (viewMode() === 'table') {
+ 
   <div class="card p-0 overflow-hidden">
     <app-data-table
       [config]="tableConfig()"
@@ -158,84 +136,10 @@
 
     </app-data-table>
   </div>
-  }
+  
 
-  <!-- ── GRID VIEW ──────────────────────────────────────────────────────────── -->
-  @if (viewMode() === 'grid') {
 
-  @if (isLoading()) {
-  <div class="flex flex-col items-center justify-center py-20">
-    <div class="h-10 w-10 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
-    <p class="text-sm text-text-muted mt-4 font-medium">Loading implementation data...</p>
-  </div>
-  } @else if (filteredClients().length === 0) {
-  <div class="card flex flex-col items-center justify-center py-20 gap-4">
-    <div class="w-14 h-14 rounded-full bg-brand-50 border-2 border-brand-200 flex items-center justify-center text-brand-400">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-    </div>
-    <p class="text-base font-semibold text-text-primary">No clients found</p>
-    <p class="text-sm text-text-muted">Try adjusting your search or filter.</p>
-  </div>
-  } @else {
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-    @for (client of filteredClients(); track client.id) {
-    <div class="card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
-         (click)="openClientDetails(client)">
-      <!-- Card top -->
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 text-sm font-bold">
-            {{ getInitials(client.name) }}
-          </div>
-          <div>
-            <p class="font-semibold text-text-primary text-sm group-hover:text-brand-500 transition-colors">{{ client.name }}</p>
-            <p class="text-xs text-text-muted">Org #{{ client.org_id }}</p>
-          </div>
-        </div>
-        <span class="badge" [ngClass]="getHealthBadgeClasses(client.health)">
-          {{ client.health }}
-        </span>
-      </div>
 
-      <!-- Progress bar -->
-      <div class="mb-3">
-        <div class="flex justify-between text-xs mb-1.5">
-          <span class="font-medium text-text-secondary">Overall Progress</span>
-          <span class="font-bold" [style.color]="getProgressColor(getClientProgressPercent(client))">{{ getClientProgressPercent(client) }}%</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill"
-               [style.width.%]="getClientProgressPercent(client)"
-               [style.background]="getProgressColor(getClientProgressPercent(client))">
-          </div>
-        </div>
-      </div>
-
-      <!-- Module badges -->
-   <div class="flex flex-wrap gap-1.5 mb-4">
-  @for (mod of getClientModules(client); track mod.key) {
-    @if (getModuleTotalCount(client, mod) > 0) {
-    <span class="module-badge" ...>
-      {{ mod.label }}
-      {{ getModuleApprovedCount(client, mod) }}/{{ getModuleTotalCount(client, mod) }}
-    </span>
-    }
-  }
-</div>
-
-      <!-- Footer -->
-      <div class="flex items-center justify-between pt-3 border-t border-card-border">
-        <div class="flex items-center gap-1.5 text-xs text-text-muted">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          {{ client.onboarding_date || '—' }}
-        </div>
-        <div class="text-xs text-text-secondary font-medium">{{ client.cs_lead }}</div>
-      </div>
-    </div>
-    }
-  </div>
-  }
-  }
 
 </div>
 
@@ -351,9 +255,9 @@
         <div class="divide-y divide-card-border">
           @for (feat of mod.features; track feat.mod_id) {
           <div class="px-4 py-3 flex items-center gap-3 hover:bg-surface-50 transition-colors">
-            <!-- Toggle checkbox -->
-            <button (click)="toggleFeatureStatus(selectedClient()!, feat.mod_id)"
-              class="check-box"
+            <!-- Checkbox (Always Disabled) -->
+            <button disabled
+              class="check-box cursor-not-allowed opacity-75 pointer-events-none"
               [class.check-box-checked]="selectedClient()!.checklist[feat.mod_id]?.approval_status === 1"
               [class.check-box-unchecked]="selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1">
               @if (selectedClient()!.checklist[feat.mod_id]?.approval_status === 1) {

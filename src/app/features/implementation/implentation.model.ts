@@ -101,15 +101,18 @@ export interface ApiModule {
 }
 
 export interface Datum {
-  orgId:           number;
-  organization:    string;
-  onboardedDate:   Date | string;
-  csLead:          string | null;
-  supportOwner:    string | null;
-  country:         string | null;
-  health:          string;
-  overallProgress: OverallProgress;
-  modules:         Record<string, ApiModule>;
+  orgId:              number;
+  organization:       string;
+  onboardedDate:      Date | string;
+  csLead:             string | null;
+  supportOwner:       string | null;
+  country:            string | null;
+  rating:             number | null;
+  licenceStartDate:   Date | string | null;
+  licenceEndDate:     Date | string | null;
+  health:             string;
+  overallProgress:    OverallProgress;
+  modules:            Record<string, ApiModule>;
 }
 
 export interface OverallProgress {

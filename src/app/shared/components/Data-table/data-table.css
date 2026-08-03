@@ -828,8 +828,24 @@
 
 /* Actions */
 .st-actions-col {
+  position: sticky;
+  right: 0;
   width: 100px;
   text-align: center;
+}
+
+th.st-actions-col {
+  z-index: 35;
+  background-color: var(--st-header-bg);
+}
+
+td.st-actions-col {
+  z-index: 20;
+  background-color: var(--st-surface);
+}
+
+.st-tr:hover > td.st-actions-col {
+  background-color: var(--st-row-hover);
 }
 
 .st-row-actions {

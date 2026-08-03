@@ -37,14 +37,12 @@ export class SidebarComponent implements OnInit {
 
   csNavItems: NavItem[] = [
     { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
-
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
-
-    { id: 'training', label: 'Training', icon: 'training' },
+    { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-    { id: 'health', label: 'Health Score', icon: 'health' },
-    { id: 'support', label: 'Support Tickets', icon: 'support',  },
-    { id: 'settings', label: 'Settings & Master', icon: 'settings' }
+    { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
+    { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
+    { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
   ];
 
   ngOnInit() {
@@ -57,13 +55,32 @@ export class SidebarComponent implements OnInit {
   }
 
   private updateActiveFromRoute(url: string) {
+    if (!url) return;
+
+    let matchedId = '';
     if (url.includes('implementation')) {
-      this.activeNav = 'implementation';
-    }
-    if (url.includes('onboarding')) {
-      this.activeNav = 'onboarding';
+      matchedId = 'implementation';
+    } else if (url.includes('onboarding')) {
+      matchedId = 'onboarding';
     } else if (url.includes('dashboard')) {
-      this.activeNav = 'dashboard';
+      matchedId = 'dashboard';
+    } else if (url.includes('client')) {
+      matchedId = 'clients';
+    } else if (url.includes('training')) {
+      matchedId = 'training';
+    } else if (url.includes('meetings')) {
+      matchedId = 'meetings';
+    } else if (url.includes('health')) {
+      matchedId = 'health';
+    } else if (url.includes('support')) {
+      matchedId = 'support';
+    } else if (url.includes('settings')) {
+      matchedId = 'settings';
+    }
+
+    if (matchedId) {
+      this.activeNav = matchedId;
+      this.navChange.emit(matchedId);
     }
   }
 
@@ -76,25 +93,10 @@ export class SidebarComponent implements OnInit {
     this.navChange.emit(id);
     this.closeMobile.emit();
 
-    if (id === 'dashboard') {
-      this.router.navigate(['/dashboard']);
-    } else if (id === 'implementation') {
-      this.router.navigate(['/implementation']);
-    }
-
-    else if (id === 'training') {
-      this.router.navigate(['/training']);
-    }
-
-
-    else if (id === 'onboarding') {
-      this.router.navigate(['/onboarding']);
-    }
-    else if (id === 'meetings') {
-      this.router.navigate(['/meetings']);
-    }else if (id === 'clients') {
-
-      this.router.navigate(['/client']);
+    const allItems = [...this.mainNavItems, ...this.csNavItems];
+    const targetItem = allItems.find(item => item.id === id);
+    if (targetItem?.route) {
+      this.router.navigate([targetItem.route]);
     }
   }
 
