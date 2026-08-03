@@ -298,7 +298,7 @@
           <!-- Actions header -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <th
-            class="st-th st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
             Actions</th>
           }
         </tr>
@@ -314,7 +314,7 @@
         <tr>
           <td
             [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)"
-            class="st-group-header px-3.5 py-1.5 bg-[color-mix(in_srgb,var(--st-accent)_8%,var(--st-surface))] border-t border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] border-b border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] text-[12px] font-semibold text-[--st-accent-dark]">
+            class=" px-3.5 py-1.5  border-t text-[12px] font-semibold text-text-primary">
             <span>{{ row.__groupValue }}</span>
           </td>
         </tr>
@@ -751,7 +751,9 @@
                     <polygon
                       points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
-                  <span class="flex-1 truncate">{{ opt.value }}</span>
+                  <span class="flex-1 truncate">
+  {{ opt.value }} Star{{ opt.value > 1 ? 's' : '' }}
+</span>
                   @if (isStarSelected(filter.key, opt.value)) {
                   <svg class="w-3.5 h-3.5 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5">

@@ -11,7 +11,7 @@ import { NavbarComponent } from './shared/components/navbar/navbar.component';
   styleUrl: './app.css'
 })
 export class App {
-  activeNav = 'implementation';
+  activeNav = '';
   searchQuery = '';
 
   // Mobile/tablet sidebar drawer state — desktop (lg+) ignores this and always

@@ -17,7 +17,7 @@ export interface Module {
   tab_id: number;
   key: string;
   label: string;
-  icon: string;
+  icon?: string;
   features: Feature[];
 }
 
@@ -37,6 +37,9 @@ export interface Client {
   cs_lead: string;
   support_owner: string;
   country: string;
+  rating: number;
+  licence_start_date: string;
+  licence_end_date: string;
   health: string;
   checklist: Record<number, FeatureChecklistRow>;
   overallProgress: {
@@ -44,6 +47,7 @@ export interface Client {
     total: number;
     percentage: number;
   };
+  modules: Module[];
   apiModules: Record<string, { completed: number; total: number }>;
 }
 
@@ -61,46 +65,6 @@ export class ImplementationComponent implements OnInit {
   @ViewChild('nameCell')     nameCellTemplate!: TemplateRef<any>;
 
   private readonly implService = inject(ImplementationService);
-
-  readonly modules: Module[] = [
-    { tab_id: 1, key: 'employee',     label: 'Employee',     icon: 'users',   features: [{ mod_id: 64, name: 'Onboard Employees' }] },
-    { tab_id: 2, key: 'attendance',   label: 'Attendance',   icon: 'calendar',features: [
-        { mod_id: 42,  name: 'Shift' },
-        { mod_id: 185, name: 'Projects' },
-        { mod_id: 186, name: 'Tasks' },
-        { mod_id: 187, name: 'Settings of Timesheet' },
-        { mod_id: 502, name: 'Regularization Settings' }
-      ]
-    },
-    { tab_id: 3, key: 'leave',        label: 'Leave',        icon: 'leave',   features: [
-        { mod_id: 31,  name: 'Leave Type Settings' },
-        { mod_id: 193, name: 'Import Leave Balance' }
-      ]
-    },
-    { tab_id: 4, key: 'salary',       label: 'Salary',       icon: 'wallet',  features: [{ mod_id: 41, name: 'Salary Heads' }] },
-    { tab_id: 5, key: 'organization', label: 'Organization', icon: 'network', features: [
-        { mod_id: 12,  name: 'Departments' },
-        { mod_id: 13,  name: 'Designations' },
-        { mod_id: 14,  name: 'Divisions' },
-        { mod_id: 29,  name: 'Holidays' },
-        { mod_id: 32,  name: 'Locations' },
-        { mod_id: 35,  name: 'Company Details' },
-        { mod_id: 54,  name: 'Company Policy' },
-        { mod_id: 145, name: 'Hierarchy' }
-      ]
-    },
-    { tab_id: 6, key: 'timesheet',    label: 'Timesheet',    icon: 'clock',   features: [{ mod_id: 188, name: 'Timesheet Settings' }] },
-    { tab_id: 7, key: 'payroll',      label: 'Payroll',      icon: 'bank',    features: [
-        { mod_id: 455, name: 'Payroll Heads' },
-        { mod_id: 474, name: 'EPF Settings' },
-        { mod_id: 478, name: 'ESIC Settings' },
-        { mod_id: 485, name: 'Professional Tax Settings' },
-        { mod_id: 509, name: 'Labour Welfare Fund' }
-      ]
-    }
-  ];
-
-  readonly totalFeaturesCount = this.modules.reduce((acc, m) => acc + m.features.length, 0);
 
   clients    = signal<Client[]>([]);
   isLoading  = signal<boolean>(false);
@@ -125,7 +89,7 @@ export class ImplementationComponent implements OnInit {
       { id: 'all',         label: 'All Organisations', count: this.cardData().totalAccounts },
       { id: 'in_progress', label: 'In Progress',       count: this.cardData().inProgress },
       { id: 'complete',    label: 'Completed',         count: this.cardData().completed },
-      { id: 'pending',     label: 'Not Started',       count: this.cardData().notStarted }
+      // { id: 'pending',     label: 'Not Started',       count: this.cardData().notStarted }
     ];
   }
 
@@ -137,9 +101,18 @@ export class ImplementationComponent implements OnInit {
                     c.org_id.toString().includes(q) ||
                     c.cs_lead.toLowerCase().includes(q);
       if (!match) return false;
-      if (sf === 'complete')    return c.overallProgress.percentage === 100;
-      if (sf === 'in_progress') return c.overallProgress.percentage > 0 && c.overallProgress.percentage < 100;
-      if (sf === 'pending')     return c.overallProgress.percentage === 0;
+
+      const totalApproved = c.overallProgress?.approved ?? this.getClientApprovedCount(c);
+      const totalFeatures = c.overallProgress?.total ?? this.getClientTotalFeaturesCount(c);
+      const percentage    = c.overallProgress?.percentage ?? (totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0);
+
+      const isCompleted  = percentage === 100 || (totalFeatures > 0 && totalApproved === totalFeatures);
+      const isNotStarted = percentage === 0 || totalApproved === 0;
+      const isInProgress = !isCompleted && !isNotStarted;
+
+      if (sf === 'complete')    return isCompleted;
+      if (sf === 'in_progress') return isInProgress;
+      // if (sf === 'pending')     return isNotStarted;
       return true;
     });
   });
@@ -148,7 +121,7 @@ export class ImplementationComponent implements OnInit {
   totalClients          = computed(() => this.cardData().totalAccounts);
   completedClientsCount = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
-  pendingClientsCount   = computed(() => this.cardData().notStarted);
+  // pendingClientsCount   = computed(() => this.cardData().notStarted);
 
  
 
@@ -160,10 +133,11 @@ export class ImplementationComponent implements OnInit {
 
     return {
       columns: [
-        { key: 'name',             label: 'Organisation',   sortable: true },
-        { key: 'cs_lead',          label: 'Lead Owner',        sortable: false },
-        { key: 'support_owner',    label: 'Support Owner',  sortable: false },
-        { key: 'country',          label: 'Country',        sortable: false },
+        { key: 'name',               label: 'Organisation',   sortable: true },
+        { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
+        { key: 'support_owner',      label: 'Support Owner',  sortable: false },
+        { key: 'country',            label: 'Country',        sortable: false },
+        { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
@@ -173,9 +147,12 @@ export class ImplementationComponent implements OnInit {
             'Risk':      { label: 'Risk' },
           }
         },
-        { key: 'onboarding_date',  label: 'Onboarded',   sortable: false },
-        { key: 'overallProgress',  label: 'Progress',    align: 'center', tooltip: 'Overall implementation progress' },
-        { key: 'modules',          label: 'Modules',     align: 'center', tooltip: 'Module-wise completion status' },
+        { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
+        { key: 'licence_start_date', label: 'Start Date',  sortable: false },
+        { key: 'licence_end_date',   label: 'End Date',    sortable: false },
+        { key: 'overallProgress',    label: 'Progress',       align: 'center', tooltip: 'Overall implementation progress' },
+        { key: 'modules',            label: 'Modules',        align: 'center', tooltip: 'Module-wise completion status' },
+        
       ],
 
       apiConfig: {
@@ -185,11 +162,10 @@ export class ImplementationComponent implements OnInit {
 
         buildRequest: (ctx: RequestContext) => {
           const filterObj: Record<string, any> = { ...ctx.filters };
-          if (statusFilter !== 'all') filterObj['status'] = statusFilter;
 
           const today = this.getTodayDateString();
           const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
-          const toDate = ctx.dateTo ? ctx.dateTo : today;
+          const toDate   = ctx.dateTo   ? ctx.dateTo   : today;
 
           const sortColMap: Record<string, string> = {
             'name': 'orgName',
@@ -214,13 +190,31 @@ export class ImplementationComponent implements OnInit {
             filter: JSON.stringify(filterObj),
             tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0,
             fromDate: fromDate,
-            toDate: toDate
+            toDate:   toDate,
           };
 
           return { method: 'POST' as const, body };
         },
 
-        transformRow: (row: any) => this.mapApiRowToClient(row as Datum),
+        transformRow: (row: any): Client | null => {
+          const client = this.mapApiRowToClient(row as Datum);
+          const sf = statusFilter;
+          if (sf === 'all') return client;
+
+          const totalApproved = client.overallProgress?.approved ?? this.getClientApprovedCount(client);
+          const totalFeatures = client.overallProgress?.total ?? this.getClientTotalFeaturesCount(client);
+          const percentage    = client.overallProgress?.percentage ?? (totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0);
+
+          const isCompleted  = percentage === 100 || (totalFeatures > 0 && totalApproved === totalFeatures);
+          const isNotStarted = percentage === 0 || totalApproved === 0;
+          const isInProgress = !isCompleted && !isNotStarted;
+
+          if (sf === 'complete' && !isCompleted) return null;
+          if (sf === 'in_progress' && !isInProgress) return null;
+          if (sf === 'pending' && !isNotStarted) return null;
+
+          return client;
+        },
       },
 
       rowIdKey:        'id',
@@ -296,54 +290,76 @@ export class ImplementationComponent implements OnInit {
   }
 
   private mapApiRowToClient(row: Datum): Client {
-    const checklist  = this.buildChecklistFromApi(row);
+    const modules: Module[] = [];
+    const checklist: Record<number, FeatureChecklistRow> = {};
     const apiModules: Record<string, { completed: number; total: number }> = {};
-    if (row.modules) {
-      Object.entries(row.modules).forEach(([key, val]) => {
-        const m = val as { completed: number; total: number };
-        apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+
+    if (row.modules && typeof row.modules === 'object') {
+      const moduleEntries = Object.entries(row.modules);
+      moduleEntries.sort(([, a], [, b]) => (a?.tabOrder ?? 0) - (b?.tabOrder ?? 0));
+
+      moduleEntries.forEach(([key, modData]) => {
+        const featuresList: Feature[] = [];
+        let completedCount = 0;
+        const totalCount = Array.isArray(modData?.features) ? modData.features.length : 0;
+
+        if (Array.isArray(modData?.features)) {
+          modData.features.forEach((feat) => {
+            featuresList.push({
+              mod_id: feat.mod_id,
+              name: feat.name
+            });
+
+            if (feat.approval_status === 1) {
+              completedCount++;
+            }
+
+            checklist[feat.mod_id] = {
+              approval_status: feat.approval_status ?? 0,
+              remark: feat.remark ?? '',
+              started_at: feat.started_at ? this.formatDate(feat.started_at.toString()) : null,
+              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null
+            };
+          });
+        }
+
+        modules.push({
+          tab_id: modData?.tabOrder ?? (modules.length + 1),
+          key: key,
+          label: modData?.label || key,
+          features: featuresList
+        });
+
+        apiModules[key] = { completed: completedCount, total: totalCount };
       });
     }
+
     return {
-      id:              row.orgId,
-      org_id:          row.orgId,
-      name:            row.organization,
-      industry:        '',
-      onboarding_date: this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
-      cs_lead:         row.csLead         || '-',
-      support_owner:   row.supportOwner   || '—',
-      country:         (row as any).country || '—',
-      health:          row.health,
+      id:                  row.orgId,
+      org_id:              row.orgId,
+      name:                row.organization,
+      industry:            '',
+      onboarding_date:     this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
+      cs_lead:             row.csLead         || '-',
+      support_owner:       row.supportOwner   || '—',
+      country:             row.country        || '—',
+      rating:              row.rating         ?? 0,
+      licence_start_date:  this.formatDate(row.licenceStartDate ? row.licenceStartDate.toString() : ''),
+      licence_end_date:    this.formatDate(row.licenceEndDate   ? row.licenceEndDate.toString()   : ''),
+      health:              row.health,
       checklist,
       overallProgress: {
         approved:   row.overallProgress?.approved   || 0,
         total:      row.overallProgress?.total      || 0,
         percentage: row.overallProgress?.percentage || 0,
       },
+      modules,
       apiModules,
     };
   }
 
   private mapApiDataToClients(data: Datum[]): Client[] {
     return data.map(row => this.mapApiRowToClient(row));
-  }
-
-  private buildChecklistFromApi(row: Datum): Record<number, FeatureChecklistRow> {
-    const checklist: Record<number, FeatureChecklistRow> = {};
-    this.modules.forEach(mod => {
-      const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
-      const completedCount = apiMod?.completed || 0;
-      mod.features.forEach((feat, idx) => {
-        const isApproved = idx < completedCount;
-        checklist[feat.mod_id] = {
-          approval_status: isApproved ? 1 : 0,
-          remark: isApproved ? 'Verified & approved' : '',
-          started_at:   isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null,
-          completed_at: isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null
-        };
-      });
-    });
-    return checklist;
   }
 
   private formatDate(isoDate: string): string {
@@ -359,31 +375,40 @@ export class ImplementationComponent implements OnInit {
     return Object.values(client.checklist).filter(r => r.approval_status === 1).length;
   }
 
+  getClientTotalFeaturesCount(client: Client): number {
+    if (client?.overallProgress?.total) return client.overallProgress.total;
+    if (!client?.modules) return 0;
+    return client.modules.reduce((acc, m) => acc + m.features.length, 0);
+  }
+
   getClientProgressPercent(client: Client): number {
-    if (client.overallProgress?.percentage > 0) return client.overallProgress.percentage;
-    if (this.totalFeaturesCount === 0) return 0;
-    return Math.round((this.getClientApprovedCount(client) / this.totalFeaturesCount) * 100);
+    if (client?.overallProgress?.percentage !== undefined) return client.overallProgress.percentage;
+    const total = this.getClientTotalFeaturesCount(client);
+    if (total === 0) return 0;
+    return Math.round((this.getClientApprovedCount(client) / total) * 100);
   }
 
   getModuleApprovedCount(client: Client, mod: Module): number {
-    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].completed;
+    if (client?.apiModules?.[mod.key]) return client.apiModules[mod.key].completed;
     if (!client?.checklist) return 0;
     return mod.features.filter(f => client.checklist[f.mod_id]?.approval_status === 1).length;
   }
 
   getModuleTotalCount(client: Client, mod: Module): number {
-    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].total;
-    return mod.features.length;
+    if (client?.apiModules?.[mod.key]) return client.apiModules[mod.key].total;
+    return mod.features?.length ?? 0;
   }
 
   isModuleFullyApproved(client: Client, mod: Module): boolean {
     const total = this.getModuleTotalCount(client, mod);
     return total > 0 && this.getModuleApprovedCount(client, mod) === total;
   }
+
   isModuleInProgress(client: Client, mod: Module): boolean {
     const count = this.getModuleApprovedCount(client, mod);
     return count > 0 && count < this.getModuleTotalCount(client, mod);
   }
+
   isModuleNotStarted(client: Client, mod: Module): boolean {
     return this.getModuleApprovedCount(client, mod) === 0;
   }
@@ -427,10 +452,16 @@ export class ImplementationComponent implements OnInit {
     this.closeTimer = setTimeout(() => this.selectedClient.set(null), 300);
   }
 
+  getClientModules(client: Client | null): Module[] {
+    if (!client?.modules) return [];
+    return client.modules.filter(mod => this.getModuleTotalCount(client, mod) > 0);
+  }
+
   getDisplayModules(): Module[] {
+    const clientModules = this.getClientModules(this.selectedClient());
     const tabKey = this.selectedModuleTab();
-    if (tabKey === 'all') return this.modules;
-    return this.modules.filter(m => m.key === tabKey);
+    if (tabKey === 'all') return clientModules;
+    return clientModules.filter(m => m.key === tabKey);
   }
 
   toggleFeatureStatus(client: Client, modId: number) {
@@ -446,7 +477,36 @@ export class ImplementationComponent implements OnInit {
         completed_at: next === 1 ? stamp : null
       }
     };
-    const updated = { ...client, checklist: updatedChecklist };
+
+    const updatedApiModules: Record<string, { completed: number; total: number }> = {};
+    let totalApproved = 0;
+    let totalFeatures = 0;
+
+    (client.modules || []).forEach(mod => {
+      const total = mod.features.length;
+      const completed = mod.features.filter(f => {
+        const status = f.mod_id === modId ? next : (updatedChecklist[f.mod_id]?.approval_status || 0);
+        return status === 1;
+      }).length;
+
+      updatedApiModules[mod.key] = { completed, total };
+      totalApproved += completed;
+      totalFeatures += total;
+    });
+
+    const percentage = totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0;
+
+    const updated: Client = {
+      ...client,
+      checklist: updatedChecklist,
+      apiModules: updatedApiModules,
+      overallProgress: {
+        approved: totalApproved,
+        total: totalFeatures,
+        percentage
+      }
+    };
+
     this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
     if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
   }
@@ -462,15 +522,33 @@ export class ImplementationComponent implements OnInit {
   markAllApproved(client: Client) {
     const stamp = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
     const updatedChecklist = { ...client.checklist };
-    this.modules.forEach(m => m.features.forEach(f => {
-      updatedChecklist[f.mod_id] = {
-        approval_status: 1,
-        remark: updatedChecklist[f.mod_id]?.remark || 'Batch approved by CS Manager',
-        started_at:   updatedChecklist[f.mod_id]?.started_at || stamp,
-        completed_at: stamp
-      };
-    }));
-    const updated = { ...client, checklist: updatedChecklist };
+    const updatedApiModules: Record<string, { completed: number; total: number }> = {};
+    let totalFeatures = 0;
+
+    (client.modules || []).forEach(m => {
+      m.features.forEach(f => {
+        updatedChecklist[f.mod_id] = {
+          approval_status: 1,
+          remark: updatedChecklist[f.mod_id]?.remark || 'Batch approved by CS Manager',
+          started_at:   updatedChecklist[f.mod_id]?.started_at || stamp,
+          completed_at: stamp
+        };
+      });
+      const total = m.features.length;
+      updatedApiModules[m.key] = { completed: total, total };
+      totalFeatures += total;
+    });
+
+    const updated: Client = {
+      ...client,
+      checklist: updatedChecklist,
+      apiModules: updatedApiModules,
+      overallProgress: {
+        approved: totalFeatures,
+        total: totalFeatures,
+        percentage: 100
+      }
+    };
     this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
     this.selectedClient.set(updated);
   }
