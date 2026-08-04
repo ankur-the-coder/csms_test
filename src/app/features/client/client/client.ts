@@ -72,8 +72,8 @@ export class Client {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
         { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
-        { key: 'planEnd', label: 'Plan End', sortable: true, hideable: false, type: 'date' },
-        { key: 'userLimit', label: 'User Limit', sortable: false },
+        { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
+        { key: 'userLimit', label: 'User Limit', sortable: true },
         {
           key: 'stage',
           label: 'Stage',
@@ -123,7 +123,7 @@ export class Client {
             start: ctx.page * ctx.pageSize,
             length: ctx.pageSize,
             search: ctx.search ?? '',
-            sorting: JSON.stringify({ require: 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
+            sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
