@@ -1,1 +1,22 @@
-<p>client works!</p>
+<div class="space-y-6 pb-12">
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl  p-4 mb-4 text-black">
+    <div>
+      <h1 class="page-title">Client</h1>
+      <p>Every onboarding in progress. Switch views, filter, and act on bottlenecks.</p>
+    </div>
+
+  </div>
+
+
+ <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
+
+  <div class="card p-0 overflow-hidden">
+    <app-data-table
+      [config]="tableConfig()"
+      (onRefresh)="loadData()"
+      [filterNames]="['leadOwner', 'supportOwner',
+     'rating', 'country']">
+    </app-data-table>
+  </div>
+</div>
