@@ -112,19 +112,19 @@ export class Client {
             statusFilter === 'in_progress' ? 2 :
             statusFilter === 'pending' ? 3 : 0;
 
-          // Server accepts GET with query params (not POST body)
-          const params = new URLSearchParams({
-            start: String(ctx.page * ctx.pageSize),
-            length: String(ctx.pageSize),
+          // POST body with all required fields
+          const body = {
+            start: ctx.page * ctx.pageSize,
+            length: ctx.pageSize,
             search: ctx.search ?? '',
             sorting: JSON.stringify({ require: 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
-            tabSts: String(tabSts),
+            tabSts,
             fromDate,
             toDate,
-          });
+          };
 
-          return { method: 'POST' as const, query: params.toString() };
+          return { method: 'POST' as const, body };
         },
 
 
