@@ -95,6 +95,7 @@ export class SingleInput implements ControlValueAccessor {
   @Output() valueChange = new EventEmitter<any>();
   @Output() change = new EventEmitter<any>();
   @Output() optionChange = new EventEmitter<SelectOption>();
+  @Output() onOpen = new EventEmitter<void>();
   @ViewChild('dropdown') dropdownElement!: ElementRef;
   @ViewChild('trigger') triggerElement!: ElementRef;
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
@@ -118,6 +119,7 @@ export class SingleInput implements ControlValueAccessor {
         this.closeDropdown();
       } else {
         this.isOpen = true;
+        this.onOpen.emit();
         this.isClosing = false;
         this.calculateDropdownPosition();
         this.scrollToSelectedOption();
