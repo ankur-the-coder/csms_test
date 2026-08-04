@@ -14,6 +14,7 @@ import {
   QueryList,
   HostListener,
   ViewChild,
+  ViewChildren,
   ElementRef,
 } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -59,6 +60,9 @@ export class DataTable<T extends object> implements AfterContentInit {
 
   @ContentChildren(CustomColumnDirective)
   customTemplates!: QueryList<CustomColumnDirective>;
+
+  @ViewChildren(SingleInput)
+  singleInputComponents!: QueryList<SingleInput>;
 
   private http = inject(HttpClient);
   private dataTableService = inject(DataTableService);
@@ -714,6 +718,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   onDocumentClick(): void {
     this.exportMenuOpen.set(false);
     this.pageSizePopoverOpen.set(false);
+    // Close any open filter dropdowns when clicking outside
+    if (this.activeDropdownKey() !== null) {
+      this.closeAllDropdowns();
+    }
   }
 
   toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
@@ -990,24 +998,43 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dragOverKey.set(null);
   }
   toggleDropdown(key: string, event?: MouseEvent): void {
-  const opening = this.activeDropdownKey() !== key;
-  this.activeDropdownKey.update(current => (current === key ? null : key));
-  if (opening && event) {
-    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.dropdownPosition.set({ top: trigger.bottom + 6, left: trigger.left, width: trigger.width });
-  } else {
-    this.dropdownPosition.set(null);
+    const opening = this.activeDropdownKey() !== key;
+    
+    // Close all SingleInput components
+    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
+
+    if (opening && event) {
+      const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      this.activeDropdownKey.set(key);
+      this.dropdownPosition.set({ top: trigger.bottom + 6, left: trigger.left, width: trigger.width });
+    } else {
+      this.activeDropdownKey.set(null);
+      this.dropdownPosition.set(null);
+    }
   }
-}
 
-isDropdownOpen(key: string): boolean {
-  return this.activeDropdownKey() === key;
-}
+  onSingleInputOpened(openedComp: SingleInput): void {
+    // Close DataTable custom dropdowns (starRating, multiSelect)
+    this.activeDropdownKey.set(null);
+    this.dropdownPosition.set(null);
 
-closeAllDropdowns(): void {
-  this.activeDropdownKey.set(null);
-  this.dropdownPosition.set(null);
-}
+    // Close all OTHER SingleInput components
+    this.singleInputComponents?.forEach(comp => {
+      if (comp !== openedComp) {
+        comp.closeDropdown();
+      }
+    });
+  }
+
+  isDropdownOpen(key: string): boolean {
+    return this.activeDropdownKey() === key;
+  }
+
+  closeAllDropdowns(): void {
+    this.activeDropdownKey.set(null);
+    this.dropdownPosition.set(null);
+    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
+  }
 
 hasSelections(key: string): boolean {
   const values = this.tempFilters()[key];

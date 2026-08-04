@@ -5,9 +5,12 @@ import { FormsModule } from '@angular/forms';
 
 import { SmartTableConfig, RequestContext } from '../../../../shared/components/Data-table/data-table.types';
 // import { Client, FeatureChecklistRow } from '../../../implementation/implementation.component';
-import { ImplementationService } from '../../../implementation/implementation.service';
-import { CardData, DataTablePayload, Datum, Implementation } from '../../../implementation/implentation.model';
+
+
 import { DataTable } from '../../../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
+import { ImplementationService } from '../../../implementations/services/implementation/implementation';
+import { CardData, DataTablePayload, Datum, ImplementationData } from '../../../implementations/models/implementation.model';
 export interface Feature {
   mod_id: number;
   name: string;
@@ -49,7 +52,7 @@ export interface Client {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-imports: [CommonModule, FormsModule, DataTable],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
 
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -288,7 +291,7 @@ export class Dashboard {
     };
 
     this.implService.fetchDataTable(payload).subscribe({
-      next: (res: Implementation) => {
+      next: (res: ImplementationData) => {
         this.clients.set(this.mapApiDataToClients(res.data ?? []));
         this.isLoading.set(false);
       },
