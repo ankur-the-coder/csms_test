@@ -79,7 +79,7 @@ export interface DataTablePayload {
 
 
 
-export interface Implementation {
+export interface ImplementationData {
   status: boolean;
   data:   Datum[];
   meta:   Meta;

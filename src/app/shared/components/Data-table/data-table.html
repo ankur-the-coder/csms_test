@@ -238,7 +238,7 @@
           <!-- Checkbox -->
           @if (config().selectable) {
           <th
-            class="st-th st-check-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
+            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
             <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
               <input type="checkbox"
                 class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
@@ -255,7 +255,7 @@
 
           @for (col of visibleColumns(); track col.key) {
           <th
-            class="st-th sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150"
+            class="st-th sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 group"
             [class.st-th--sortable]="col.sortable" [class.st-th--sorted]="sort().key === col.key"
             [class.st-th--right]="col.align === 'right'" [class.st-th--center]="col.align === 'center'"
             [class.st-th--sticky]="col.sticky === true" [class.st-th--dragging]="dragSrcKey() === col.key.toString()"
@@ -266,24 +266,16 @@
             (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
             [title]="col.tooltip ?? ''">
-            <span class="st-th-inner inline-flex items-center gap-1">
+            <span class="st-th-inner inline-flex items-center gap-1.5" [class.cursor-pointer]="col.sortable">
               {{ col.label }}
               @if (col.sortable) {
-              <span class="st-sort-icon inline-flex items-center text-[--st-accent]">
-                @if (getSortIcon($any(col.key)) === 'up') {
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <span class="st-sort-icons flex flex-col -gap-0.5" [class.text-[--st-accent]]="sort().key === col.key">
+                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'asc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'asc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-                } @else if (getSortIcon($any(col.key)) === 'down') {
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'desc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'desc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-                } @else {
-                <svg class="w-3 h-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="18 15 12 9 6 15" />
-                  <polyline points="6 9 12 15 18 9" class="opacity-0" />
-                </svg>
-                }
               </span>
               }
             </span>
@@ -677,7 +669,7 @@
     </div>
 
     <!-- Modal Body -->
-    <div class="px-6 py-5 overflow-y-auto flex-1" (click)="closeAllDropdowns()">
+    <div class="px-6 py-5 overflow-y-auto flex-1">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
         @for (filter of allFilters(); track filter.key) {
         <div class="flex flex-col gap-1.5">
@@ -708,7 +700,7 @@
               (ngModelChange)="updateTempFilter(filter.key + '_to', $event)" />
           </div>
           } @else if (filter.starRating) {
-          <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+          <div class="relative st-custom-select group">
             <!-- Trigger Button -->
             <button type="button"
               class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors focus:border-brand-500 text-left cursor-pointer"
@@ -767,7 +759,7 @@
             }
           </div>
           } @else if (filter.multiSelect) {
-          <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+          <div class="relative st-custom-select group">
             <!-- Trigger Button -->
             <button type="button"
               class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors focus:border-brand-500 text-left cursor-pointer"
@@ -826,9 +818,10 @@
             }
           </div>
           } @else {
-          <app-single-input [options]="getFilterSelectOptions(filter)"
+          <app-single-input #singleInputRef [options]="getFilterSelectOptions(filter)"
             [placeHolder]="'Select ' + filter.label" [ngModel]="tempFilters()[filter.key]"
-            (ngModelChange)="updateTempFilter(filter.key, $event)" [enableSearch]="filter.searchable ?? true">
+            (ngModelChange)="updateTempFilter(filter.key, $event)" [enableSearch]="filter.searchable ?? true"
+            (onOpen)="onSingleInputOpened(singleInputRef)">
           </app-single-input>
           }
         </div>
