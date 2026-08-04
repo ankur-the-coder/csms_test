@@ -897,6 +897,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       case 'excellent': return 'badge-excellent';
       case 'neutral': return 'badge-neutral';
       case 'risk': return 'badge-risk';
+      case 'premium': return 'badge-premium';
       default: return 'badge-default';
     }
   }
