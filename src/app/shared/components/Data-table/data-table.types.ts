@@ -35,6 +35,7 @@ export interface SmartColumn<T> {
   type?: ColType;
   sortable?: boolean;
   hidden?: boolean;
+  hideable?: boolean;
   sticky?: boolean;
   align?: 'left' | 'center' | 'right';
   tooltip?: string;

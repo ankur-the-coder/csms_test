@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
 import {
   RequestContext,
+  SmartColumn,
   SmartTableConfig,
 } from '../../../shared/components/Data-table/data-table.types';
 import { ClientService } from '../services/client/client';
@@ -73,7 +74,14 @@ export class Client {
         { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: true, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: false },
-        { key: 'modules', label: 'Modules', sortable: true },
+        {
+          key: 'stage',
+          label: 'Stage',
+          sortable: false,
+          type: 'badge',
+          badgeMap: { PREMIUM: { label: 'PREMIUM' } },
+        },
+        { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         {
@@ -83,7 +91,7 @@ export class Client {
           type: 'badge',
           badgeMap: { Pending: { label: 'Pending' }, Completed: { label: 'Completed' } },
         },
-      ],
+      ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
         endpoint: this.tableEndpoint,
@@ -97,20 +105,18 @@ export class Client {
           const toDate = ctx.dateTo ? ctx.dateTo : today;
 
           const sortColMap: Record<string, string> = {
-            name: 'orgName',
+            name: 'client',
             planStart: 'planStart',
             planEnd: 'planEnd',
             userLimit: 'userLimit',
+            stage: 'stage',
             modules: 'module',
             leadOwner: 'leadOwner',
             supportOwner: 'suppOwner',
           };
-          const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgName';
+          const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'client';
 
-          const tabSts =
-            statusFilter === 'complete' ? 1 :
-            statusFilter === 'in_progress' ? 2 :
-            statusFilter === 'pending' ? 3 : 0;
+       
 
           // POST body with all required fields
           const body = {
@@ -119,7 +125,6 @@ export class Client {
             search: ctx.search ?? '',
             sorting: JSON.stringify({ require: 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
-            tabSts,
             fromDate,
             toDate,
           };

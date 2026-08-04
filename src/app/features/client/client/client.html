@@ -1,12 +1,15 @@
 <div class="space-y-6 pb-12">
   <!-- ── Page Header ──────────────────────────────────────────────────────── -->
-  <div class="bg-white rounded-xl  p-4 mb-4 text-black">
-    <div>
-      <h1 class="page-title">Client</h1>
-      <p>Every onboarding in progress. Switch views, filter, and act on bottlenecks.</p>
-    </div>
-
+ 
+    
+     <div class="card p-4 mb-4">
+    <h1 class="text-xl font-bold">Client</h1>
+    <p class="mt-2 text-sm text-text-muted">
+      Manage all client information, agreements, contacts, subscriptions in one place
+    </p>
   </div>
+
+
 
 
  <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
@@ -15,8 +18,7 @@
     <app-data-table
       [config]="tableConfig()"
       (onRefresh)="loadData()"
-      [filterNames]="['leadOwner', 'supportOwner',
-     'rating', 'country']">
+      [filterNames]="['leadOwner', 'supportOwner']">
     </app-data-table>
   </div>
 </div>
