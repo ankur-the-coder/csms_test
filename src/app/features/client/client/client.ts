@@ -5,7 +5,7 @@ import {
   SmartTableConfig,
    ApiRequest,
 } from '../../../shared/components/Data-table/data-table.types';
-import { Client as ClientApi, DataTablePayload } from '../services/client/client';
+import { ClientService, DataTablePayload } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
 
 export interface ClientRow {
@@ -29,8 +29,8 @@ export interface ClientRow {
 })
 export class Client {
   // 'ClientApi' — same alias se inject karna hoga
-  private clientApi = inject(ClientApi);
-
+  private clientApi = inject(ClientService);
+ private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   statusFilter = signal<string>('all');
 
   private getTodayDateString(): string {
@@ -67,6 +67,7 @@ export class Client {
   tableConfig = computed<SmartTableConfig<ClientRow>>(() => {
     const statusFilter = this.statusFilter();
 
+
     return {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
@@ -87,7 +88,7 @@ export class Client {
 
       apiConfig: {
         // endpoint zaroori nahi — real URL service ke andar hai
-        endpoint: 'clientDataTable',
+        endpoint: 'this.tableEndpoint',
         dataPath: 'data',
         totalPath: 'totalRecords',
 

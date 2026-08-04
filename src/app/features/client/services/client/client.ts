@@ -17,8 +17,8 @@ export interface DataTablePayload {
 @Injectable({
   providedIn: 'root',
 })
-export class Client {
-  private readonly baseUrl = 'http://127.0.0.1:5000/clientDataTable';
+export class ClientService {
+  public readonly baseUrl = 'http://127.0.0.1:5000';
 
   constructor(private http: HttpClient) {}
 
