@@ -1,11 +1,14 @@
-import { Component, signal, computed, OnInit, inject, TemplateRef, ViewChild } from '@angular/core';
+import { Component, signal, computed, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ImplementationService} from './implementation.service';
-import { DataTable } from '../../shared/components/Data-table/data-table';
-import { SmartTableConfig, RequestContext } from '../../shared/components/Data-table/data-table.types';
-import { Implementation, Datum, CardData, DataTablePayload } from './implentation.model';
-import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
+import { Subject, catchError, of, switchMap, takeUntil } from 'rxjs';
+
+import { RequestContext, SmartTableConfig } from '../../../../../shared/components/Data-table/data-table.types';
+import { DataTable } from "../../../../../shared/components/Data-table/data-table";
+import { CustomColumnDirective } from '../../../../../shared/components/Data-table/custom-column.directive';
+import { ImplementationService } from '../../../services/implementation/implementation';
+import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
+
 
 export interface Feature {
   mod_id: number;
@@ -51,30 +54,32 @@ export interface Client {
   apiModules: Record<string, { completed: number; total: number }>;
 }
 
+interface ClientStatus {
+  approved: number;
+  total: number;
+  percentage: number;
+  isCompleted: boolean;
+  isInProgress: boolean;
+  isNotStarted: boolean;
+}
+
 @Component({
   selector: 'app-implementation',
-  standalone: true,
   imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
-  templateUrl: './implementation.component.html'
+  templateUrl: './implementation.html',
+  styleUrl: './implementation.css',
+  standalone: true,
 })
-export class ImplementationComponent implements OnInit {
-
-  @ViewChild('progressCell') progressCellTemplate!: TemplateRef<any>;
-  @ViewChild('moduleCell')   moduleCellTemplate!: TemplateRef<any>;
-  @ViewChild('healthCell')   healthCellTemplate!: TemplateRef<any>;
-  @ViewChild('nameCell')     nameCellTemplate!: TemplateRef<any>;
+export class Implementation implements OnInit, OnDestroy {
 
   private readonly implService = inject(ImplementationService);
+ private readonly tableEndpoint = `${this.implService.baseUrl}/fetchDataTable`; 
 
-  clients    = signal<Client[]>([]);
-  isLoading  = signal<boolean>(false);
-  errorMessage = signal<string>('');
-  cardData   = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
+  // Card stats (fetched independently from the table's own data source)
+  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
 
   // UI state
-  searchQuery  = signal<string>('');
   statusFilter = signal<string>('all');
-  viewMode     = signal<'grid' | 'table'>('table');
 
   // Drawer
   selectedClient    = signal<Client | null>(null);
@@ -83,77 +88,86 @@ export class ImplementationComponent implements OnInit {
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
 
-  // Filter tabs
+  // Card fetch trigger (Subject + switchMap + takeUntil pattern)
+  private fetchCardTrigger$ = new Subject<void>();
+  private destroy$          = new Subject<void>();
+
+  // ── Filter tabs (read from cardData, no recompute logic needed) ───────────
   get filterTabs() {
+    const c = this.cardData();
     return [
-      { id: 'all',         label: 'All Organisations', count: this.cardData().totalAccounts },
-      { id: 'in_progress', label: 'In Progress',       count: this.cardData().inProgress },
-      { id: 'complete',    label: 'Completed',         count: this.cardData().completed },
-      // { id: 'pending',     label: 'Not Started',       count: this.cardData().notStarted }
+      { id: 'all',         label: 'All Organisations', count: c.totalAccounts },
+      { id: 'in_progress', label: 'In Progress',       count: c.inProgress },
+      { id: 'complete',    label: 'Completed',         count: c.completed },
     ];
   }
 
-  filteredClients = computed(() => {
-    const q  = this.searchQuery().toLowerCase().trim();
-    const sf = this.statusFilter();
-    return this.clients().filter(c => {
-      const match = c.name.toLowerCase().includes(q) ||
-                    c.org_id.toString().includes(q) ||
-                    c.cs_lead.toLowerCase().includes(q);
-      if (!match) return false;
+  totalClients           = computed(() => this.cardData().totalAccounts);
+  completedClientsCount  = computed(() => this.cardData().completed);
+  inProgressClientsCount = computed(() => this.cardData().inProgress);
 
-      const totalApproved = c.overallProgress?.approved ?? this.getClientApprovedCount(c);
-      const totalFeatures = c.overallProgress?.total ?? this.getClientTotalFeaturesCount(c);
-      const percentage    = c.overallProgress?.percentage ?? (totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0);
-
-      const isCompleted  = percentage === 100 || (totalFeatures > 0 && totalApproved === totalFeatures);
-      const isNotStarted = percentage === 0 || totalApproved === 0;
-      const isInProgress = !isCompleted && !isNotStarted;
-
-      if (sf === 'complete')    return isCompleted;
-      if (sf === 'in_progress') return isInProgress;
-      // if (sf === 'pending')     return isNotStarted;
-      return true;
-    });
+  // ── Memoized module lookups for the open drawer (recompute only when
+  //    selectedClient / selectedModuleTab actually change) ──────────────────
+  clientModules = computed<Module[]>(() => {
+    const client = this.selectedClient();
+    if (!client?.modules) return [];
+    return client.modules.filter(mod => this.getModuleTotalCount(client, mod) > 0);
   });
 
-  // Card computed
-  totalClients          = computed(() => this.cardData().totalAccounts);
-  completedClientsCount = computed(() => this.cardData().completed);
-  inProgressClientsCount = computed(() => this.cardData().inProgress);
-  // pendingClientsCount   = computed(() => this.cardData().notStarted);
+  displayModules = computed<Module[]>(() => {
+    const tabKey = this.selectedModuleTab();
+    const modules = this.clientModules();
+    return tabKey === 'all' ? modules : modules.filter(m => m.key === tabKey);
+  });
 
- 
+  // ── Static table config pieces (built once, never re-allocated) ───────────
+  private static readonly COLUMNS = [
+    { key: 'name',               label: 'Organisation',   sortable: true },
+    { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
+    { key: 'support_owner',      label: 'Support Owner',  sortable: false },
+    { key: 'country',            label: 'Country',        sortable: false },
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
+    {
+      key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
+      badgeMap: {
+        'Good':      { label: 'Good' },
+        'Excellent': { label: 'Excellent' },
+        'Neutral':   { label: 'Neutral' },
+        'Risk':      { label: 'Risk' },
+      }
+    },
+    { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
+    { key: 'licence_start_date', label: 'Start Date',     sortable: false },
+    { key: 'licence_end_date',   label: 'End Date',       sortable: false },
+    { key: 'overallProgress',    label: 'Progress',       align: 'center' as const, tooltip: 'Overall implementation progress' },
+    { key: 'modules',            label: 'Modules',        align: 'center' as const, tooltip: 'Module-wise completion status' },
+  ];
 
-  // ── DataTable config ──────────────────────────────────────────────────────
-  private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
+  private static readonly TOOLBAR_BUTTONS = [
+    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
+    { id: 'export',  type: 'export'       as const, label: 'Export' },
+    { id: 'refresh', type: 'refresh'      as const },
+    { id: 'columns', type: 'columnPicker' as const, label: 'Columns' },
+  ];
 
+  private static readonly SORT_COL_MAP: Record<string, string> = {
+    'name':            'orgName',
+    'cs_lead':         'csLead',
+    'support_owner':   'suppOwner',
+    'country':         'country',
+    'health':          'health',
+    'onboarding_date': 'onboardedDate',
+    'orgId':           'orgId',
+  };
+
+  // ── DataTable config — only apiConfig depends on statusFilter ─────────────
   tableConfig = computed<SmartTableConfig<Client>>(() => {
     const statusFilter = this.statusFilter();
+    const tabSts = statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0;
 
     return {
-      columns: [
-        { key: 'name',               label: 'Organisation',   sortable: true },
-        { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
-        { key: 'support_owner',      label: 'Support Owner',  sortable: false },
-        { key: 'country',            label: 'Country',        sortable: false },
-        { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' },
-        {
-          key: 'health', label: 'Health', type: 'badge', align: 'center',
-          badgeMap: {
-            'Good':      { label: 'Good' },
-            'Excellent': { label: 'Excellent' },
-            'Neutral':   { label: 'Neutral' },
-            'Risk':      { label: 'Risk' },
-          }
-        },
-        { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
-        { key: 'licence_start_date', label: 'Start Date',  sortable: false },
-        { key: 'licence_end_date',   label: 'End Date',    sortable: false },
-        { key: 'overallProgress',    label: 'Progress',       align: 'center', tooltip: 'Overall implementation progress' },
-        { key: 'modules',            label: 'Modules',        align: 'center', tooltip: 'Module-wise completion status' },
-        
-      ],
+      columns: Implementation.COLUMNS,
 
       apiConfig: {
         endpoint:  this.tableEndpoint,
@@ -161,58 +175,32 @@ export class ImplementationComponent implements OnInit {
         totalPath: 'meta.total',
 
         buildRequest: (ctx: RequestContext) => {
-          const filterObj: Record<string, any> = { ...ctx.filters };
-
           const today = this.getTodayDateString();
-          const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
-          const toDate   = ctx.dateTo   ? ctx.dateTo   : today;
-
-          const sortColMap: Record<string, string> = {
-            'name': 'orgName',
-            'cs_lead': 'csLead',
-            'support_owner': 'suppOwner',
-            'country': 'country',
-            'health': 'health',
-            'onboarding_date': 'onboardedDate',
-            'orgId': 'orgId'
-          };
-          const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgName';
-
           const body: DataTablePayload = {
             start:   ctx.page * ctx.pageSize,
             length:  ctx.pageSize,
             search:  ctx.search ?? '',
             sorting: JSON.stringify({
               require: 0,
-              col: sortCol,
+              col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
               dir: ctx.sortDir ?? 'desc',
             }),
-            filter: JSON.stringify(filterObj),
-            tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0,
-            fromDate: fromDate,
-            toDate:   toDate,
+            filter:   JSON.stringify({ ...ctx.filters }),
+            tabSts,
+            fromDate: ctx.dateFrom || today,
+            toDate:   ctx.dateTo   || today,
           };
-
           return { method: 'POST' as const, body };
         },
 
         transformRow: (row: any): Client | null => {
           const client = this.mapApiRowToClient(row as Datum);
-          const sf = statusFilter;
-          if (sf === 'all') return client;
+          if (statusFilter === 'all') return client;
 
-          const totalApproved = client.overallProgress?.approved ?? this.getClientApprovedCount(client);
-          const totalFeatures = client.overallProgress?.total ?? this.getClientTotalFeaturesCount(client);
-          const percentage    = client.overallProgress?.percentage ?? (totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0);
-
-          const isCompleted  = percentage === 100 || (totalFeatures > 0 && totalApproved === totalFeatures);
-          const isNotStarted = percentage === 0 || totalApproved === 0;
-          const isInProgress = !isCompleted && !isNotStarted;
-
-          if (sf === 'complete' && !isCompleted) return null;
-          if (sf === 'in_progress' && !isInProgress) return null;
-          if (sf === 'pending' && !isNotStarted) return null;
-
+          const { isCompleted, isInProgress, isNotStarted } = this.getClientStatus(client);
+          if (statusFilter === 'complete'    && !isCompleted)  return null;
+          if (statusFilter === 'in_progress' && !isInProgress) return null;
+          if (statusFilter === 'pending'     && !isNotStarted) return null;
           return client;
         },
       },
@@ -225,13 +213,7 @@ export class ImplementationComponent implements OnInit {
       exportFileName:  'implementation-progress',
       emptyMessage:    'No implementation records found.',
       clickable:       false,
-      toolbarButtons: [
-        { id: 'date', type: 'datePicker', label: 'Date' },
-        { id: 'filter',  type: 'filter',  label: 'Filter' },
-        { id: 'export',  type: 'export',  label: 'Export' },
-        { id: 'refresh', type: 'refresh' },
-        { id: 'columns', type: 'columnPicker', label: 'Columns' },
-      ],
+      toolbarButtons: Implementation.TOOLBAR_BUTTONS,
       customRowActions: [
         {
           id:      'view',
@@ -241,8 +223,6 @@ export class ImplementationComponent implements OnInit {
           onClick: (row: Client) => this.openClientDetails(row),
         }
       ],
-
-      
     };
   });
 
@@ -255,38 +235,41 @@ export class ImplementationComponent implements OnInit {
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
-  ngOnInit() { this.loadData(); }
+  ngOnInit() {
+    this.setupCardFetchStream();
+    this.fetchCardTrigger$.next();
+  }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    if (this.closeTimer) clearTimeout(this.closeTimer);
+    if (this.openTimer)  clearTimeout(this.openTimer);
+  }
+
+  private setupCardFetchStream() {
+    this.fetchCardTrigger$
+      .pipe(
+        switchMap(() =>
+          this.implService.fetchImpCardData().pipe(
+            catchError((err) => {
+              console.error('Card data error:', err);
+              return of(null);
+            })
+          )
+        ),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((data) => {
+        if (!data) return;
+        this.cardData.set(data);
+      });
+  }
+
+  // Called on manual refresh (e.g. the data-table's refresh button) to
+  // resync the stat cards; the table refetches its own rows internally.
   loadData() {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    // Card data (always fetched separately)
-    this.implService.fetchImpCardData().subscribe({
-      next: (data) => this.cardData.set(data),
-      error: (err) => console.error('Card data error:', err)
-    });
-
-    const payload: DataTablePayload = {
-      start: 0,
-      length: 10,
-      search: '',
-      sorting: JSON.stringify({ require: 0, col: 'orgId', dir: 'desc' }),
-      filter: JSON.stringify({}),
-      tabSts: 0
-    };
-
-    this.implService.fetchDataTable(payload).subscribe({
-      next: (res: Implementation) => {
-        this.clients.set(this.mapApiDataToClients(res.data ?? []));
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Grid data error:', err);
-        this.errorMessage.set('Failed to load data. Please try again.');
-        this.isLoading.set(false);
-      }
-    });
+    this.fetchCardTrigger$.next();
   }
 
   private mapApiRowToClient(row: Datum): Client {
@@ -295,8 +278,8 @@ export class ImplementationComponent implements OnInit {
     const apiModules: Record<string, { completed: number; total: number }> = {};
 
     if (row.modules && typeof row.modules === 'object') {
-      const moduleEntries = Object.entries(row.modules);
-      moduleEntries.sort(([, a], [, b]) => (a?.tabOrder ?? 0) - (b?.tabOrder ?? 0));
+      const moduleEntries = Object.entries(row.modules)
+        .sort(([, a], [, b]) => (a?.tabOrder ?? 0) - (b?.tabOrder ?? 0));
 
       moduleEntries.forEach(([key, modData]) => {
         const featuresList: Feature[] = [];
@@ -305,29 +288,24 @@ export class ImplementationComponent implements OnInit {
 
         if (Array.isArray(modData?.features)) {
           modData.features.forEach((feat) => {
-            featuresList.push({
-              mod_id: feat.mod_id,
-              name: feat.name
-            });
+            featuresList.push({ mod_id: feat.mod_id, name: feat.name });
 
-            if (feat.approval_status === 1) {
-              completedCount++;
-            }
+            if (feat.approval_status === 1) completedCount++;
 
             checklist[feat.mod_id] = {
               approval_status: feat.approval_status ?? 0,
               remark: feat.remark ?? '',
-              started_at: feat.started_at ? this.formatDate(feat.started_at.toString()) : null,
-              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null
+              started_at:   feat.started_at   ? this.formatDate(feat.started_at.toString())   : null,
+              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null,
             };
           });
         }
 
         modules.push({
           tab_id: modData?.tabOrder ?? (modules.length + 1),
-          key: key,
+          key,
           label: modData?.label || key,
-          features: featuresList
+          features: featuresList,
         });
 
         apiModules[key] = { completed: completedCount, total: totalCount };
@@ -339,13 +317,13 @@ export class ImplementationComponent implements OnInit {
       org_id:              row.orgId,
       name:                row.organization,
       industry:            '',
-      onboarding_date:     this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
-      cs_lead:             row.csLead         || '-',
-      support_owner:       row.supportOwner   || '—',
-      country:             row.country        || '—',
-      rating:              row.rating         ?? 0,
-      licence_start_date:  this.formatDate(row.licenceStartDate ? row.licenceStartDate.toString() : ''),
-      licence_end_date:    this.formatDate(row.licenceEndDate   ? row.licenceEndDate.toString()   : ''),
+      onboarding_date:     this.formatDate(row.onboardedDate?.toString() ?? ''),
+      cs_lead:             row.csLead        || '-',
+      support_owner:       row.supportOwner  || '—',
+      country:             row.country       || '—',
+      rating:              row.rating        ?? 0,
+      licence_start_date:  this.formatDate(row.licenceStartDate?.toString() ?? ''),
+      licence_end_date:    this.formatDate(row.licenceEndDate?.toString()   ?? ''),
       health:              row.health,
       checklist,
       overallProgress: {
@@ -358,15 +336,24 @@ export class ImplementationComponent implements OnInit {
     };
   }
 
-  private mapApiDataToClients(data: Datum[]): Client[] {
-    return data.map(row => this.mapApiRowToClient(row));
-  }
-
   private formatDate(isoDate: string): string {
     if (!isoDate) return '';
     const d = new Date(isoDate);
     if (isNaN(d.getTime())) return '';
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── Shared status logic (single source of truth, used by table filtering) ─
+  private getClientStatus(client: Client): ClientStatus {
+    const approved   = client.overallProgress?.approved   ?? this.getClientApprovedCount(client);
+    const total      = client.overallProgress?.total      ?? this.getClientTotalFeaturesCount(client);
+    const percentage = client.overallProgress?.percentage ?? (total > 0 ? Math.round((approved / total) * 100) : 0);
+
+    const isCompleted  = percentage === 100 || (total > 0 && approved === total);
+    const isNotStarted = percentage === 0 || approved === 0;
+    const isInProgress = !isCompleted && !isNotStarted;
+
+    return { approved, total, percentage, isCompleted, isInProgress, isNotStarted };
   }
 
   // ── Client helpers ────────────────────────────────────────────────────────
@@ -382,10 +369,7 @@ export class ImplementationComponent implements OnInit {
   }
 
   getClientProgressPercent(client: Client): number {
-    if (client?.overallProgress?.percentage !== undefined) return client.overallProgress.percentage;
-    const total = this.getClientTotalFeaturesCount(client);
-    if (total === 0) return 0;
-    return Math.round((this.getClientApprovedCount(client) / total) * 100);
+    return this.getClientStatus(client).percentage;
   }
 
   getModuleApprovedCount(client: Client, mod: Module): number {
@@ -452,30 +436,31 @@ export class ImplementationComponent implements OnInit {
     this.closeTimer = setTimeout(() => this.selectedClient.set(null), 300);
   }
 
+  // Kept for template backward-compatibility; now backed by memoized computed signals
+  // when called with the currently-open drawer's client.
   getClientModules(client: Client | null): Module[] {
+    if (client === this.selectedClient()) return this.clientModules();
     if (!client?.modules) return [];
     return client.modules.filter(mod => this.getModuleTotalCount(client, mod) > 0);
   }
 
   getDisplayModules(): Module[] {
-    const clientModules = this.getClientModules(this.selectedClient());
-    const tabKey = this.selectedModuleTab();
-    if (tabKey === 'all') return clientModules;
-    return clientModules.filter(m => m.key === tabKey);
+    return this.displayModules();
   }
 
   toggleFeatureStatus(client: Client, modId: number) {
     const current = client.checklist[modId]?.approval_status || 0;
     const next    = current === 1 ? 0 : 1;
     const stamp   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
     const updatedChecklist = {
       ...client.checklist,
       [modId]: {
         ...client.checklist[modId],
         approval_status: next,
         started_at:   next === 1 ? client.checklist[modId]?.started_at || stamp : null,
-        completed_at: next === 1 ? stamp : null
-      }
+        completed_at: next === 1 ? stamp : null,
+      },
     };
 
     const updatedApiModules: Record<string, { completed: number; total: number }> = {};
@@ -494,8 +479,6 @@ export class ImplementationComponent implements OnInit {
       totalFeatures += total;
     });
 
-    const percentage = totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0;
-
     const updated: Client = {
       ...client,
       checklist: updatedChecklist,
@@ -503,20 +486,19 @@ export class ImplementationComponent implements OnInit {
       overallProgress: {
         approved: totalApproved,
         total: totalFeatures,
-        percentage
-      }
+        percentage: totalFeatures > 0 ? Math.round((totalApproved / totalFeatures) * 100) : 0,
+      },
     };
 
-    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
     if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
   }
 
   updateRemark(client: Client, modId: number, event: Event) {
     const remark = (event.target as HTMLInputElement).value;
     const updatedChecklist = { ...client.checklist, [modId]: { ...client.checklist[modId], remark } };
-    const updated = { ...client, checklist: updatedChecklist };
-    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
-    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
+    if (this.selectedClient()?.id === client.id) {
+      this.selectedClient.set({ ...client, checklist: updatedChecklist });
+    }
   }
 
   markAllApproved(client: Client) {
@@ -531,7 +513,7 @@ export class ImplementationComponent implements OnInit {
           approval_status: 1,
           remark: updatedChecklist[f.mod_id]?.remark || 'Batch approved by CS Manager',
           started_at:   updatedChecklist[f.mod_id]?.started_at || stamp,
-          completed_at: stamp
+          completed_at: stamp,
         };
       });
       const total = m.features.length;
@@ -543,13 +525,8 @@ export class ImplementationComponent implements OnInit {
       ...client,
       checklist: updatedChecklist,
       apiModules: updatedApiModules,
-      overallProgress: {
-        approved: totalFeatures,
-        total: totalFeatures,
-        percentage: 100
-      }
+      overallProgress: { approved: totalFeatures, total: totalFeatures, percentage: 100 },
     };
-    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
     this.selectedClient.set(updated);
   }
 }
