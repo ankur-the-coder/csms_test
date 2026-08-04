@@ -181,7 +181,7 @@ export class Implementation implements OnInit, OnDestroy {
             length:  ctx.pageSize,
             search:  ctx.search ?? '',
             sorting: JSON.stringify({
-              require: 0,
+              require: ctx.sortKey ? 1 : 0,
               col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
               dir: ctx.sortDir ?? 'desc',
             }),
