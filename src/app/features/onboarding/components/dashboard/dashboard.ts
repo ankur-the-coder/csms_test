@@ -167,7 +167,7 @@ export class Dashboard {
   });
 
   // ── DataTable config ──────────────────────────────────────────────────────
-  private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
+  private readonly tableEndpoint = 'http://127.0.0.1:5000/onboardingDashboardTable';
 
   tableConfig = computed<SmartTableConfig<Client>>(() => {
     // Reading statusFilter here makes tableConfig reactive to tab changes.
