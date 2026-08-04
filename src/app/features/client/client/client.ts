@@ -74,13 +74,13 @@ export class Client {
         { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
-        {
-          key: 'stage',
-          label: 'Stage',
-          sortable: false,
-          type: 'badge',
-          badgeMap: { PREMIUM: { label: 'PREMIUM' } },
-        },
+        // {
+        //   key: 'stage',
+        //   label: 'Stage',
+        //   sortable: false,
+        //   type: 'badge',
+        //   badgeMap: { PREMIUM: { label: 'PREMIUM' } },
+        // },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
@@ -116,7 +116,7 @@ export class Client {
           };
           const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'client';
 
-       
+
 
           // POST body with all required fields
           const body = {
@@ -125,8 +125,7 @@ export class Client {
             search: ctx.search ?? '',
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
-            fromDate,
-            toDate,
+
           };
 
           return { method: 'POST' as const, body };
@@ -145,7 +144,7 @@ export class Client {
       emptyMessage: 'No client records found.',
       clickable: false,
       toolbarButtons: [
-        { id: 'date', type: 'datePicker', label: 'Date' },
+
         { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
