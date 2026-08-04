@@ -23,6 +23,6 @@ export class ClientService {
   constructor(private http: HttpClient) {}
 
   getClientDataTable(payload: DataTablePayload): Observable<ClientDataTableResponse> {
-    return this.http.post<ClientDataTableResponse>(this.baseUrl, payload);
+    return this.http.post<ClientDataTableResponse>(`${this.baseUrl}/clientDataTable`, payload);
   }
 }

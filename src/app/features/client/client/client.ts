@@ -3,9 +3,8 @@ import { DataTable } from '../../../shared/components/Data-table/data-table';
 import {
   RequestContext,
   SmartTableConfig,
-   ApiRequest,
 } from '../../../shared/components/Data-table/data-table.types';
-import { ClientService, DataTablePayload } from '../services/client/client';
+import { ClientService } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
 
 export interface ClientRow {
@@ -87,8 +86,7 @@ export class Client {
       ],
 
       apiConfig: {
-        // endpoint zaroori nahi — real URL service ke andar hai
-        endpoint: 'this.tableEndpoint',
+        endpoint: this.tableEndpoint,
         dataPath: 'data',
         totalPath: 'totalRecords',
 
@@ -109,27 +107,26 @@ export class Client {
           };
           const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgName';
 
-          // ── body ka type DataTablePayload hai (request), na ki ClientDataTableResponse (response) ──
-          const body: DataTablePayload = {
-            start: ctx.page * ctx.pageSize,
-            length: ctx.pageSize,
+          const tabSts =
+            statusFilter === 'complete' ? 1 :
+            statusFilter === 'in_progress' ? 2 :
+            statusFilter === 'pending' ? 3 : 0;
+
+          // Server accepts GET with query params (not POST body)
+          const params = new URLSearchParams({
+            start: String(ctx.page * ctx.pageSize),
+            length: String(ctx.pageSize),
             search: ctx.search ?? '',
-            sorting: JSON.stringify({ require: 0, col: sortCol, dir: ctx.sortDir ?? 'desc' }),
+            sorting: JSON.stringify({ require: 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
-            tabSts:
-              statusFilter === 'complete' ? 1 :
-              statusFilter === 'in_progress' ? 2 :
-              statusFilter === 'pending' ? 3 : 0,
+            tabSts: String(tabSts),
             fromDate,
             toDate,
-          };
+          });
 
-          return { method: 'POST' as const, body };
+          return { method: 'POST' as const, query: params.toString() };
         },
 
-
-        // fetchFn: (req) => this.clientApi.getClientDataTable(req.body as DataTablePayload),
-        fetchFn: (req: ApiRequest) => this.clientApi.getClientDataTable(req.body as DataTablePayload),
 
         transformRow: (raw: Datum): ClientRow | null => this.mapDatumToClientRow(raw),
       },
