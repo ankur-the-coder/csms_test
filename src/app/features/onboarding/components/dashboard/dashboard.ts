@@ -11,6 +11,7 @@ import { DataTable } from '../../../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { ImplementationService } from '../../../implementations/services/implementation/implementation';
 import { CardData, DataTablePayload, Datum, ImplementationData } from '../../../implementations/models/implementation.model';
+import { environment } from '../../../../../environments/environment';
 export interface Feature {
   mod_id: number;
   name: string;
@@ -170,7 +171,7 @@ export class Dashboard {
   });
 
   // ── DataTable config ──────────────────────────────────────────────────────
-  private readonly tableEndpoint = 'http://127.0.0.1:5000/onboardingDashboardTable';
+  private readonly tableEndpoint = environment.apiUrl + '/onboardingDashboardTable';
 
   tableConfig = computed<SmartTableConfig<Client>>(() => {
     // Reading statusFilter here makes tableConfig reactive to tab changes.
