@@ -1,96 +1,179 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, Organization } from '../meetings.service';
+import { forkJoin } from 'rxjs';
+import { ScheduleMeetingService, Organization, OwnerOption } from './schedule-meetings.service';
+import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
+import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
+
+type EntryMode = 'select' | 'manual';
 
 @Component({
   selector: 'app-schedule-meeting',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker],
   templateUrl: './schedule-meeting.html',
   styleUrls: ['./schedule-meeting.css']
 })
 export class ScheduleMeeting implements OnInit {
-  newMeeting: any = {
+  newMeeting = {
     title: '',
-    orgId: null,
-    customer: '',
     type: '',
     duration: '1 hour',
-    date: '',
+    date: null as Date | null,
     time: '',
-    priority: 'Medium',
-    host: '',
+    priority: 'Medium' as 'Low' | 'Medium' | 'High',
+
+    orgMode: 'select' as EntryMode,
+    orgId: null as number | null,
+    orgName: '',
+    orgEmail: '',
+
+    hostMode: 'select' as EntryMode,
+    hostType: '' as 'lead' | 'support' | '',
+    hostId: '',
+    hostName: '',
+    hostEmail: '',
+
     link: '',
     description: ''
   };
 
   organizations: Organization[] = [];
-  loadingOrganizations = false;
+  hosts: OwnerOption[] = [];
+
+  private leadOwners: OwnerOption[] = [];
+  private supportOwners: OwnerOption[] = [];
 
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
-  
-  hostType: 'lead' | 'support' | '' = '';
-  hosts: string[] = [];
-  loadingHosts = false;
+  priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
 
-  constructor(private router: Router, private meetingService: MeetingService) {}
+  loadingInitialData = true;
+
+  constructor(
+    private router: Router,
+    private scheduleMeetingService: ScheduleMeetingService,
+    private ngZone: NgZone
+  ) {}
 
   ngOnInit(): void {
-    this.fetchOrganizations();
+    this.loadAllData();
   }
 
-  fetchOrganizations(): void {
-    this.loadingOrganizations = true;
-    this.meetingService.getOrganizations().subscribe({
-      next: (orgs) => {
-        this.organizations = orgs;
-        this.loadingOrganizations = false;
+  private loadAllData(): void {
+    this.loadingInitialData = true;
+
+    forkJoin({
+      organizations: this.scheduleMeetingService.getOrganizations(),
+      leadOwners: this.scheduleMeetingService.getLeadOwners(),
+      supportOwners: this.scheduleMeetingService.getSupportOwners()
+    }).subscribe({
+      next: ({ organizations, leadOwners, supportOwners }) => {
+        this.ngZone.run(() => {
+          this.organizations = organizations;
+          this.leadOwners = leadOwners;
+          this.supportOwners = supportOwners;
+          this.loadingInitialData = false;
+        });
       },
       error: (err) => {
-        console.error('Failed to fetch organizations', err);
-        this.loadingOrganizations = false;
+        console.error('Failed to load schedule-meeting form data', err);
+        this.ngZone.run(() => { this.loadingInitialData = false; });
       }
     });
   }
 
-  onOrganizationSelect(orgIdValue: string): void {
+  // ---------- SelectOption helpers ----------
+
+  get meetingTypeOptions(): SelectOption[] {
+    return this.meetingTypesList.map(t => ({ label: t, value: t }));
+  }
+
+  get durationOptions(): SelectOption[] {
+    return [
+      { label: '15 minutes', value: '15 minutes' },
+      { label: '30 minutes', value: '30 minutes' },
+      { label: '45 minutes', value: '45 minutes' },
+      { label: '1 hour', value: '1 hour' },
+      { label: '1.5 hours', value: '1.5 hours' },
+      { label: '2 hours', value: '2 hours' }
+    ];
+  }
+
+  get priorityOptions(): SelectOption[] {
+    return this.priorities.map(p => ({ label: p, value: p }));
+  }
+
+  get organizationOptions(): SelectOption[] {
+    return this.organizations.map(o => ({ label: o.name, value: o.orgId }));
+  }
+
+  get hostTypeOptions(): SelectOption[] {
+    return [
+      { label: 'Lead Owner', value: 'lead' },
+      { label: 'Support Owner', value: 'support' }
+    ];
+  }
+
+  get hostOptions(): SelectOption[] {
+    return this.hosts.map(h => ({ label: h.name, value: h.id }));
+  }
+
+  // ---------- Organization ----------
+
+  setOrgMode(mode: EntryMode): void {
+    if (this.newMeeting.orgMode === mode) return;
+    this.newMeeting.orgMode = mode;
+    this.newMeeting.orgId = null;
+    this.newMeeting.orgName = '';
+    this.newMeeting.orgEmail = '';
+  }
+
+  onOrganizationSelect(orgIdValue: any): void {
     const orgId = Number(orgIdValue);
     const org = this.organizations.find(o => o.orgId === orgId);
     this.newMeeting.orgId = org ? org.orgId : null;
-    this.newMeeting.customer = org ? org.name : '';
+    this.newMeeting.orgName = org ? org.name : '';
+    this.newMeeting.orgEmail = org ? org.email : '';
   }
 
-  onHostTypeChange(type: 'lead' | 'support'): void {
-    this.hostType = type;
-    this.newMeeting.host = '';
-    this.hosts = [];
-    this.loadingHosts = true;
+  // ---------- Host ----------
 
-    if (type === 'lead') {
-      this.meetingService.getLeadOwners().subscribe({
-        next: (owners) => {
-          this.hosts = owners;
-          this.loadingHosts = false;
-        },
-        error: (err) => {
-          console.error('Failed to fetch lead owners', err);
-          this.loadingHosts = false;
-        }
-      });
-    } else if (type === 'support') {
-      this.meetingService.getSupportOwners().subscribe({
-        next: (owners) => {
-          this.hosts = owners;
-          this.loadingHosts = false;
-        },
-        error: (err) => {
-          console.error('Failed to fetch support owners', err);
-          this.loadingHosts = false;
-        }
-      });
-    }
+  setHostMode(mode: EntryMode): void {
+    if (this.newMeeting.hostMode === mode) return;
+    this.newMeeting.hostMode = mode;
+    this.newMeeting.hostType = '';
+    this.newMeeting.hostId = '';
+    this.newMeeting.hostName = '';
+    this.newMeeting.hostEmail = '';
+    this.hosts = [];
+  }
+
+  onHostTypeChange(type: any): void {
+    if (this.newMeeting.hostType === type) return;
+    this.newMeeting.hostType = type;
+    this.newMeeting.hostId = '';
+    this.newMeeting.hostName = '';
+    this.newMeeting.hostEmail = '';
+    this.hosts = type === 'lead' ? this.leadOwners : this.supportOwners;
+  }
+
+  onHostSelect(hostId: any): void {
+    const owner = this.hosts.find(h => h.id === hostId);
+    this.newMeeting.hostId = hostId;
+    this.newMeeting.hostName = owner ? owner.name : '';
+    this.newMeeting.hostEmail = owner ? owner.email : '';
+  }
+
+  // ---------- Misc ----------
+
+  trackByOrgId(_index: number, org: Organization): number {
+    return org.orgId;
+  }
+
+  trackByHostId(_index: number, host: OwnerOption): string {
+    return host.id;
   }
 
   getDefaultAttendees(): string[] {
@@ -111,8 +194,21 @@ export class ScheduleMeeting implements OnInit {
     this.goBack();
   }
 
+  private isValidEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
   isFormValid(): boolean {
-    return !!(this.newMeeting.title && this.newMeeting.orgId && this.newMeeting.type && 
-              this.newMeeting.date && this.newMeeting.time && this.newMeeting.host);
+    const m = this.newMeeting;
+
+    const orgOk = m.orgMode === 'select'
+      ? !!m.orgId
+      : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
+
+    const hostOk = m.hostMode === 'select'
+      ? !!m.hostId
+      : m.hostName.trim().length > 0 && this.isValidEmail(m.hostEmail);
+
+    return !!(m.title && m.type && m.date && m.time && orgOk && hostOk);
   }
 }

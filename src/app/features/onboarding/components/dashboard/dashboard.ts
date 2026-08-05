@@ -5,9 +5,13 @@ import { FormsModule } from '@angular/forms';
 
 import { SmartTableConfig, RequestContext } from '../../../../shared/components/Data-table/data-table.types';
 // import { Client, FeatureChecklistRow } from '../../../implementation/implementation.component';
-import { ImplementationService } from '../../../implementation/implementation.service';
-import { CardData, DataTablePayload, Datum, Implementation } from '../../../implementation/implentation.model';
+
+
 import { DataTable } from '../../../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
+import { ImplementationService } from '../../../implementations/services/implementation/implementation';
+import { CardData, DataTablePayload, Datum, ImplementationData } from '../../../implementations/models/implementation.model';
+import { environment } from '../../../../../environments/environment';
 export interface Feature {
   mod_id: number;
   name: string;
@@ -49,7 +53,7 @@ export interface Client {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-imports: [CommonModule, FormsModule, DataTable],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
 
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -167,7 +171,7 @@ export class Dashboard {
   });
 
   // ── DataTable config ──────────────────────────────────────────────────────
-  private readonly tableEndpoint = 'http://127.0.0.1:5000/imp/fetchDataTable';
+  private readonly tableEndpoint = environment.apiUrl + '/onboardingDashboardTable';
 
   tableConfig = computed<SmartTableConfig<Client>>(() => {
     // Reading statusFilter here makes tableConfig reactive to tab changes.
@@ -176,9 +180,9 @@ export class Dashboard {
 
     return {
       columns: [
-        { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
+        // { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
         { key: 'name',             label: 'Organisation', sortable: true, type: 'avatar' },
-        { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
+        // { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
         {
           key: 'health', label: 'Health', type: 'badge', align: 'center',
           badgeMap: {
@@ -288,7 +292,7 @@ export class Dashboard {
     };
 
     this.implService.fetchDataTable(payload).subscribe({
-      next: (res: Implementation) => {
+      next: (res: ImplementationData) => {
         this.clients.set(this.mapApiDataToClients(res.data ?? []));
         this.isLoading.set(false);
       },
@@ -303,10 +307,16 @@ export class Dashboard {
   private mapApiRowToClient(row: Datum): Client {
     const checklist  = this.buildChecklistFromApi(row);
     const apiModules: Record<string, { completed: number; total: number }> = {};
-    if (row.modules) {
-      Object.entries(row.modules).forEach(([key, val]) => {
-        const m = val as { completed: number; total: number };
-        apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+    if (row.modules && typeof row.modules === 'object') {
+      Object.entries(row.modules).forEach(([key, modData]) => {
+        if (modData && Array.isArray(modData.features)) {
+          const completed = modData.features.filter(f => f.approval_status === 1).length;
+          const total = modData.features.length;
+          apiModules[key] = { completed, total };
+        } else if (modData && typeof modData === 'object') {
+          const m = modData as any;
+          apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+        }
       });
     }
     return {
@@ -333,19 +343,20 @@ export class Dashboard {
 
   private buildChecklistFromApi(row: Datum): Record<number, FeatureChecklistRow> {
     const checklist: Record<number, FeatureChecklistRow> = {};
-    this.modules.forEach(mod => {
-      const apiMod = row.modules ? (row.modules as any)[mod.key] : null;
-      const completedCount = apiMod?.completed || 0;
-      mod.features.forEach((feat, idx) => {
-        const isApproved = idx < completedCount;
-        checklist[feat.mod_id] = {
-          approval_status: isApproved ? 1 : 0,
-          remark: isApproved ? 'Verified & approved' : '',
-          started_at:   isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null,
-          completed_at: isApproved ? this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : '') : null
-        };
+    if (row.modules && typeof row.modules === 'object') {
+      Object.values(row.modules).forEach(modData => {
+        if (modData && Array.isArray(modData.features)) {
+          modData.features.forEach(feat => {
+            checklist[feat.mod_id] = {
+              approval_status: feat.approval_status ?? 0,
+              remark: feat.remark ?? '',
+              started_at: feat.started_at ? this.formatDate(feat.started_at.toString()) : null,
+              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null
+            };
+          });
+        }
       });
-    });
+    }
     return checklist;
   }
 

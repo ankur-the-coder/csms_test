@@ -1,0 +1,49 @@
+.custom-radio {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-card-border);
+    background-color: transparent;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    flex-shrink: 0;
+}
+
+/* Hover state */
+.custom-radio:hover:not(:disabled) {
+    border-color: var(--color-brand-500);
+}
+
+.custom-radio:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.06);
+    border-color: var(--color-brand-500);
+}
+
+.custom-radio:checked {
+    border-color: var(--color-brand-500);
+    background-color: transparent;
+}
+
+.custom-radio:checked::before {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-brand-500);
+    border-radius: 9999px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Disabled */
+.custom-radio:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

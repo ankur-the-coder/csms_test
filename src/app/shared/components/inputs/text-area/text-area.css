@@ -1,0 +1,26 @@
+/* Textarea visual theme */
+
+.text-area textarea,
+textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card-bg);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  resize: vertical;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.text-area textarea:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.06);
+}
+
+.text-area textarea::placeholder {
+  color: var(--color-text-muted);
+}

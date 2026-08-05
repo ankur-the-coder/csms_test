@@ -1,0 +1,48 @@
+
+    <header class="h-16 min-h-16 bg-white px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 gap-3">
+
+      <!-- Left: Mobile Hamburger + Breadcrumb & Title -->
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <button
+          type="button"
+          (click)="menuToggle.emit()"
+          class="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+          aria-label="Open menu"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <div class="flex flex-col justify-center">
+
+        </div>
+      </div>
+
+
+
+      <!-- Right: Actions, Notifications & Profile -->
+      <div class="flex items-center gap-3 shrink-0">
+
+
+
+
+
+
+        <!-- User Profile Card -->
+        <div class="flex items-center gap-2.5 cursor-pointer group shrink-0">
+          <div class="relative shrink-0">
+            <div class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs">
+              AS
+            </div>
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+          </div>
+          <div class="hidden sm:flex flex-col text-left whitespace-nowrap shrink-0 leading-none">
+            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">Anita Sharma</span>
+            <span class="text-[10px] font-semibold text-slate-400 mt-0.5">Senior CS Manager</span>
+          </div>
+        </div>
+
+      </div>
+
+    </header>
+

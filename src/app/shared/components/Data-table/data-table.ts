@@ -14,6 +14,7 @@ import {
   QueryList,
   HostListener,
   ViewChild,
+  ViewChildren,
   ElementRef,
 } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -40,11 +41,13 @@ import { CustomColumnDirective } from './custom-column.directive';
 import { DataTableService } from './data-table.service';
 import { CustomDateSelector } from '../inputs/custom-date-selector/custom-date-selector';
 
+import { SingleInput, SelectOption } from '../inputs/single-input/single-input';
+
 type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe,CustomDateSelector],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, CustomDateSelector, CustomColumnDirective, SingleInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
@@ -57,6 +60,9 @@ export class DataTable<T extends object> implements AfterContentInit {
 
   @ContentChildren(CustomColumnDirective)
   customTemplates!: QueryList<CustomColumnDirective>;
+
+  @ViewChildren(SingleInput)
+  singleInputComponents!: QueryList<SingleInput>;
 
   private http = inject(HttpClient);
   private dataTableService = inject(DataTableService);
@@ -102,6 +108,11 @@ export class DataTable<T extends object> implements AfterContentInit {
   pageSizePopoverOpen = signal(false);
   private wasDragging = signal(false);
   activeDropdownKey = signal<string | null>(null);
+  // Viewport-relative coordinates for the currently open dropdown popover.
+  // Computed from the trigger button's own bounding rect so the popover can
+  // render with position:fixed and escape the modal body's overflow-y-auto
+  // clipping (view-only fix — no filter/search behaviour changes).
+  dropdownPosition = signal<{ top: number; left: number; width: number } | null>(null);
 
   // Modal open states (using native <dialog>)
   filterModalOpen = signal(false);
@@ -351,11 +362,13 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.loadState() === 'loading' && this.initialLoadDone()
   );
 
-  templateMap = computed(() => {
+  templateMap = signal<Map<string, TemplateRef<any>>>(new Map());
+
+  private buildTemplateMap(): void {
     const map = new Map<string, TemplateRef<any>>();
     this.customTemplates?.forEach(t => map.set(t.columnName, t.template));
-    return map;
-  });
+    this.templateMap.set(map);
+  }
 
   hasData = computed(() => this.displayRows().length > 0);
   pageSizeOptions = computed(() => this.config().pageSizeOptions ?? [10, 25, 50, 100]);
@@ -474,7 +487,8 @@ export class DataTable<T extends object> implements AfterContentInit {
           if (stale) return;
           this._lastFetchKey = fetchKey;
           const rawData = getByPath(res, dp) as any[] ?? [];
-          const data = transformRow ? rawData.map(transformRow) : rawData as T[];
+          const mapped = transformRow ? rawData.map(transformRow) : rawData as T[];
+          const data = mapped.filter((r): r is T => r !== null && r !== undefined);
           const total = getByPath(res, tp) as number ?? data.length;
           this.rows.set(data);
           this.selectedIds.set(new Set());
@@ -523,6 +537,11 @@ export class DataTable<T extends object> implements AfterContentInit {
       this.colVisibility.set(vis);
       this.colOrder.set(cfg.columns.map(c => String(c.key)));
     });
+
+    // Build template map from projected ng-template[appCustomColumn] directives
+    // and keep it in sync if templates are added/removed dynamically.
+    this.buildTemplateMap();
+    this.customTemplates.changes.subscribe(() => this.buildTemplateMap());
   }
 
   // ── Date filter ────────────────────────────────────────────────────────────
@@ -553,6 +572,13 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   clearModalFilters(): void { this.tempFilters.set({}); }
+
+  getFilterSelectOptions(filter: TableFilter): SelectOption[] {
+    return (filter.options || []).map(opt => ({
+      label: String(opt.label),
+      value: opt.value
+    }));
+  }
 
   clearFilters(): void {
     this.searchRaw.set('');
@@ -692,6 +718,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   onDocumentClick(): void {
     this.exportMenuOpen.set(false);
     this.pageSizePopoverOpen.set(false);
+    // Close any open filter dropdowns when clicking outside
+    if (this.activeDropdownKey() !== null) {
+      this.closeAllDropdowns();
+    }
   }
 
   toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
@@ -867,6 +897,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       case 'excellent': return 'badge-excellent';
       case 'neutral': return 'badge-neutral';
       case 'risk': return 'badge-risk';
+      case 'premium': return 'badge-premium';
       default: return 'badge-default';
     }
   }
@@ -967,17 +998,44 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dragSrcKey.set(null);
     this.dragOverKey.set(null);
   }
-  toggleDropdown(key: string): void {
-  this.activeDropdownKey.update(current => (current === key ? null : key));
-}
+  toggleDropdown(key: string, event?: MouseEvent): void {
+    const opening = this.activeDropdownKey() !== key;
+    
+    // Close all SingleInput components
+    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
 
-isDropdownOpen(key: string): boolean {
-  return this.activeDropdownKey() === key;
-}
+    if (opening && event) {
+      const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      this.activeDropdownKey.set(key);
+      this.dropdownPosition.set({ top: trigger.bottom + 6, left: trigger.left, width: trigger.width });
+    } else {
+      this.activeDropdownKey.set(null);
+      this.dropdownPosition.set(null);
+    }
+  }
 
-closeAllDropdowns(): void {
-  this.activeDropdownKey.set(null);
-}
+  onSingleInputOpened(openedComp: SingleInput): void {
+    // Close DataTable custom dropdowns (starRating, multiSelect)
+    this.activeDropdownKey.set(null);
+    this.dropdownPosition.set(null);
+
+    // Close all OTHER SingleInput components
+    this.singleInputComponents?.forEach(comp => {
+      if (comp !== openedComp) {
+        comp.closeDropdown();
+      }
+    });
+  }
+
+  isDropdownOpen(key: string): boolean {
+    return this.activeDropdownKey() === key;
+  }
+
+  closeAllDropdowns(): void {
+    this.activeDropdownKey.set(null);
+    this.dropdownPosition.set(null);
+    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
+  }
 
 hasSelections(key: string): boolean {
   const values = this.tempFilters()[key];
@@ -1016,5 +1074,27 @@ getMultiSelectDisplay(key: string): string {
 onDropdownSearch(filterKey: string, searchTerm: string): void {
   // Logic to emit an event or filter filter.options dynamically
   console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
+}
+
+// ── Star rating filter helpers ───────────────────────────
+starArray(value: number | string | null | undefined, max = 5): boolean[] {
+  const n = Number(value) || 0;
+  return Array.from({ length: max }, (_, i) => i < n);
+}
+
+selectedStarValue(key: string): number {
+  return Number(this.tempFilters()[key]) || 0;
+}
+
+isStarSelected(key: string, value: any): boolean {
+  return String(this.tempFilters()[key] ?? '') === String(value);
+}
+
+selectStarRating(key: string, value: any): void {
+  const current = this.tempFilters()[key];
+  const next = String(current ?? '') === String(value) ? '' : value;
+  this.updateTempFilter(key, next);
+  this.activeDropdownKey.set(null);
+  this.dropdownPosition.set(null);
 }
 }

@@ -1,0 +1,452 @@
+<!-- Label -->
+@if(label){
+<div class="flex items-center space-x-2  mb-1">
+    <label class="block text-[13px] text-text-secondary  ml-1">
+        {{ label }}
+    </label>
+    @if(required){
+    <span class="text-red-500 ml-0.5 text-xs font-bold" aria-hidden="true">*</span>
+    }
+</div>
+}
+
+<div class="w-full flex flex-col gap-3">
+
+    <!-- ATTACHED STATE (Only shown if files > 0) -->
+    @if (getTotalFilesCount() > 0) {
+    <div class="w-full h-[68px] bg-card-bg text-text-primary border border-card-border rounded-xl flex items-center justify-between px-5 cursor-pointer shadow-md transition-all"
+        (click)="openFileList()">
+        <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+            <div class="flex items-center pl-1 sm:pl-2 flex-shrink-0">
+                @for (file of files.slice(0, 3); track $index) {
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-200 dark:bg-slate-700 -ml-2.5 sm:-ml-3 overflow-hidden flex items-center justify-center shadow-sm dark:shadow-md first:ml-0"
+                    [style.z-index]="10 - $index" [class.mfi-pdf-thumb]="file.type === 'application/pdf'">
+                    @if (file.type === 'application/pdf') {
+                    <svg width="100%" height="100%" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="16" fill="#38BDF8" />
+                        <path
+                            d="M10 6C10 5.44772 10.4477 5 11 5H19L24 10V25C24 25.5523 23.5523 26 23 26H11C10.4477 26 10 25.5523 10 25V6Z"
+                            fill="#F0F9FF" />
+                        <path d="M19 5V10H24L19 5Z" fill="#BAE6FD" />
+                        <rect x="14" y="12" width="14" height="10" rx="2" fill="#EF4444" stroke="white"
+                            stroke-width="0.5" />
+                        <path
+                            d="M17 15V19M17 15H18C18.4 15 18.7 15.3 18.7 15.7C18.7 16.1 18.4 16.4 18 16.4H17M20.5 15V19M20.5 15H21.5C22.1 15 22.5 15.5 22.5 16V18C22.5 18.5 22.1 19 21.5 19H20.5M24 15H26.5M24 17H25.8M24 15V19"
+                            stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    } @else if (fileThumbs[$index]) {
+                    <img [src]="fileThumbs[$index]" alt="Thumb" class="w-full h-full object-cover">
+                    } @else {
+                    <div
+                        class="bg-brand-600 text-white text-[10px] font-extrabold w-full h-full flex items-center justify-center">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    }
+                </div>
+                }
+                @if (files.length < 3) { @for (url of preloadedFiles.slice(0, 3 - files.length); track $index) { <div
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-600 text-white -ml-2.5 sm:-ml-3 overflow-hidden flex items-center justify-center shadow-sm dark:shadow-md first:ml-0"
+                    [style.z-index]="10 - (files.length + $index)"
+                    [class.mfi-pdf-thumb]="url.toLowerCase().endsWith('.pdf')">
+                    @if (isImageUrl(url)) {
+                    <img [src]="url" alt="Thumb" class="w-full h-full object-cover">
+                    } @else if (url.toLowerCase().endsWith('.pdf')) {
+                    <svg width="100%" height="100%" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="16" fill="#38BDF8" />
+                        <path
+                            d="M10 6C10 5.44772 10.4477 5 11 5H19L24 10V25C24 25.5523 23.5523 26 23 26H11C10.4477 26 10 25.5523 10 25V6Z"
+                            fill="#F0F9FF" />
+                        <path d="M19 5V10H24L19 5Z" fill="#BAE6FD" />
+                        <rect x="14" y="12" width="14" height="10" rx="2" fill="#EF4444" stroke="white"
+                            stroke-width="0.5" />
+                        <path
+                            d="M17 15V19M17 15H18C18.4 15 18.7 15.3 18.7 15.7C18.7 16.1 18.4 16.4 18 16.4H17M20.5 15V19M20.5 15H21.5C22.1 15 22.5 15.5 22.5 16V18C22.5 18.5 22.1 19 21.5 19H20.5M24 15H26.5M24 17H25.8M24 15V19"
+                            stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    } @else {
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                    </svg>
+                    }
+            </div>
+            }
+            }
+            @if (getTotalFilesCount() > 3) {
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-600 text-white -ml-2.5 sm:-ml-3 overflow-hidden flex items-center justify-center shadow-sm dark:shadow-md first:ml-0"
+                style="z-index: 5;">
+                <span class="text-[10px] font-extrabold">+{{ getTotalFilesCount() - 3 }}</span>
+            </div>
+            }
+        </div>
+
+        <div class="flex flex-col min-w-0 flex-1">
+            <span class="text-[12px] min-[380px]:text-[13px] sm:text-[15px] font-bold text-inherit truncate">{{
+                getTotalFilesCount() }} {{ getTotalFilesCount() === 1 ? ('document') : ('documents')
+                }}</span>
+            <span
+                class="text-[10px] min-[380px]:text-[11px] sm:text-[13px] text-inherit opacity-70 mt-1 truncate">{{'uploaded'}}</span>
+        </div>
+    </div>
+
+    <button
+        class="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] rounded-full border border-card-border dark:border-white/10 bg-brand-600 text-white dark:bg-white/5 dark:text-white flex items-center justify-center cursor-pointer transition-all hover:scale-105 flex-shrink-0"
+        style="background-color:var(--color-brand-600); color: #ffffff;"
+        (click)="onViewIconClick(); $event.stopPropagation()">
+        <svg width="14" height="14" sm:width="16" sm:height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+    </button>
+</div>
+}
+
+<!-- INPUT AREA -->
+@if (getTotalFilesCount() < fileLimit) { <div
+    class="w-full min-h-[120px] border-2 border-dashed border-card-border rounded-2xl bg-surface-50 flex items-center justify-center p-5 relative transition-all"
+    [class.min-h-[100px]]="getTotalFilesCount() > 0" [class.opacity-60]="disabled" [class.cursor-pointer]="!isUploading"
+    (dragover)="!isUploading ? onDragOver($event) : null" (dragleave)="!isUploading ? onDragLeave($event) : null"
+    (drop)="!isUploading ? onDrop($event) : null" (click)="!isUploading ? onUploadAreaClick() : null">
+
+    @if (!isUploading) {
+    <input type="file" [id]="id" class="absolute w-px h-px p-0 -m-px overflow-hidden clip-rect-0 border-0"
+        (change)="onFileChange($event)" [disabled]="disabled" [multiple]="isMultiple"
+        [accept]="allowedFileTypes ? allowedFileTypes.join(',') : '*'" />
+
+    <div class="flex flex-col items-center text-center">
+        <div class="text-brand-600 mb-2">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+        </div>
+            <p class="text-[15px] text-text-secondary">
+            <span>{{"drop1"}} {{ fileLimit === 1 ? ('document1') : ('documents1') }}
+                {{'hereor'}}
+            </span>
+            <span class="text-brand-600 font-extrabold">{{"browse1"}}</span>
+        </p>
+            <p class="text-[12px] text-text-muted mt-0.5">
+            @if(getTotalFilesCount() === 0) {
+            {{'max'}} {{ fileLimit }} {{ fileLimit === 1 ? ('file') : ('files') }} • {{
+            getReadableFileSize(maxFileSize) }} {{'each'}}
+            } @else {
+            {{ getRemainingLimit() }} {{'more'}} {{ getRemainingLimit() === 1 ? ('file') :
+            ('files') }} {{"canbeadded"}}
+            }
+        </p>
+    </div>
+    } @else {
+        <div class="flex flex-col items-center justify-center gap-3 w-full h-full">
+        <div class="w-8 h-8 rounded-full border-2 border-surface-200 border-t-brand-600 animate-spin"></div>
+        <span class="text-brand-600 font-bold text-[14px]">{{'processingfile'}}...</span>
+    </div>
+    }
+
+    </div>
+
+
+    }
+
+    <!-- Validation -->
+    @if(!validFileSts.valid) {
+    <div
+        class="flex items-start gap-2 mt-[10px] text-[12px] color-[#ef4444] bg-red-500/5 border border-red-500/15 rounded-[10px] p-[10px_14px]">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>{{ validFileSts.msg }}</span>
+    </div>
+    }
+
+    <!-- MANAGEMENT MODAL -->
+    @if(isFileListOpen) {
+    <div [id]="id + '-mgmt-overlay'"
+        class="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+        (click)="closeFileList()">
+        <div class="bg-card-bg rounded-2xl w-full max-w-[440px] max-h-[80vh] flex flex-col shadow-2xl border border-card-border overflow-hidden"
+            (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between p-5 border-b border-card-border">
+                <h3 class="text-[1rem] font-extrabold text-text-secondary">{{"attacheddocuments"}} ({{
+                    getTotalFilesCount()
+                    }})</h3>
+                <button
+                    class="w-8 h-8 rounded-full border-none bg-transparent text-text-secondary flex items-center justify-center cursor-pointer transition-all hover:text-text-secondary hover:scale-110"
+                    (click)="closeFileList()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="max-h-[60vh] overflow-y-auto p-4">
+                <div class="flex flex-col gap-2">
+                    @for (file of files; track $index) {
+                    <div
+                        class="flex items-center justify-between bg-surface-50 border border-card-border rounded-2xl p-[10px_12px] transition-all">
+                        <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                            (click)="openViewer($index, 'new'); closeFileList()">
+                            <div class="w-9 h-9 rounded-full overflow-hidden bg-surface-200 flex-shrink-0 flex items-center justify-center"
+                                [class.mfi-pdf-thumb]="file.type === 'application/pdf'">
+                                @if (file.type === 'application/pdf') {
+                                <svg width="100%" height="100%" viewBox="0 0 32 32" fill="none">
+                                    <circle cx="16" cy="16" r="16" fill="#38BDF8" />
+                                    <path
+                                        d="M10 6C10 5.44772 10.4477 5 11 5H19L24 10V25C24 25.5523 23.5523 26 23 26H11C10.4477 26 10 25.5523 10 25V6Z"
+                                        fill="#F0F9FF" />
+                                    <path d="M19 5V10H24L19 5Z" fill="#BAE6FD" />
+                                    <rect x="14" y="12" width="14" height="10" rx="2" fill="#EF4444" stroke="white"
+                                        stroke-width="0.5" />
+                                    <path
+                                        d="M17 15V19M17 15H18C18.4 15 18.7 15.3 18.7 15.7C18.7 16.1 18.4 16.4 18 16.4H17M20.5 15V19M20.5 15H21.5C22.1 15 22.5 15.5 22.5 16V18C22.5 18.5 22.1 19 21.5 19H20.5M24 15H26.5M24 17H25.8M24 15V19"
+                                        stroke="white" stroke-width="1" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                } @else if (fileThumbs[$index]) {
+                                <img [src]="fileThumbs[$index]" class="w-full h-full object-cover">
+                                } @else {
+                                <div class="text-[1.2rem]">📄</div>
+                                }
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="text-[0.875rem] font-bold text-text-secondary truncate">{{ file.name }}
+                                </div>
+                                <div class="text-[0.75rem] text-text-muted">{{ getFileSizeLabel(file.size) }}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button
+                                class="w-[30px] h-[30px] flex items-center justify-center text-text-secondary cursor-pointer bg-transparent border-none transition-all hover:text-brand-600 hover:bg-brand-50 hover:rounded-lg"
+                                (click)="downloadFile({ file: file, name: file.name }); $event.stopPropagation()">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            <button
+                                class="w-[30px] h-[30px] flex items-center justify-center text-text-muted cursor-pointer bg-transparent border-none transition-all hover:text-red-500 hover:bg-red-500/10 hover:rounded-lg"
+                                (click)="removeFile($index); $event.stopPropagation()" [disabled]="disabled">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    }
+                    @for (url of preloadedFiles; track $index) {
+                    <div
+                        class="flex items-center justify-between bg-surface-50 border border-card-border rounded-2xl p-[10px_12px] transition-all">
+                        <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                            (click)="openViewer($index, 'preloaded'); closeFileList()">
+                            <div class="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-brand-600 text-white"
+                                [class.mfi-pdf-thumb]="url.toLowerCase().endsWith('.pdf')">
+                                @if (isImageUrl(url)) {
+                                <img [src]="url" alt="Thumb" class="w-full h-full object-cover">
+                                } @else if (url.toLowerCase().endsWith('.pdf')) {
+                                <svg width="100%" height="100%" viewBox="0 0 32 32" fill="none">
+                                    <circle cx="16" cy="16" r="16" fill="#38BDF8" />
+                                    <path
+                                        d="M10 6C10 5.44772 10.4477 5 11 5H19L24 10V25C24 25.5523 23.5523 26 23 26H11C10.4477 26 10 25.5523 10 25V6Z"
+                                        fill="#F0F9FF" />
+                                    <path d="M19 5V10H24L19 5Z" fill="#BAE6FD" />
+                                    <rect x="14" y="12" width="14" height="10" rx="2" fill="#EF4444" stroke="white"
+                                        stroke-width="0.5" />
+                                    <path
+                                        d="M17 15V19M17 15H18C18.4 15 18.7 15.3 18.7 15.7C18.7 16.1 18.4 16.4 18 16.4H17M20.5 15V19M20.5 15H21.5C22.1 15 22.5 15.5 22.5 16V18C22.5 18.5 22.1 19 21.5 19H20.5M24 15H26.5M24 17H25.8M24 15V19"
+                                        stroke="white" stroke-width="1" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                } @else {
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                                </svg>
+                                }
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="text-[0.875rem] font-bold text-text-secondary truncate">{{ getFileName(url)
+                                    }}</div>
+                                <div class="text-[0.75rem] text-text-muted">{{"clouddocument"}}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button
+                                class="w-[30px] h-[30px] flex items-center justify-center text-text-secondary cursor-pointer bg-transparent border-none transition-all hover:text-brand-600 hover:bg-brand-50 hover:rounded-lg"
+                                (click)="downloadFile({ url: url, name: getFileName(url) }); $event.stopPropagation()">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            <button
+                                class="w-[30px] h-[30px] flex items-center justify-center text-text-muted cursor-pointer bg-transparent border-none transition-all hover:text-red-500 hover:bg-red-500/10 hover:rounded-lg"
+                                (click)="removePreloadedFile($index); $event.stopPropagation()" [disabled]="disabled">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- VIEWER MODAL -->
+    @if(isViewerOpen) {
+    <div [id]="id + '-viewer-overlay'"
+        class="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+        (click)="closeViewer()">
+        <div class="bg-card-bg rounded-[1.5rem] w-[95%] max-w-[50rem] h-[85vh] flex flex-col shadow-2xl border border-card-border overflow-hidden"
+            (click)="$event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-card-border">
+                <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                    <div class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center"
+                        [class.bg-red-500/10]="currentViewerItem.type === 'pdf'"
+                        [class.text-red-500]="currentViewerItem.type === 'pdf'"
+                        [class.bg-green-500/10]="currentViewerItem.type === 'image'"
+                        [class.text-green-500]="currentViewerItem.type === 'image'">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            @if(currentViewerItem.type === 'image') {
+                            <path
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586 a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            } @else {
+                            <path
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            }
+                        </svg>
+                    </div>
+                    <div class="flex flex-col min-w-0 flex-1">
+                        <div class="text-[0.9375rem] font-extrabold text-text-secondary truncate w-full">{{
+                            currentViewerItem.name }}</div>
+                        <div class="text-[0.75rem] text-text-muted">File {{ viewerIndex + 1 }} of {{ viewerItems.length
+                            }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        class="w-8 h-8 rounded-full border-none bg-transparent text-text-secondary flex items-center justify-center cursor-pointer transition-all hover:text-text-secondary hover:scale-110"
+                        title="Close" (click)="closeViewer()">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 flex items-center justify-center overflow-hidden relative bg-surface-50">
+
+                @if(currentViewerItem.type === 'image') {
+                <div class="w-full h-full flex items-center justify-center relative overflow-hidden">
+                    @if(isViewerLoading) {
+                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-surface-50">
+                        <div class="mfi-spinner"></div>
+                        <p class="text-text-secondary">{{"loadingpreview"}}...</p>
+                    </div>
+                    }
+                    @if(imagePreviewUrl) {
+                    <img [src]="imagePreviewUrl" [style.opacity]="isViewerLoading ? '0' : '1'"
+                        style="transition: opacity 0.25s ease; max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 0.75rem; box-shadow: 0 8px 32px rgba(0,0,0,0.18);"
+                        (load)="onViewerImageLoad()" (error)="onViewerImageLoad()" alt="Preview" />
+                    }
+                </div>
+                }
+                @else if(currentViewerItem.type === 'pdf') {
+                <div class="w-full h-full overflow-y-auto" [style.visibility]="isViewerLoading ? 'hidden' : 'visible'">
+                    <div id="viewer-pdf-canvas" class="w-full min-h-[300px]"></div>
+                </div>
+                }
+                @else if(currentViewerItem.type === 'text') {
+                <div class="w-full h-full bg-surface-50 flex flex-col items-center justify-center p-6 text-center">
+                    <div
+                        class="w-16 h-16 bg-surface-200 rounded-full flex items-center justify-center mb-6 text-text-muted">
+                        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 11v6m0 0l3-3m-3 3l-3-3" />
+                        </svg>
+                    </div>
+                    <p class="text-[0.875rem] text-text-secondary font-medium max-w-md">
+                        {{"thisdocumentcannotbevieweddirectlyinthebrowserpleasedownloadittoviewitscontents"}}
+                    </p>
+                </div>
+                } @else {
+                <div class="text-text-muted">{{"previewunavailable"}}</div>
+                }
+            </div>
+
+            <div class="p-4 border-t border-card-border flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                        class="flex items-center gap-1.5 p-[0.5rem] sm:p-[0.5rem_1rem] rounded-2xl border border-card-border bg-card-bg text-text-secondary text-[0.8125rem] font-bold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        [disabled]="viewerIndex === 0 || viewerItems.length <= 1" (click)="prevViewer()">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                            viewBox="0 0 24 24">
+                            <path d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span class="hidden sm:inline">{{"prev"}}</span>
+                    </button>
+                    <button
+                        class="flex items-center gap-1.5 p-[0.5rem] sm:p-[0.5rem_1rem] rounded-2xl border border-card-border bg-card-bg text-text-secondary text-[0.8125rem] font-bold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        [disabled]="viewerIndex === viewerItems.length - 1 || viewerItems.length <= 1"
+                        (click)="nextViewer()">
+                        <span class="hidden sm:inline">{{"next"}}</span>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                            viewBox="0 0 24 24">
+                            <path d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                        class="flex items-center gap-1.5 p-[0.625rem] sm:p-[0.625rem_1.25rem] rounded-2xl border border-card-border bg-surface-100 dark:bg-white/5 text-text-secondary text-[0.875rem] font-bold cursor-pointer transition-all hover:bg-brand-600 hover:text-white hover:border-brand-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        [disabled]="currentViewerItem.type === 'text' || disabled" (click)="viewFull()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span class="hidden sm:inline">{{"fullview"}}</span>
+                    </button>
+                    <button
+                        class="flex items-center gap-1.5 p-[0.625rem] sm:p-[0.625rem_1.25rem] rounded-2xl border-none bg-brand-600 text-white text-[0.875rem] font-bold cursor-pointer transition-all hover:bg-brand-700 hover:-translate-y-0.5 shadow-lg"
+                        (click)="downloadFile()">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span class="hidden sm:inline">{{"download"}}</span>
+                    </button>
+                    <button
+                        class="flex items-center gap-1.5 p-[0.625rem] sm:p-[0.625rem_1.25rem] rounded-2xl border border-red-500/20 bg-red-500/10 dark:bg-red-500/20 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white text-[0.875rem] font-bold cursor-pointer transition-all hover:-translate-y-0.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                        (click)="deleteCurrentViewerItem()" [disabled]="disabled">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span class="hidden sm:inline">{{"delete"}}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    }    

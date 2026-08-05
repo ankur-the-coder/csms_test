@@ -1,32 +1,37 @@
-
-import { CommonModule, DatePipe, NgClass } from '@angular/common';
+import { CommonModule, NgClass, isPlatformBrowser } from '@angular/common';
 import {
   Component,
   ElementRef,
   HostListener,
   Input,
   Output,
+  EventEmitter,
   SimpleChanges,
   ViewChild,
   OnInit,
   AfterContentInit,
   OnDestroy,
-  OnChanges
+  OnChanges,
+  Inject,
+  PLATFORM_ID
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
 
+export interface DateRangeOutput {
+  from: string;
+  to: string;
+}
 
 @Component({
   selector: 'app-custom-date-selector',
-  imports: [ CommonModule,
-    FormsModule,
-    NgClass,],
+  standalone: true,
+  imports: [CommonModule, FormsModule, NgClass],
   templateUrl: './custom-date-selector.html',
   styleUrl: './custom-date-selector.css',
 })
-export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, OnChanges{
-   readonly id = 'cds' + Math.random().toString(36).substring(2, 9);
+export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, OnChanges {
+  readonly id = 'cds_' + Math.random().toString(36).substring(2, 9);
+
   @Input() label: string = '';
   @Input() required: boolean = false;
   @Input() placeholder: string = 'Select Date Range';
@@ -37,12 +42,13 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   @Input() preDefinedPresent: string = '';
   @Input() selectedDays: number = 0;
   @Input() showEmpty: boolean = false;
-  @Output() onApplyDate = new Subject<{ from: string; to: string }>();
 
-  @ViewChild('yearDropdown') yearDropdownElement!: ElementRef;
-  @ViewChild('monthDropdown') monthDropdownElement!: ElementRef;
+  @Output() onApplyDate = new EventEmitter<DateRangeOutput>();
 
-  datePickerPosition: string = '';
+  @ViewChild('yearDropdown') yearDropdownElement!: ElementRef<HTMLDivElement>;
+  @ViewChild('monthDropdown') monthDropdownElement!: ElementRef<HTMLDivElement>;
+
+  datePickerPosition: string = 'left-0';
   showDatePicker = false;
   currentMonth: Date = new Date();
   selectedStartDate: Date | null = null;
@@ -50,7 +56,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   submittedStartDate: Date | null = null;
   submittedEndDate: Date | null = null;
 
-  days: string[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  days: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   firstDayOfMonth: number = 0;
   monthDates: Date[] = [];
   emptyDays: number[] = [];
@@ -62,7 +68,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     { key: 'today', label: 'Today' },
     { key: 'yesterday', label: 'Yesterday' },
     { key: 'lastWeek', label: 'Last 7 Days' },
-    { key: 'lastMonth', label: 'Last 30 Days' },
+    { key: 'lastMonth', label: 'Last Month' },
     { key: 'currentMonth', label: 'Current Month' },
     { key: 'last90days', label: 'Last 90 Days' },
     { key: 'custom', label: 'Custom Date' }
@@ -82,12 +88,16 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   showMonthDropdown: boolean = false;
   showYearDropdown: boolean = false;
   yearRange: number[] = [];
-  closing: boolean = false;
   isSelectingRange: boolean = false;
+
+  private isBrowser: boolean;
 
   constructor(
     private elementRef: ElementRef,
-  ) { }
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
     this.generateYearRange();
@@ -105,6 +115,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
     this.disabled = this.selectedDays > 0;
   }
+
   ngAfterContentInit(): void {
     if (!this.showEmpty) {
       if (this.initialDates.from === '' && !this.preDefinedPresent) {
@@ -117,7 +128,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['initialDates']) {
+    if (changes['initialDates'] && this.initialDates) {
       if (typeof this.initialDates.from === 'string' && this.initialDates.from !== '') {
         this.selectedStartDate = this.parseLocalDate(this.initialDates.from);
       } else if (this.initialDates.from instanceof Date) {
@@ -148,11 +159,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     }
   }
 
-  ngOnDestroy(): void {
-    const overlay = document.getElementById(this.id + '-overlay');
-    if (overlay) overlay.remove();
-    this.onApplyDate.complete();
-  }
+  ngOnDestroy(): void {}
 
   private updateSelectedPreset(): void {
     if (!this.selectedStartDate || !this.selectedEndDate) return;
@@ -160,22 +167,21 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     const diffTime = this.selectedEndDate.getTime() - this.selectedStartDate.getTime();
     const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
 
-    const firstDayOfCurrentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
     const lastDayOfCurrentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 0);
 
     const isFirstDayOfCurrentMonth = this.selectedStartDate.getDate() === 1;
     const isEndDateBeforeOrEqualLastDayOfCurrentMonth = this.selectedEndDate <= lastDayOfCurrentMonth;
 
     if (isFirstDayOfCurrentMonth && isEndDateBeforeOrEqualLastDayOfCurrentMonth && diffDays > 1 && diffDays !== 7) {
-      this.selectedPreset = "currentMonth";
+      this.selectedPreset = 'currentMonth';
     } else if (diffDays >= 28 && diffDays <= 31) {
-      this.selectedPreset = "currentMonth";
+      this.selectedPreset = 'currentMonth';
     } else if (diffDays === 7) {
-      this.selectedPreset = "lastWeek";
+      this.selectedPreset = 'lastWeek';
     } else if (diffDays <= 1) {
-      this.selectedPreset = "today";
+      this.selectedPreset = 'today';
     } else {
-      this.selectedPreset = "custom";
+      this.selectedPreset = 'custom';
     }
   }
 
@@ -195,28 +201,25 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       if (event) {
         this.calculatePosition(event);
       }
-      setTimeout(() => {
-        const overlay = document.getElementById(this.id + '-overlay');
-        if (overlay) {
-          document.body.appendChild(overlay);
-        }
-      }, 10);
     } else {
       this.closeDatePicker();
     }
   }
 
   private calculatePosition(event: MouseEvent): void {
+    if (!this.isBrowser) return;
+
     const buttonElement = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const pickerWidth = 460; // Approximate modal width
+    const pickerWidth = 360; 
 
-    if (buttonElement.right + pickerWidth > viewportWidth) {
-      this.datePickerPosition = 'sm:right-0 sm:left-auto';
+    if (buttonElement.left + pickerWidth > viewportWidth) {
+      this.datePickerPosition = 'right-0';
     } else {
-      this.datePickerPosition = 'sm:left-0 sm:right-auto';
+      this.datePickerPosition = 'left-0';
     }
   }
+
   clearDates(): void {
     this.selectedStartDate = null;
     this.selectedEndDate = null;
@@ -224,12 +227,11 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.submittedEndDate = null;
     this.selectedPreset = null;
     this.previousPreset = null;
-    this.onApplyDate.next({ from: '', to: '' });
+    this.onApplyDate.emit({ from: '', to: '' });
     this.closeDatePicker();
   }
+
   closeDatePicker(): void {
-    const overlay = document.getElementById(this.id + '-overlay');
-    if (overlay) overlay.remove();
     this.showDatePicker = false;
     this.showMonthDropdown = false;
     this.showYearDropdown = false;
@@ -238,9 +240,9 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   @HostListener('document:click', ['$event'])
   onClickOutside(event: Event) {
-    const overlay = document.getElementById(this.id + '-overlay');
-    if (!this.elementRef.nativeElement.contains(event.target as Node) &&
-      overlay && !overlay.contains(event.target as Node)) {
+    if (!this.isBrowser) return;
+
+    if (!this.elementRef.nativeElement.contains(event.target as Node)) {
       if (this.showDatePicker) {
         this.closeDatePicker();
       }
@@ -249,16 +251,16 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   get minDate(): Date {
     if (this.setMinDate) return this.setMinDate;
-    const minDate = new Date(this.currentDate);
-    minDate.setFullYear(minDate.getFullYear() - this.dateRangeYears);
-    return minDate;
+    const min = new Date(this.currentDate);
+    min.setFullYear(min.getFullYear() - this.dateRangeYears);
+    return min;
   }
 
   get maxDate(): Date {
     if (this.setMaxDate) return this.setMaxDate;
-    const maxDate = new Date(this.currentDate);
-    maxDate.setFullYear(maxDate.getFullYear() + this.dateRangeYears);
-    return maxDate;
+    const max = new Date(this.currentDate);
+    max.setFullYear(max.getFullYear() + this.dateRangeYears);
+    return max;
   }
 
   renderCalendar(date: Date): void {
@@ -271,7 +273,6 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       this.monthDates.push(new Date(date.getFullYear(), date.getMonth(), i));
     }
 
-    // Fill the rest of the 42 cells (6 rows) to keep height consistent
     const totalCells = 42;
     const filledCells = this.emptyDays.length + this.monthDates.length;
     this.trailingDays = Array(totalCells - filledCells).fill(0);
@@ -297,10 +298,6 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.selectPreset('today');
   }
 
-  selectDateRange(rangeType: string): void {
-    this.selectedPreset = rangeType;
-  }
-
   getFormattedDateRange(): string {
     const start = this.formatDate(this.submittedStartDate);
     const end = this.formatDate(this.submittedEndDate || this.submittedStartDate);
@@ -314,7 +311,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   formatDate(date: Date | null): string {
     if (!date) return '';
     const day = date.getDate().toString().padStart(2, '0');
-    const month = date.toLocaleString('en-us', { month: 'short' });
+    const month = date.toLocaleString('en-US', { month: 'short' });
     const year = date.getFullYear();
     return `${day} ${month} ${year}`;
   }
@@ -394,9 +391,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.showMonthDropdown = !this.showMonthDropdown;
     this.showYearDropdown = false;
 
-    if (this.showMonthDropdown) {
+    if (this.showMonthDropdown && this.isBrowser) {
       setTimeout(() => {
-        const selectedMonthElement = this.monthDropdownElement.nativeElement.querySelector('.bg-brand-100');
+        if (!this.monthDropdownElement) return;
+        const selectedMonthElement = this.monthDropdownElement.nativeElement.querySelector('.bg-indigo-50');
         if (selectedMonthElement) {
           selectedMonthElement.scrollIntoView({ block: 'center', behavior: 'auto' });
         }
@@ -409,9 +407,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     this.showYearDropdown = !this.showYearDropdown;
     this.showMonthDropdown = false;
 
-    if (this.showYearDropdown) {
+    if (this.showYearDropdown && this.isBrowser) {
       setTimeout(() => {
-        const selectedYearElement = this.yearDropdownElement.nativeElement.querySelector('.bg-brand-100');
+        if (!this.yearDropdownElement) return;
+        const selectedYearElement = this.yearDropdownElement.nativeElement.querySelector('.bg-indigo-50');
         if (selectedYearElement) {
           selectedYearElement.scrollIntoView({ block: 'center', behavior: 'auto' });
         }
@@ -479,8 +478,6 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     event.stopPropagation();
     if (!this.selectedStartDate || !this.selectedEndDate) return;
 
-    const today = this.normalizeDate(new Date());
-
     switch (this.selectedPreset) {
       case 'today':
       case 'yesterday':
@@ -521,7 +518,8 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
         this.selectedEndDate = this.addDays(this.selectedEndDate, direction * (diffInDays + 1));
         break;
 
-      default: return;
+      default:
+        return;
     }
 
     this.currentMonth = new Date(this.selectedStartDate.getFullYear(), this.selectedStartDate.getMonth(), 1);
@@ -542,7 +540,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     }
 
     if (this.selectedStartDate && this.selectedEndDate) {
-      this.onApplyDate.next({
+      this.onApplyDate.emit({
         from: this.formatDateToString(this.selectedStartDate),
         to: this.formatDateToString(this.selectedEndDate),
       });
@@ -588,7 +586,8 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
         startDate = this.addDays(today, -90);
         endDate = today;
         break;
-      default: return;
+      default:
+        return;
     }
 
     this.selectedStartDate = startDate;
@@ -614,7 +613,6 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       this.isSelectingRange = true;
     } else {
       if (this.selectedStartDate && normalizedDate < this.selectedStartDate) {
-        // Reset start date if user clicks an earlier date
         this.selectedStartDate = normalizedDate;
         this.selectedEndDate = normalizedDate;
         this.isSelectingRange = true;
@@ -630,7 +628,6 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       if (diffInDays > this.selectedDays) {
         this.selectedStartDate = null;
         this.selectedEndDate = null;
-        // this.toastr.error(`Max range is ${this.selectedDays} days.`);
       }
     }
   }

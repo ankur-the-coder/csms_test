@@ -16,8 +16,7 @@
 
     <!-- Search -->
     @if (config().showSearch !== false) {
-    <div
-      class="st-search-wrap relative flex items-center bg-[--st-search-bg] rounded-[4px] border-[1.5px] border-transparent min-w-[200px] max-w-[280px]">
+    <div class="bg-gray-100 relative flex items-center  rounded-xl border-2px border-transparent min-w-50 max-w-70">
       <svg class="st-search-icon absolute left-2.5 w-3.5 h-3.5 text-[--st-text3] pointer-events-none"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
         stroke-linejoin="round">
@@ -29,7 +28,7 @@
         type="text" placeholder="Search…" [value]="searchRaw()" (input)="onSearch($any($event.target).value)" />
       @if (searchRaw()) {
       <button
-        class="st-search-clear absolute right-2 bg-none border-none cursor-pointer p-0.5 text-[--st-text3] flex rounded-[4px] transition-colors duration-150 hover:text-[--st-text] hover:bg-[--st-border]"
+        class="st-search-clear absolute right-2 bg-none border-none cursor-pointer p-0.5 text-[--st-text3] flex rounded-sm transition-colors duration-150 hover:text-[--st-text] hover:bg-[--st-border]"
         (click)="onSearch('')" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
           class="w-3 h-3">
@@ -74,7 +73,7 @@
     <!-- REFRESH -->
     @else if (button.type === 'refresh') {
     <button
-      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+      class="st-icon-btn inline-flex items-center justify-center w-8.5 h-8.5 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
       title="Refresh" (click)="refresh()" [disabled]="isRefreshing() || isSpinning()" type="button">
       <svg class="w-4 h-4" [class.animate-spin]="isRefreshing() || isSpinning()" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2">
@@ -88,7 +87,7 @@
     @else if (button.type === 'export') {
     <div class="relative" (click)="$event.stopPropagation()">
       <button
-        class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
+        class="st-icon-btn inline-flex items-center justify-center w-8.5 h-8.5 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] disabled:opacity-40 disabled:cursor-not-allowed"
         title="Export" [disabled]="!hasData()" (click)="hasData() && toggleExportMenu()" type="button">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -98,7 +97,7 @@
       </button>
       @if (exportMenuOpen()) {
       <div
-        class="st-export-menu absolute right-0 top-[calc(100%+8px)] w-[168px] rounded-[--st-radius-lg] border border-[--st-border] bg-[--st-surface] shadow-[--st-shadow-lg] z-[999] overflow-hidden animate-[st-dropdown_0.15s_ease-out]">
+        class="st-export-menu absolute right-0 top-[calc(100%+8px)] w-42 rounded-[--st-radius-lg] border border-[--st-border] bg-[--st-surface] shadow-[--st-shadow-lg] z-999 overflow-hidden animate-[st-dropdown_0.15s_ease-out]">
         <button
           class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
           (click)="exportCSV()" type="button">
@@ -126,7 +125,7 @@
     <!-- COLUMN PICKER -->
     @else if (button.type === 'columnPicker') {
     <button
-      class="st-icon-btn inline-flex items-center justify-center w-[34px] h-[34px] rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
+      class="inline-flex items-center justify-center w-8.5 h-8.5 rounded-xl border-[1.5px] border-card-border cursor-pointer"
       title="Columns" (click)="toggleColPicker()" type="button">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="7" height="18" rx="1" />
@@ -138,7 +137,7 @@
 
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
-    <app-custom-date-selector></app-custom-date-selector>
+    <app-custom-date-selector (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
     }
 
     <!-- CUSTOM BUTTON -->
@@ -204,12 +203,12 @@
         </svg>
       </div>
       <div>
-        <p class="st-error-title text-[15px] font-semibold text-[--st-text]">Failed to load data</p>
-        <p class="st-error-sub text-[13px] text-[--st-text3] text-center max-w-[300px]">Something went wrong while
+        <p class="text-[15px] font-semibold ">Failed to load data</p>
+        <p class="text-[13px]  text-center max-w-75">Something went wrong while
           fetching data</p>
       </div>
       <button
-        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        class=" inline-flex items-center gap-1.5 px-3.5 py-1.5  text-[13px] font-medium font-inherit cursor-pointer border-[1.5px]  text-white  transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
         (click)="refresh()" type="button">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="23 4 23 10 17 10" />
@@ -239,7 +238,7 @@
           <!-- Checkbox -->
           @if (config().selectable) {
           <th
-            class="st-th st-check-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
+            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
             <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
               <input type="checkbox"
                 class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
@@ -256,7 +255,7 @@
 
           @for (col of visibleColumns(); track col.key) {
           <th
-            class="st-th sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150"
+            class="st-th sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 group"
             [class.st-th--sortable]="col.sortable" [class.st-th--sorted]="sort().key === col.key"
             [class.st-th--right]="col.align === 'right'" [class.st-th--center]="col.align === 'center'"
             [class.st-th--sticky]="col.sticky === true" [class.st-th--dragging]="dragSrcKey() === col.key.toString()"
@@ -267,24 +266,16 @@
             (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
             [title]="col.tooltip ?? ''">
-            <span class="st-th-inner inline-flex items-center gap-1">
+            <span class="st-th-inner inline-flex items-center gap-1.5" [class.cursor-pointer]="col.sortable">
               {{ col.label }}
               @if (col.sortable) {
-              <span class="st-sort-icon inline-flex items-center text-[--st-accent]">
-                @if (getSortIcon($any(col.key)) === 'up') {
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <span class="st-sort-icons flex flex-col -gap-0.5" [class.text-[--st-accent]]="sort().key === col.key">
+                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'asc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'asc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-                } @else if (getSortIcon($any(col.key)) === 'down') {
-                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'desc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'desc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
-                } @else {
-                <svg class="w-3 h-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="18 15 12 9 6 15" />
-                  <polyline points="6 9 12 15 18 9" class="opacity-0" />
-                </svg>
-                }
               </span>
               }
             </span>
@@ -299,7 +290,7 @@
           <!-- Actions header -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <th
-            class="st-th st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
             Actions</th>
           }
         </tr>
@@ -315,7 +306,7 @@
         <tr>
           <td
             [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)"
-            class="st-group-header px-3.5 py-1.5 bg-[color-mix(in_srgb,var(--st-accent)_8%,var(--st-surface))] border-t border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] border-b border-[color-mix(in_srgb,var(--st-accent)_20%,transparent)] text-[12px] font-semibold text-[--st-accent-dark]">
+            class=" px-3.5 py-1.5  border-t text-[12px] font-semibold text-text-primary">
             <span>{{ row.__groupValue }}</span>
           </td>
         </tr>
@@ -355,7 +346,8 @@
             class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
-            [style.max-width.px]="colWidths()[col.key.toString()] ?? 200">
+            [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
+            [style.overflow]="getColumnTemplate(col.key.toString()) ? 'visible' : 'hidden'">
 
             @switch (col.type) {
 
@@ -415,8 +407,7 @@
             <img [src]="getCellValue(row, col.key)" alt="image"
               class="w-12 h-12 object-cover rounded-lg border border-card-border transition-colors duration-150 hover:border-[--st-accent] hover:scale-105" />
             } @else if (getColumnTemplate(col.key.toString())) {
-            <div class="st-cell-text truncate"
-              [attr.title]="isCellValueTruncated(getCellValue(row, col.key)) ? formatCellValue(getCellValue(row, col.key)) : null">
+            <div class="st-cell-custom-template">
               <ng-container
                 *ngTemplateOutlet="getColumnTemplate(col.key.toString())!; context: { $implicit: row, row: row, value: getCellValue(row, col.key) }" />
             </div>
@@ -658,95 +649,159 @@
 <!-- ── Filter Modal ──────────────────────────────────────────────────────── -->
 @if (filterModalOpen()) {
 <div
-  class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
+  class="fixed inset-0 z-1500 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 "
   (click)="closeFilterModal()">
   <div
-    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    class=" bg-card-bg rounded-xl border border-card-border shadow-2xl w-full max-w-160 max-h-[85vh] flex flex-col overflow-hidden "
     (click)="$event.stopPropagation()">
-    <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
-      <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Filters</h3>
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
+      <h3 class="text-base font-bold text-text-primary">Filters</h3>
       <button
-        class="st-modal-close w-[32px] h-[32px] rounded-[--st-radius-sm] border-none bg-[--st-search-bg] text-[--st-text2] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-[--st-border] hover:text-[--st-text]"
+        class="w-8 h-8 rounded-full bg-surface-100 hover:bg-surface-200 text-text-secondary flex items-center justify-center transition-colors border-none cursor-pointer"
         (click)="closeFilterModal()" type="button">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
-    <!-- UPDATE THIS LINE IN THE FILTER MODAL BODY -->
-    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1" (click)="closeAllDropdowns()">
-      <div class="st-filter-grid grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+
+    <!-- Modal Body -->
+    <div class="px-6 py-5 overflow-y-auto flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
         @for (filter of allFilters(); track filter.key) {
-        <div class="st-filter-field flex flex-col gap-1.5">
-          <label class="st-filter-label text-[11px] font-semibold uppercase tracking-[0.06em] text-[--st-text2]">{{
-            filter.label }}</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-text-secondary tracking-wide">{{ filter.label }}</label>
+
           @if (filter.type === 'range') {
           <div class="flex items-center gap-2">
             <input type="number"
-              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              class="px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors w-full focus:border-brand-500 flex-1"
               placeholder="Min" [ngModel]="tempFilters()[filter.key + '_min']"
               (ngModelChange)="updateTempFilter(filter.key + '_min', $event)" />
             <span class="text-text-muted font-medium">–</span>
             <input type="number"
-              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              class="px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors w-full focus:border-brand-500 flex-1"
               placeholder="Max" [ngModel]="tempFilters()[filter.key + '_max']"
               (ngModelChange)="updateTempFilter(filter.key + '_max', $event)" />
           </div>
           } @else if (filter.type === 'daterange') {
           <div class="flex items-center gap-2">
             <input type="date"
-              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              class="px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors w-full focus:border-brand-500 flex-1"
               [ngModel]="tempFilters()[filter.key + '_from']"
               (ngModelChange)="updateTempFilter(filter.key + '_from', $event)" />
             <span class="text-text-muted font-medium">–</span>
             <input type="date"
-              class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] flex-1"
+              class="px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors w-full focus:border-brand-500 flex-1"
               [ngModel]="tempFilters()[filter.key + '_to']"
               (ngModelChange)="updateTempFilter(filter.key + '_to', $event)" />
           </div>
-          } @else if (filter.multiSelect) {
-          <div class="relative st-custom-select group" (click)="$event.stopPropagation()">
+          } @else if (filter.starRating) {
+          <div class="relative st-custom-select group">
             <!-- Trigger Button -->
             <button type="button"
-              class="st-filter-input w-full flex items-center justify-between px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring] text-left"
-              (click)="toggleDropdown(filter.key)">
-              <span class="truncate block pr-2 text-[13px]" [class.text-[--st-text2]]="!hasSelections(filter.key)">
-                {{ getMultiSelectDisplay(filter.key) || '-- Select ' + filter.label + ' --' }}
+              class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors focus:border-brand-500 text-left cursor-pointer"
+              (click)="toggleDropdown(filter.key, $event)">
+              @if (selectedStarValue(filter.key) > 0) {
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"
+                  stroke="currentColor" stroke-width="1.5">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span class="text-text-primary truncate">{{ selectedStarValue(filter.key) }} Star{{
+                  selectedStarValue(filter.key) > 1 ? 's' : '' }}</span>
               </span>
-              <svg class="w-4 h-4 text-[--st-text3] flex-shrink-0 transition-transform duration-200"
+              } @else {
+              <span class="text-text-muted truncate">Select Rating</span>
+              }
+              <svg class="w-4 h-4 text-text-muted flex-shrink-0 transition-transform duration-200"
                 [class.rotate-180]="isDropdownOpen(filter.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
 
-            <!-- Dropdown Popover -->
-            @if (isDropdownOpen(filter.key)) {
+            <!-- Dropdown Popover (fixed to viewport so it renders above/outside the modal, not clipped) -->
+            @if (isDropdownOpen(filter.key) && dropdownPosition(); as pos) {
             <div
-              class="absolute top-[calc(100%+4px)] left-0 w-full z-[2000] bg-[--st-surface] border border-[--st-border] rounded-[--st-radius-lg] shadow-[--st-shadow-xl] overflow-hidden flex flex-col max-h-[240px] animate-[st-dropdown_0.15s_ease-out]">
+              class="fixed z-[3000] bg-card-bg border border-card-border rounded-xl shadow-2xl overflow-hidden flex flex-col animate-[st-dropdown_0.15s_ease-out]"
+              [style.top.px]="pos.top" [style.left.px]="pos.left" [style.width.px]="pos.width"
+              (click)="$event.stopPropagation()">
+              <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-surface-200 max-h-[240px]">
+                @for (opt of filter.options ?? []; track opt.value) {
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-text-secondary bg-transparent border-none cursor-pointer transition-colors hover:bg-surface-100 text-left"
+                  [class.bg-brand-50]="isStarSelected(filter.key, opt.value)"
+                  [class.text-brand-600]="isStarSelected(filter.key, opt.value)"
+                  (click)="selectStarRating(filter.key, opt.value)">
+                  <svg class="w-4 h-4 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"
+                    stroke="currentColor" stroke-width="1.5">
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                  <span class="flex-1 truncate">
+  {{ opt.value }} Star{{ opt.value > 1 ? 's' : '' }}
+</span>
+                  @if (isStarSelected(filter.key, opt.value)) {
+                  <svg class="w-3.5 h-3.5 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  }
+                </button>
+                }
+              </div>
+            </div>
+            }
+          </div>
+          } @else if (filter.multiSelect) {
+          <div class="relative st-custom-select group">
+            <!-- Trigger Button -->
+            <button type="button"
+              class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-surface-200 bg-surface-100 text-xs font-medium text-text-primary outline-none transition-colors focus:border-brand-500 text-left cursor-pointer"
+              (click)="toggleDropdown(filter.key, $event)">
+              <span class="truncate block pr-2" [class.text-text-muted]="!hasSelections(filter.key)">
+                {{ getMultiSelectDisplay(filter.key) || 'Select ' + filter.label }}
+              </span>
+              <svg class="w-4 h-4 text-text-muted flex-shrink-0 transition-transform duration-200"
+                [class.rotate-180]="isDropdownOpen(filter.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Popover (fixed to viewport so it renders above/outside the modal, not clipped) -->
+            @if (isDropdownOpen(filter.key) && dropdownPosition(); as pos) {
+            <div
+              class="fixed z-[3000] bg-card-bg border border-card-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[260px] animate-[st-dropdown_0.15s_ease-out]"
+              [style.top.px]="pos.top" [style.left.px]="pos.left" [style.width.px]="pos.width"
+              (click)="$event.stopPropagation()">
 
               <!-- Search Bar for API Filtering -->
-              <div class="p-2 border-b border-[--st-border] bg-[--st-surface] sticky top-0 z-10">
+              <div class="p-2 border-b border-card-border bg-card-bg sticky top-0 z-10">
                 <div class="relative flex items-center">
-                  <svg class="absolute left-2 w-3.5 h-3.5 text-[--st-text3]" viewBox="0 0 24 24" fill="none"
+                  <svg class="absolute left-2.5 w-3.5 h-3.5 text-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
-                  <input type="text" placeholder="Search..."
-                    class="w-full pl-7 pr-2 py-1.5 text-[12px] font-inherit bg-[--st-search-bg] text-[--st-text] border border-transparent rounded-[--st-radius-sm] outline-none focus:border-[--st-accent] transition-colors"
+                  <input type="text" placeholder="Search"
+                    class="w-full pl-8 pr-3 py-1.5 text-xs font-inherit bg-surface-100 text-text-primary border border-card-border rounded-lg outline-none focus:border-brand-500 transition-colors"
                     (input)="onDropdownSearch(filter.key, $any($event.target).value)" />
                 </div>
               </div>
 
               <!-- Options List -->
-              <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-[--st-border2]">
+              <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-surface-200">
                 @for (opt of filter.options ?? []; track opt.value) {
                 <label
-                  class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-[4px] cursor-pointer text-[13px] text-[--st-text] transition-colors hover:bg-[--st-row-hover]">
+                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs font-medium text-text-secondary transition-colors hover:bg-surface-100">
                   <input type="checkbox"
-                    class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent]"
+                    class="st-checkbox appearance-none w-4 h-4 rounded border border-card-border bg-card-bg cursor-pointer transition-all flex-shrink-0 checked:bg-brand-500 checked:border-brand-500"
                     [checked]="isTempFilterValueChecked(filter.key, opt.value)"
                     (change)="toggleTempMultiValue(filter.key, opt.value)" />
                   <span class="flex-1 truncate select-none">{{ opt.label }}</span>
@@ -754,7 +809,7 @@
                 }
 
                 @if (!(filter.options ?? []).length) {
-                <div class="px-2.5 py-4 text-center text-[12px] text-[--st-text3]">
+                <div class="px-3 py-4 text-center text-xs text-text-muted">
                   No options found
                 </div>
                 }
@@ -763,26 +818,24 @@
             }
           </div>
           } @else {
-          <select
-            class="st-filter-input px-2.5 py-2 rounded-[--st-radius] border-[1.5px] border-[--st-border] bg-[--st-search-bg] text-[13px] font-inherit text-[--st-text] outline-none transition-colors duration-150 w-full focus:border-[--st-accent] focus:bg-[--st-surface] focus:shadow-[--st-focus-ring]"
-            [ngModel]="tempFilters()[filter.key]" (ngModelChange)="updateTempFilter(filter.key, $event)">
-            <option value="">-- Select {{ filter.label }} --</option>
-            @for (opt of filter.options ?? []; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-            }
-          </select>
+          <app-single-input #singleInputRef [options]="getFilterSelectOptions(filter)"
+            [placeHolder]="'Select ' + filter.label" [ngModel]="tempFilters()[filter.key]"
+            (ngModelChange)="updateTempFilter(filter.key, $event)" [enableSearch]="filter.searchable ?? true"
+            (onOpen)="onSingleInputOpened(singleInputRef)">
+          </app-single-input>
           }
         </div>
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="px-6 py-4 bg-card-bg border-t border-card-border flex items-center justify-end gap-3 relative">
       <button
-        class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
-        (click)="clearModalFilters()" type="button">Clear</button>
+        class="px-5 py-2 rounded-xl text-xs font-semibold border border-brand-500 text-brand-500 hover:bg-brand-50 bg-transparent transition-all cursor-pointer"
+        (click)="clearModalFilters()" type="button">Clear All</button>
       <button
-        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
-        (click)="applyFilters()" type="button">Apply Filters</button>
+        class="px-6 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-white hover:bg-brand-600 shadow-sm transition-all cursor-pointer"
+        (click)="applyFilters()" type="button">Apply</button>
     </div>
   </div>
 </div>
@@ -791,15 +844,15 @@
 <!-- ── Column Picker Modal ────────────────────────────────────────────────── -->
 @if (colPickerModalOpen()) {
 <div
-  class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
+  class="fixed inset-0 z-1500 bg-black/45 flex items-center justify-center p-6"
   (click)="closeColPicker()">
   <div
-    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[680px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    class=" rounded-2xl border border-card-border bg-card-bg w-full max-w-170 max-h-[85vh] flex flex-col overflow-hidden "
     (click)="$event.stopPropagation()">
-    <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
-      <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Visible Columns</h3>
+    <div class=" flex items-center justify-between px-5 py-4 border-b border-card-border">
+      <h3 class="bg-auto text-[16px] font-bold ">Visible Columns</h3>
       <button
-        class="st-modal-close w-[32px] h-[32px] rounded-[--st-radius-sm] border-none bg-[--st-search-bg] text-[--st-text2] cursor-pointer flex items-center justify-center transition-colors duration-150 hover:bg-[--st-border] hover:text-[--st-text]"
+        class=" w-8 h-8 rounded-2xl border-none bg-white text-sm cursor-pointer flex items-center justify-center transition-colors duration-150 "
         (click)="closeColPicker()" type="button">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18" />
@@ -820,7 +873,8 @@
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
       <button
         class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
         (click)="closeColPicker()" type="button">Done</button>
@@ -835,7 +889,7 @@
   class="st-modal-backdrop fixed inset-0 z-[1500] bg-black/45 flex items-center justify-center p-6 animate-[st-fade-in_0.2s_ease-out]"
   (click)="closeBulkActionModal()">
   <div
-    class="st-modal bg-[--st-surface] rounded-[--st-radius-xl] border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[480px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
+    class="st-modal bg-[--st-surface] rounded-2xl border border-[--st-border] shadow-[--st-shadow-xl] w-full max-w-[480px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.34,1.56,0.64,1)]"
     (click)="$event.stopPropagation()">
     <div class="st-modal-header flex items-center justify-between px-5 py-4 border-b border-[--st-border]">
       <h3 class="st-modal-title text-[16px] font-bold text-[--st-text]">Bulk Actions <span class="text-brand-500">({{
@@ -860,7 +914,8 @@
         }
       </div>
     </div>
-    <div class="st-modal-footer flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
       <button
         class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg]"
         (click)="closeBulkActionModal()" type="button">Cancel</button>

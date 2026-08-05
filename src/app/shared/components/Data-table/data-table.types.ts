@@ -35,6 +35,7 @@ export interface SmartColumn<T> {
   type?: ColType;
   sortable?: boolean;
   hidden?: boolean;
+  hideable?: boolean;
   sticky?: boolean;
   align?: 'left' | 'center' | 'right';
   tooltip?: string;
@@ -62,6 +63,8 @@ export interface TableFilter {
   options?: { label: string; value: any }[];
   multiSelect?: boolean;
   searchable?: boolean;
+  /** Renders this filter as a single-select star-rating picker instead of a plain <select>. */
+  starRating?: boolean;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -95,11 +98,12 @@ export interface CustomRowAction<T> {
 // ── Toolbar ───────────────────────────────────────────────────────────────────
 
 export type ToolbarButtonType =
+   | 'datePicker'
   | 'filter'
   | 'refresh'
   | 'export'
   | 'columnPicker'
-  | 'datePicker'
+  
   | 'custom';
 
 export interface ToolbarButton<T = any> {
@@ -155,7 +159,7 @@ export interface ApiConfig<T> {
   dataPath?: string;
   totalPath?: string;
   buildRequest?: (ctx: RequestContext) => ApiRequest;
-  transformRow?: (raw: any) => T;
+  transformRow?: (raw: any) => T | null;
 }
 
 // ── Main Config ───────────────────────────────────────────────────────────────

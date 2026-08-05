@@ -1,0 +1,33 @@
+/* Text input visual theme — keep component logic intact */
+
+.text-input,
+.text-input input,
+input[type="text"] {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card-bg);
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.text-input:focus,
+.text-input input:focus,
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.06);
+}
+
+.text-input::placeholder,
+.text-input input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.text-input[disabled],
+.text-input input[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

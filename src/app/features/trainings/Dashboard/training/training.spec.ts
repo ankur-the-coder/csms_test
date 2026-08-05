@@ -20,10 +20,22 @@ describe('Training', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should render the trainer view when Trainers tab is selected', () => {
-    component.activeNavTab = 'Trainers';
+  it('should render the single-page dashboard sections', () => {
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('app-trainer')).toBeTruthy();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Training Center');
+    expect(el.textContent).toContain('Upcoming Trainings');
+    expect(el.textContent).toContain("Today's Trainings");
+    expect(el.textContent).toContain('Training History');
+    expect(el.querySelector('app-trainer')).toBeNull();
+  });
+
+  it('should open create training modal', () => {
+    component.openCreateModal();
+    fixture.detectChanges();
+
+    expect(component.isCreateModalOpen()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Create Training');
   });
 });
