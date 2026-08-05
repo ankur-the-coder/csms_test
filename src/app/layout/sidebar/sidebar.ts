@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 export interface NavItem {
   id: string;
@@ -15,12 +15,12 @@ export interface NavItem {
 
 @Component({
   selector: 'app-sidebar',
-  standalone: true,
   imports: [CommonModule],
-  templateUrl: `./sidebar.component.html`
+  templateUrl: './sidebar.html',
+  styleUrl: './sidebar.css',
 })
-export class SidebarComponent implements OnInit {
-  private sanitizer = inject(DomSanitizer);
+export class Sidebar {
+   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
   @Input() activeNav = 'dashboard';
@@ -40,49 +40,10 @@ export class SidebarComponent implements OnInit {
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
     { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-    { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
-    { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
-    { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
+    // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
+    // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
+    // { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
   ];
-
-  ngOnInit() {
-    this.updateActiveFromRoute(this.router.url);
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
-      this.updateActiveFromRoute(event.urlAfterRedirects || event.url);
-    });
-  }
-
-  private updateActiveFromRoute(url: string) {
-    if (!url) return;
-
-    let matchedId = '';
-    if (url.includes('implementation')) {
-      matchedId = 'implementation';
-    } else if (url.includes('onboarding')) {
-      matchedId = 'onboarding';
-    } else if (url.includes('dashboard')) {
-      matchedId = 'dashboard';
-    } else if (url.includes('client')) {
-      matchedId = 'clients';
-    } else if (url.includes('training')) {
-      matchedId = 'training';
-    } else if (url.includes('meetings')) {
-      matchedId = 'meetings';
-    } else if (url.includes('health')) {
-      matchedId = 'health';
-    } else if (url.includes('support')) {
-      matchedId = 'support';
-    } else if (url.includes('settings')) {
-      matchedId = 'settings';
-    }
-
-    if (matchedId) {
-      this.activeNav = matchedId;
-      this.navChange.emit(matchedId);
-    }
-  }
 
   toggleCollapse() {
     this.collapsed = !this.collapsed;
@@ -115,8 +76,3 @@ export class SidebarComponent implements OnInit {
     return this.sanitizer.bypassSecurityTrustHtml(icons[type] || '');
   }
 }
-
-
-
-
-//implementation,training,uses

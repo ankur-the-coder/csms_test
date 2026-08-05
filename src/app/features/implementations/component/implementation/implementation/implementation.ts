@@ -102,12 +102,14 @@ private selectedDateTo   = signal<string | null>(null);
       { id: 'all',         label: 'All Organisations', count: c.totalAccounts },
       { id: 'in_progress', label: 'In Progress',       count: c.inProgress },
       { id: 'complete',    label: 'Completed',         count: c.completed },
+      { id: 'pending',     label: 'Not Started',       count: c.notStarted },
     ];
   }
 
   totalClients           = computed(() => this.cardData().totalAccounts);
   completedClientsCount  = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
+  pendingClientsCount = computed(() => this.cardData().notStarted);
 
   // ── Memoized module lookups for the open drawer (recompute only when
   //    selectedClient / selectedModuleTab actually change) ──────────────────
@@ -129,7 +131,7 @@ private selectedDateTo   = signal<string | null>(null);
     { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
     { key: 'support_owner',      label: 'Support Owner',  sortable: false },
     { key: 'country',            label: 'Country',        sortable: false },
-    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hide : true},
     {
       key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
       badgeMap: {
