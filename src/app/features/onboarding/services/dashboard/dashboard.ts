@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { CardData, DataTablePayload, ImplementationCardData, ImplementationData } from '../../../implementations/models/implementation.model';
+import { environment } from '../../../../../environments/environment';
 
 
 
@@ -10,20 +11,23 @@ import { CardData, DataTablePayload, ImplementationCardData, ImplementationData 
   providedIn: 'root',
 })
 
-export class Dashboard {
+export class DashboardService {
 
-private readonly baseUrl = 'http://127.0.0.1:5000/imp';
+private readonly baseUrl =environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
   fetchDataTable(payload: DataTablePayload): Observable<ImplementationData> {
-    return this.http.post<ImplementationData>(`${this.baseUrl}/fetchDataTable`, payload);
+    return this.http.post<ImplementationData>(`${this.baseUrl}/onboardingDashboardTable`, payload);
   }
 
-  fetchImpCardData(): Observable<CardData> {
-    return this.http.post<ImplementationCardData>(`${this.baseUrl}/fetchImpCardData`, {}).pipe(
-      map(res => res.data)
-    );
+  fetchImpCardData(): Observable<any> {
+    return this.http.post<ImplementationCardData>(`${this.baseUrl}/fetchImpCardData`, {});
+
+
+    // .pipe(
+    //   map(res => res.data)
+    // );
   }
 
 }
