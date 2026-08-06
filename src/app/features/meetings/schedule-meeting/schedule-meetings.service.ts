@@ -67,6 +67,23 @@ export interface CreateTeamsMeetingRequest {
 
   end: string;
 
+  // --- additional fields ---
+  meetingType?: string;
+
+  duration?: string;
+
+  priority?: 'Low' | 'Medium' | 'High';
+
+  organizationId?: number | null;
+
+  organizationName?: string;
+
+  hostType?: string;
+
+  hostId?: string;
+
+  hostName?: string;
+
 }
 
 export interface CreateTeamsMeetingResponse {

@@ -218,6 +218,9 @@ export class ScheduleMeeting implements OnInit {
       return;
     }
 
+    // Full form state, useful for debugging
+    console.log('Full meeting form data', this.newMeeting);
+
     const payload = {
 
         hostEmail: this.newMeeting.hostEmail,
@@ -234,7 +237,19 @@ export class ScheduleMeeting implements OnInit {
 
         start,
 
-        end
+        end,
+
+        // --- additional fields ---
+        meetingType: this.newMeeting.type,
+        duration: this.newMeeting.duration,
+        priority: this.newMeeting.priority,
+
+        organizationId: this.newMeeting.orgId,
+        organizationName: this.newMeeting.orgName,
+
+        hostType: this.newMeeting.hostType,
+        hostId: this.newMeeting.hostId,
+        hostName: this.newMeeting.hostName
 
     };
 
