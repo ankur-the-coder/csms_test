@@ -149,7 +149,7 @@ private selectedDateTo   = signal<string | null>(null);
   ];
 
   private static readonly TOOLBAR_BUTTONS = [
-    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    // { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
     { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
     { id: 'export',  type: 'export'       as const, label: 'Export' },
     { id: 'refresh', type: 'refresh'      as const },
@@ -182,8 +182,8 @@ private selectedDateTo   = signal<string | null>(null);
         buildRequest: (ctx: RequestContext) => {
   // Jab bhi ctx se real date aaye (user ne date picker se select kiya),
   // usko state me save kar lo.
-  if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
-  if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
+  // if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
+  // if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
 
   const today = this.getTodayDateString();
   const body: DataTablePayload = {
@@ -191,15 +191,15 @@ private selectedDateTo   = signal<string | null>(null);
     length:  ctx.pageSize,
     search:  ctx.search ?? '',
     sorting: JSON.stringify({
-      require: 0,
+      require: 1,
       col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
       dir: ctx.sortDir ?? 'desc',
     }),
     filter:   JSON.stringify({ ...ctx.filters }),
     tabSts,
     // Ab yahan ctx.dateFrom/ctx.dateTo ki jagah persisted signal use karo
-    fromDate: this.selectedDateFrom() || today,
-    toDate:   this.selectedDateTo()   || today,
+    // fromDate: this.selectedDateFrom() || today,
+    // toDate:   this.selectedDateTo()   || today,
   };
   return { method: 'POST' as const, body };
 },
@@ -277,11 +277,6 @@ private selectedDateTo   = signal<string | null>(null);
       });
   }
 
-  // Called on manual refresh (e.g. the data-table's refresh button) to
-  // resync the stat cards; the table refetches its own rows internally.
-  loadData() {
-    this.fetchCardTrigger$.next();
-  }
 
   private mapApiRowToClient(row: Datum): Client {
     const modules: Module[] = [];
