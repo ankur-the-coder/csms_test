@@ -19,6 +19,7 @@ export interface ClientRow {
   supportOwner: string;
   implementation: string;
   stage: string;
+  selectable: boolean;
 }
 
 @Component({
@@ -61,6 +62,7 @@ export class Client {
       supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
       implementation: raw.implementation,
       stage: raw.stage,
+      selectable: true,
     };
   }
 

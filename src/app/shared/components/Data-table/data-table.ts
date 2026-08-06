@@ -163,6 +163,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       ? order.map(k => colMap.get(k)).filter((c): c is SmartColumn<any> => !!c)
       : cols;
     return ordered.filter(col => {
+      if (col.hideable === false) return true; // always shown, can't be hidden
       const override = vis[col.key as string];
       return override !== undefined ? override : !col.hidden;
     });
@@ -533,7 +534,10 @@ export class DataTable<T extends object> implements AfterContentInit {
     untracked(() => {
       this.pageSize.set(cfg.defaultPageSize ?? cfg.pageSizeOptions?.[0] ?? 10);
       const vis: Record<string, boolean> = {};
-      cfg.columns.forEach(c => { vis[c.key as string] = !c.hidden; });
+      cfg.columns.forEach(c => {
+        // Non-hideable columns must always start visible, regardless of `hidden`.
+        vis[c.key as string] = c.hideable === false ? true : !c.hidden;
+      });
       this.colVisibility.set(vis);
       this.colOrder.set(cfg.columns.map(c => String(c.key)));
     });
@@ -678,6 +682,8 @@ export class DataTable<T extends object> implements AfterContentInit {
   toggleColPicker(): void { this.colPickerModalOpen.set(true); }
   closeColPicker(): void { this.colPickerModalOpen.set(false); }
   toggleColVisibility(key: string, visible: boolean): void {
+    const col = this.config().columns.find(c => String(c.key) === key);
+    if (col?.hideable === false) return; // locked column, ignore attempts to hide it
     this.colVisibility.update(v => ({ ...v, [key]: visible }));
   }
 

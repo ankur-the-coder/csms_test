@@ -864,9 +864,15 @@
       <div class="st-col-picker-grid grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
         @for (col of config().columns; track col.key) {
         <label
-          class="st-col-picker-item flex items-center gap-2 text-[13px] text-[--st-text] cursor-pointer px-2.5 py-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] transition-colors duration-150 hover:border-[--st-accent] hover:bg-[--st-accent-bg]">
-          <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent] cursor-pointer"
-            [checked]="colVisibility()[col.key.toString()] !== false"
+          class="st-col-picker-item flex items-center gap-2 text-[13px] text-[--st-text] px-2.5 py-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] transition-colors duration-150 hover:border-[--st-accent] hover:bg-[--st-accent-bg]"
+          [class.cursor-pointer]="col.hideable !== false"
+          [class.opacity-60]="col.hideable === false"
+          [class.cursor-not-allowed]="col.hideable === false">
+          <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent]"
+            [class.cursor-pointer]="col.hideable !== false"
+            [class.cursor-not-allowed]="col.hideable === false"
+            [checked]="col.hideable === false ? true : colVisibility()[col.key.toString()] !== false"
+            [disabled]="col.hideable === false"
             (change)="toggleColVisibility(col.key.toString(), $any($event.target).checked)" />
           <span>{{ col.label }}</span>
         </label>
