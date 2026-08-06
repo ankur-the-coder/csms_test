@@ -424,6 +424,7 @@ main {
   .stat-icon-success { @apply bg-success-subtle  text-success  border border-success-border; }
   .stat-icon-warning { @apply bg-warning-subtle  text-warning  border border-warning-border; }
   .stat-icon-neutral { @apply bg-neutral-subtle  text-neutral  border border-neutral-border; }
+  .stat-icon-info    { @apply bg-info-subtle     text-info      border border-info-border; }
 
   /* ── Badge ───────────────────────────────────────────────────────────────── */
   /* Usage: <span class="badge badge-success">Active</span>  */

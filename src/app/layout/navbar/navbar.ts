@@ -1,3 +1,4 @@
+
 import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
@@ -7,10 +8,11 @@ import { filter } from 'rxjs/operators';
   selector: 'app-navbar',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: `./navbar.component.html`
+  templateUrl: './navbar.html',
+  styleUrl: './navbar.css',
 })
-export class NavbarComponent implements OnInit {
-  private router = inject(Router);
+export class Navbar {
+   private router = inject(Router);
 
   @Input() searchQuery = '';
   @Output() searchChange = new EventEmitter<string>();
@@ -31,6 +33,5 @@ export class NavbarComponent implements OnInit {
   private checkRoute(url: string) {
     this.isImplementationRoute = url.includes('implementation');
   }
-
 
 }

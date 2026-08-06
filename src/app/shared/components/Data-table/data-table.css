@@ -762,6 +762,11 @@
   display: none;
 }
 
+.badge-premium {
+  background: color-mix(in srgb, #10b981 16%, transparent);
+  color: #10b981;
+}
+
 /* Checkbox */
 .st-check-col {
   width: 48px;
@@ -1263,7 +1268,14 @@ td.st-actions-col {
   animation: st-spin 0.8s linear infinite;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+.badge-premium {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+
+
 @media (max-width: 640px) {
   .st-toolbar {
     padding: 10px 12px;

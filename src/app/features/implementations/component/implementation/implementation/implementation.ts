@@ -74,6 +74,9 @@ export class Implementation implements OnInit, OnDestroy {
 
   private readonly implService = inject(ImplementationService);
  private readonly tableEndpoint = `${this.implService.baseUrl}/fetchDataTable`; 
+ 
+private selectedDateFrom = signal<string | null>(null);
+private selectedDateTo   = signal<string | null>(null);
 
   // Card stats (fetched independently from the table's own data source)
   cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
@@ -99,12 +102,14 @@ export class Implementation implements OnInit, OnDestroy {
       { id: 'all',         label: 'All Organisations', count: c.totalAccounts },
       { id: 'in_progress', label: 'In Progress',       count: c.inProgress },
       { id: 'complete',    label: 'Completed',         count: c.completed },
+      { id: 'pending',     label: 'Not Started',       count: c.notStarted },
     ];
   }
 
   totalClients           = computed(() => this.cardData().totalAccounts);
   completedClientsCount  = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
+  pendingClientsCount = computed(() => this.cardData().notStarted);
 
   // ── Memoized module lookups for the open drawer (recompute only when
   //    selectedClient / selectedModuleTab actually change) ──────────────────
@@ -126,7 +131,7 @@ export class Implementation implements OnInit, OnDestroy {
     { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
     { key: 'support_owner',      label: 'Support Owner',  sortable: false },
     { key: 'country',            label: 'Country',        sortable: false },
-    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hide : true},
     {
       key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
       badgeMap: {
@@ -144,7 +149,7 @@ export class Implementation implements OnInit, OnDestroy {
   ];
 
   private static readonly TOOLBAR_BUTTONS = [
-    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    // { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
     { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
     { id: 'export',  type: 'export'       as const, label: 'Export' },
     { id: 'refresh', type: 'refresh'      as const },
@@ -175,23 +180,29 @@ export class Implementation implements OnInit, OnDestroy {
         totalPath: 'meta.total',
 
         buildRequest: (ctx: RequestContext) => {
-          const today = this.getTodayDateString();
-          const body: DataTablePayload = {
-            start:   ctx.page * ctx.pageSize,
-            length:  ctx.pageSize,
-            search:  ctx.search ?? '',
-            sorting: JSON.stringify({
-              require: 0,
-              col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
-              dir: ctx.sortDir ?? 'desc',
-            }),
-            filter:   JSON.stringify({ ...ctx.filters }),
-            tabSts,
-            fromDate: ctx.dateFrom || today,
-            toDate:   ctx.dateTo   || today,
-          };
-          return { method: 'POST' as const, body };
-        },
+  // Jab bhi ctx se real date aaye (user ne date picker se select kiya),
+  // usko state me save kar lo.
+  // if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
+  // if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
+
+  const today = this.getTodayDateString();
+  const body: DataTablePayload = {
+    start:   ctx.page * ctx.pageSize,
+    length:  ctx.pageSize,
+    search:  ctx.search ?? '',
+    sorting: JSON.stringify({
+      require: 0,
+      col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
+      dir: ctx.sortDir ?? 'desc',
+    }),
+    filter:   JSON.stringify({ ...ctx.filters }),
+    tabSts,
+    // Ab yahan ctx.dateFrom/ctx.dateTo ki jagah persisted signal use karo
+    // fromDate: this.selectedDateFrom() || today,
+    // toDate:   this.selectedDateTo()   || today,
+  };
+  return { method: 'POST' as const, body };
+},
 
         transformRow: (row: any): Client | null => {
           const client = this.mapApiRowToClient(row as Datum);
