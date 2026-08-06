@@ -277,11 +277,6 @@ private selectedDateTo   = signal<string | null>(null);
       });
   }
 
-  // Called on manual refresh (e.g. the data-table's refresh button) to
-  // resync the stat cards; the table refetches its own rows internally.
-  loadData() {
-    this.fetchCardTrigger$.next();
-  }
 
   private mapApiRowToClient(row: Datum): Client {
     const modules: Module[] = [];
