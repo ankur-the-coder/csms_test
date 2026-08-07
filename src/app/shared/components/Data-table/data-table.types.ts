@@ -119,9 +119,20 @@ export interface ToolbarButton<T = any> {
 
 // ── Bulk Actions ──────────────────────────────────────────────────────────────
 
-export interface BulkAction {
+export type BulkActionIcon =
+  | 'plus' | 'users' | 'check' | 'x' | 'edit' | 'delete'
+  | 'download' | 'mail' | 'message' | 'circle-dot' | 'user-check';
+
+export interface BulkAction<T = any> {
   id: string;
   label: string;
+  icon?: BulkActionIcon;
+  /** Any valid CSS color, e.g. '#3b82f6'. Tints the icon chip and border. */
+  color?: string;
+  disabled?: (rows: T[]) => boolean;
+  hidden?: (rows: T[]) => boolean;
+  /** Called with the currently selected rows when the user picks this action. */
+  onClick: (rows: T[]) => void;
 }
 
 // ── API Config ────────────────────────────────────────────────────────────────
@@ -211,7 +222,7 @@ export interface SmartTableConfig<T> {
   filters?: TableFilter[];
 
   // Bulk actions
-  bulkActions?: BulkAction[];
+  bulkActions?: BulkAction<T>[];
   bulkActionButtonLabel?: string;
   bulkActionButtonIcon?: 'plus' | 'users' | 'check';
 
