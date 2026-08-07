@@ -14,16 +14,20 @@ import { TrainingMaterials } from './features/trainings/Component/training-mater
 
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
+import { authGuard, checkGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
-  { path: 'login', component: Login },
+  { path: 'login', component: Login,
+    //  canActivate: [checkGuard],
+     },
 
   // Every other route is a child of Layout, so it renders inside the
   // sidebar + navbar shell (Layout owns its own nested <router-outlet>).
   {
     path: '',
     component: Layout,
+    // canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },

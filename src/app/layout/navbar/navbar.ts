@@ -1,13 +1,14 @@
 
-import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { ClickOutsideDirective } from '../../shared/directives/click-outside.directive';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ClickOutsideDirective],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
 })
@@ -19,6 +20,7 @@ export class Navbar {
   @Output() menuToggle = new EventEmitter<void>();
 
   showNotifications = false;
+  showProfileMenu = signal(false);
   isImplementationRoute = true;
 
   ngOnInit() {
