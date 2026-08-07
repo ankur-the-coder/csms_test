@@ -51,10 +51,10 @@ export class Login {
 
           let password = Utils.decode5t(res.data.password);
           let username = Utils.decode5t(res.data.userName);
-
-
+          let empId = Utils.decode5t(res.data.empId);
           localStorage.setItem('password', password);
-          localStorage.setItem('username', username);
+          localStorage.setItem('userName', username);
+          localStorage.setItem('empId', empId);
           localStorage.setItem('isLoggedIn', 'true');
           this.authService.isLoggedIn.set(true);
 

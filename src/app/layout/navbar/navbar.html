@@ -29,17 +29,43 @@
 
 
         <!-- User Profile Card -->
-        <div class="flex items-center gap-2.5 cursor-pointer group shrink-0">
-          <div class="relative shrink-0">
-            <div class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs">
-              AS
+        <div class="relative shrink-0" appClickOutside (clickOutside)="showProfileMenu.set(false)">
+          <button
+            type="button"
+            class="flex items-center gap-2.5 rounded-2xl px-2 py-1.5 group transition-colors hover:bg-slate-100"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="showProfileMenu()"
+            (click)="showProfileMenu.update(value => !value)"
+          >
+            <div class="relative shrink-0">
+              <div class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs">
+                AS
+              </div>
+              <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
             </div>
-            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
-          </div>
-          <div class="hidden sm:flex flex-col text-left whitespace-nowrap shrink-0 leading-none">
-            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">Anita Sharma</span>
-            <span class="text-[10px] font-semibold text-slate-400 mt-0.5">Senior CS Manager</span>
-          </div>
+            <div class="hidden sm:flex flex-col text-left whitespace-nowrap shrink-0 leading-none">
+              <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">Anita Sharma</span>
+              <span class="text-[10px] font-semibold text-slate-400 mt-0.5">Senior CS Manager</span>
+            </div>
+          </button>
+
+          <ng-container *ngIf="showProfileMenu()">
+            <div class="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-900/5">
+              <div class="px-4 py-3 border-b border-slate-200">
+                <p class="text-xs font-bold text-slate-900">Anita Sharma</p>
+                <p class="text-[10px] font-semibold text-slate-500 mt-1">Senior CS Manager</p>
+              </div>
+              <button type="button" class="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100" (click)="showProfileMenu.set(false)">
+                Dashboard
+              </button>
+              <button type="button" class="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100" (click)="showProfileMenu.set(false)">
+                Change Password
+              </button>
+              <button type="button" class="w-full px-4 py-3 text-left text-sm font-semibold text-danger hover:bg-slate-100" (click)="showProfileMenu.set(false)">
+                Logout
+              </button>
+            </div>
+          </ng-container>
         </div>
 
       </div>
