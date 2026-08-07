@@ -53,6 +53,53 @@ interface OwnerApiResponse {
   data: OwnerApiRow[];
 }
 
+export interface CreateTeamsMeetingRequest {
+
+  hostEmail: string;
+
+  clientEmails: string[];
+
+  title: string;
+
+  purpose: string;
+
+  start: string;
+
+  end: string;
+
+  // --- additional fields ---
+  meetingType?: string;
+
+  duration?: string;
+
+  priority?: 'Low' | 'Medium' | 'High';
+
+  organizationId?: number | null;
+
+  organizationName?: string;
+
+  hostType?: string;
+
+  hostId?: string;
+
+  hostName?: string;
+
+}
+
+export interface CreateTeamsMeetingResponse {
+
+  status: boolean;
+
+  meetingLink: string;
+
+  meetingId: string;
+
+  eventId: string;
+
+  webLink: string;
+
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -117,4 +164,14 @@ export class ScheduleMeetingService {
     }
     return this.supportOwners$;
   }
+
+  createTeamsMeeting(payload: CreateTeamsMeetingRequest) {
+
+  return this.http.post<CreateTeamsMeetingResponse>(
+    `${this.baseUrl}/meetings/create`,
+    payload
+  );
+
+}
+
 }

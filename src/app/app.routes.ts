@@ -12,19 +12,19 @@ import { TrainingMaterials } from './features/trainings/training-materials/train
 import { Implementation } from './features/implementations/component/implementation/implementation/implementation';
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
-import { CourseCatalog } from './features/user/components/course-catalog/course-catalog';
-import { CourseDetail } from './features/user/components/course-detail/course-detail';
-import { MyLearning } from './features/user/components/my-learning/my-learning';
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
-  { path: 'login', component: Login },
+  { path: 'login', component: Login,
+    //  canActivate: [checkGuard],
+     },
 
   // Every other route is a child of Layout, so it renders inside the
   // sidebar + navbar shell (Layout owns its own nested <router-outlet>).
   {
     path: '',
     component: Layout,
+    // canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
