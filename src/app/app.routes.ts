@@ -10,6 +10,7 @@ import { ScheduleMeeting } from './features/meetings/schedule-meeting/schedule-m
 import { MyTraining } from './features/trainings/my-training/my-training';
 import { TrainingMaterials } from './features/trainings/training-materials/training-materials';
 import { Implementation } from './features/implementations/component/implementation/implementation/implementation';
+import { VoiceComponent } from './features/voice/voice.component';
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
 
@@ -31,6 +32,7 @@ export const routes: Routes = [
       { path: 'add-onboarding', component: AddOnboarding },
       { path: 'meetings', component: MeetingsComponent },
       { path: 'client', component: Client },
+      { path: 'voice', component: VoiceComponent },
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },
