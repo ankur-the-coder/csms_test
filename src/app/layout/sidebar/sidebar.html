@@ -120,6 +120,37 @@
         </button>
       </nav>
     </div>
+
+    <!-- Learning Section -->
+    <div class="mt-4">
+      <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
+        Learning
+      </div>
+      <nav class="space-y-1">
+        <button
+          *ngFor="let item of learningNavItems"
+          (click)="selectNav(item.id)"
+          class="w-full flex rounded-lg text-xs font-medium transition-all group relative cursor-pointer border-l-[3px]"
+          [ngClass]="{
+            'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': activeNav === item.id,
+            'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': activeNav !== item.id,
+            'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
+            'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
+          }"
+        >
+          <div
+            class="w-5 h-5 flex items-center justify-center shrink-0"
+            [ngClass]="activeNav === item.id ? 'text-emerald-600' : 'text-text-secondary'"
+            [innerHTML]="getSvgIcon(item.icon)"
+          ></div>
+
+          <span
+            class="truncate text-left"
+            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'"
+          >{{ item.label }}</span>
+        </button>
+      </nav>
+    </div>
   </div>
 
   <!-- Footer / Bottom Collapse Control (desktop only) -->
