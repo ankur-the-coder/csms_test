@@ -15,10 +15,12 @@ export class AuthService {
   constructor(private http: HttpClient) { }
 
   login(userName: string, password: string): Observable<LoginResponse> {
-    const payload: Data = {
-      userName: Utils.encode5t(userName),
-      password: Utils.encode5t(password),
-    };
+
+    const payload = new FormData();
+    // const payload: Data = {
+    payload.append('userName', Utils.encode5t(userName));
+    payload.append('password', Utils.encode5t(password));
+    // };
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload);
   }
 }
