@@ -1,15 +1,5 @@
 <div class="st-shell p-5">
 
-  <!-- ── Full cover loader ───────────────────────────────────────────────── -->
-  @if (isInitialLoading() || isSpinning()) {
-  <div class="st-loader-overlay">
-    <div class="st-loader-inner">
-      <div class="st-spinner"></div>
-      <p class="st-loader-text">Loading…</p>
-    </div>
-  </div>
-  }
-
   <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
   <div
     class="st-toolbar flex items-center gap-2 p-3 border-b border-[--st-border] bg-[--st-surface] flex-wrap rounded-t-[--st-radius-xl]">
@@ -109,6 +99,27 @@
         </button>
         <button
           class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
+          (click)="exportExcel()" type="button">
+          <svg class="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <path d="M8 13l3 5m0-5l-3 5" />
+            <path d="M13 13h3" />
+          </svg>
+          Export Excel
+        </button>
+        <button
+          class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
+          (click)="openPdfColumnSelector()" type="button">
+          <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <text x="6" y="18" font-size="7" fill="currentColor" stroke="none">PDF</text>
+          </svg>
+          Export PDF
+        </button>
+        <button
+          class="st-export-item w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-inherit bg-none border-none cursor-pointer text-[--st-text2] transition-colors duration-100 hover:bg-[--st-row-hover] hover:text-[--st-text] text-left"
           (click)="printTable()" type="button">
           <svg class="w-4 h-4 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 6 2 18 2 18 9" />
@@ -159,6 +170,28 @@
   </div>
   <!-- /toolbar -->
 
+  <!-- ── Export progress bar ─────────────────────────────────────────────── -->
+  @if (pdfExporting()) {
+  <div class="relative h-8 flex items-center px-4 bg-[--st-accent-bg] border-b border-[--st-border] gap-3">
+    <span class="text-xs font-medium text-[--st-accent] whitespace-nowrap">
+      Preparing export… {{ pdfProgress() }}%
+    </span>
+    <div class="flex-1 h-1.5 bg-[--st-border] rounded-full overflow-hidden">
+      <div class="h-full bg-[--st-accent] rounded-full transition-all duration-300"
+        [style.width.%]="pdfProgress()">
+      </div>
+    </div>
+    <button (click)="cancelPdfExport()" type="button"
+      class="w-5 h-5 flex items-center justify-center rounded-full bg-[--st-border] hover:bg-red-100 hover:text-red-600 text-[--st-text2] transition-colors shrink-0"
+      title="Cancel">
+      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+  </div>
+  }
+
   <!-- ── Active filter chips ─────────────────────────────────────────────── -->
   @if (hasActiveFilter()) {
   <div
@@ -192,7 +225,14 @@
   <div
     class="st-scroll-area flex-1 overflow-x-auto overflow-y-auto relative min-h-0 scrollbar-thin scrollbar-thumb-[--st-border2]">
 
-    @if (loadState() === 'error') {
+    @if (showTableLoader()) {
+    <div class="st-loader-overlay absolute inset-0 z-40 flex items-center justify-center bg-[--st-surface]">
+      <div class="st-loader-inner flex flex-col items-center gap-2.5">
+        <div class="st-spinner w-8 h-8 rounded-full border-[3px] border-[--st-border] border-t-[--st-accent] animate-spin"></div>
+        <p class="st-loader-text text-[13px] font-medium text-[--st-text2] m-0">Loading…</p>
+      </div>
+    </div>
+    } @else if (loadState() === 'error') {
     <div class="st-error-state flex flex-col items-center justify-center py-20 px-6 gap-3">
   <div
     class="st-error-icon w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--st-danger)_14%,transparent)] border-2 border-[color-mix(in_srgb,var(--st-danger)_35%,transparent)] flex items-center justify-center text-[--st-danger]">
@@ -220,18 +260,7 @@
 </div>
     } @else {
 
-    <!-- Refresh bar -->
-    @if (isRefreshing()) {
-    <div
-      class="st-refresh-bar absolute top-0 left-0 right-0 h-[2px] z-[50] bg-[color-mix(in_srgb,var(--st-accent)_15%,transparent)] overflow-hidden">
-      <div
-        class="st-refresh-progress h-full w-[33.333%] bg-[--st-accent] rounded-full animate-[st-table-loader_1s_ease-in-out_infinite]">
-      </div>
-    </div>
-    }
-
-    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums"
-      [class.opacity-70]="isRefreshing()" role="grid">
+    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums" role="grid">
 
       <!-- ── Head ─────────────────────────────────────────────────────── -->
       <thead class="st-thead sticky top-0 z-30">
@@ -240,13 +269,13 @@
           @if (config().selectable) {
           <th
             class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer">
               <input type="checkbox"
-                class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="allSelected()" (change)="toggleSelectAll()" />
               <span
-                class="st-checkbox-check absolute pointer-events-none w-2.5 h-2.5 text-white opacity-0 scale-50 transition-all duration-150 flex checked:opacity-100 checked:scale-100">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </span>
@@ -324,16 +353,16 @@
           <td
             class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[48px]"
             (click)="$event.stopPropagation()">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer"
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer"
               [class.cursor-not-allowed]="config().selectableWhen ? !config().selectableWhen!(row) : false">
               <input type="checkbox"
-                class="st-checkbox appearance-none w-4 h-4 rounded-[4px] border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="isRowSelected(row)"
                 [disabled]="config().selectableWhen ? !config().selectableWhen!(row) : false"
                 (change)="config().selectableWhen ? config().selectableWhen!(row) && toggleRow(row) : toggleRow(row)" />
               <span
-                class="st-checkbox-check absolute pointer-events-none w-2.5 h-2.5 text-white opacity-0 scale-50 transition-all duration-150 flex checked:opacity-100 checked:scale-100">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </span>
@@ -885,6 +914,109 @@
       <button
         class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
         (click)="closeColPicker()" type="button">Done</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── PDF Export Modal ───────────────────────────────────────────────────── -->
+@if (pdfColumnModalOpen()) {
+<div
+  class="fixed inset-0 z-1500 bg-black/45 flex items-center justify-center p-6"
+  (click)="closePdfColumnSelector()">
+  <div
+    class="rounded-2xl border border-card-border bg-card-bg w-full max-w-190 max-h-[85vh] flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-card-border">
+      <h3 class="bg-auto text-[16px] font-bold">Export PDF</h3>
+      <button
+        class="w-8 h-8 rounded-2xl border-none bg-white text-sm cursor-pointer flex items-center justify-center transition-colors duration-150"
+        (click)="closePdfColumnSelector()" type="button">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="st-modal-body overflow-y-auto flex-1">
+      <!-- Page size selector -->
+      <div class="px-5 pt-4 pb-3 border-b border-card-border">
+        <p class="text-xs font-bold uppercase tracking-wider text-[--st-text2] mb-3">
+          Page size affects maximum column selection
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          @for (size of ['A4', 'A3', 'A2', 'A1']; track size) {
+          <label
+            class="flex items-center gap-2 cursor-pointer px-3 py-2.5 border-[1.5px] border-[--st-border] rounded-[--st-radius] hover:bg-[--st-accent-bg] transition-colors"
+            [class.border-[--st-accent]]="pdfPageSize() === size"
+            [class.bg-[--st-accent-bg]]="pdfPageSize() === size">
+            <input type="radio" name="pdfPageSize" [value]="size" [checked]="pdfPageSize() === size"
+              (change)="onPdfPageSizeChange($any(size))" class="w-3.5 h-3.5 accent-[--st-accent] shrink-0" />
+            <span class="text-xs font-medium text-[--st-text] leading-tight">
+              {{ size }}
+              <span class="block text-[--st-text2] text-[10px]">(Max {{ PAGE_SIZE_LIMITS[size] }} columns)</span>
+            </span>
+          </label>
+          }
+        </div>
+      </div>
+
+      <!-- Row limit selector -->
+      <div class="px-5 pt-3 pb-3 border-b border-card-border">
+        <p class="text-xs font-bold uppercase tracking-wider text-[--st-text2] mb-3">Rows to export</p>
+        <div class="flex flex-wrap items-center gap-3">
+          @for (opt of [
+            { label: 'Current page (' + pageSize() + ')', value: 'current' },
+            { label: '100 rows', value: 100 },
+            { label: '200 rows', value: 200 },
+            { label: 'All rows (' + totalCount() + ')', value: 'all' }
+          ]; track opt.value) {
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="pdfRowLimit" [value]="opt.value" [checked]="pdfRowLimit() === opt.value"
+              (change)="pdfRowLimit.set($any(opt.value))" class="w-3.5 h-3.5 accent-[--st-accent] shrink-0" />
+            <span class="text-xs font-medium text-[--st-text] whitespace-nowrap">{{ opt.label }}</span>
+          </label>
+          }
+        </div>
+      </div>
+
+      <!-- Column grid -->
+      <div class="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        @for (col of config().columns; track col.key) {
+        @if (!['actions', 'action', 'photo'].includes(col.key.toString())) {
+        <label
+          class="flex items-center justify-between gap-2 px-2.5 py-2 border-[1.5px] rounded-[--st-radius] cursor-pointer transition-all duration-150"
+          [class.opacity-40]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
+          [class.cursor-not-allowed]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
+          [style.border-color]="isPdfColumnSelected(col.key.toString()) ? 'var(--st-accent)' : 'var(--st-border)'"
+          [style.background]="isPdfColumnSelected(col.key.toString()) ? 'var(--st-accent-bg)' : 'transparent'">
+          <span class="text-xs font-medium truncate"
+            [style.color]="isPdfColumnSelected(col.key.toString()) ? 'var(--st-accent)' : 'var(--st-text2)'">
+            {{ col.label }}
+          </span>
+          <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent] shrink-0"
+            [checked]="isPdfColumnSelected(col.key.toString())"
+            [disabled]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
+            (change)="togglePdfColumn(col.key.toString())" />
+        </label>
+        }
+        }
+      </div>
+    </div>
+
+    <div
+      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-between gap-3 px-5 py-3.5 border-t border-[--st-border]">
+      <span class="text-xs text-[--st-text2]">{{ pdfSelectedColumns().length }} columns selected</span>
+      <div class="flex gap-2">
+        <button
+          class="st-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] border-[--st-border] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:bg-[--st-row-hover]"
+          (click)="closePdfColumnSelector()" type="button">Close</button>
+        <button
+          class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+          [disabled]="pdfSelectedColumns().length === 0"
+          (click)="exportPDFWithColumns()" type="button">Export PDF</button>
+      </div>
     </div>
   </div>
 </div>

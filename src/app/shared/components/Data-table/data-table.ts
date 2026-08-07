@@ -21,6 +21,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule, DatePipe, DecimalPipe, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import {
   SmartTableConfig,
@@ -118,6 +121,18 @@ export class DataTable<T extends object> implements AfterContentInit {
   filterModalOpen = signal(false);
   colPickerModalOpen = signal(false);
   bulkActionModalOpen = signal(false);
+  pdfColumnModalOpen = signal(false);
+
+  // ── PDF export state ──────────────────────────────────────────────────────
+  pdfExporting = signal(false);
+  pdfProgress = signal(0);
+  pdfPageSize = signal<'A4' | 'A3' | 'A2' | 'A1'>('A4');
+  pdfRowLimit = signal<'current' | 'all' | number>('all');
+  pdfSelectedColumns = signal<string[]>([]);
+  private pdfCancelRequested = false;
+  readonly PAGE_SIZE_LIMITS: Record<string, number> = {
+    A4: 10, A3: 15, A2: 20, A1: 30,
+  };
 
   // ── Date range ────────────────────────────────────────────────────────────
   dateFrom = signal('');
@@ -362,6 +377,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   isRefreshing = computed(() =>
     this.loadState() === 'loading' && this.initialLoadDone()
   );
+
+  // Any load in progress that should block the table body with a loader —
+  // used to fully hide stale rows instead of dimming them underneath.
+  showTableLoader = computed(() => this.isInitialLoading() || this.isRefreshing() || this.isSpinning());
 
   templateMap = signal<Map<string, TemplateRef<any>>>(new Map());
 
@@ -731,62 +750,350 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
+  closeExportMenu(): void { this.exportMenuOpen.set(false); }
 
-  exportCSV(): void {
-    this.exportMenuOpen.set(false);
-    const data = this.allRows();
-    const cols = this.config().columns.filter(c =>
-      !['photo', 'actions', 'action'].includes(c.key as string)
-    );
-    const sanitize = (v: unknown) => {
-      const s = String(v ?? '').replace(/<[^>]*>/g, '').replace(/"/g, '""').trim();
-      return `"${s}"`;
-    };
-    const header = ['S.No', ...cols.map(c => c.label)].map(h => sanitize(h)).join(',');
-    const body = data.map((row, i) =>
-      [i + 1, ...cols.map(c => sanitize((row as any)[c.key]))].join(',')
-    );
-    const csv = '\ufeff' + [header, ...body].join('\r\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.config().exportFileName ?? 'table-data'}_${this.timestamp()}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+  // Shared cell sanitizer — strips tags, decodes common entities, trims.
+  private sanitizeCell(value: unknown, emptyPlaceholder = ''): string {
+    const cleaned = String(value ?? '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+    return cleaned || emptyPlaceholder;
   }
 
-  private timestamp(): string {
+  private exportableColumns(): SmartColumn<any>[] {
+    return this.config().columns.filter(c =>
+      !['actions', 'action', 'photo'].includes(c.key as string)
+    );
+  }
+
+  private timestampForFilename(): string {
     const d = new Date();
     const p = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
   }
 
-  printTable(): void {
-    this.exportMenuOpen.set(false);
+  private timestampForDisplay(): string {
+    const d = new Date();
+    return d.toLocaleString(undefined, {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  /**
+   * Returns all rows matching the current filters/sort/search, ignoring pagination.
+   * Static-data mode: returns the already-filtered/sorted client rows.
+   * API mode: re-requests the endpoint with pageSize = rowLimit (or total count),
+   * so exports aren't limited to whatever page is currently on screen.
+   */
+  private async getAllDataForExport(rowLimit?: 'current' | 'all' | number): Promise<T[]> {
+    const cfg = this.config();
+
+    if (!cfg.apiConfig) {
+      return rowLimit === 'current'
+        ? this.displayRows().filter((r: any) => !r.__isGroupHeader)
+        : this.clientRows();
+    }
+
+    const currentTotal = this.totalCount();
+    if (currentTotal === 0) return [];
+
+    const fetchSize =
+      rowLimit === 'current' ? this.pageSize() :
+      rowLimit === undefined || rowLimit === 'all' ? currentTotal :
+      Math.min(rowLimit, currentTotal);
+
+    const ctx = {
+      page: 0,
+      pageSize: fetchSize,
+      sortKey: this.sort().key ? String(this.sort().key) : null,
+      sortDir: this.sort().dir,
+      search: (this.activeFilters().search as string) ?? '',
+      filters: Object.fromEntries(Object.entries(this.activeFilters()).filter(([k]) => k !== 'search')),
+      dateFrom: this.dateFrom(),
+      dateTo: this.dateTo(),
+      refresh: () => this.refresh(),
+    };
+
+    const { endpoint, buildRequest, dataPath, transformRow } = cfg.apiConfig;
+    const req = buildRequest ? buildRequest(ctx) : null;
+
+    let request$;
+    if (buildRequest && req) {
+      if (req.method === 'GET') {
+        const url = req.query ? `${endpoint}?${req.query}` : endpoint;
+        request$ = this.http.get<unknown>(url, { headers: req.headers ?? {} });
+      } else {
+        request$ = this.http.post<unknown>(endpoint, req.body ?? '', { headers: req.headers ?? {} });
+      }
+    } else {
+      const pm = cfg.apiConfig.paramMap ?? {};
+      let params = new HttpParams()
+        .set(pm.page ?? 'page', '1')
+        .set(pm.pageSize ?? 'pageSize', String(fetchSize));
+      if (ctx.sortKey) {
+        params = params.set(pm.sortKey ?? 'sort', ctx.sortKey).set(pm.sortDir ?? 'dir', ctx.sortDir);
+      }
+      if (ctx.search) params = params.set(pm.search ?? 'q', ctx.search);
+      request$ = this.http.get<unknown>(endpoint, { params, headers: cfg.apiConfig.headers ?? {} });
+    }
+
+    const response = await request$.toPromise().catch(() => null);
+    const rawData = (getByPath(response, dataPath ?? 'data') as any[]) ?? [];
+    return transformRow ? rawData.map(transformRow).filter((r: T | null): r is T => r != null) : (rawData as T[]);
+  }
+
+  // ── CSV ───────────────────────────────────────────────────────────────────
+  async exportCSV(): Promise<void> {
+    this.closeExportMenu();
+    this.pdfCancelRequested = false;
+    this.pdfExporting.set(true);
+    this.pdfProgress.set(1);
+    const progressInterval = setInterval(() => {
+      if (this.pdfCancelRequested) return;
+      this.pdfProgress.update(p => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
+    }, 100);
+
+    try {
+      const data = await this.getAllDataForExport('all');
+      if (this.pdfCancelRequested) return;
+
+      const cols = this.exportableColumns();
+      const sanitize = (v: unknown) => `"${this.sanitizeCell(v).replace(/"/g, '""')}"`;
+      const header = ['S.No', ...cols.map(c => c.label)].map(sanitize).join(',');
+      const body = data.map((row, i) => [i + 1, ...cols.map(c => sanitize((row as any)[c.key]))].join(','));
+
+      this.pdfProgress.set(100);
+      const csv = '\ufeff' + [header, ...body].join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${this.config().exportFileName ?? 'table-data'}_${this.timestampForFilename()}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err) {
+      this.errorMessage.set('Failed to export CSV.');
+      console.error('exportCSV:', err);
+    } finally {
+      clearInterval(progressInterval);
+      setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+    }
+  }
+
+  // ── Excel ─────────────────────────────────────────────────────────────────
+  async exportExcel(): Promise<void> {
+    this.closeExportMenu();
+    this.pdfCancelRequested = false;
+    this.pdfExporting.set(true);
+    this.pdfProgress.set(1);
+    const progressInterval = setInterval(() => {
+      if (this.pdfCancelRequested) return;
+      this.pdfProgress.update(p => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
+    }, 100);
+
+    try {
+      const data = await this.getAllDataForExport('all');
+      if (this.pdfCancelRequested) return;
+
+      const cols = this.exportableColumns();
+      const worksheetData = data.map((row, idx) => {
+        const obj: any = { 'S.No': idx + 1 };
+        cols.forEach(col => { obj[col.label] = this.sanitizeCell((row as any)[col.key], '—'); });
+        return obj;
+      });
+
+      this.pdfProgress.set(100);
+      const ws = XLSX.utils.json_to_sheet(worksheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Data');
+      XLSX.writeFile(wb, `${this.config().exportFileName ?? 'table-data'}_${this.timestampForFilename()}.xlsx`);
+    } catch (err) {
+      this.errorMessage.set('Failed to export Excel.');
+      console.error('exportExcel:', err);
+    } finally {
+      clearInterval(progressInterval);
+      setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+    }
+  }
+
+  // ── PDF (with column picker) ─────────────────────────────────────────────
+  openPdfColumnSelector(): void {
+    this.closeExportMenu();
+    this.pdfPageSize.set('A4');
+    this.pdfRowLimit.set('all');
+    const limit = this.PAGE_SIZE_LIMITS['A4'];
+    const visibleKeys = this.visibleColumns()
+      .filter(c => !['actions', 'action', 'photo'].includes(c.key as string))
+      .map(c => c.key as string)
+      .slice(0, limit);
+    this.pdfSelectedColumns.set(visibleKeys);
+    this.pdfColumnModalOpen.set(true);
+  }
+
+  closePdfColumnSelector(): void { this.pdfColumnModalOpen.set(false); }
+
+  togglePdfColumn(key: string): void {
+    const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
+    const current = this.pdfSelectedColumns();
+    if (current.includes(key)) {
+      this.pdfSelectedColumns.set(current.filter(k => k !== key));
+    } else {
+      if (current.length >= limit) return;
+      this.pdfSelectedColumns.set([...current, key]);
+    }
+  }
+
+  isPdfColumnSelected(key: string): boolean {
+    return this.pdfSelectedColumns().includes(key);
+  }
+
+  onPdfPageSizeChange(size: 'A4' | 'A3' | 'A2' | 'A1'): void {
+    this.pdfPageSize.set(size);
+    const limit = this.PAGE_SIZE_LIMITS[size];
+    this.pdfSelectedColumns.update(cols => cols.slice(0, limit));
+  }
+
+  cancelPdfExport(): void {
+    this.pdfCancelRequested = true;
+    this.pdfExporting.set(false);
+    this.pdfProgress.set(0);
+  }
+
+  private reportLogoPromise: Promise<HTMLImageElement | null> | null = null;
+
+  /** Loads an optional logo (from /logo.png) once and caches the promise. */
+  private getReportLogo(): Promise<HTMLImageElement | null> {
+    if (!this.reportLogoPromise) {
+      this.reportLogoPromise = new Promise((resolve) => {
+        const img = new Image();
+        img.src = '/logo.png';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null); // no logo asset — export still proceeds
+      });
+    }
+    return this.reportLogoPromise;
+  }
+
+  private buildAndSavePdf(rows: any[], exportColumns: SmartColumn<any>[], baseFileName: string, logo: HTMLImageElement | null): void {
+    const doc = new jsPDF({ orientation: 'landscape', format: this.pdfPageSize().toLowerCase() as any });
+    const generatedOn = this.timestampForDisplay();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const centerX = pageWidth / 2;
+
+    if (logo) {
+      const logoWidth = 18;
+      const logoHeight = (logo.naturalHeight / logo.naturalWidth) * logoWidth;
+      doc.addImage(logo, 'PNG', 10, 4, logoWidth, logoHeight);
+    }
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(baseFileName.replace(/[-_]/g, ' '), centerX, 14, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated on: ${generatedOn}  •  Rows: ${rows.length}`, centerX, 20, { align: 'center' });
+
+    autoTable(doc, {
+      head: [['S.No', ...exportColumns.map(c => c.label)]],
+      body: rows.map((row, idx) => [idx + 1, ...exportColumns.map(col => this.sanitizeCell(row[col.key], '—'))]),
+      startY: 26,
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: [29, 158, 117], fontSize: 8, fontStyle: 'bold' },
+      margin: { top: 26, left: 10, right: 10 },
+      didDrawPage: (data) => {
+        const pageCount = doc.getNumberOfPages();
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.getHeight();
+        doc.setFontSize(7);
+        doc.setTextColor(120);
+        doc.text(`Generated: ${generatedOn}`, 10, pageHeight - 8);
+        doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageSize.getWidth() - 10, pageHeight - 8, { align: 'right' });
+      },
+    });
+
+    doc.save(`${baseFileName}_${this.timestampForFilename()}.pdf`);
+  }
+
+  async exportPDFWithColumns(): Promise<void> {
+    const cfg = this.config();
+    const selectedKeys = this.pdfSelectedColumns();
+    if (!selectedKeys.length) {
+      this.errorMessage.set('Select at least one column to export.');
+      return;
+    }
+
+    const exportColumns = cfg.columns.filter(c => selectedKeys.includes(c.key as string));
+    const baseFileName = cfg.exportFileName ?? 'table-data';
+    const logo = await this.getReportLogo();
+
+    this.closePdfColumnSelector();
+    this.pdfCancelRequested = false;
+    this.pdfExporting.set(true);
+    this.pdfProgress.set(20);
+
+    try {
+      const rows = await this.getAllDataForExport(this.pdfRowLimit());
+      if (this.pdfCancelRequested) return;
+      this.pdfProgress.set(80);
+      this.buildAndSavePdf(rows, exportColumns, baseFileName, logo);
+      this.pdfProgress.set(100);
+    } catch (err) {
+      this.errorMessage.set('Failed to generate PDF.');
+      console.error('exportPDFWithColumns:', err);
+    } finally {
+      if (!this.pdfCancelRequested) {
+        setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+      }
+    }
+  }
+
+  async printTable(): Promise<void> {
+    this.closeExportMenu();
     const cols = this.visibleColumns().filter(c => !['actions', 'action'].includes(c.key as string));
-    const rows = this.allRows();
+    const rows = await this.getAllDataForExport('all');
     const title = this.config().exportFileName ?? 'Table Data';
-    const headHtml = cols.map(c => `<th>${c.label}</th>`).join('');
+    const generatedOn = this.timestampForDisplay();
+    const headHtml = cols.map(c => `<th>${this.escapeHtml(c.label)}</th>`).join('');
     const bodyHtml = rows.map(row =>
-      `<tr>${cols.map(col => `<td>${this.formatCellValue((row as any)[col.key])}</td>`).join('')}</tr>`
+      `<tr>${cols.map(col => `<td>${this.escapeHtml(this.stripHtml(this.formatCellValue((row as any)[col.key])))}</td>`).join('')}</tr>`
     ).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>
         @page{size:A4 landscape;margin:14mm}
         body{font-family:Arial,sans-serif;padding:12px;color:#111827}
-        h2{text-align:center;margin:0 0 16px;color:#1f2937}
-        table{width:100%;border-collapse:collapse}
-        th{background:#f3f4f6;text-align:left;font-size:10px;padding:6px 8px;border:1px solid #d1d5db}
-        td{font-size:10px;padding:6px 8px;border:1px solid #d1d5db;word-break:break-word}
+        h2{text-align:center;margin:0 0 4px;color:#1f2937}
+        .subtitle{text-align:center;color:#6b7280;font-size:12px;margin:0 0 20px}
+        table{width:100%;border-collapse:collapse;table-layout:fixed}
+        th{background:#f3f4f6;text-align:left}
+        th,td{border:1px solid #d1d5db;padding:6px 8px;font-size:10px;word-break:break-word}
       </style></head><body>
-      <h2>${title}</h2>
+      <h2>${title} List</h2>
+      <p class="subtitle">Generated on: ${this.escapeHtml(generatedOn)}</p>
       <table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
     </body></html>`;
     const w = window.open('', '_blank', 'width=1200,height=800');
-    if (!w) return;
+    if (!w) { console.warn('Print popup was blocked by the browser.'); return; }
     w.document.open(); w.document.write(html); w.document.close();
     setTimeout(() => { w.focus(); w.print(); }, 300);
     w.addEventListener('afterprint', () => w.close());
+  }
+
+  private stripHtml(value: string): string {
+    const div = document.createElement('div');
+    div.innerHTML = String(value ?? '');
+    return div.textContent || div.innerText || '';
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   togglePageSizePopover(): void { this.pageSizePopoverOpen.update(v => !v); }
