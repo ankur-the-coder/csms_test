@@ -1410,4 +1410,17 @@ selectStarRating(key: string, value: any): void {
   this.activeDropdownKey.set(null);
   this.dropdownPosition.set(null);
 }
+pdfExportableColumns = computed(() =>
+  this.config().columns.filter(c => !['actions', 'action', 'photo'].includes(c.key as string))
+);
+
+selectAllPdfColumns(): void {
+  const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
+  const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
+  this.pdfSelectedColumns.set(keys);
+}
+
+clearPdfColumns(): void {
+  this.pdfSelectedColumns.set([]);
+}
 }
