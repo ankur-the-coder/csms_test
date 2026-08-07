@@ -1162,6 +1162,19 @@ export class DataTable<T extends object> implements AfterContentInit {
     });
   }
 
+  onBulkActionClick(action: BulkAction<T>): void {
+    if (this.isBulkActionDisabled(action)) return;
+    const rows = this.selectedRows();
+    this.closeBulkActionModal();
+    action.onClick(rows);
+  }
+
+  isBulkActionDisabled = (action: BulkAction<T>): boolean =>
+    action.disabled ? action.disabled(this.selectedRows()) : false;
+
+  isBulkActionHidden = (action: BulkAction<T>): boolean =>
+    action.hidden ? action.hidden(this.selectedRows()) : false;
+
   onRowClick(row: T): void {
     if (this.config().clickable) this.rowClick.emit(row);
   }
