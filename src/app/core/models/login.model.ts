@@ -16,12 +16,13 @@
 // }
 
 export interface LoginResponse {
-    status: boolean;
-    msg:    string;
-    data:   Data;
+  status: boolean;
+  msg: string;
+  data: Data;
 }
 
 export interface Data {
-    password: string;
-    userName: string;
+  password: string;
+  userName: string;
+  empId: string;
 }
