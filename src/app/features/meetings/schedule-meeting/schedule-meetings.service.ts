@@ -15,6 +15,18 @@ export interface OwnerOption {
   email: string;
 }
 
+/** Response of POST /meetings/employee-details — the logged-in user, used as the meeting host. */
+export interface EmployeeDetails {
+  currentMail: string;
+  companyId: string;
+  name: string;
+}
+
+interface EmployeeDetailsApiResponse {
+  status: boolean;
+  data: EmployeeDetails;
+}
+
 interface DataTablePayload {
   start: number;
   length: number;
@@ -77,8 +89,6 @@ export interface CreateTeamsMeetingRequest {
   organizationId?: number | null;
 
   organizationName?: string;
-
-  hostType?: string;
 
   hostId?: string;
 
@@ -163,6 +173,21 @@ export class ScheduleMeetingService {
         );
     }
     return this.supportOwners$;
+  }
+
+  /**
+   * Fetches the currently logged-in employee's details (name + email) so it can be
+   * used as the meeting host. Deliberately NOT cached/shareReplay'd like the other
+   * lookups above, since this must reflect whoever is logged in right now.
+   * Errors are intentionally left uncaught here — the component decides what to do
+   * (e.g. fall back to manual host entry) when this call fails.
+   */
+  getEmployeeDetails(employeeId: number | string): Observable<EmployeeDetails> {
+    return this.http
+      .post<EmployeeDetailsApiResponse>(`${this.baseUrl}/meetings/employee-details`, { employeeId })
+      .pipe(
+        map(res => res.data)
+      );
   }
 
   createTeamsMeeting(payload: CreateTeamsMeetingRequest) {
