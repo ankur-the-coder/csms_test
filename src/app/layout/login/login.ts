@@ -16,7 +16,6 @@ import { Utils } from '../../shared/utils/utils';
 })
 export class Login {
   isLoading = signal(false);
-  errorMsg = signal('');
   kickedOutMsg = signal('');
   showPassword = signal(false);
   errorMessage = signal('');
@@ -24,49 +23,38 @@ export class Login {
     username: new FormControl<string>('', Validators.required),
     password: new FormControl<string>('', Validators.required),
   });
+
   constructor(
     private router: Router,
     private authService: AuthService
-  ) { }
+  ) {}
+
   togglePasswordVisibility(): void {
     this.showPassword.set(!this.showPassword());
   }
+
   onSubmit(): void {
     this.errorMessage.set('');
-    this.errorMsg.set('');
     this.isLoading.set(true);
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       this.isLoading.set(false);
       return;
     }
-    const username: string = this.loginForm.controls.username.value?.trim() || '';
-    const password: string = this.loginForm.controls.password.value?.trim() || '';
+
+    const username = this.loginForm.controls.username.value?.trim() || '';
+    const password = this.loginForm.controls.password.value?.trim() || '';
+
     this.authService.login(username, password).subscribe({
       next: (res: LoginResponse) => {
         this.isLoading.set(false);
 
-        if (res.status == true) {
-          console.log(res.data);
-
-          let password = Utils.decode5t(res.data.password);
-          let username = Utils.decode5t(res.data.userName);
-          let empId = Utils.decode5t(res.data.empId);
-          localStorage.setItem('password', password);
-          localStorage.setItem('userName', username);
-          localStorage.setItem('empId', empId);
-          localStorage.setItem('isLoggedIn', 'true');
-          this.authService.isLoggedIn.set(true);
-
+        if (res.status === true) {
           this.router.navigate(['/dashboard']);
-
-
-
-
-          // this.router.navigate(['/dashboard']);
         } else {
           this.errorMessage.set(
-            res.msg || 'Something went wrong. Please try again.'
+            res.msg || 'Invalid username or password. Please try again.'
           );
         }
       },
