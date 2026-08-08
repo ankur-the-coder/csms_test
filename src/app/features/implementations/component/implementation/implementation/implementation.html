@@ -64,7 +64,7 @@
     </div>
   </div>
 
-  <!-- ── Filter / Controls Bar ─────────────────────────────────────────────── -->
+ 
   <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
    <div class="inline-flex flex-wrap items-center gap-1 bg-surface-100 p-1 rounded-2xl">
       @for (tab of filterTabs; track tab.id) {
@@ -79,18 +79,12 @@
     </div>
 </div>
 
-
-  <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
- 
-  <div class="card p-0 overflow-hidden">
+<div class="card p-0 overflow-hidden">
     <app-data-table
       [config]="tableConfig()"
-   
-      [filterNames]="['leadOwner', 'supportOwner',
-     'rating', 'country']">
+      [filterNames]="['leadOwner', 'supportOwner','rating', 'country']">
 
-    
-      <ng-template appCustomColumn="overallProgress" let-row>
+     <ng-template appCustomColumn="overallProgress" let-row>
         <div class="flex flex-col gap-1.5" style="min-width:180px">
          <div class="flex items-center gap-2">
             <span class="text-base font-extrabold"
@@ -130,28 +124,19 @@
 
     </app-data-table>
   </div>
-  
+  </div>
 
-
-
-
-</div>
-
-<!-- ── Detail Drawer ──────────────────────────────────────────────────────── -->
+<!--  Detail Drawer  -->
 @if (selectedClient()) {
-<div class="fixed inset-0 z-[1200] flex justify-end" (click)="closeClientDetails()">
-  <!-- Backdrop -->
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+<div class="fixed inset-0 z-1200 flex justify-end" (click)="closeClientDetails()">
+ <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
        [class.opacity-0]="!drawerOpen()" [class.opacity-100]="drawerOpen()"></div>
-
-  <!-- Drawer panel -->
-  <div class="relative w-full max-w-2xl h-full bg-card-bg shadow-2xl flex flex-col transition-transform duration-300 ease-in-out overflow-hidden"
+ <div class="relative w-full max-w-2xl h-full bg-card-bg shadow-2xl flex flex-col transition-transform duration-300 ease-in-out overflow-hidden"
        [class.translate-x-full]="!drawerOpen()"
        [class.translate-x-0]="drawerOpen()"
        (click)="$event.stopPropagation()">
 
-    <!-- Drawer header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
+   <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center font-bold text-brand-600 text-sm">
           {{ getInitials(selectedClient()!.name) }}
@@ -177,7 +162,7 @@
         <span class="font-semibold text-brand-700">Overall Implementation Progress</span>
         <span class="font-bold text-brand-600">{{ getClientProgressPercent(selectedClient()!) }}%</span>
       </div>
-      <div class="h-2.5 bg-brand-100 rounded-full overflow-hidden">
+      <div class="h-1.5 bg-brand-100 rounded-full overflow-hidden">
         <div class="h-full bg-brand-500 rounded-full transition-all duration-700"
              [style.width.%]="getClientProgressPercent(selectedClient()!)">
         </div>
@@ -211,11 +196,7 @@
 </div>
 
 
-
-
-
-
-    <!-- Module list -->
+<!-- Module list -->
     <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
       @for (mod of getDisplayModules(); track mod.key) {
       <div class="rounded-xl border border-card-border overflow-hidden">
@@ -267,15 +248,8 @@
               }
             </div>
 
-            <!-- Remark input -->
-            <!-- <input type="text"
-                   class="hidden md:block inline-input w-32"
-                   placeholder="Remark..."
-                   [value]="selectedClient()!.checklist[feat.mod_id]?.remark || ''"
-                   (blur)="updateRemark(selectedClient()!, feat.mod_id, $event)" /> -->
-
-            <!-- Status badge -->
-            <span class="flex-shrink-0 badge"
+          
+            <span class="shrink-0 badge"
                   [class.badge-brand]="selectedClient()!.checklist[feat.mod_id]?.approval_status === 1"
                   [class.badge-neutral]="selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1">
               {{ selectedClient()!.checklist[feat.mod_id]?.approval_status === 1 ? 'Done' : 'Pending' }}
@@ -288,16 +262,7 @@
     </div>
 
     <!-- Drawer footer -->
-    <div class="px-6 py-4 border-t border-card-border bg-card-bg flex justify-between items-center">
-      <!-- <div class="text-xs text-text-muted">
-        {{ getClientApprovedCount(selectedClient()!) }} of {{ getClientTotalFeaturesCount(selectedClient()!) }} features approved
-      </div>
-      <button (click)="markAllApproved(selectedClient()!)" class="btn-primary">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline stroke-width="2.5" points="20 6 9 17 4 12"/></svg>
-        Mark All Approved
-      </button> -->
-    </div>
-
-  </div>
+    <div class="px-6 py-4 border-t border-card-border bg-card-bg flex justify-between items-center"></div>
+   </div>
 </div>
 }

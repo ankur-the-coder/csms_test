@@ -15,6 +15,18 @@ export interface OwnerOption {
   email: string;
 }
 
+/** Response of POST /meetings/employee-details — the logged-in user, used as the meeting host. */
+export interface EmployeeDetails {
+  currentMail: string;
+  companyId: string;
+  name: string;
+}
+
+interface EmployeeDetailsApiResponse {
+  status: boolean;
+  data: EmployeeDetails;
+}
+
 interface DataTablePayload {
   start: number;
   length: number;
@@ -51,6 +63,51 @@ interface OwnerApiResponse {
   status: boolean;
   msg?: string;
   data: OwnerApiRow[];
+}
+
+export interface CreateTeamsMeetingRequest {
+
+  hostEmail: string;
+
+  clientEmails: string[];
+
+  title: string;
+
+  purpose: string;
+
+  start: string;
+
+  end: string;
+
+  // --- additional fields ---
+  meetingType?: string;
+
+  duration?: string;
+
+  priority?: 'Low' | 'Medium' | 'High';
+
+  organizationId?: number | null;
+
+  organizationName?: string;
+
+  hostId?: string;
+
+  hostName?: string;
+
+}
+
+export interface CreateTeamsMeetingResponse {
+
+  status: boolean;
+
+  meetingLink: string;
+
+  meetingId: string;
+
+  eventId: string;
+
+  webLink: string;
+
 }
 
 @Injectable({
@@ -117,4 +174,29 @@ export class ScheduleMeetingService {
     }
     return this.supportOwners$;
   }
+
+  /**
+   * Fetches the currently logged-in employee's details (name + email) so it can be
+   * used as the meeting host. Deliberately NOT cached/shareReplay'd like the other
+   * lookups above, since this must reflect whoever is logged in right now.
+   * Errors are intentionally left uncaught here — the component decides what to do
+   * (e.g. fall back to manual host entry) when this call fails.
+   */
+  getEmployeeDetails(employeeId: number | string): Observable<EmployeeDetails> {
+    return this.http
+      .post<EmployeeDetailsApiResponse>(`${this.baseUrl}/meetings/employee-details`, { employeeId })
+      .pipe(
+        map(res => res.data)
+      );
+  }
+
+  createTeamsMeeting(payload: CreateTeamsMeetingRequest) {
+
+  return this.http.post<CreateTeamsMeetingResponse>(
+    `${this.baseUrl}/meetings/create`,
+    payload
+  );
+
+}
+
 }
