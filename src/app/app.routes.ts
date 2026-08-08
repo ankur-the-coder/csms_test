@@ -14,7 +14,7 @@ import { TrainingMaterials } from './features/trainings/Component/training-mater
 
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
-import { authGuard, checkGuard } from './core/guards/auth-guard';
+import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.

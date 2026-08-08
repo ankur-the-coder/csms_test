@@ -268,7 +268,18 @@
 </div>
     } @else {
 
-    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums" role="grid">
+    <!-- Refresh bar -->
+    @if (isRefreshing()) {
+    <div
+      class="st-refresh-bar absolute top-0 left-0 right-0 h-0.5 z-50 bg-[color-mix(in_srgb,var(--st-accent)_15%,transparent)] overflow-hidden">
+      <div
+        class="st-refresh-progress h-full w-[33.333%] bg-[--st-accent] rounded-full animate-[st-table-loader_1s_ease-in-out_infinite]">
+      </div>
+    </div>
+    }
+
+    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums"
+      [class.opacity-70]="isRefreshing()" role="grid">
 
       <!-- ── Head ─────────────────────────────────────────────────────── -->
       <thead class="st-thead sticky top-0 z-30">
@@ -276,10 +287,10 @@
           <!-- Checkbox -->
           @if (config().selectable) {
           <th
-            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer">
+            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-12">
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
               <input type="checkbox"
-                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="allSelected()" (change)="toggleSelectAll()" />
               <span
                 class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
@@ -319,7 +330,7 @@
             </span>
             @if (config().resizableColumns) {
             <div
-              class="st-col-resizer absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize z-[1] bg-transparent transition-colors duration-100 hover:bg-[--st-accent]"
+              class="st-col-resizer absolute right-0 top-0 bottom-0 w-1.25 cursor-col-resize -z-negative bg-transparent transition-colors duration-100 hover:bg-[--st-accent]"
               (mousedown)="startResize($event, col.key.toString())" (click)="$event.stopPropagation()"></div>
             }
           </th>
@@ -328,7 +339,7 @@
           <!-- Actions header -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <th
-            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-25">
             Actions</th>
           }
         </tr>
@@ -372,12 +383,12 @@
           <!-- Checkbox cell -->
           @if (config().selectable) {
           <td
-            class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[48px]"
+            class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50 w-12"
             (click)="$event.stopPropagation()">
             <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer"
               [class.cursor-not-allowed]="config().selectableWhen ? !config().selectableWhen!(row) : false">
               <input type="checkbox"
-                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="isRowSelected(row)"
                 [disabled]="config().selectableWhen ? !config().selectableWhen!(row) : false"
                 (change)="config().selectableWhen ? config().selectableWhen!(row) && toggleRow(row) : toggleRow(row)" />
@@ -394,7 +405,7 @@
           <!-- Data cells -->
           @for (col of visibleColumns(); track col.key) {
           <td
-            class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]"
+            class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
             [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
@@ -405,7 +416,7 @@
             @case ('avatar') {
             <div class="st-avatar-cell flex items-center gap-2">
               <div
-                class="st-avatar w-[30px] h-[30px] rounded-full bg-[--st-accent-bg] text-[--st-accent] text-[11px] font-bold flex items-center justify-center flex-shrink-0 border-[1.5px] border-[color-mix(in_srgb,var(--st-accent)_30%,transparent)]">
+                class="st-avatar w-7.5 h-7.5 rounded-full bg-[--st-accent-bg] text-[--st-accent] text-[11px] font-bold flex items-center justify-center shrink-0 border-[1.5px] border-[color-mix(in_srgb,var(--st-accent)_30%,transparent)]">
                 {{ isString(getCellValue(row, col.key)) ? $any(getCellValue(row, col.key)).slice(0,2).toUpperCase() :
                 '?' }}
               </div>
@@ -415,7 +426,7 @@
 
             @case ('badge') {
             <span
-              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:shrink-0"
               [ngClass]="getBadgeClass(col, getCellValue(row, col.key))">
               {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
             </span>
@@ -438,7 +449,7 @@
 
             @case ('boolean') {
             <span
-              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:shrink-0"
               [class]="getCellValue(row, col.key) ? 'badge-good' : 'badge-default'">
               {{ getCellValue(row, col.key) ? 'Yes' : 'No' }}
             </span>
@@ -479,14 +490,14 @@
           <!-- Actions cell -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <td
-            class="st-td st-actions-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[100px] text-center"
+            class="st-td st-actions-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50 w-25 text-center"
             (click)="$event.stopPropagation()">
             <div class="st-row-actions flex items-center justify-center gap-1">
 
               @for (action of actions(); track action.id) {
               @if (!isActionHidden(action, row)) {
               <button
-                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit"
+                class="st-action-btn inline-flex items-center justify-center w-7 h-7 rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit"
                 [class.st-action-btn--danger]="action.color === 'danger'" [title]="action.label"
                 (click)="onRowAction(action.id, row, $event)" type="button">
                 @if (action.icon === 'view') {
@@ -524,7 +535,7 @@
               @for (action of config().customRowActions ?? []; track action.id) {
               @if (!isCustomActionHidden(action, row)) {
               <button
-                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit {{ getActionColorClass(action.color) }}"
+                class="st-action-btn inline-flex items-center justify-center w-7 h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit {{ getActionColorClass(action.color) }}"
                 [title]="action.tooltip ?? action.label" [disabled]="action.disabled && action.disabled(row)"
                 (click)="onCustomRowAction(action, row, $event)" type="button">
                 @if (action.icon === 'view') {
