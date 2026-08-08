@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
+
 import { Dashboard } from './features/onboarding/components/dashboard/dashboard';
 import { MeetingsComponent } from './features/meetings/meetings';
 import { AddOnboarding } from './features/onboarding/components/add-onboarding/add-onboarding';
@@ -16,14 +16,12 @@ import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
 import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
 
+
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
   { path: 'login', component: Login,
     //  canActivate: [checkGuard],
      },
-
-  // Every other route is a child of Layout, so it renders inside the
-  // sidebar + navbar shell (Layout owns its own nested <router-outlet>).
   {
     path: '',
     component: Layout,
