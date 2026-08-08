@@ -508,8 +508,8 @@ export class Training implements OnInit {
     this.router.navigate(['/dashboard']);
   }
 
-  navigateToMyTraining(): void {
-    this.router.navigate(['/trainings/my-training']);
+ navigateToMyTraining(): void {
+    this.router.navigate(['/trainings/materials']);
   }
 
   // ======================================================
