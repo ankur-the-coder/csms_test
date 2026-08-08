@@ -3,12 +3,13 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Sidebar } from './sidebar/sidebar';
 import { Navbar } from './navbar/navbar';
+import { GlobalCallPopupComponent } from '../shared/components/global-call-popup.component';
 
 
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, Sidebar, Navbar],
+  imports: [RouterOutlet, Sidebar, Navbar, GlobalCallPopupComponent],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })

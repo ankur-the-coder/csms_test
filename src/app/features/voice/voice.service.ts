@@ -450,9 +450,21 @@ export class WebRtcVoiceService {
   }
 
   /**
-   * Simulate or handle an incoming PSTN call event
+   * Handle an incoming PSTN call event with Concurrent Call Protection
    */
   receiveIncomingCall(callLogId: number, fromNumber: string, customerName?: string): void {
+    const existing = this.activeCall();
+
+    // Concurrent Call Protection: If employee is already on an active/dialing call, do NOT replace it automatically
+    if (existing && (existing.status === 'active' || existing.status === 'dialing' || existing.status === 'held')) {
+      console.warn(`[Concurrent Call Protection] Busy on existing call ${existing.callLogId}. Incoming call ${callLogId} from ${fromNumber} rejected auto-replacement.`);
+      this.lastNotification.set({
+        message: `Incoming call from ${fromNumber} ignored - already on an active call.`,
+        type: 'warn'
+      });
+      return;
+    }
+
     this.activeCall.set({
       callLogId,
       customerNumber: fromNumber,
