@@ -36,7 +36,8 @@ export class VoiceComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Clean up softphone session when leaving component
+    // Clean up softphone session and SSE stream when leaving component to prevent leaks
+    this.voiceService.closeSSE(true);
   }
 
   appendDigit(digit: string): void {

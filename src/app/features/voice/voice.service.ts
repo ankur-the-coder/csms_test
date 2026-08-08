@@ -159,6 +159,9 @@ export class WebRtcVoiceService {
       this.registrationToken.set(token);
       this.connectionState.set('Connected');
 
+      // Initialize real-time Server-Sent Events (SSE) connection with backend
+      this.initSSE('1');
+
       // Complete Telnyx WebRTC Softphone registration state
       setTimeout(() => {
         this.connectionState.set('Registered');
@@ -169,6 +172,225 @@ export class WebRtcVoiceService {
       console.error('WebRTC Registration Error:', err);
       this.connectionState.set('Disconnected');
       this.errorMessage.set(`Registration Failed: ${err.message}`);
+    }
+  }
+
+  // SSE State & Notification Signals
+  readonly sseConnected = signal<boolean>(false);
+  readonly lastNotification = signal<{ message: string; type: 'info' | 'success' | 'warn' | 'error' } | null>(null);
+
+  private eventSource: EventSource | null = null;
+  private sseReconnectTimer: any = null;
+  private currentEmployeeId: string = '1';
+  private isIntentionallyClosed: boolean = false;
+
+  /**
+   * Initializes HTML5 EventSource SSE connection to AdonisJS backend
+   * Handled with auto-reconnect, duplicate protection, memory cleanup, and sanitized logs.
+   */
+  initSSE(employeeId: string = '1'): void {
+    this.currentEmployeeId = employeeId;
+    this.isIntentionallyClosed = false;
+
+    // Prevent duplicate active connections
+    if (this.eventSource) {
+      console.log('[SSE] Closing existing EventSource connection prior to re-initialization.');
+      this.closeSSE(false);
+    }
+
+    if (!employeeId || employeeId.trim() === '') {
+      console.warn('[SSE Error] Invalid employee session ID. SSE connection aborted.');
+      this.errorMessage.set('Invalid employee session. Cannot establish real-time SSE stream.');
+      return;
+    }
+
+    try {
+      // Build safe URL without credentials/tokens in logs
+      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(employeeId)}`;
+      console.log(`[SSE Log] Establishing SSE connection for Employee [ID: ${employeeId}]`);
+
+      this.eventSource = new EventSource(url);
+
+      this.eventSource.onopen = () => {
+        console.log(`[SSE Log] SSE connection established successfully.`);
+        this.sseConnected.set(true);
+        if (this.sseReconnectTimer) {
+          clearTimeout(this.sseReconnectTimer);
+          this.sseReconnectTimer = null;
+        }
+      };
+
+      // Native voice_event listener
+      this.eventSource.addEventListener('voice_event', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data);
+          console.log('[SSE Log] Event received:', payload.type || 'unknown_event');
+          this.handleIncomingSSEEvent(payload);
+        } catch (err) {
+          console.warn('[SSE Log] Failed event delivery - Error parsing payload JSON:', err);
+        }
+      });
+
+      // Global message listener fallback
+      this.eventSource.onmessage = (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data);
+          console.log('[SSE Log] Generic SSE message received:', payload.type || 'message');
+          this.handleIncomingSSEEvent(payload);
+        } catch (err) {
+          // Ignore non-json ping/heartbeat keep-alive messages
+        }
+      };
+
+      this.eventSource.onerror = (err) => {
+        this.sseConnected.set(false);
+        if (this.isIntentionallyClosed) return;
+
+        console.warn('[SSE Log] SSE connection interrupted or backend offline.');
+        
+        // Ensure connection closed before scheduling reconnect to prevent leak
+        if (this.eventSource) {
+          this.eventSource.close();
+          this.eventSource = null;
+        }
+
+        // Automatic reconnect retry logic
+        if (!this.sseReconnectTimer) {
+          console.log('[SSE Log] Scheduling automatic reconnection in 5 seconds...');
+          this.sseReconnectTimer = setTimeout(() => {
+            this.sseReconnectTimer = null;
+            if (!this.isIntentionallyClosed && this.connectionState() !== 'Disconnected') {
+              console.log('[SSE Log] Attempting SSE reconnection...');
+              this.initSSE(this.currentEmployeeId);
+            }
+          }, 5000);
+        }
+      };
+    } catch (e: any) {
+      console.error('[SSE Log] Failed event delivery - Could not create EventSource:', e?.message || e);
+      this.sseConnected.set(false);
+    }
+  }
+
+  /**
+   * Closes SSE connection and cleans up reconnect timers to prevent memory leaks
+   */
+  closeSSE(isExplicitLogout: boolean = true): void {
+    if (isExplicitLogout) {
+      this.isIntentionallyClosed = true;
+    }
+
+    if (this.sseReconnectTimer) {
+      clearTimeout(this.sseReconnectTimer);
+      this.sseReconnectTimer = null;
+    }
+
+    if (this.eventSource) {
+      try {
+        this.eventSource.close();
+      } catch (e) {
+        console.warn('[SSE Log] Error closing EventSource:', e);
+      }
+      this.eventSource = null;
+      console.log('[SSE Log] SSE connection closed.');
+    }
+    this.sseConnected.set(false);
+  }
+
+  /**
+   * Real-time event handler updating softphone UI state without polling
+   */
+  private handleIncomingSSEEvent(payload: any): void {
+    if (!payload || typeof payload !== 'object') return;
+
+    const { type, callLogId, phoneNumber, customerName, recordingUrl, message } = payload;
+
+    switch (type) {
+      case 'incoming_call':
+        console.log(`[SSE UI State] Incoming call popup triggered: ${phoneNumber || 'Unknown'}`);
+        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName || 'Incoming PSTN Call');
+        this.lastNotification.set({ message: `Incoming Call from ${phoneNumber || 'Unknown'}`, type: 'info' });
+        break;
+
+      case 'call_ringing':
+        console.log(`[SSE UI State] Call ringing state: Call ${callLogId}`);
+        const curRinging = this.activeCall();
+        if (curRinging) {
+          this.activeCall.set({ ...curRinging, status: 'ringing', callLogId });
+        }
+        break;
+
+      case 'call_answered':
+        console.log(`[SSE UI State] Connected state: Call ${callLogId}`);
+        const curAns = this.activeCall();
+        if (curAns) {
+          this.activeCall.set({ ...curAns, status: 'active', callLogId });
+          this.startTimer();
+        } else {
+          this.activeCall.set({
+            callLogId,
+            customerNumber: phoneNumber || 'Connected Call',
+            customerName: customerName || 'Customer',
+            direction: 'inbound',
+            status: 'active',
+            isMuted: false,
+            isHeld: false,
+            durationSeconds: 0,
+            startTime: new Date()
+          });
+          this.startTimer();
+        }
+        this.lastNotification.set({ message: 'Call connected', type: 'success' });
+        break;
+
+      case 'call_hold':
+        console.log(`[SSE UI State] Hold state: Call ${callLogId}`);
+        const curHold = this.activeCall();
+        if (curHold) {
+          this.activeCall.set({ ...curHold, status: 'held', isHeld: true, callLogId });
+        }
+        this.lastNotification.set({ message: 'Call placed on hold', type: 'info' });
+        break;
+
+      case 'call_resume':
+        console.log(`[SSE UI State] Resume state: Call ${callLogId}`);
+        const curResume = this.activeCall();
+        if (curResume) {
+          this.activeCall.set({ ...curResume, status: 'active', isHeld: false, callLogId });
+        }
+        this.lastNotification.set({ message: 'Call resumed', type: 'info' });
+        break;
+
+      case 'call_completed':
+        console.log(`[SSE UI State] Call completed: Call ${callLogId}`);
+        this.endCallSession();
+        this.lastNotification.set({ message: 'Call completed', type: 'info' });
+        break;
+
+      case 'call_rejected':
+        console.log(`[SSE UI State] Call rejected: Call ${callLogId}`);
+        this.endCallSession();
+        this.lastNotification.set({ message: 'Call rejected', type: 'warn' });
+        break;
+
+      case 'call_failed':
+        console.log(`[SSE UI State] Failed call notification: Call ${callLogId}`);
+        this.endCallSession();
+        this.errorMessage.set(message || 'Call failed or network error occurred.');
+        this.lastNotification.set({ message: message || 'Call failed notification', type: 'error' });
+        break;
+
+      case 'recording_ready':
+        console.log(`[SSE UI State] Recording available notification for Call [${callLogId}]: ${recordingUrl}`);
+        this.lastNotification.set({ 
+          message: `Recording available for call ${callLogId || ''}`, 
+          type: 'success' 
+        });
+        break;
+      
+      default:
+        console.log(`[SSE Log] Handled unmapped event type: ${type}`);
+        break;
     }
   }
 
@@ -374,6 +596,7 @@ export class WebRtcVoiceService {
    */
   unregister(): void {
     this.endCallSession();
+    this.closeSSE(true);
     if (this.localStream) {
       this.localStream.getTracks().forEach(t => t.stop());
       this.localStream = null;
