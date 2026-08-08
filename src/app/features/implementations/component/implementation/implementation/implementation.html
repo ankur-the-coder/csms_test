@@ -139,7 +139,7 @@
 
 <!-- ── Detail Drawer ──────────────────────────────────────────────────────── -->
 @if (selectedClient()) {
-<div class="fixed inset-0 z-[1200] flex justify-end" (click)="closeClientDetails()">
+<div class="fixed inset-0 z-1200 flex justify-end" (click)="closeClientDetails()">
   <!-- Backdrop -->
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
        [class.opacity-0]="!drawerOpen()" [class.opacity-100]="drawerOpen()"></div>
@@ -275,7 +275,7 @@
                    (blur)="updateRemark(selectedClient()!, feat.mod_id, $event)" /> -->
 
             <!-- Status badge -->
-            <span class="flex-shrink-0 badge"
+            <span class="shrink-0 badge"
                   [class.badge-brand]="selectedClient()!.checklist[feat.mod_id]?.approval_status === 1"
                   [class.badge-neutral]="selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1">
               {{ selectedClient()!.checklist[feat.mod_id]?.approval_status === 1 ? 'Done' : 'Pending' }}

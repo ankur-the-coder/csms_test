@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
+
 
 import { Dashboard } from './features/onboarding/components/dashboard/dashboard';
 import { MeetingsComponent } from './features/meetings/meetings';
@@ -12,6 +12,7 @@ import { TrainingMaterials } from './features/trainings/training-materials/train
 import { Implementation } from './features/implementations/component/implementation/implementation/implementation';
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
+import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
