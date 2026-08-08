@@ -2,7 +2,10 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, Organization } from './meetings.service'; // adjust path to your actual services folder
+import { MeetingService, MeetingRow, Organization } from './meetings.service';
+import { DataTable } from '../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
+import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
 
 interface Meeting {
   id: number;
@@ -38,10 +41,13 @@ interface AgendaItem {
 
 import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
 
+import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
+import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
+
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput],
+  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -96,14 +102,207 @@ export class MeetingsComponent implements OnInit {
   // Selected meeting for detail drawer
   selectedMeeting: Meeting | null = null;
 
-  // ============ Organizations (fetched from API) ============
+  // ============ Organizations & API Meetings ============
   organizations: Organization[] = [];
   loadingOrganizations = false;
+  apiMeetings: MeetingRow[] = [];
+  filterDateFrom: string = '';
+  filterDateTo: string = '';
+
+  // ============ Meetings DataTable Config ============
+  private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
+
+  tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
+    columns: [
+      {
+        key: 'title',
+        label: 'Meeting',
+        sortable: true,
+      },
+      {
+        key: 'orgName',
+        label: 'Organisation',
+        sortable: true,
+      },
+      {
+        key: 'purpose',
+        label: 'Purpose',
+        sortable: false,
+        type: 'text',
+      },
+      {
+        key: 'startTime',
+        label: 'Date & Time',
+        sortable: true,
+      },
+      {
+        key: 'duration',
+        label: 'Duration',
+        sortable: false,
+      },
+      {
+        key: 'priority',
+        label: 'Priority',
+        sortable: true,
+        type: 'badge' as const,
+        align: 'center' as const,
+        badgeMap: {
+          '0': { label: 'Low' },
+          '1': { label: 'Medium' },
+          '2': { label: 'High' },
+        } as Record<string, BadgeMapEntry>,
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        sortable: true,
+        type: 'badge' as const,
+        align: 'center' as const,
+        badgeMap: {
+          '0': { label: 'Scheduled' },
+          '1': { label: 'In Progress' },
+          '2': { label: 'Completed' },
+          '3': { label: 'Pending' },
+        } as Record<string, BadgeMapEntry>,
+      },
+      {
+        key: 'clientMail',
+        label: 'Client Email',
+        sortable: false,
+      },
+    ],
+
+    apiConfig: {
+      endpoint: this.meetingsEndpoint,
+      dataPath: 'data',
+      totalPath: 'meta.total',
+      buildRequest: (ctx: RequestContext) => {
+        const body = {
+          start: ctx.page * ctx.pageSize,
+          length: ctx.pageSize,
+          search: ctx.search ?? '',
+          sorting: `startTime,desc`,
+          filter: JSON.stringify({ status: 0 }),
+          fromDate: ctx.dateFrom ?? '',
+          toDate: ctx.dateTo ?? '',
+        };
+        return { method: 'POST' as const, body };
+      },
+      transformRow: (raw: any): MeetingRow => raw as MeetingRow,
+    },
+
+    rowIdKey: 'id',
+    showSearch: true,
+    showPagination: true,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50, 100],
+    exportFileName: 'meetings',
+    emptyMessage: 'No meetings found.',
+    clickable: false,
+    toolbarButtons: [
+      { id: 'datePicker', type: 'datePicker' },
+      { id: 'filter',  type: 'filter',       label: 'Filter' },
+      { id: 'export',  type: 'export',       label: 'Export' },
+      { id: 'refresh', type: 'refresh' },
+      { id: 'columns', type: 'columnPicker', label: 'Columns' },
+    ],
+    customRowActions: [
+      {
+        id: 'view',
+        icon: 'view',
+        label: 'View',
+        tooltip: 'View meeting details',
+        onClick: (row: MeetingRow) => this.openMeetingLink(row),
+      },
+    ],
+  }));
+
+  openMeetingLink(row: MeetingRow): void {
+    if (row.meetingLink) {
+      window.open(row.meetingLink, '_blank');
+    } else {
+      this.showToastMessage('No meeting link available for this entry.');
+    }
+  }
+
+  /** Converts '01:00:00.000000' → '01:00:00' */
+  formatDuration(raw: string): string {
+    if (!raw) return '00:00:00';
+    return raw.split('.')[0] || raw;
+  }
+
+  /** Returns coloured initials avatar background for an org name */
+  getOrgAvatarClass(name: string): string {
+    const colors = [
+      'bg-indigo-500', 'bg-purple-500', 'bg-emerald-500',
+      'bg-amber-500',  'bg-rose-500',   'bg-blue-500', 'bg-teal-500'
+    ];
+    if (!name) return colors[0];
+    return colors[name.charCodeAt(0) % colors.length];
+  }
+
+  getOrgInitials(name: string): string {
+    if (!name) return '?';
+    return name.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  getPriorityLabel(p: number): string {
+    return ['Low', 'Medium', 'High'][p] ?? 'Low';
+  }
+
+  getPriorityClass(p: number): string {
+    const map: Record<number, string> = {
+      0: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      1: 'bg-amber-50  text-amber-700  border border-amber-200',
+      2: 'bg-rose-50   text-rose-700   border border-rose-200',
+    };
+    return map[p] ?? map[0];
+  }
+
+  getStatusLabel(s: number): string {
+    return ['Scheduled', 'In Progress', 'Completed', 'Pending'][s] ?? 'Scheduled';
+  }
+
+  getStatusClass(s: number): string {
+    const map: Record<number, string> = {
+      0: 'bg-blue-50   text-blue-700   border border-blue-200',
+      1: 'bg-purple-50 text-purple-700 border border-purple-200',
+      2: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      3: 'bg-amber-50  text-amber-700  border border-amber-200',
+    };
+    return map[s] ?? map[0];
+  }
 
   constructor(private router: Router, private meetingService: MeetingService) {}
 
   ngOnInit(): void {
     this.fetchOrganizations();
+    this.fetchApiMeetings();
+  }
+
+  fetchApiMeetings(): void {
+    this.meetingService.fetchMeetings({
+      start: 0,
+      length: 100,
+      search: this.searchTerm || '',
+      sorting: 'startTime,desc',
+      filter: JSON.stringify({ status: 0 }),
+      fromDate: this.filterDateFrom || '',
+      toDate: this.filterDateTo || ''
+    }).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.apiMeetings = res.data;
+        }
+      },
+      error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
+    });
+  }
+
+  onDateApplied(event: { from: string; to: string }): void {
+    this.filterDateFrom = event.from;
+    this.filterDateTo = event.to;
+    this.fetchApiMeetings();
   }
 
   fetchOrganizations(): void {
@@ -452,6 +651,54 @@ export class MeetingsComponent implements OnInit {
 
   getMeetingsByStatus(status: string): Meeting[] {
     return this.meetings.filter(m => m.status === status);
+  }
+
+  // ============ Calendar & Timeline API Helper Methods ============
+
+  getApiMeetingsForDay(dateStr: string): MeetingRow[] {
+    return this.apiMeetings.filter(m => {
+      if (!m.startTime) return false;
+      return m.startTime.split('T')[0] === dateStr;
+    });
+  }
+
+  get calendarEventsByDay(): Record<number, DayEvent[]> {
+    const map: Record<number, DayEvent[]> = {};
+    for (const m of this.apiMeetings) {
+      if (!m.startTime) continue;
+      const d = new Date(m.startTime);
+      const dayNum = d.getDate();
+      if (!map[dayNum]) map[dayNum] = [];
+
+      const startHrs = d.getHours();
+      const startMins = d.getMinutes();
+      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      map[dayNum].push({
+        title: m.title || 'Meeting',
+        client: m.orgName || 'N/A',
+        timeLabel: `${timeStr} (${this.formatDuration(m.duration)})`,
+        startTime: timeStr,
+        startMinutes: startHrs * 60 + startMins,
+        endMinutes: startHrs * 60 + startMins + 60,
+        chipClass: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+        accentClass: 'border-indigo-500'
+      });
+    }
+    return map;
+  }
+
+  getFilteredApiMeetings(): MeetingRow[] {
+    let result = [...this.apiMeetings];
+    if (this.searchTerm) {
+      const q = this.searchTerm.toLowerCase();
+      result = result.filter(m =>
+        (m.title && m.title.toLowerCase().includes(q)) ||
+        (m.orgName && m.orgName.toLowerCase().includes(q)) ||
+        (m.purpose && m.purpose.toLowerCase().includes(q))
+      );
+    }
+    return result;
   }
 
   // ============ Calendar Helper Methods ============
