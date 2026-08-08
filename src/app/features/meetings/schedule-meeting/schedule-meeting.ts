@@ -2,8 +2,7 @@ import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { ScheduleMeetingService, Organization, OwnerOption } from './schedule-meetings.service';
+import { ScheduleMeetingService, Organization, EmployeeDetails } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
 
@@ -30,8 +29,9 @@ export class ScheduleMeeting implements OnInit {
     orgName: '',
     orgEmail: '',
 
+    // hostMode 'select' = auto-filled from the logged-in user (the normal path).
+    // hostMode 'manual' = fallback used only if we couldn't fetch the current user's details.
     hostMode: 'select' as EntryMode,
-    hostType: '' as 'lead' | 'support' | '',
     hostId: '',
     hostName: '',
     hostEmail: '',
@@ -40,13 +40,15 @@ export class ScheduleMeeting implements OnInit {
   };
 
   organizations: Organization[] = [];
-  hosts: OwnerOption[] = [];
 
   /** Populated with the Teams join link once the meeting is successfully created. */
   createdMeetingLink: string | null = null;
 
-  private leadOwners: OwnerOption[] = [];
-  private supportOwners: OwnerOption[] = [];
+  /** True while we're fetching the logged-in user's details to use as the host. */
+  hostDetailsLoading = true;
+
+  /** True if fetching the host's details failed — UI falls back to manual host entry. */
+  hostDetailsError = false;
 
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
   priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
@@ -66,21 +68,16 @@ export class ScheduleMeeting implements OnInit {
 
   ngOnInit(): void {
     this.loadAllData();
+    this.loadHostDetails();
   }
 
   private loadAllData(): void {
     this.loadingInitialData = true;
 
-    forkJoin({
-      organizations: this.scheduleMeetingService.getOrganizations(),
-      leadOwners: this.scheduleMeetingService.getLeadOwners(),
-      supportOwners: this.scheduleMeetingService.getSupportOwners()
-    }).subscribe({
-      next: ({ organizations, leadOwners, supportOwners }) => {
+    this.scheduleMeetingService.getOrganizations().subscribe({
+      next: (organizations) => {
         this.ngZone.run(() => {
           this.organizations = organizations;
-          this.leadOwners = leadOwners;
-          this.supportOwners = supportOwners;
           this.loadingInitialData = false;
         });
       },
@@ -89,6 +86,64 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => { this.loadingInitialData = false; });
       }
     });
+  }
+
+  /**
+   * Fetches the logged-in user's email/name and uses it as the meeting host,
+   * so the meeting is created on behalf of whoever is currently logged in.
+   *
+   * The logged-in user's id is read from localStorage('empId') below.
+   */
+  loadHostDetails(): void {
+    const employeeId = this.getCurrentEmployeeId();
+
+    if (!employeeId) {
+      console.error('No employeeId available for the current session — cannot auto-fill host.');
+      this.hostDetailsLoading = false;
+      this.hostDetailsError = true;
+      this.newMeeting.hostMode = 'manual';
+      return;
+    }
+
+    this.hostDetailsLoading = true;
+    this.hostDetailsError = false;
+
+    this.scheduleMeetingService.getEmployeeDetails(employeeId).subscribe({
+      next: (details: EmployeeDetails) => {
+        this.ngZone.run(() => {
+          this.newMeeting.hostEmail = details.currentMail;
+          this.newMeeting.hostName = details.name;
+          this.newMeeting.hostId = String(details.companyId ?? employeeId);
+          this.newMeeting.hostMode = 'select';
+          this.hostDetailsLoading = false;
+          this.hostDetailsError = false;
+        });
+      },
+      error: (err) => {
+        console.error('Failed to fetch current user (host) details:', err.status, err.error ?? err.message);
+        this.ngZone.run(() => {
+          this.hostDetailsLoading = false;
+          this.hostDetailsError = true;
+          this.newMeeting.hostMode = 'manual';
+        });
+      }
+    });
+  }
+
+  /**
+   * Reads the current employee id from localStorage (set at login as 'empId').
+   * localStorage always returns a string — the backend expects a numeric
+   * employeeId (as sent from Postman), so this coerces it to a number.
+   */
+  private getCurrentEmployeeId(): number | null {
+    const raw = localStorage.getItem('empId');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return isNaN(parsed) ? null : parsed;
+  }
+
+  retryHostFetch(): void {
+    this.loadHostDetails();
   }
 
   // ---------- SelectOption helpers ----------
@@ -116,17 +171,6 @@ export class ScheduleMeeting implements OnInit {
     return this.organizations.map(o => ({ label: o.name, value: o.orgId }));
   }
 
-  get hostTypeOptions(): SelectOption[] {
-    return [
-      { label: 'Lead Owner', value: 'lead' },
-      { label: 'Support Owner', value: 'support' }
-    ];
-  }
-
-  get hostOptions(): SelectOption[] {
-    return this.hosts.map(h => ({ label: h.name, value: h.id }));
-  }
-
   // ---------- Organization ----------
 
   setOrgMode(mode: EntryMode): void {
@@ -145,42 +189,10 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgEmail = org ? org.email : '';
   }
 
-  // ---------- Host ----------
-
-  setHostMode(mode: EntryMode): void {
-    if (this.newMeeting.hostMode === mode) return;
-    this.newMeeting.hostMode = mode;
-    this.newMeeting.hostType = '';
-    this.newMeeting.hostId = '';
-    this.newMeeting.hostName = '';
-    this.newMeeting.hostEmail = '';
-    this.hosts = [];
-  }
-
-  onHostTypeChange(type: any): void {
-    if (this.newMeeting.hostType === type) return;
-    this.newMeeting.hostType = type;
-    this.newMeeting.hostId = '';
-    this.newMeeting.hostName = '';
-    this.newMeeting.hostEmail = '';
-    this.hosts = type === 'lead' ? this.leadOwners : this.supportOwners;
-  }
-
-  onHostSelect(hostId: any): void {
-    const owner = this.hosts.find(h => h.id === hostId);
-    this.newMeeting.hostId = hostId;
-    this.newMeeting.hostName = owner ? owner.name : '';
-    this.newMeeting.hostEmail = owner ? owner.email : '';
-  }
-
   // ---------- Misc ----------
 
   trackByOrgId(_index: number, org: Organization): number {
     return org.orgId;
-  }
-
-  trackByHostId(_index: number, host: OwnerOption): string {
-    return host.id;
   }
 
   goBack(): void {
@@ -247,7 +259,6 @@ export class ScheduleMeeting implements OnInit {
         organizationId: this.newMeeting.orgId,
         organizationName: this.newMeeting.orgName,
 
-        hostType: this.newMeeting.hostType,
         hostId: this.newMeeting.hostId,
         hostName: this.newMeeting.hostName
 
@@ -372,11 +383,13 @@ private buildEndDateTime(start: string): string {
       ? !!m.orgId
       : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
 
+    // 'select' mode means the host was auto-filled from the logged-in user;
+    // 'manual' mode is the fallback used when that fetch failed.
     const hostOk = m.hostMode === 'select'
-      ? !!m.hostType && !!m.hostId
+      ? this.isValidEmail(m.hostEmail)
       : m.hostName.trim().length > 0 && this.isValidEmail(m.hostEmail);
 
-    return !!(m.title.trim() && m.type && m.date && m.time && orgOk && hostOk);
+    return !!(m.title.trim() && m.type && m.date && m.time && orgOk && hostOk && !this.hostDetailsLoading);
   }
 
   // ---------- Inline field errors (shown only after a submit attempt) ----------
@@ -407,15 +420,6 @@ private buildEndDateTime(start: string): string {
 
   get showOrgEmailError(): boolean {
     return this.submitted && this.newMeeting.orgMode === 'manual' && !this.isValidEmail(this.newMeeting.orgEmail);
-  }
-
-  get showHostCategoryError(): boolean {
-    return this.submitted && this.newMeeting.hostMode === 'select' && !this.newMeeting.hostType;
-  }
-
-  get showHostSelectError(): boolean {
-    return this.submitted && this.newMeeting.hostMode === 'select'
-      && !!this.newMeeting.hostType && !this.newMeeting.hostId;
   }
 
   get showHostNameError(): boolean {
