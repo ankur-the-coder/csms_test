@@ -1,0 +1,906 @@
+/* <div class="space-y-6 pb-12">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────────── -->
+  <div class="bg-white rounded-xl  p-4 mb-4 text-black">
+    <div>
+      <h1 class="page-title">Onboarding Dashboard</h1>
+      <p>Every onboarding in progress. Switch views, filter, and act on bottlenecks.</p>
+    </div>
+
+  </div>
+
+  <!-- ── Stat Cards ────────────────────────────────────────────────────────── -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Total Accounts -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">Total Onboardings</span>
+        <div class="text-2xl font-extrabold text-text-primary mt-1">{{ totalClients() }}</div>
+        <!-- <div class="text-xs font-medium text-text-muted mt-1">Active CS Portfolio</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Completed -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">In Progress</span>
+        <div class="text-2xl font-extrabold text-brand-500 mt-1">{{ completedClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-brand-500 mt-1">100% Approved</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">On Track</span>
+        <div class="text-2xl font-extrabold text-amber-600 mt-1">{{ inProgressClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-amber-600 mt-1">Active Milestones</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Not Started -->
+    <div class="card flex items-center justify-between gap-4">
+      <div>
+        <span class="text-xs font-semibold text-text-muted uppercase tracking-wider">Completed </span>
+        <div class="text-2xl font-extrabold text-text-muted mt-1">{{ pendingClientsCount() }}</div>
+        <!-- <div class="text-xs font-medium text-text-muted mt-1">Pending Kickoff</div> -->
+      </div>
+      <div
+        class="h-12 w-12 rounded-xl bg-surface-100 text-text-muted flex items-center justify-center border border-surface-200 flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Filter / Controls Bar ─────────────────────────────────────────────── -->
+  <!-- <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"> -->
+    <!-- Status Tabs -->
+    <!-- <div class="inline-flex flex-wrap items-center gap-1 bg-surface-100 p-1 rounded-2xl">
+      @for (tab of filterTabs; track tab.id) {
+      <button (click)="setFilterStatus(tab.id)" class="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+        [ngClass]="{
+          'bg-card-bg text-text-primary shadow-sm border border-card-border': statusFilter() === tab.id,
+          'text-text-secondary hover:text-text-primary': statusFilter() !== tab.id
+        }">
+        {{ tab.label }}
+      </button>
+      }
+    </div> -->
+
+    <!-- View toggle -->
+    <!-- <div class="flex items-center gap-3">
+      <div class="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200">
+        <button (click)="viewMode.set('grid')" title="Grid View" class="p-1.5 rounded-lg transition-colors"
+          [ngClass]="viewMode() === 'grid' ? 'bg-card-bg shadow-sm text-brand-500' : 'text-text-muted hover:text-text-primary'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        <button (click)="viewMode.set('table')" title="Table View" class="p-1.5 rounded-lg transition-colors"
+          [ngClass]="viewMode() === 'table' ? 'bg-card-bg shadow-sm text-brand-500' : 'text-text-muted hover:text-text-primary'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div> -->
+  <!-- </div> -->
+
+
+  <!-- ── TABLE VIEW ─────────────────────────────────────────────────────────── -->
+  @if (viewMode() === 'table') {
+  <div class="card p-0 overflow-hidden">
+    <app-data-table [config]="tableConfig()" [filterNames]="['leadOwner', 'supportOwner',
+     'rating', 'country'
+    , 'dateRange']">
+
+      <!-- Custom progress cell template -->
+      <ng-template appCustomColumn="overallProgress" let-row>
+        <div class="flex items-center gap-2 min-w-[120px]">
+          <div class="flex-1 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" [style.width.%]="getClientProgressPercent(row)"
+              [style.background]="getProgressColor(getClientProgressPercent(row))">
+            </div>
+          </div>
+          <span class="text-xs font-bold w-8 text-right"
+            [style.color]="getProgressColor(getClientProgressPercent(row))">
+            {{ getClientProgressPercent(row) }}%
+          </span>
+        </div>
+      </ng-template>
+
+      <!-- Custom modules cell template -->
+      <ng-template appCustomColumn="modules" let-row>
+        <div class="flex flex-wrap items-center justify-center gap-1 max-w-[320px]">
+          @for (mod of modules; track mod.key) {
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap" [ngClass]="{
+                  'bg-brand-100 text-brand-700 border-brand-200': isModuleFullyApproved(row, mod),
+                  'bg-amber-100 text-amber-700 border-amber-200': isModuleInProgress(row, mod),
+                  'bg-surface-100 text-text-muted border-surface-200': isModuleNotStarted(row, mod)
+                }">
+            {{ mod.label }}: {{ getModuleApprovedCount(row, mod) }}/{{ getModuleTotalCount(row, mod) }}
+          </span>
+          }
+        </div>
+      </ng-template>
+
+    </app-data-table>
+  </div>
+  }
+
+  <!-- ── GRID VIEW ──────────────────────────────────────────────────────────── -->
+  @if (viewMode() === 'grid') {
+
+  @if (isLoading()) {
+  <div class="flex flex-col items-center justify-center py-20">
+    <div class="h-10 w-10 border-3 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+    <p class="text-sm text-text-muted mt-4 font-medium">Loading implementation data...</p>
+  </div>
+  } @else if (filteredClients().length === 0) {
+  <div class="card flex flex-col items-center justify-center py-20 gap-4">
+    <div
+      class="w-14 h-14 rounded-full bg-brand-50 border-2 border-brand-200 flex items-center justify-center text-brand-400">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    </div>
+    <p class="text-base font-semibold text-text-primary">No clients found</p>
+    <p class="text-sm text-text-muted">Try adjusting your search or filter.</p>
+  </div>
+  } @else {
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    @for (client of filteredClients(); track client.id) {
+    <div class="card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+      (click)="openClientDetails(client)">
+      <!-- Card top -->
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 text-sm font-bold">
+            {{ getInitials(client.name) }}
+          </div>
+          <div>
+            <p class="font-semibold text-text-primary text-sm group-hover:text-brand-500 transition-colors">{{
+              client.name }}</p>
+            <p class="text-xs text-text-muted">Org #{{ client.org_id }}</p>
+          </div>
+        </div>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border"
+          [ngClass]="getHealthBadgeClasses(client.health)">
+          {{ client.health }}
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="mb-3">
+        <div class="flex justify-between text-xs mb-1.5">
+          <span class="font-medium text-text-secondary">Overall Progress</span>
+          <span class="font-bold" [style.color]="getProgressColor(getClientProgressPercent(client))">{{
+            getClientProgressPercent(client) }}%</span>
+        </div>
+        <div class="h-2 bg-surface-200 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700"
+            [style.width.%]="getClientProgressPercent(client)"
+            [style.background]="getProgressColor(getClientProgressPercent(client))">
+          </div>
+        </div>
+      </div>
+
+      <!-- Module badges -->
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        @for (mod of modules; track mod.key) {
+        <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold" [ngClass]="{
+                'bg-brand-100 text-brand-700': isModuleFullyApproved(client, mod),
+                'bg-amber-100 text-amber-700': isModuleInProgress(client, mod),
+                'bg-surface-100 text-text-muted': isModuleNotStarted(client, mod)
+              }">
+          {{ mod.label }}
+          {{ getModuleApprovedCount(client, mod) }}/{{ getModuleTotalCount(client, mod) }}
+        </span>
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between pt-3 border-t border-card-border">
+        <div class="flex items-center gap-1.5 text-xs text-text-muted">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          {{ client.onboarding_date || '—' }}
+        </div>
+        <div class="text-xs text-text-secondary font-medium">{{ client.cs_lead }}</div>
+      </div>
+    </div>
+    }
+  </div>
+  }
+  }
+
+</div>
+
+<!-- ── Detail Drawer ──────────────────────────────────────────────────────── -->
+@if (selectedClient()) {
+<div class="fixed inset-0 z-[1200] flex justify-end" (click)="closeClientDetails()">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+    [class.opacity-0]="!drawerOpen()" [class.opacity-100]="drawerOpen()"></div>
+
+  <!-- Drawer panel -->
+  <div
+    class="relative w-full max-w-2xl h-full bg-card-bg shadow-2xl flex flex-col transition-transform duration-300 ease-in-out overflow-hidden"
+    [class.translate-x-full]="!drawerOpen()" [class.translate-x-0]="drawerOpen()" (click)="$event.stopPropagation()">
+
+    <!-- Drawer header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 flex items-center justify-center font-bold text-brand-600 text-sm">
+          {{ getInitials(selectedClient()!.name) }}
+        </div>
+        <div>
+          <h2 class="font-bold text-text-primary text-base">{{ selectedClient()!.name }}</h2>
+          <p class="text-xs text-text-muted">Org #{{ selectedClient()!.org_id }} · {{ selectedClient()!.cs_lead }}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border"
+          [ngClass]="getHealthBadgeClasses(selectedClient()!.health)">
+          {{ selectedClient()!.health }}
+        </span>
+        <button (click)="closeClientDetails()"
+          class="w-8 h-8 rounded-lg bg-surface-100 hover:bg-surface-200 flex items-center justify-center text-text-secondary transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress summary bar -->
+    <div class="px-6 py-3 bg-brand-50 border-b border-brand-100">
+      <div class="flex items-center justify-between text-xs mb-1.5">
+        <span class="font-semibold text-brand-700">Overall Implementation Progress</span>
+        <span class="font-bold text-brand-600">{{ getClientProgressPercent(selectedClient()!) }}%</span>
+      </div>
+      <div class="h-2.5 bg-brand-100 rounded-full overflow-hidden">
+        <div class="h-full bg-brand-500 rounded-full transition-all duration-700"
+          [style.width.%]="getClientProgressPercent(selectedClient()!)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Module tab filter -->
+    <div class="px-6 py-3 border-b border-card-border bg-card-bg overflow-x-auto">
+      <div class="flex items-center gap-1 min-w-max">
+        <button (click)="selectedModuleTab.set('all')"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+          [ngClass]="selectedModuleTab() === 'all' ? 'bg-brand-500 text-white' : 'bg-surface-100 text-text-secondary hover:bg-surface-200'">
+          All Modules
+        </button>
+        @for (mod of modules; track mod.key) {
+        <button (click)="selectedModuleTab.set(mod.key)"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
+          [ngClass]="selectedModuleTab() === mod.key ? 'bg-brand-500 text-white' : 'bg-surface-100 text-text-secondary hover:bg-surface-200'">
+          {{ mod.label }}
+        </button>
+        }
+      </div>
+    </div>
+
+    <!-- Module list -->
+    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      @for (mod of getDisplayModules(); track mod.key) {
+      <div class="rounded-xl border border-card-border overflow-hidden">
+        <!-- Module header -->
+        <div class="flex items-center justify-between px-4 py-3 bg-surface-100 border-b border-card-border">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-text-primary">{{ mod.label }}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" [ngClass]="{
+                    'bg-brand-100 text-brand-700': isModuleFullyApproved(selectedClient()!, mod),
+                    'bg-amber-100 text-amber-700': isModuleInProgress(selectedClient()!, mod),
+                    'bg-surface-200 text-text-muted': isModuleNotStarted(selectedClient()!, mod)
+                  }">
+              {{ getModuleApprovedCount(selectedClient()!, mod) }} / {{ getModuleTotalCount(selectedClient()!, mod) }}
+            </span>
+          </div>
+          <!-- Mini progress bar -->
+          <div class="flex items-center gap-2">
+            <div class="w-20 h-1.5 bg-surface-200 rounded-full overflow-hidden">
+              <div class="h-full bg-brand-500 rounded-full transition-all" [style.width.%]="getModuleTotalCount(selectedClient()!, mod) > 0
+                     ? (getModuleApprovedCount(selectedClient()!, mod) / getModuleTotalCount(selectedClient()!, mod)) * 100
+                     : 0">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature rows -->
+        <div class="divide-y divide-card-border">
+          @for (feat of mod.features; track feat.mod_id) {
+          <div class="px-4 py-3 flex items-center gap-3 hover:bg-surface-50 transition-colors">
+            <!-- Toggle checkbox -->
+            <button (click)="toggleFeatureStatus(selectedClient()!, feat.mod_id)"
+              class="w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-all" [ngClass]="{
+                'bg-brand-500 border-brand-500': selectedClient()!.checklist[feat.mod_id]?.approval_status === 1,
+                'border-surface-300 hover:border-brand-400': selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1
+              }">
+              @if (selectedClient()!.checklist[feat.mod_id]?.approval_status === 1) {
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              }
+            </button>
+
+            <!-- Feature info -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-text-primary truncate">{{ feat.name }}</p>
+              @if (selectedClient()!.checklist[feat.mod_id]?.completed_at) {
+              <p class="text-xs text-text-muted">Completed: {{ selectedClient()!.checklist[feat.mod_id]?.completed_at }}
+              </p>
+              }
+            </div>
+
+            <!-- Remark input -->
+            <input type="text"
+              class="hidden md:block text-xs px-2 py-1 rounded-lg border border-card-border bg-surface-50 text-text-secondary focus:outline-none focus:border-brand-500 w-32"
+              placeholder="Remark..." [value]="selectedClient()!.checklist[feat.mod_id]?.remark || ''"
+              (blur)="updateRemark(selectedClient()!, feat.mod_id, $event)" />
+
+            <!-- Status badge -->
+            <span class="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="{
+                    'bg-brand-100 text-brand-700': selectedClient()!.checklist[feat.mod_id]?.approval_status === 1,
+                    'bg-surface-200 text-text-muted': selectedClient()!.checklist[feat.mod_id]?.approval_status !== 1
+                  }">
+              {{ selectedClient()!.checklist[feat.mod_id]?.approval_status === 1 ? 'Done' : 'Pending' }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+
+    <!-- Drawer footer -->
+    <div class="px-6 py-4 border-t border-card-border bg-card-bg flex justify-between items-center">
+      <div class="text-xs text-text-muted">
+        {{ getClientApprovedCount(selectedClient()!) }} of {{ totalFeaturesCount }} features approved
+      </div>
+      <button (click)="markAllApproved(selectedClient()!)"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <polyline stroke-width="2.5" points="20 6 9 17 4 12" />
+        </svg>
+        Mark All Approved
+      </button>
+    </div>
+
+  </div>
+</div>
+} */
+
+
+
+
+
+/* import { Component, computed, inject, signal, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+import { SmartTableConfig, RequestContext } from '../../../../shared/components/Data-table/data-table.types';
+// import { Client, FeatureChecklistRow } from '../../../implementation/implementation.component';
+
+
+import { DataTable } from '../../../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
+import { ImplementationService } from '../../../implementations/services/implementation/implementation';
+import { CardData, DataTablePayload, Datum, ImplementationData } from '../../../implementations/models/implementation.model';
+import { environment } from '../../../../../environments/environment';
+export interface Feature {
+  mod_id: number;
+  name: string;
+  description?: string;
+}
+
+export interface Module {
+  tab_id: number;
+  key: string;
+  label: string;
+  icon: string;
+  features: Feature[];
+}
+
+export interface FeatureChecklistRow {
+  approval_status: number; // 1 = approved, 0 = pending
+  remark: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface Client {
+  id: number;
+  org_id: number;
+  name: string;
+  industry: string;
+  onboarding_date: string;
+  cs_lead: string;
+  health: string;
+  checklist: Record<number, FeatureChecklistRow>;
+  overallProgress: {
+    approved: number;
+    total: number;
+    percentage: number;
+  };
+  apiModules: Record<string, { completed: number; total: number }>;
+}
+
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.css',
+})
+export class Dashboard {
+
+  @ViewChild('progressCell') progressCellTemplate!: TemplateRef<any>;
+  @ViewChild('moduleCell') moduleCellTemplate!: TemplateRef<any>;
+  @ViewChild('healthCell') healthCellTemplate!: TemplateRef<any>;
+  @ViewChild('nameCell') nameCellTemplate!: TemplateRef<any>;
+
+  private readonly implService = inject(ImplementationService);
+
+  readonly modules: Module[] = [
+    { tab_id: 1, key: 'employee', label: 'Employee', icon: 'users', features: [{ mod_id: 64, name: 'Onboard Employees' }] },
+    {
+      tab_id: 2, key: 'attendance', label: 'Attendance', icon: 'calendar', features: [
+        { mod_id: 42, name: 'Shift' },
+        { mod_id: 185, name: 'Projects' },
+        { mod_id: 186, name: 'Tasks' },
+        { mod_id: 187, name: 'Settings of Timesheet' },
+        { mod_id: 502, name: 'Regularization Settings' }
+      ]
+    },
+    {
+      tab_id: 3, key: 'leave', label: 'Leave', icon: 'leave', features: [
+        { mod_id: 31, name: 'Leave Type Settings' },
+        { mod_id: 193, name: 'Import Leave Balance' }
+      ]
+    },
+    { tab_id: 4, key: 'salary', label: 'Salary', icon: 'wallet', features: [{ mod_id: 41, name: 'Salary Heads' }] },
+    {
+      tab_id: 5, key: 'organization', label: 'Organization', icon: 'network', features: [
+        { mod_id: 12, name: 'Departments' },
+        { mod_id: 13, name: 'Designations' },
+        { mod_id: 14, name: 'Divisions' },
+        { mod_id: 29, name: 'Holidays' },
+        { mod_id: 32, name: 'Locations' },
+        { mod_id: 35, name: 'Company Details' },
+        { mod_id: 54, name: 'Company Policy' },
+        { mod_id: 145, name: 'Hierarchy' }
+      ]
+    },
+    { tab_id: 6, key: 'timesheet', label: 'Timesheet', icon: 'clock', features: [{ mod_id: 188, name: 'Timesheet Settings' }] },
+    {
+      tab_id: 7, key: 'payroll', label: 'Payroll', icon: 'bank', features: [
+        { mod_id: 455, name: 'Payroll Heads' },
+        { mod_id: 474, name: 'EPF Settings' },
+        { mod_id: 478, name: 'ESIC Settings' },
+        { mod_id: 485, name: 'Professional Tax Settings' },
+        { mod_id: 509, name: 'Labour Welfare Fund' }
+      ]
+    }
+  ];
+
+  readonly totalFeaturesCount = this.modules.reduce((acc, m) => acc + m.features.length, 0);
+
+  clients = signal<Client[]>([]);
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string>('');
+  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
+
+  // UI state
+  searchQuery = signal<string>('');
+  statusFilter = signal<string>('all');
+  viewMode = signal<'grid' | 'table'>('table');
+
+  // Drawer
+  selectedClient = signal<Client | null>(null);
+  selectedModuleTab = signal<string>('all');
+  drawerOpen = signal<boolean>(false);
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
+  private openTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Filter tabs
+  get filterTabs() {
+    return [
+      { id: 'all', label: 'All Organisations', count: this.cardData().totalAccounts },
+      { id: 'in_progress', label: 'In Progress', count: this.cardData().inProgress },
+      { id: 'complete', label: 'Completed', count: this.cardData().completed },
+      { id: 'pending', label: 'Not Started', count: this.cardData().notStarted }
+    ];
+  }
+
+  filteredClients = computed(() => {
+    const q = this.searchQuery().toLowerCase().trim();
+    const sf = this.statusFilter();
+    return this.clients().filter(c => {
+      const match = c.name.toLowerCase().includes(q) ||
+        c.org_id.toString().includes(q) ||
+        c.cs_lead.toLowerCase().includes(q);
+      if (!match) return false;
+      if (sf === 'complete') return c.overallProgress.percentage === 100;
+      if (sf === 'in_progress') return c.overallProgress.percentage > 0 && c.overallProgress.percentage < 100;
+      if (sf === 'pending') return c.overallProgress.percentage === 0;
+      return true;
+    });
+  });
+
+  // Card computed
+  totalClients = computed(() => this.cardData().totalAccounts);
+  completedClientsCount = computed(() => this.cardData().completed);
+  inProgressClientsCount = computed(() => this.cardData().inProgress);
+  pendingClientsCount = computed(() => this.cardData().notStarted);
+
+  // ── Filter option sources for the DataTable's built-in filter modal ───────
+  // 'csLead' options come from the data we already loaded — no extra endpoint
+  // needed. Recomputes automatically whenever `clients()` changes (e.g. after
+  // a refresh or a new page of data arrives).
+  csLeadFilterOptions = computed(() => {
+    const leads = new Set(
+      this.clients()
+        .map(c => c.cs_lead)
+        .filter((v): v is string => !!v)
+    );
+    return Array.from(leads)
+      .sort((a, b) => a.localeCompare(b))
+      .map(label => ({ label, value: label }));
+  });
+
+  // ── DataTable config ──────────────────────────────────────────────────────
+  private readonly tableEndpoint = environment.apiUrl + '/onboardingDashboardTable';
+
+  tableConfig = computed<SmartTableConfig<Client>>(() => {
+    // Reading statusFilter here makes tableConfig reactive to tab changes.
+    // When the tab changes → new buildRequest body → new fetchKey → re-fetch.
+    const statusFilter = this.statusFilter();
+
+    return {
+      columns: [
+        // { key: 'org_id',           label: 'Org ID',       sortable: true, type: 'number' },
+        { key: 'name', label: 'Organisation', sortable: true, type: 'avatar' },
+        // { key: 'cs_lead',          label: 'CS Lead',      sortable: true },
+        {
+          key: 'health', label: 'Health', type: 'badge', align: 'center',
+          badgeMap: {
+            'Good': { label: 'Good' },
+            'Excellent': { label: 'Excellent' },
+            'Neutral': { label: 'Neutral' },
+            'Risk': { label: 'Risk' },
+          }
+        },
+        { key: 'onboarding_date', label: 'Onboarded', sortable: true },
+        { key: 'overallProgress', label: 'Progress', type: 'template', align: 'center' },
+        { key: 'modules', label: 'Modules', type: 'template', align: 'center' },
+
+      ],
+
+      // ── Server-side config ────────────────────────────────────────────────
+      apiConfig: {
+        endpoint: this.tableEndpoint,
+        dataPath: 'data',        // res.data
+        totalPath: 'meta.total',  // res.meta.total
+
+
+        buildRequest: (ctx: RequestContext) => {
+          // Merge the active status-filter tab AND the table's own filter
+          // modal selections (csLead, health, ...) into the filter object.
+          const filterObj: Record<string, any> = { ...ctx.filters };
+          if (statusFilter !== 'all') filterObj['status'] = statusFilter;
+
+          const body: DataTablePayload = {
+            start: ctx.page * ctx.pageSize,          // offset
+            length: ctx.pageSize,                     // page size
+            search: ctx.search ?? '',
+            sorting: JSON.stringify({
+              require: 0,
+              col: ctx.sortKey ?? 'orgId',
+              dir: ctx.sortDir ?? 'desc',
+            }),
+            filter: JSON.stringify(filterObj),
+            tabSts: statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0
+          };
+
+          return { method: 'POST' as const, body };
+        },
+
+
+        transformRow: (row: any) => this.mapApiRowToClient(row as Datum),
+      },
+
+      rowIdKey: 'id',
+      showSearch: true,
+      showPagination: true,
+      defaultPageSize: 10,
+      // selectable:true,
+      pageSizeOptions: [10, 25, 50, 100, 500],
+      exportFileName: 'implementation-progress',
+      emptyMessage: 'No implementation records found.',
+      clickable: false,
+      toolbarButtons: [
+        { id: 'filter', type: 'filter', label: 'Filter' },
+        { id: 'export', type: 'export', label: 'Export' },
+        { id: 'refresh', type: 'refresh' },
+        { id: 'columns', type: 'columnPicker', label: 'Columns' },
+
+      ],
+      // customRowActions: [
+      //   {
+      //     id:      'view',
+      //     icon:    'view',
+      //     label:   'View Details',
+      //     tooltip: 'Open detail drawer',
+      //     onClick: (row: Client) => this.openClientDetails(row),
+      //   }
+      // ],
+
+      // 'health' is resolved via filterNames + DataTableService (static enum).
+      // 'csLead' is defined here directly since its options come from data
+      // already loaded on the client (not a separate API call).
+      filters: [
+        { key: 'csLead', label: 'CS Lead', options: this.csLeadFilterOptions() },
+      ],
+    };
+  });
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  ngOnInit() { this.loadData(); }
+
+  loadData() {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    // Card data (always fetched separately)
+    this.implService.fetchImpCardData().subscribe({
+      next: (data) => this.cardData.set(data),
+      error: (err) => console.error('Card data error:', err)
+    });
+
+    const payload: DataTablePayload = {
+      start: 0,
+      length: 100,
+      search: '',
+      sorting: JSON.stringify({ require: 0, col: 'orgId', dir: 'desc' }),
+      filter: JSON.stringify({}),
+      tabSts: 0
+    };
+
+    this.implService.fetchDataTable(payload).subscribe({
+      next: (res: ImplementationData) => {
+        this.clients.set(this.mapApiDataToClients(res.data ?? []));
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Grid data error:', err);
+        this.errorMessage.set('Failed to load data. Please try again.');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  private mapApiRowToClient(row: Datum): Client {
+    const checklist = this.buildChecklistFromApi(row);
+    const apiModules: Record<string, { completed: number; total: number }> = {};
+    if (row.modules && typeof row.modules === 'object') {
+      Object.entries(row.modules).forEach(([key, modData]) => {
+        if (modData && Array.isArray(modData.features)) {
+          const completed = modData.features.filter(f => f.approval_status === 1).length;
+          const total = modData.features.length;
+          apiModules[key] = { completed, total };
+        } else if (modData && typeof modData === 'object') {
+          const m = modData as any;
+          apiModules[key] = { completed: m?.completed ?? 0, total: m?.total ?? 0 };
+        }
+      });
+    }
+    return {
+      id: row.orgId,
+      org_id: row.orgId,
+      name: row.organization,
+      industry: '',
+      onboarding_date: this.formatDate(row.onboardedDate ? row.onboardedDate.toString() : ''),
+      cs_lead: row.csLead || 'Unassigned',
+      health: row.health,
+      checklist,
+      overallProgress: {
+        approved: row.overallProgress?.approved || 0,
+        total: row.overallProgress?.total || 0,
+        percentage: row.overallProgress?.percentage || 0,
+      },
+      apiModules,
+    };
+  }
+
+  private mapApiDataToClients(data: Datum[]): Client[] {
+    return data.map(row => this.mapApiRowToClient(row));
+  }
+
+  private buildChecklistFromApi(row: Datum): Record<number, FeatureChecklistRow> {
+    const checklist: Record<number, FeatureChecklistRow> = {};
+    if (row.modules && typeof row.modules === 'object') {
+      Object.values(row.modules).forEach(modData => {
+        if (modData && Array.isArray(modData.features)) {
+          modData.features.forEach(feat => {
+            checklist[feat.mod_id] = {
+              approval_status: feat.approval_status ?? 0,
+              remark: feat.remark ?? '',
+              started_at: feat.started_at ? this.formatDate(feat.started_at.toString()) : null,
+              completed_at: feat.completed_at ? this.formatDate(feat.completed_at.toString()) : null
+            };
+          });
+        }
+      });
+    }
+    return checklist;
+  }
+
+  private formatDate(isoDate: string): string {
+    if (!isoDate) return '';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── Client helpers ────────────────────────────────────────────────────────
+  getClientApprovedCount(client: Client): number {
+    if (!client?.checklist) return 0;
+    return Object.values(client.checklist).filter(r => r.approval_status === 1).length;
+  }
+
+  getClientProgressPercent(client: Client): number {
+    if (client.overallProgress?.percentage > 0) return client.overallProgress.percentage;
+    if (this.totalFeaturesCount === 0) return 0;
+    return Math.round((this.getClientApprovedCount(client) / this.totalFeaturesCount) * 100);
+  }
+
+  getModuleApprovedCount(client: Client, mod: Module): number {
+    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].completed;
+    if (!client?.checklist) return 0;
+    return mod.features.filter(f => client.checklist[f.mod_id]?.approval_status === 1).length;
+  }
+
+  getModuleTotalCount(client: Client, mod: Module): number {
+    if (client.apiModules?.[mod.key]) return client.apiModules[mod.key].total;
+    return mod.features.length;
+  }
+
+  isModuleFullyApproved(client: Client, mod: Module): boolean {
+    const total = this.getModuleTotalCount(client, mod);
+    return total > 0 && this.getModuleApprovedCount(client, mod) === total;
+  }
+  isModuleInProgress(client: Client, mod: Module): boolean {
+    const count = this.getModuleApprovedCount(client, mod);
+    return count > 0 && count < this.getModuleTotalCount(client, mod);
+  }
+  isModuleNotStarted(client: Client, mod: Module): boolean {
+    return this.getModuleApprovedCount(client, mod) === 0;
+  }
+
+  setFilterStatus(status: string) { this.statusFilter.set(status); }
+
+  getInitials(name: string): string {
+    if (!name) return '';
+    return name.split(' ').map(p => p.charAt(0)).join('').slice(0, 2).toUpperCase();
+  }
+
+  getHealthBadgeClasses(health: string): string {
+    switch (health) {
+      case 'Good': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Excellent': return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'Neutral': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Risk': return 'bg-rose-50 text-rose-700 border-rose-200';
+      default: return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
+  }
+
+  getProgressColor(pct: number): string {
+    if (pct === 100) return 'var(--brand-500)';
+    if (pct >= 50) return 'var(--brand-400)';
+    if (pct > 0) return '#f59e0b';
+    return '#e2e8f0';
+  }
+
+  // ── Drawer ────────────────────────────────────────────────────────────────
+  openClientDetails(client: Client) {
+    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = null; }
+    this.selectedClient.set({ ...client });
+    this.selectedModuleTab.set('all');
+    this.drawerOpen.set(false);
+    this.openTimer = setTimeout(() => this.drawerOpen.set(true), 20);
+  }
+
+  closeClientDetails() {
+    if (this.openTimer) { clearTimeout(this.openTimer); this.openTimer = null; }
+    this.drawerOpen.set(false);
+    this.closeTimer = setTimeout(() => this.selectedClient.set(null), 300);
+  }
+
+  getDisplayModules(): Module[] {
+    const tabKey = this.selectedModuleTab();
+    if (tabKey === 'all') return this.modules;
+    return this.modules.filter(m => m.key === tabKey);
+  }
+
+  toggleFeatureStatus(client: Client, modId: number) {
+    const current = client.checklist[modId]?.approval_status || 0;
+    const next = current === 1 ? 0 : 1;
+    const stamp = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const updatedChecklist = {
+      ...client.checklist,
+      [modId]: {
+        ...client.checklist[modId],
+        approval_status: next,
+        started_at: next === 1 ? client.checklist[modId]?.started_at || stamp : null,
+        completed_at: next === 1 ? stamp : null
+      }
+    };
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
+  }
+
+  updateRemark(client: Client, modId: number, event: Event) {
+    const remark = (event.target as HTMLInputElement).value;
+    const updatedChecklist = { ...client.checklist, [modId]: { ...client.checklist[modId], remark } };
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    if (this.selectedClient()?.id === client.id) this.selectedClient.set(updated);
+  }
+
+  markAllApproved(client: Client) {
+    const stamp = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const updatedChecklist = { ...client.checklist };
+    this.modules.forEach(m => m.features.forEach(f => {
+      updatedChecklist[f.mod_id] = {
+        approval_status: 1,
+        remark: updatedChecklist[f.mod_id]?.remark || 'Batch approved by CS Manager',
+        started_at: updatedChecklist[f.mod_id]?.started_at || stamp,
+        completed_at: stamp
+      };
+    }));
+    const updated = { ...client, checklist: updatedChecklist };
+    this.clients.update(list => list.map(c => c.id === client.id ? updated : c));
+    this.selectedClient.set(updated);
+
+  }
+} */
