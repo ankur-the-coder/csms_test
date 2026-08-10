@@ -23,7 +23,7 @@ export interface CardData {
   totalAccounts: number;
   completed: number;
   inProgress: number;
-  notTrack: number;
+  notStarted: number;
 }
 export interface OnboardingCardData {
   status: boolean;

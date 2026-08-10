@@ -47,11 +47,11 @@ export class Dashboard {
   private readonly tableEndpoint = `${this.baseUrl}/onboardingDashboardTable`;
   statusFilter = signal<string>('all');
   // Card computed
-  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notTrack: 0 });
+  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
   totalClients = computed(() => this.cardData().totalAccounts);
   completedClientsCount = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
-  pendingClientsCount = computed(() => this.cardData().notTrack);
+  pendingClientsCount = computed(() => this.cardData().notStarted);
 
   private destroy$ = new Subject<void>();
   private fetchCardTrigger$ = new Subject<void>();
