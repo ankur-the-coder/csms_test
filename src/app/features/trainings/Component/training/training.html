@@ -1,0 +1,99 @@
+<div class="card mb-4 flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <h1 class="page-title">Training</h1>
+    <p class="mt-2 text-sm text-text-muted">
+      Coordinate every training lifecycle from planning to completion with a polished workspace for customer success
+      teams.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap gap-3">
+      <button type="button" (click)="navigateToMyTraining()" class="btn-primary inline-flex items-center gap-2">
+        Training Materials
+      </button>
+  </div>
+</div>   
+   
+
+
+
+<section class="card overflow-hidden p-0">
+
+  <div class="border-b border-card-border px-6 py-4">
+
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+      <div>
+        <h2 class="text-lg font-semibold text-text-primary">
+          Organization List
+        </h2>
+
+        <p class="mt-1 text-sm text-text-muted">
+          Showing organizations available for training.
+        </p>
+      </div>
+
+      <div class="w-full md:w-80">
+
+        <input
+          type="text"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search organization..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <app-data-table [config]="currentTableConfig()">
+
+    <ng-template appCustomColumn="organization" let-row>
+      <span class="font-medium">
+        {{ row.organization }}
+      </span>
+    </ng-template>
+
+    <ng-template appCustomColumn="contactPerson" let-row>
+      {{ row.contactPerson }}
+    </ng-template>
+
+    <ng-template appCustomColumn="email" let-row>
+      {{ row.email }}
+    </ng-template>
+
+    <ng-template appCustomColumn="phone" let-row>
+      {{ row.phone }}
+    </ng-template>
+
+    <ng-template appCustomColumn="supportOwner" let-row>
+      {{ row.supportOwner }}
+    </ng-template>
+
+    <ng-template appCustomColumn="leadOwner" let-row>
+      {{ row.leadOwner }}
+    </ng-template>
+
+    <ng-template appCustomColumn="stage" let-row>
+
+      <span
+        class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+
+        {{ row.stage }}
+
+      </span>
+
+    </ng-template>
+
+    <ng-template appCustomColumn="createdDate" let-row>
+
+      {{ row.createdDate | date:'dd-MM-yyyy' }}
+
+    </ng-template>
+
+  </app-data-table>
+
+</section>

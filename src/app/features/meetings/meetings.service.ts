@@ -8,6 +8,45 @@ export interface Organization {
   name: string;
 }
 
+export interface MeetingRow {
+  id: number;
+  orgId: number | null;
+  orgName: string;
+  empId: number;
+  priority: number;
+  purpose: string;
+  title: string;
+  startTime: string | null;
+  endTime: string | null;
+  duration: string;
+  clientMail: string;
+  meetingLink: string;
+  webLink: string;
+  status: number;
+  eventId: string;
+  onlineMeetingId: string | null;
+  createdById: number;
+  createdDate: string;
+  lastModifiedById: number;
+  lastModifiedDate: string;
+}
+
+export interface FetchMeetingsPayload {
+  start: number;
+  length: number;
+  search: string;
+  sorting: string;
+  filter: string;
+  fromDate: string;
+  toDate: string;
+}
+
+export interface FetchMeetingsResponse {
+  status: boolean;
+  data: MeetingRow[];
+  meta: { total: number; first_page: number };
+}
+
 interface DataTablePayload {
   start: number;
   length: number;
@@ -62,5 +101,9 @@ export class MeetingService {
     return this.http.post<{status: boolean, data: {name: string}[]}>(`http://127.0.0.1:5000/meetings/fetchSupportOwners`, {}).pipe(
       map(res => (res.data || []).map(row => row.name))
     );
+  }
+
+  fetchMeetings(payload: FetchMeetingsPayload): Observable<FetchMeetingsResponse> {
+    return this.http.post<FetchMeetingsResponse>(`${this.imp}/meetings/fetchMeetings`, payload);
   }
 }
