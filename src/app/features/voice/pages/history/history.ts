@@ -11,6 +11,7 @@ export interface CallHistoryRow {
   id: number;
   direction: 'inbound' | 'outbound';
   toNumber: string;
+  clientName: string;
   status: string;
   duration: string;
   createdAt: string;
@@ -32,13 +33,14 @@ export class History {
 
   readonly historyTableConfig: SmartTableConfig<CallHistoryRow> = {
     columns: [
+      { key: 'clientName', label: 'Name' },
       {
         key: 'direction',
         label: 'Direction',
         type: 'badge',
         badgeMap: {
-          inbound: { label: 'Inbound' },
-          outbound: { label: 'Outbound' },
+          inbound: { label: 'Inbound', color: 'info' },
+          outbound: { label: 'Outbound', color: 'pink' },
         },
       },
       { key: 'toNumber', label: 'Customer Number' },
@@ -47,13 +49,13 @@ export class History {
         label: 'Status',
         type: 'badge',
         badgeMap: {
-          initiated: { label: 'Initiated' },
-          ringing: { label: 'Ringing' },
-          answered: { label: 'Answered' },
-          completed: { label: 'Completed' },
-          busy: { label: 'Busy' },
-          no_answer: { label: 'No Answer' },
-          failed: { label: 'Failed' },
+          initiated: { label: 'Initiated', color: 'warn' },
+          ringing: { label: 'Ringing', color: 'warn' },
+          answered: { label: 'Answered', color: 'good' },
+          completed: { label: 'Completed', color: 'good' },
+          busy: { label: 'Busy', color: 'danger' },
+          no_answer: { label: 'No Answer', color: 'danger' },
+          failed: { label: 'Failed', color: 'danger' },
         },
       },
       { key: 'duration', label: 'Duration' },
@@ -124,6 +126,7 @@ export class History {
           id: raw.id,
           direction: raw.direction,
           toNumber: raw.to_number,
+          clientName: raw.client_name || '—',
           status: raw.status,
           duration: this.voiceService.formatDuration(Number(raw.duration) || 0),
           createdAt: raw.created_at,

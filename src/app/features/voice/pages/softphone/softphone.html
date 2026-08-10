@@ -4,7 +4,7 @@
 
 <div class="space-y-6">
   <!-- Connection Status Bar -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Dialer &amp; Active Call</h2>
       <p class="text-xs text-slate-400 mt-0.5">Real-time PSTN calling &amp; browser audio terminal</p>
@@ -12,14 +12,14 @@
 
     <!-- Softphone Connection Status Badge -->
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-xs"
+      <div class="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold shadow-xs"
         [ngClass]="{
           'bg-amber-50 text-amber-700 border border-amber-200': voiceService.connectionState() === 'Connecting',
           'bg-emerald-50 text-emerald-700 border border-emerald-200': voiceService.connectionState() === 'Registered',
           'bg-blue-50 text-blue-700 border border-blue-200': voiceService.connectionState() === 'Connected',
           'bg-rose-50 text-rose-700 border border-rose-200': voiceService.connectionState() === 'Disconnected'
         }">
-        <span class="w-2.5 h-2.5 rounded-full"
+        <span class="w-3 h-3 rounded-full"
           [ngClass]="{
             'bg-amber-500 animate-ping': voiceService.connectionState() === 'Connecting',
             'bg-emerald-500': voiceService.connectionState() === 'Registered',
@@ -31,13 +31,13 @@
 
       <button *ngIf="voiceService.connectionState() === 'Disconnected'"
         (click)="voiceService.registerSoftphone()"
-        class="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs">
+        class="px-4 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-xs">
         Register Softphone
       </button>
 
       <button *ngIf="voiceService.connectionState() === 'Registered'"
         (click)="voiceService.unregister()"
-        class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200">
+        class="px-4 py-2.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200">
         Disconnect
       </button>
     </div>
@@ -93,7 +93,7 @@
         </div>
 
         <!-- Admin Client Picker -->
-        <div class="relative">
+        <!-- <div class="relative">
           <div class="flex items-center justify-between mb-1">
             <label class="block text-xs font-medium text-slate-600">Client (Admin Contact)</label>
             <button (click)="refreshAdminClients()" [disabled]="voiceService.loadingAdminClients()"
@@ -105,7 +105,7 @@
             placeholder="Type a client name to search…"
             class="w-full px-3 py-2.5 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
 
-          <!-- Results dropdown -- capped server-side (25 by default), so this never renders more than a couple dozen rows -->
+          <!-Results dropdown -- capped server-side (25 by default), so this never renders more than a couple dozen rows --
           <div *ngIf="clientSearch && voiceService.adminClients().length > 0"
             class="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
             <button *ngFor="let c of voiceService.adminClients()" (click)="onSelectClient(c.orgId); clientSearch = ''"
@@ -122,7 +122,7 @@
           <div *ngIf="selectedClientOrgId" class="mt-1.5 text-xs text-emerald-600 font-medium">
             ✓ {{ customerNameInput }} selected
           </div>
-        </div>
+        </div> -->
 
         <!-- Calling From (DID) -->
         <div>

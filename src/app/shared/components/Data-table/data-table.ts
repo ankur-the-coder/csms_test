@@ -1212,8 +1212,28 @@ export class DataTable<T extends object> implements AfterContentInit {
     return row?.[this.config().rowIdKey ?? 'id'] ?? _;
   }
 
-  getBadgeClass(_col: any, value: any): string {
-    switch (String(value ?? '').toLowerCase()) {
+  getBadgeClass(col: any, value: any): string {
+    // If the column's badgeMap explicitly tags this value with a color
+    // (BadgeMapEntry.color), that wins over the generic value->class
+    // guess below -- lets a column like call status/direction use
+    // domain-specific values (e.g. 'completed', 'inbound') while still
+    // rendering with the shared good/warn/danger/info/pink palette.
+    const raw = String(value ?? '');
+    const entryColor = col?.badgeMap?.[raw]?.color as string | undefined;
+    if (entryColor) {
+      const colorClassMap: Record<string, string> = {
+        good: 'badge-good',
+        danger: 'badge-rejected',
+        warn: 'badge-pending',
+        info: 'badge-interview',
+        pink: 'badge-shortlist',
+        premium: 'badge-premium',
+        default: 'badge-default',
+      };
+      return colorClassMap[entryColor] ?? 'badge-default';
+    }
+
+    switch (raw.toLowerCase()) {
       case 'pending': return 'badge-pending';
       case 'selected': return 'badge-selected';
       case 'shortlist': return 'badge-shortlist';
