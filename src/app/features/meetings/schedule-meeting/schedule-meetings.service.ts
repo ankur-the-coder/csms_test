@@ -84,11 +84,16 @@ export interface CreateTeamsMeetingRequest {
 
   duration?: string;
 
-  priority?: 'Low' | 'Medium' | 'High';
+  // Backend validator expects a number: 0 = Low, 1 = Medium, 2 = High.
+  priority?: number;
 
-  organizationId?: number | null;
+  // NOTE: must be named orgId/orgName — MeetingsService.createMeeting()
+  // reads data.orgId / data.orgName directly. Using
+  // organizationId/organizationName here means the backend never
+  // receives them.
+  orgId?: number | null;
 
-  organizationName?: string;
+  orgName?: string;
 
   hostId?: string;
 
