@@ -1,11 +1,16 @@
-<div class="flex flex-col items-center justify-center text-center py-20 px-6 bg-white border border-dashed border-slate-200 rounded-xl">
-  <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mb-4">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a4 4 0 10-4-4" />
-    </svg>
+<div class="space-y-6">
+  <!-- Header -->
+  <div>
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Voice Clients</h2>
+    <!-- <p class="text-xs text-slate-400 mt-0.5">
+      Admin-tier clients (Organization &times; Userprofile.AdminSts&nbsp;=&nbsp;1), ready to call.
+    </p> -->
   </div>
-  <h3 class="text-sm font-semibold text-slate-700">Voice Clients — Coming Soon</h3>
-  <p class="text-xs text-slate-400 mt-1 max-w-sm">
-    This page isn't built yet. It will show clients linked to voice numbers and their call activity.
-  </p>
+
+  <!-- DataTable owns its own search, pagination, loading state, and the
+       per-row "Call" action (see customRowActions in clients.ts) -- no
+       manual list/search state needed here. -->
+  <div class="card p-0 overflow-hidden">
+    <app-data-table [config]="tableConfig()"></app-data-table>
+  </div>
 </div>

@@ -86,20 +86,47 @@
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Outbound PSTN Dialer</h2>
-          <!-- <button (click)="simulateIncomingCall()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline">
-            Simulate Incoming Call
-          </button> -->
+          <button (click)="voiceService.syncNumbersFromTelnyx()" [disabled]="voiceService.syncingNumbers()"
+            class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ voiceService.syncingNumbers() ? 'Syncing…' : 'Sync from Telnyx' }}
+          </button>
+        </div>
+
+        <!-- Admin Client Picker -->
+        <div class="relative">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-slate-600">Client (Admin Contact)</label>
+            <button (click)="refreshAdminClients()" [disabled]="voiceService.loadingAdminClients()"
+              class="text-xs text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50">
+              {{ voiceService.loadingAdminClients() ? 'Searching…' : 'Refresh' }}
+            </button>
+          </div>
+          <input type="text" [ngModel]="clientSearch" (ngModelChange)="onClientSearchChange($event)"
+            placeholder="Type a client name to search…"
+            class="w-full px-3 py-2.5 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+
+          <!-- Results dropdown -- capped server-side (25 by default), so this never renders more than a couple dozen rows -->
+          <div *ngIf="clientSearch && voiceService.adminClients().length > 0"
+            class="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+            <button *ngFor="let c of voiceService.adminClients()" (click)="onSelectClient(c.orgId); clientSearch = ''"
+              class="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0">
+              <div class="font-medium text-slate-800">{{ c.name }}</div>
+              <div class="text-xs text-slate-400 font-mono">{{ c.phoneNumber }}</div>
+            </button>
+          </div>
+          <div *ngIf="clientSearch && !voiceService.loadingAdminClients() && voiceService.adminClients().length === 0"
+            class="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2 text-xs text-slate-400">
+            No matching clients
+          </div>
+
+          <div *ngIf="selectedClientOrgId" class="mt-1.5 text-xs text-emerald-600 font-medium">
+            ✓ {{ customerNameInput }} selected
+          </div>
         </div>
 
         <!-- Calling From (DID) -->
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-medium text-slate-600">Calling From (DID)</label>
-            <button (click)="voiceService.syncNumbersFromTelnyx()" [disabled]="voiceService.syncingNumbers()"
-              class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
-              {{ voiceService.syncingNumbers() ? 'Syncing…' : 'Sync from Telnyx' }}
-            </button>
-          </div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Calling From (DID)</label>
           <select [ngModel]="voiceService.selectedNumberId()" (ngModelChange)="voiceService.selectNumber($event)"
             class="w-full px-3 py-2.5 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
             <option *ngIf="voiceService.voiceNumbers().length === 0" [ngValue]="null" disabled>No numbers synced yet — click Sync from Telnyx</option>

@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { WebRtcVoiceService } from '../../voice.service';
 
 @Component({
@@ -23,17 +24,51 @@ import { WebRtcVoiceService } from '../../voice.service';
 })
 export class Softphone implements OnInit, AfterViewInit, OnDestroy {
   public voiceService = inject(WebRtcVoiceService);
+  private route = inject(ActivatedRoute);
 
   /** Hidden audio element that receives the remote WebRTC stream */
   @ViewChild('remoteAudio') remoteAudioRef!: ElementRef<HTMLAudioElement>;
 
-  dialNumber = '+13055550100';
-  customerNameInput = 'John Doe (Acme Corp)';
+  dialNumber = '';
+  customerNameInput = '';
+  selectedClientOrgId: number | null = null;
+  clientSearch = '';
+  private clientSearchDebounce: any = null;
 
   keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 
+  onClientSearchChange(term: string): void {
+    this.clientSearch = term;
+    if (this.clientSearchDebounce) clearTimeout(this.clientSearchDebounce);
+    this.clientSearchDebounce = setTimeout(() => {
+      this.voiceService.fetchAdminClients(term);
+    }, 300);
+  }
+
+  onSelectClient(orgId: number | string): void {
+    const id = Number(orgId);
+    const client = this.voiceService.adminClients().find(c => c.orgId === id);
+    if (!client) {
+      this.selectedClientOrgId = null;
+      return;
+    }
+    this.selectedClientOrgId = client.orgId;
+    this.dialNumber = client.phoneNumber || '';
+    this.customerNameInput = client.name || '';
+  }
+
   ngOnInit(): void {
     // Registration is deferred to ngAfterViewInit so the audio element exists first
+
+    // Pre-fill from ?orgId=&number=&name= when navigated here from the
+    // Clients tab's "Call" button (see clients.ts -> callClient()).
+    const qp = this.route.snapshot.queryParamMap;
+    const orgId = qp.get('orgId');
+    const number = qp.get('number');
+    const name = qp.get('name');
+    if (orgId) this.selectedClientOrgId = Number(orgId);
+    if (number) this.dialNumber = number;
+    if (name) this.customerNameInput = name;
   }
 
   ngAfterViewInit(): void {
@@ -63,6 +98,10 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
   onMakeCall(): void {
     if (!this.dialNumber) return;
     this.voiceService.makeOutboundCall(this.dialNumber, this.customerNameInput);
+  }
+
+  refreshAdminClients(): void {
+    this.voiceService.fetchAdminClients(this.clientSearch);
   }
 
   simulateIncomingCall(): void {

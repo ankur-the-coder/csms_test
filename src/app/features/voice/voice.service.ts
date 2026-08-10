@@ -46,6 +46,13 @@ export interface VoiceNumber {
   account_label?: string | null;
 }
 
+export interface AdminClient {
+  orgId: number;
+  name: string;
+  phoneNumber: string | null;
+  altPhoneNumber: string | null;
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -63,6 +70,8 @@ export class WebRtcVoiceService {
   readonly voiceNumbers = signal<VoiceNumber[]>([]);
   readonly selectedNumberId = signal<number | null>(null);
   readonly syncingNumbers = signal<boolean>(false);
+  readonly adminClients = signal<AdminClient[]>([]);
+  readonly loadingAdminClients = signal<boolean>(false);
 
   // ── Private State ───────────────────────────────────────────────────────
   private telnyxClient: TelnyxRTC | null = null;
@@ -83,6 +92,9 @@ export class WebRtcVoiceService {
     if (this.isBrowser) {
       this.checkMicrophonePermissionStatus();
       this.fetchVoiceNumbers();
+      // No eager full-list load anymore -- fetchAdminClients() is search-
+      // driven now (this org table has 100k+ rows). Softphone/Clients
+      // pages call it themselves as the user types.
     }
   }
 
@@ -133,6 +145,29 @@ export class WebRtcVoiceService {
 
   selectNumber(id: number): void {
     this.selectedNumberId.set(id);
+  }
+
+  /**
+   * Loads admin-tier clients (Organization + Userprofile.AdminSts=1) for
+   * the dialer's client picker. Search-driven and capped server-side
+   * (default 25, max 100) -- this table is huge, so callers should pass
+   * a `search` term once the user has typed a couple characters rather
+   * than relying on the unfiltered default list.
+   */
+  async fetchAdminClients(search: string = '', limit: number = 25): Promise<void> {
+    this.loadingAdminClients.set(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      params.set('limit', String(limit));
+      const res = await fetch(`${this.API_BASE}/admin-clients?${params.toString()}`);
+      const json = await res.json();
+      this.adminClients.set(json.data || []);
+    } catch (err: any) {
+      console.warn('[Voice][AdminClients] Failed to fetch admin clients:', err.message);
+    } finally {
+      this.loadingAdminClients.set(false);
+    }
   }
 
   /** The E.164 number currently selected in the DID dropdown, used as callerNumber for outbound calls. */
