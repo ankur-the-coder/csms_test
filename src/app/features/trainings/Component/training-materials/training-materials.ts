@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -49,6 +49,19 @@ export class TrainingMaterials implements OnInit {
   courseModules = signal<CourseModule[]>([]);
   courseMaterials = signal<Material[]>([]); // Course level materials
 
+  // API Request States
+  loading = signal<boolean>(false);
+  error = signal<string | null>(null);
+
+  // Search / filter
+  searchTerm = signal<string>('');
+  filteredModules = computed<CourseModule[]>(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const modules = this.courseModules();
+    if (!term) return modules;
+    return modules.filter((m) => m.title.toLowerCase().includes(term));
+  });
+
   // Modal / Form States
   isUploadModalOpen = false;
   isAddModuleModalOpen = false;
@@ -75,22 +88,34 @@ export class TrainingMaterials implements OnInit {
   }
 
   loadCourses(selectId?: number): void {
+    this.loading.set(true);
+    this.error.set(null);
     this.trainingService.getCourses().subscribe({
       next: (res) => {
+        this.loading.set(false);
         if (res.status && res.data) {
           this.courses.set(res.data);
           if (res.data.length > 0) {
             const idToSelect = selectId || res.data[0].id;
             this.selectCourse(idToSelect);
+          } else {
+            this.courses.set([]);
           }
+        } else {
+          this.courses.set([]);
         }
       },
-      error: (err) => console.error('Failed to load courses', err)
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set('Unable to load courses. The backend service or API may be temporarily unavailable.');
+        console.error('Failed to load courses', err);
+      }
     });
   }
 
   selectCourse(courseId: number): void {
     this.selectedCourseId.set(courseId);
+    this.searchTerm.set(''); // Reset search when switching courses
     this.loadCourseDetails(courseId);
   }
 
@@ -234,7 +259,7 @@ export class TrainingMaterials implements OnInit {
     const payload = {
       title: this.newCourseTitle.trim(),
       description: this.newCourseDescription.trim(),
-      category_id: 3, // Pre-select category 3: Employee Essentials
+      category_id: 5, // Pre-select category 5: Employee Essentials
       created_by: 2254960, // Admin User ID
       status: 'published'
     };
