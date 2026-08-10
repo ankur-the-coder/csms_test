@@ -342,9 +342,9 @@ export class WebRtcVoiceService {
 
   private attachRemoteAudio(call: any): void {
     // Check multiple locations for the remote stream: direct stream, options stream, peer stream, or fallback to peerConnection receivers
-    const remoteStream: MediaStream | undefined = 
-      call.remoteStream || 
-      call.options?.remoteStream || 
+    const remoteStream: MediaStream | undefined =
+      call.remoteStream ||
+      call.options?.remoteStream ||
       call.peer?.remoteStream ||
       (call.peerConnection && call.peerConnection.getReceivers && new MediaStream(call.peerConnection.getReceivers().map((r: any) => r.track).filter(Boolean)));
 
@@ -482,7 +482,7 @@ export class WebRtcVoiceService {
       if (this.localStream) {
         this.localStream.getTracks().forEach(t => t.stop());
       }
-      
+
       const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       this.localStream = freshStream;
 
@@ -554,7 +554,7 @@ export class WebRtcVoiceService {
         if (this.localStream) {
           this.localStream.getTracks().forEach(t => t.stop());
         }
-        
+
         const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         this.localStream = freshStream;
 
@@ -650,12 +650,15 @@ export class WebRtcVoiceService {
 
   async toggleHold(): Promise<void> {
     const current = this.activeCall();
-    if (!current?.callLogId) return;
+    if (!current) return;
 
     const isHolding = current.isHeld;
-    const endpoint = isHolding ? 'resume' : 'hold';
 
-    // SDK hold/unhold if available
+    // SDK hold/unhold if available — this must run regardless of whether
+    // callLogId has arrived yet, since the WebRTC-level hold/unhold is
+    // independent of the backend record. Previously this whole method
+    // returned early on missing callLogId, silently skipping even the
+    // SDK-level toggle for freshly-answered outbound calls.
     if (this.activeRTCCall) {
       try {
         if (isHolding) {
@@ -665,6 +668,17 @@ export class WebRtcVoiceService {
         }
       } catch { /* fall through to REST */ }
     }
+
+    if (!current.callLogId) {
+      // No backend record yet to sync against — still reflect the SDK-level
+      // toggle locally so the UI isn't stuck, but warn since the backend
+      // (and other connected clients via SSE) won't know about this yet.
+      console.warn('[Voice][Hold] No callLogId yet — toggled via SDK only, backend not notified. It will resync once callLogId arrives via SSE.');
+      this.activeCall.set({ ...current, isHeld: !isHolding, status: !isHolding ? 'held' : 'active' });
+      return;
+    }
+
+    const endpoint = isHolding ? 'resume' : 'hold';
 
     try {
       const res = await fetch(`${this.API_BASE}/${endpoint}`, {
