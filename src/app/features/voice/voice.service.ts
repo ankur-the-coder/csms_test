@@ -1,6 +1,7 @@
 import { Injectable, signal, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { TelnyxRTC } from '@telnyx/webrtc';
+import { environment } from '../../../environments/environment';
 
 // ─── State Types ────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ export interface VoiceNumber {
 
 @Injectable({ providedIn: 'root' })
 export class WebRtcVoiceService {
-  private readonly API_BASE = 'http://localhost:5000/api/voice';
+  private readonly API_BASE = `${environment.apiUrl}/api/voice`;
 
   // ── Public Signals ──────────────────────────────────────────────────────
   readonly connectionState = signal<ConnectionState>('Disconnected');
