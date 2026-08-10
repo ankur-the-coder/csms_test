@@ -374,6 +374,66 @@ export class WebRtcVoiceService {
     }
   }
 
+  /**
+   * DEBUG ONLY — diagnostic helper to trace the one-way-audio bug.
+   * Locates the underlying RTCPeerConnection on a TelnyxRTC call object
+   * and logs its outbound audio sender(s). If no audio sender exists (or
+   * its track is null/ended), the local mic was never attached to the
+   * peer connection — that's the root cause of "they can't hear me".
+   * Safe to remove once the bug is confirmed/fixed.
+   */
+  private diagnosePeerConnectionAudio(label: string): void {
+    setTimeout(() => {
+      const call: any = this.activeRTCCall;
+      if (!call) {
+        console.warn(`[Voice][Debug][${label}] No activeRTCCall to inspect.`);
+        return;
+      }
+
+      const pc: RTCPeerConnection | undefined =
+        call.peerConnection ||
+        call.peer?.instance ||
+        call.options?.peer?.instance ||
+        call.session?.peerConnection;
+
+      if (!pc) {
+        console.warn(`[Voice][Debug][${label}] Could not locate RTCPeerConnection on activeRTCCall. Inspect this.activeRTCCall in devtools manually.`, call);
+        return;
+      }
+
+      const senders = pc.getSenders();
+      const audioSenders = senders.filter(s => s.track?.kind === 'audio');
+
+      console.log(`[Voice][Debug][${label}] All senders:`, senders.map(s => ({
+        kind: s.track?.kind ?? '(no track)',
+        readyState: s.track?.readyState,
+        enabled: s.track?.enabled,
+        muted: s.track?.muted,
+      })));
+
+      if (audioSenders.length === 0) {
+        console.error(`[Voice][Debug][${label}] NO AUDIO SENDER FOUND — local mic track was never attached to the peer connection. This is the outbound-audio bug.`);
+      } else {
+        audioSenders.forEach((s, i) => {
+          if (!s.track || s.track.readyState !== 'live' || !s.track.enabled) {
+            console.error(`[Voice][Debug][${label}] Audio sender #${i} exists but track is not live/enabled:`, {
+              hasTrack: !!s.track,
+              readyState: s.track?.readyState,
+              enabled: s.track?.enabled,
+              muted: s.track?.muted,
+            });
+          } else {
+            console.log(`[Voice][Debug][${label}] Audio sender #${i} looks healthy (live + enabled). If the far end still can't hear you, check chrome://webrtc-internals for outbound-rtp packetsSent — this points to a network/NAT/TURN issue, not this code.`);
+          }
+        });
+      }
+
+      // ICE connection state is also worth surfacing here — a stuck
+      // 'checking' or 'disconnected' state points to NAT/firewall issues.
+      console.log(`[Voice][Debug][${label}] iceConnectionState=${pc.iceConnectionState}, connectionState=${(pc as any).connectionState}`);
+    }, 2000);
+  }
+
   private cleanupCallMedia(): void {
     console.log('[Voice][Media] Cleaning up call media...');
     if (this.isBrowser && this.remoteAudioEl) {
@@ -427,7 +487,7 @@ export class WebRtcVoiceService {
       this.localStream = freshStream;
 
       const audioTracks = this.localStream.getAudioTracks();
-      console.log('[Voice][Debug] Outbound Mic tracks:', audioTracks.map(t => ({ enabled: t.enabled, readyState: t.readyState })));
+      console.log('[Voice][Debug] Outbound Mic tracks:', audioTracks.map(t => ({ label: t.label, enabled: t.enabled, muted: t.muted, readyState: t.readyState })));
 
       // Place the call through TelnyxRTC — this dials via the SIP Connection
       // which is linked to the Telnyx network and routes to PSTN.
@@ -443,6 +503,9 @@ export class WebRtcVoiceService {
       });
 
       console.log('[Voice][Media] Local audio track added, outbound call initiated');
+
+      // DEBUG: verify the mic track actually landed on the peer connection.
+      this.diagnosePeerConnectionAudio('outbound');
       // Call state transitions (ringing → active → hangup) come via telnyx.notification
 
     } catch (err: any) {
@@ -496,7 +559,7 @@ export class WebRtcVoiceService {
         this.localStream = freshStream;
 
         const audioTracks = this.localStream.getAudioTracks();
-        console.log('[Voice][Debug] Inbound Answer Mic tracks:', audioTracks.map(t => ({ enabled: t.enabled, readyState: t.readyState })));
+        console.log('[Voice][Debug] Inbound Answer Mic tracks:', audioTracks.map(t => ({ label: t.label, enabled: t.enabled, muted: t.muted, readyState: t.readyState })));
 
         await this.activeRTCCall.answer({
           audio: true,
@@ -505,6 +568,9 @@ export class WebRtcVoiceService {
           localStream: this.localStream,
         });
         console.log('[Voice][Call] Inbound call answered via TelnyxRTC SDK');
+
+        // DEBUG: verify the mic track actually landed on the peer connection.
+        this.diagnosePeerConnectionAudio('inbound-answer');
         return;
       } catch (e: any) {
         console.warn('[Voice][Call] SDK answer failed, falling back to REST answer:', e.message);
