@@ -12,7 +12,12 @@ import { MyTraining } from './features/trainings/Component/my-training/my-traini
 import { TrainingMaterials } from './features/trainings/Component/training-materials/training-materials';
 
 
-import { VoiceComponent } from './features/voice/voice.component';
+import { VoiceShell } from './features/voice/voice-shell/voice-shell.component';
+import { Softphone } from './features/voice/pages/softphone/softphone';
+import { History } from './features/voice/pages/history/history';
+import { Notes } from './features/voice/pages/notes/notes';
+import { Recordings } from './features/voice/pages/recordings/recordings';
+import { Clients } from './features/voice/pages/clients/clients';
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
 import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
@@ -40,7 +45,18 @@ export const routes: Routes = [
       { path: 'add-onboarding', component: AddOnboarding },
       { path: 'meetings', component: MeetingsComponent },
       { path: 'client', component: Client },
-      { path: 'voice', component: VoiceComponent },
+      {
+        path: 'voice',
+        component: VoiceShell,
+        children: [
+          { path: '', redirectTo: 'softphone', pathMatch: 'full' },
+          { path: 'softphone', component: Softphone },
+          { path: 'history', component: History },
+          { path: 'notes', component: Notes },
+          { path: 'recordings', component: Recordings },
+          { path: 'clients', component: Clients },
+        ],
+      },
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },

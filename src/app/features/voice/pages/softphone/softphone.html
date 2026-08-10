@@ -2,12 +2,12 @@
 <!-- #remoteAudio is read by VoiceComponent via @ViewChild and passed to WebRtcVoiceService -->
 <audio #remoteAudio id="remoteAudio" autoplay playsinline style="display:none"></audio>
 
-<div class="p-6 max-w-7xl mx-auto space-y-6">
-  <!-- Page Header -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+<div class="space-y-6">
+  <!-- Connection Status Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Enterprise WebRTC Softphone</h1>
-      <p class="text-sm text-slate-500 mt-1">Real-time PSTN Calling & Browser Audio Terminal</p>
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Dialer &amp; Active Call</h2>
+      <p class="text-xs text-slate-400 mt-0.5">Real-time PSTN calling &amp; browser audio terminal</p>
     </div>
 
     <!-- Softphone Connection Status Badge -->
@@ -86,9 +86,27 @@
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Outbound PSTN Dialer</h2>
-          <button (click)="simulateIncomingCall()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline">
+          <!-- <button (click)="simulateIncomingCall()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline">
             Simulate Incoming Call
-          </button>
+          </button> -->
+        </div>
+
+        <!-- Calling From (DID) -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-medium text-slate-600">Calling From (DID)</label>
+            <button (click)="voiceService.syncNumbersFromTelnyx()" [disabled]="voiceService.syncingNumbers()"
+              class="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed">
+              {{ voiceService.syncingNumbers() ? 'Syncing…' : 'Sync from Telnyx' }}
+            </button>
+          </div>
+          <select [ngModel]="voiceService.selectedNumberId()" (ngModelChange)="voiceService.selectNumber($event)"
+            class="w-full px-3 py-2.5 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <option *ngIf="voiceService.voiceNumbers().length === 0" [ngValue]="null" disabled>No numbers synced yet — click Sync from Telnyx</option>
+            <option *ngFor="let n of voiceService.voiceNumbers()" [ngValue]="n.id">
+              {{ n.phone_number }}{{ n.label ? ' — ' + n.label : '' }}{{ !n.is_active ? ' (inactive)' : '' }}
+            </option>
+          </select>
         </div>
 
         <!-- Phone Number Input -->
@@ -221,4 +239,5 @@
     </div>
 
   </div>
+
 </div>

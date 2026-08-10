@@ -35,6 +35,16 @@ export interface ActiveCallInfo {
   durationSeconds: number;
 }
 
+export interface VoiceNumber {
+  id: number;
+  phone_number: string;
+  label: string | null;
+  department: string | null;
+  is_active: number;
+  provider?: string;
+  account_label?: string | null;
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -49,6 +59,9 @@ export class WebRtcVoiceService {
   readonly activeCall = signal<ActiveCallInfo | null>(null);
   readonly sseConnected = signal<boolean>(false);
   readonly lastNotification = signal<{ message: string; type: 'info' | 'success' | 'warn' | 'error' } | null>(null);
+  readonly voiceNumbers = signal<VoiceNumber[]>([]);
+  readonly selectedNumberId = signal<number | null>(null);
+  readonly syncingNumbers = signal<boolean>(false);
 
   // ── Private State ───────────────────────────────────────────────────────
   private telnyxClient: TelnyxRTC | null = null;
@@ -68,7 +81,63 @@ export class WebRtcVoiceService {
   constructor() {
     if (this.isBrowser) {
       this.checkMicrophonePermissionStatus();
+      this.fetchVoiceNumbers();
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DID NUMBERS (voice_numbers, synced from Telnyx)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Loads currently synced voice_numbers rows and auto-selects the first active one. */
+  async fetchVoiceNumbers(): Promise<void> {
+    try {
+      const res = await fetch(`${this.API_BASE}/numbers`);
+      const data = await res.json();
+      const list: VoiceNumber[] = data.data || [];
+      this.voiceNumbers.set(list);
+
+      // Keep the current selection if it's still in the list; otherwise
+      // fall back to the first active number.
+      const stillValid = list.some(n => n.id === this.selectedNumberId());
+      if (!stillValid) {
+        const firstActive = list.find(n => n.is_active) || list[0];
+        this.selectedNumberId.set(firstActive?.id ?? null);
+      }
+    } catch (err: any) {
+      console.warn('[Voice][Numbers] Failed to fetch numbers:', err.message);
+    }
+  }
+
+  /** Pulls DIDs from Telnyx into voice_numbers, then refreshes the local list. */
+  async syncNumbersFromTelnyx(): Promise<void> {
+    this.syncingNumbers.set(true);
+    this.errorMessage.set(null);
+    try {
+      const res = await fetch(`${this.API_BASE}/numbers/sync`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || !data.status) throw new Error(data.message || 'Sync failed');
+
+      this.lastNotification.set({
+        message: `Synced ${data.total} number(s) from Telnyx (${data.created} new, ${data.updated} updated)`,
+        type: 'success',
+      });
+      await this.fetchVoiceNumbers();
+    } catch (err: any) {
+      this.errorMessage.set(`Number sync failed: ${err.message}`);
+    } finally {
+      this.syncingNumbers.set(false);
+    }
+  }
+
+  selectNumber(id: number): void {
+    this.selectedNumberId.set(id);
+  }
+
+  /** The E.164 number currently selected in the DID dropdown, used as callerNumber for outbound calls. */
+  get selectedCallerNumber(): string | null {
+    const n = this.voiceNumbers().find(v => v.id === this.selectedNumberId());
+    return n?.phone_number || null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -476,6 +545,14 @@ export class WebRtcVoiceService {
 
     console.log('[Voice][Call] Call requested to:', phoneNumber);
 
+    // Use the DID selected in the dropdown; fall back to the hardcoded
+    // number only if nothing has synced/loaded yet, so a fresh page load
+    // before fetchVoiceNumbers() resolves doesn't hard-fail the call.
+    const callerNumber = this.selectedCallerNumber || '+14029489500';
+    if (!this.selectedCallerNumber) {
+      console.warn('[Voice][Call] No DID selected from voice_numbers -- falling back to hardcoded number. Sync/select a number first.');
+    }
+
     try {
       // Fix 1 & 2: Re-acquire fresh mic stream specifically for this call
       console.log('[Voice][Audio] Acquiring fresh mic stream for outbound call');
@@ -493,7 +570,7 @@ export class WebRtcVoiceService {
       // which is linked to the Telnyx network and routes to PSTN.
       this.activeRTCCall = this.telnyxClient.newCall({
         destinationNumber: phoneNumber,
-        callerNumber: '+14029489500',
+        callerNumber: callerNumber,
         audio: true,
         video: false,
         // Attach remote audio automatically to our audio element
