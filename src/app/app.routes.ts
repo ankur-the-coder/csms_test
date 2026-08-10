@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
+
 import { Dashboard } from './features/onboarding/components/dashboard/dashboard';
 import { MeetingsComponent } from './features/meetings/meetings';
 import { AddOnboarding } from './features/onboarding/components/add-onboarding/add-onboarding';
@@ -14,14 +14,17 @@ import { TrainingMaterials } from './features/trainings/Component/training-mater
 
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
+import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
 import { CourseCatalog } from './features/user/components/course-catalog/course-catalog';
 import { CourseDetail } from './features/user/components/course-detail/course-detail';
 import { MyLearning } from './features/user/components/my-learning/my-learning';
+import { authGuard, checkGuard } from './core/guards/auth-guard';
+
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
   { path: 'login', component: Login,
-    //  canActivate: [checkGuard],
+     canActivate: [checkGuard],
      },
 
   // Every other route is a child of Layout, so it renders inside the
@@ -29,7 +32,7 @@ export const routes: Routes = [
   {
     path: '',
     component: Layout,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
@@ -50,4 +53,3 @@ export const routes: Routes = [
 
   { path: '**', redirectTo: 'login' },
 ];
-    

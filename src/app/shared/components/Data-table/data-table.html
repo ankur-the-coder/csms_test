@@ -1,4 +1,4 @@
-<div class="st-shell p-5">
+<div class="st-shell p-5 h-[80vh] ">
 
   <!-- ── Toolbar ─────────────────────────────────────────────────────────── -->
   <div
@@ -40,13 +40,16 @@
       @switch (config().bulkActionButtonIcon) {
       @case ('plus') {
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
       }
       @case ('users') {
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
       }
       @default {
@@ -192,8 +195,7 @@
       Preparing export… {{ pdfProgress() }}%
     </span>
     <div class="flex-1 h-1.5 bg-[--st-border] rounded-full overflow-hidden">
-      <div class="h-full bg-[--st-accent] rounded-full transition-all duration-300"
-        [style.width.%]="pdfProgress()">
+      <div class="h-full bg-[--st-accent] rounded-full transition-all duration-300" [style.width.%]="pdfProgress()">
       </div>
     </div>
     <button (click)="cancelPdfExport()" type="button"
@@ -242,33 +244,44 @@
 
     @if (loadState() === 'error' && !showTableLoader()) {
     <div class="st-error-state flex flex-col items-center justify-center py-20 px-6 gap-3">
-  <div
-    class="st-error-icon w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--st-danger)_14%,transparent)] border-2 border-[color-mix(in_srgb,var(--st-danger)_35%,transparent)] flex items-center justify-center text-[--st-danger]">
-    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  </div>
+      <div
+        class="st-error-icon w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--st-danger)_14%,transparent)] border-2 border-[color-mix(in_srgb,var(--st-danger)_35%,transparent)] flex items-center justify-center text-[--st-danger]">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
 
-  <div class="flex flex-col items-center text-center">
-    <p class="text-[15px] font-semibold">Failed to load data</p>
-    <p class="text-[13px] text-center max-w-75">Something went wrong while fetching data</p>
-  </div>
+      <div class="flex flex-col items-center text-center">
+        <p class="text-[15px] font-semibold">Failed to load data</p>
+        <p class="text-[13px] text-center max-w-75">Something went wrong while fetching data</p>
+      </div>
 
-  <button
-    class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] text-white transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
-    (click)="refresh()" type="button">
-    <span>Retry</span>
-    <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-    </svg>
-  </button>
-</div>
+      <button
+        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] text-white transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        (click)="refresh()" type="button">
+        <span>Retry</span>
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
     } @else {
 
-    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums" role="grid">
+    <!-- Refresh bar -->
+    @if (isRefreshing()) {
+    <div
+      class="st-refresh-bar absolute top-0 left-0 right-0 h-0.5 z-50 bg-[color-mix(in_srgb,var(--st-accent)_15%,transparent)] overflow-hidden">
+      <div
+        class="st-refresh-progress h-full w-[33.333%] bg-[--st-accent] rounded-full animate-[st-table-loader_1s_ease-in-out_infinite]">
+      </div>
+    </div>
+    }
+
+    <table class="st-table w-full border-collapse table-auto font-variant-numeric-tabular-nums"
+      [class.opacity-70]="isRefreshing()" role="grid">
 
       <!-- ── Head ─────────────────────────────────────────────────────── -->
       <thead class="st-thead sticky top-0 z-30">
@@ -276,10 +289,10 @@
           <!-- Checkbox -->
           @if (config().selectable) {
           <th
-            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[48px]">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer">
+            class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-12">
+            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
               <input type="checkbox"
-                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="allSelected()" (change)="toggleSelectAll()" />
               <span
                 class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
@@ -308,10 +321,16 @@
               {{ col.label }}
               @if (col.sortable) {
               <span class="st-sort-icons flex flex-col -gap-0.5" [class.text-[--st-accent]]="sort().key === col.key">
-                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'asc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'asc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                <svg class="w-2.5 h-2.5 transition-opacity"
+                  [class.opacity-100]="sort().key === col.key && sort().dir === 'asc'"
+                  [class.opacity-30]="!(sort().key === col.key && sort().dir === 'asc')" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="4">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-                <svg class="w-2.5 h-2.5 transition-opacity" [class.opacity-100]="sort().key === col.key && sort().dir === 'desc'" [class.opacity-30]="!(sort().key === col.key && sort().dir === 'desc')" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4">
+                <svg class="w-2.5 h-2.5 transition-opacity"
+                  [class.opacity-100]="sort().key === col.key && sort().dir === 'desc'"
+                  [class.opacity-30]="!(sort().key === col.key && sort().dir === 'desc')" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="4">
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </span>
@@ -319,7 +338,7 @@
             </span>
             @if (config().resizableColumns) {
             <div
-              class="st-col-resizer absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize z-[1] bg-transparent transition-colors duration-100 hover:bg-[--st-accent]"
+              class="st-col-resizer absolute right-0 top-0 bottom-0 w-1.25 cursor-col-resize -z-negative bg-transparent transition-colors duration-100 hover:bg-[--st-accent]"
               (mousedown)="startResize($event, col.key.toString())" (click)="$event.stopPropagation()"></div>
             }
           </th>
@@ -328,7 +347,7 @@
           <!-- Actions header -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <th
-            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-[100px] text-center">
+            class="st-th  st-actions-col sticky top-0 px-3.5 py-2.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-[--st-text2] bg-[--st-header-bg] border-b-2 border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-25">
             Actions</th>
           }
         </tr>
@@ -344,7 +363,9 @@
             [attr.colspan]="visibleColumns().length + (config().selectable ? 1 : 0) + (actions().length || config().customRowActions?.length ? 1 : 0)"
             class="border-0 py-16">
             <div class="flex items-center justify-center">
-              <div class="st-spinner w-8 h-8 rounded-full border-[3px] border-[--st-border] border-t-[--st-accent] animate-spin"></div>
+              <div
+                class="st-spinner w-8 h-8 rounded-full border-[3px] border-[--st-border] border-t-[--st-accent] animate-spin">
+              </div>
             </div>
           </td>
         </tr>
@@ -372,12 +393,12 @@
           <!-- Checkbox cell -->
           @if (config().selectable) {
           <td
-            class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[48px]"
+            class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50 w-12"
             (click)="$event.stopPropagation()">
             <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer"
               [class.cursor-not-allowed]="config().selectableWhen ? !config().selectableWhen!(row) : false">
               <input type="checkbox"
-                class="st-checkbox peer appearance-none w-5 h-5 rounded-[5px] border-2 border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 flex-shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="isRowSelected(row)"
                 [disabled]="config().selectableWhen ? !config().selectableWhen!(row) : false"
                 (change)="config().selectableWhen ? config().selectableWhen!(row) && toggleRow(row) : toggleRow(row)" />
@@ -394,7 +415,7 @@
           <!-- Data cells -->
           @for (col of visibleColumns(); track col.key) {
           <td
-            class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]"
+            class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
             [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
@@ -405,7 +426,7 @@
             @case ('avatar') {
             <div class="st-avatar-cell flex items-center gap-2">
               <div
-                class="st-avatar w-[30px] h-[30px] rounded-full bg-[--st-accent-bg] text-[--st-accent] text-[11px] font-bold flex items-center justify-center flex-shrink-0 border-[1.5px] border-[color-mix(in_srgb,var(--st-accent)_30%,transparent)]">
+                class="st-avatar w-7.5 h-7.5 rounded-full bg-[--st-accent-bg] text-[--st-accent] text-[11px] font-bold flex items-center justify-center shrink-0 border-[1.5px] border-[color-mix(in_srgb,var(--st-accent)_30%,transparent)]">
                 {{ isString(getCellValue(row, col.key)) ? $any(getCellValue(row, col.key)).slice(0,2).toUpperCase() :
                 '?' }}
               </div>
@@ -415,7 +436,7 @@
 
             @case ('badge') {
             <span
-              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:shrink-0"
               [ngClass]="getBadgeClass(col, getCellValue(row, col.key))">
               {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
             </span>
@@ -438,7 +459,7 @@
 
             @case ('boolean') {
             <span
-              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:flex-shrink-0"
+              class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:shrink-0"
               [class]="getCellValue(row, col.key) ? 'badge-good' : 'badge-default'">
               {{ getCellValue(row, col.key) ? 'Yes' : 'No' }}
             </span>
@@ -479,14 +500,14 @@
           <!-- Actions cell -->
           @if (actions().length > 0 || config().customRowActions?.length) {
           <td
-            class="st-td st-actions-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] w-[100px] text-center"
+            class="st-td st-actions-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50 w-25 text-center"
             (click)="$event.stopPropagation()">
             <div class="st-row-actions flex items-center justify-center gap-1">
 
               @for (action of actions(); track action.id) {
               @if (!isActionHidden(action, row)) {
               <button
-                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit"
+                class="st-action-btn inline-flex items-center justify-center w-7 h-7 rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit"
                 [class.st-action-btn--danger]="action.color === 'danger'" [title]="action.label"
                 (click)="onRowAction(action.id, row, $event)" type="button">
                 @if (action.icon === 'view') {
@@ -524,7 +545,7 @@
               @for (action of config().customRowActions ?? []; track action.id) {
               @if (!isCustomActionHidden(action, row)) {
               <button
-                class="st-action-btn inline-flex items-center justify-center w-[28px] h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit {{ getActionColorClass(action.color) }}"
+                class="st-action-btn inline-flex items-center justify-center w-7 h-[28px] rounded-[--st-radius-sm] border border-[--st-border] bg-[--st-surface] text-[--st-text2] cursor-pointer transition-colors duration-150 hover:border-[--st-accent] hover:text-[--st-accent] hover:bg-[--st-accent-bg] font-inherit {{ getActionColorClass(action.color) }}"
                 [title]="action.tooltip ?? action.label" [disabled]="action.disabled && action.disabled(row)"
                 (click)="onCustomRowAction(action, row, $event)" type="button">
                 @if (action.icon === 'view') {
@@ -700,20 +721,20 @@
 
 <!-- ── Filter Modal ──────────────────────────────────────────────────────── -->
 @if (filterModalOpen()) {
-<div
-  class="fixed inset-0 z-1500 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 "
+<div class="fixed inset-0 z-1500 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 "
   (click)="closeFilterModal()">
   <div
     class=" bg-card-bg rounded-xl border border-card-border shadow-2xl w-full max-w-160 max-h-[85vh] flex flex-col overflow-hidden "
     (click)="$event.stopPropagation()">
-    
+
     <!-- Modal Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
       <h3 class="text-base font-bold text-text-primary">Filters</h3>
       <button
         class="w-8 h-8 rounded-full bg-surface-100 hover:bg-surface-200 text-text-secondary flex items-center justify-center transition-colors border-none cursor-pointer"
         (click)="closeFilterModal()" type="button">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
@@ -796,8 +817,8 @@
                       points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                   <span class="flex-1 truncate">
-  {{ opt.value }} Star{{ opt.value > 1 ? 's' : '' }}
-</span>
+                    {{ opt.value }} Star{{ opt.value > 1 ? 's' : '' }}
+                  </span>
                   @if (isStarSelected(filter.key, opt.value)) {
                   <svg class="w-3.5 h-3.5 text-brand-500 flex-shrink-0" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2.5">
@@ -836,8 +857,8 @@
               <!-- Search Bar for API Filtering -->
               <div class="p-2 border-b border-card-border bg-card-bg sticky top-0 z-10">
                 <div class="relative flex items-center">
-                  <svg class="absolute left-2.5 w-3.5 h-3.5 text-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
+                  <svg class="absolute left-2.5 w-3.5 h-3.5 text-text-muted pointer-events-none" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
@@ -880,11 +901,10 @@
         }
       </div>
     </div>
-    <div
-      class="px-6 py-4 bg-card-bg border-t border-card-border flex items-center justify-end gap-3 relative">
+    <div class="px-6 py-4 bg-card-bg border-t border-card-border flex items-center justify-end gap-3 relative">
       <button
         class="px-5 py-2 rounded-xl text-xs font-semibold border border-warning text-warning hover:bg-warning-50 bg-transparent transition-all cursor-pointer"
-        (click)="clearModalFilters()" type="button">Clear All</button> 
+        (click)="clearModalFilters()" type="button">Clear All</button>
       <button
         class="px-6 py-2 rounded-xl text-xs font-semibold bg-brand-500 text-white hover:bg-brand-600 shadow-sm transition-all cursor-pointer"
         (click)="applyFilters()" type="button">Apply</button>
@@ -895,9 +915,7 @@
 
 <!-- ── Column Picker Modal ────────────────────────────────────────────────── -->
 @if (colPickerModalOpen()) {
-<div
-  class="fixed inset-0 z-1500 bg-black/45 flex items-center justify-center p-6"
-  (click)="closeColPicker()">
+<div class="fixed inset-0 z-1500 bg-black/45 flex items-center justify-center p-6" (click)="closeColPicker()">
   <div
     class=" rounded-2xl border border-card-border bg-card-bg w-full max-w-170 max-h-[85vh] flex flex-col overflow-hidden "
     (click)="$event.stopPropagation()">
@@ -917,12 +935,10 @@
         @for (col of config().columns; track col.key) {
         <label
           class="st-col-picker-item flex items-center gap-2 text-[13px] text-[--st-text] px-2.5 py-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] transition-colors duration-150 hover:border-[--st-accent] hover:bg-[--st-accent-bg]"
-          [class.cursor-pointer]="col.hideable !== false"
-          [class.opacity-60]="col.hideable === false"
+          [class.cursor-pointer]="col.hideable !== false" [class.opacity-60]="col.hideable === false"
           [class.cursor-not-allowed]="col.hideable === false">
           <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent]"
-            [class.cursor-pointer]="col.hideable !== false"
-            [class.cursor-not-allowed]="col.hideable === false"
+            [class.cursor-pointer]="col.hideable !== false" [class.cursor-not-allowed]="col.hideable === false"
             [checked]="col.hideable === false ? true : colVisibility()[col.key.toString()] !== false"
             [disabled]="col.hideable === false"
             (change)="toggleColVisibility(col.key.toString(), $any($event.target).checked)" />
@@ -946,7 +962,7 @@
 <div
   class="fixed inset-0 z-[1500] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-[st-fade-in_0.15s_ease-out]"
   (click)="closePdfColumnSelector()">
-  
+
   <div
     class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-[720px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.16,1,0.3,1)]"
     (click)="$event.stopPropagation()">
@@ -960,7 +976,8 @@
       <button
         class="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-all cursor-pointer"
         (click)="closePdfColumnSelector()" type="button" aria-label="Close">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
@@ -971,38 +988,35 @@
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-white">
 
       <!-- Left Sidebar: Settings -->
-      <div class="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-slate-100 bg-slate-50/60 flex flex-col">
-        
+      <div
+        class="w-full md:w-[220px] shrink-0 border-b md:border-b-0 md:border-r border-slate-100 bg-slate-50/60 flex flex-col">
+
         <!-- Rows to Export -->
         <div class="p-4 border-b border-slate-100">
           <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">Rows to export</span>
           <div class="space-y-1.5">
             @for (opt of [
-              { label: 'Current page', sub: pageSize() + ' rows', value: 'current' },
-              { label: '100 rows', sub: '', value: 100 },
-              { label: '200 rows', sub: '', value: 200 },
-              { label: 'All rows', sub: totalCount() + ' rows', value: 'all' }
+            { label: 'Current page', sub: pageSize() + ' rows', value: 'current' },
+            { label: '100 rows', sub: '', value: 100 },
+            { label: '200 rows', sub: '', value: 200 },
+            { label: 'All rows', sub: totalCount() + ' rows', value: 'all' }
             ]; track opt.value) {
-            <label
-              class="flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all cursor-pointer"
-              [class.bg-white]="pdfRowLimit() === opt.value"
-              [class.border-emerald-600]="pdfRowLimit() === opt.value"
-              [class.shadow-xs]="pdfRowLimit() === opt.value"
-              [class.border-transparent]="pdfRowLimit() !== opt.value"
+            <label class="flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all cursor-pointer"
+              [class.bg-white]="pdfRowLimit() === opt.value" [class.border-emerald-600]="pdfRowLimit() === opt.value"
+              [class.shadow-xs]="pdfRowLimit() === opt.value" [class.border-transparent]="pdfRowLimit() !== opt.value"
               [class.hover:bg-slate-100/70]="pdfRowLimit() !== opt.value">
-              
+
               <input type="radio" name="pdfRowLimit" [value]="opt.value" [checked]="pdfRowLimit() === opt.value"
-                (change)="pdfRowLimit.set($any(opt.value))" 
+                (change)="pdfRowLimit.set($any(opt.value))"
                 class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer" />
-              
+
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold leading-tight" 
-                      [class.text-emerald-950]="pdfRowLimit() === opt.value"
-                      [class.text-slate-700]="pdfRowLimit() !== opt.value">
+                <span class="text-xs font-semibold leading-tight" [class.text-emerald-950]="pdfRowLimit() === opt.value"
+                  [class.text-slate-700]="pdfRowLimit() !== opt.value">
                   {{ opt.label }}
                 </span>
                 @if (opt.sub) {
-                  <span class="text-[10px] text-slate-400 leading-none mt-0.5">{{ opt.sub }}</span>
+                <span class="text-[10px] text-slate-400 leading-none mt-0.5">{{ opt.sub }}</span>
                 }
               </div>
             </label>
@@ -1013,17 +1027,13 @@
         <!-- Page Size (Segmented Control) -->
         <div class="p-4">
           <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">Page size</span>
-          
+
           <div class="grid grid-cols-4 p-1 rounded-xl bg-slate-200/70 gap-0.5">
             @for (size of ['A4', 'A3', 'A2', 'A1']; track size) {
-            <button type="button"
-              class="text-xs font-bold py-1.5 rounded-lg transition-all cursor-pointer border-none"
-              [class.bg-white]="pdfPageSize() === size"
-              [class.text-slate-900]="pdfPageSize() === size"
-              [class.shadow-xs]="pdfPageSize() === size"
-              [class.text-slate-500]="pdfPageSize() !== size"
-              [class.hover:text-slate-800]="pdfPageSize() !== size"
-              (click)="onPdfPageSizeChange($any(size))">
+            <button type="button" class="text-xs font-bold py-1.5 rounded-lg transition-all cursor-pointer border-none"
+              [class.bg-white]="pdfPageSize() === size" [class.text-slate-900]="pdfPageSize() === size"
+              [class.shadow-xs]="pdfPageSize() === size" [class.text-slate-500]="pdfPageSize() !== size"
+              [class.hover:text-slate-800]="pdfPageSize() !== size" (click)="onPdfPageSizeChange($any(size))">
               {{ size }}
             </button>
             }
@@ -1034,10 +1044,10 @@
 
       <!-- Right Pane: Column Selection -->
       <div class="flex-1 flex flex-col overflow-hidden bg-white">
-        
+
         <div class="shrink-0 flex items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Select columns</span>
-          
+
           <div class="flex items-center gap-2">
             <button
               class="text-xs font-medium text-emerald-600 hover:text-emerald-700 cursor-pointer bg-transparent border-none transition-colors"
@@ -1046,30 +1056,30 @@
             <button
               class="text-xs font-medium text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none transition-colors"
               (click)="clearPdfColumns()" type="button">Clear</button>
-            
-            
+
+
           </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-5">
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
             @for (col of pdfExportableColumns(); track col.key) {
-            <label 
+            <label
               class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/70 transition-all cursor-pointer group"
               [class.opacity-40]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
               [class.cursor-not-allowed]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
               [class.bg-emerald-50/40]="isPdfColumnSelected(col.key.toString())"
               [class.border-emerald-200]="isPdfColumnSelected(col.key.toString())">
-              
-              <input type="checkbox" 
+
+              <input type="checkbox"
                 class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer disabled:cursor-not-allowed"
                 [checked]="isPdfColumnSelected(col.key.toString())"
                 [disabled]="!isPdfColumnSelected(col.key.toString()) && pdfSelectedColumns().length >= PAGE_SIZE_LIMITS[pdfPageSize()]"
                 (change)="togglePdfColumn(col.key.toString())" />
-              
+
               <span class="text-xs font-medium text-slate-700 group-hover:text-slate-900 truncate"
-                    [class.text-emerald-950]="isPdfColumnSelected(col.key.toString())"
-                    [class.font-semibold]="isPdfColumnSelected(col.key.toString())">
+                [class.text-emerald-950]="isPdfColumnSelected(col.key.toString())"
+                [class.font-semibold]="isPdfColumnSelected(col.key.toString())">
                 {{ col.label }}
               </span>
             </label>
@@ -1085,16 +1095,16 @@
         @if (pdfSelectedColumns().length === 0) { Select at least one column }
         @else { {{ pdfSelectedColumns().length }} column{{ pdfSelectedColumns().length === 1 ? '' : 's' }} ready }
       </span>
-      
+
       <div class="flex items-center gap-2.5 w-full sm:w-auto ml-auto">
         <button
           class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-all cursor-pointer"
           (click)="closePdfColumnSelector()" type="button">Cancel</button>
         <button
           class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          [disabled]="pdfSelectedColumns().length === 0"
-          (click)="exportPDFWithColumns()" type="button">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          [disabled]="pdfSelectedColumns().length === 0" (click)="exportPDFWithColumns()" type="button">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -1137,8 +1147,7 @@
         <button
           class="st-btn w-full inline-flex items-center gap-3 px-3.5 py-2.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-surface] text-[--st-text2] transition-colors duration-150 hover:bg-[--st-accent-bg] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[--st-surface]"
           [style.border-color]="action.color ? action.color + '40' : 'var(--st-border)'"
-          [disabled]="isBulkActionDisabled(action)"
-          (click)="onBulkActionClick(action)" type="button">
+          [disabled]="isBulkActionDisabled(action)" (click)="onBulkActionClick(action)" type="button">
 
           <!-- Icon chip -->
           <span class="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
@@ -1147,12 +1156,15 @@
             @switch (action.icon) {
             @case ('delete') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
             }
             @case ('download') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
             }
             @case ('edit') {
@@ -1168,12 +1180,15 @@
             }
             @case ('x') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
             }
             @case ('mail') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16v16H4z" opacity="0" /><path d="M22 6l-10 7L2 6" /><rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M4 4h16v16H4z" opacity="0" />
+              <path d="M22 6l-10 7L2 6" />
+              <rect x="2" y="4" width="20" height="16" rx="2" />
             </svg>
             }
             @case ('message') {
@@ -1183,23 +1198,29 @@
             }
             @case ('circle-dot') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" fill="currentColor" />
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="1" fill="currentColor" />
             </svg>
             }
             @case ('user-check') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" />
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <polyline points="17 11 19 13 23 9" />
             </svg>
             }
             @case ('users') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
             }
             @case ('plus') {
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
             }
             }
@@ -1208,7 +1229,8 @@
           {{ action.label }}
 
           <!-- Arrow -->
-          <svg class="w-3.5 h-3.5 ml-auto opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-3.5 h-3.5 ml-auto opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>

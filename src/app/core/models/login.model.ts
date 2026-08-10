@@ -25,4 +25,10 @@ export interface Data {
   password: string;
   userName: string;
   empId: string;
+  designation: string
+}
+export interface ProfileDetail {
+  designation: string;
+  userName: string;
+
 }

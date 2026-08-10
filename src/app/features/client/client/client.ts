@@ -201,10 +201,10 @@ export class Client {
       clickable: true,
 
       // ── Bulk actions — this is all you need ────────────────────────────
-      selectable: true,
-      bulkActions: this.bulkActions,
-      bulkActionButtonLabel: 'Actions',
-      bulkActionButtonIcon: 'users',
+      // selectable: true,
+      // // bulkActions: this.bulkActions,
+      // // bulkActionButtonLabel: 'Actions',
+      // // bulkActionButtonIcon: 'users',
 
       toolbarButtons: [
         { id: 'filter', type: 'filter', label: 'Filter' },

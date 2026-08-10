@@ -24,7 +24,7 @@
           class="px-4 py-2 text-xs font-semibold text-text-secondary bg-card-bg border border-card-border rounded-lg hover:bg-surface-100 transition-colors">
           Save Draft
         </button> -->
-        <button (click)="onScheduleClick()" [disabled]="saving"
+        <button (click)="onScheduleClick()" [disabled]="saving || hostDetailsLoading"
           class="px-5 py-2 text-xs font-semibold text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm">
           {{ saving ? 'Scheduling...' : 'Schedule Meeting' }}
         </button>
@@ -216,49 +216,35 @@
             </svg>
             Host Information
           </h2>
+        </div>
 
-          <div class="inline-flex p-0.5 bg-surface-100 rounded-lg border border-card-border">
-            <button type="button" (click)="setHostMode('select')"
-              class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all"
-              [class.bg-brand-500]="newMeeting.hostMode === 'select'"
-              [class.text-white]="newMeeting.hostMode === 'select'"
-              [class.text-text-muted]="newMeeting.hostMode !== 'select'">
-              List
-            </button>
-            <button type="button" (click)="setHostMode('manual')"
-              class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all"
-              [class.bg-brand-500]="newMeeting.hostMode === 'manual'"
-              [class.text-white]="newMeeting.hostMode === 'manual'"
-              [class.text-text-muted]="newMeeting.hostMode !== 'manual'">
-              Manual
-            </button>
+        @if (hostDetailsLoading) {
+        <div class="flex items-center gap-2 text-xs text-text-muted py-1">
+          <svg class="w-4 h-4 animate-spin text-brand-500" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          Fetching your account details...
+        </div>
+        } @else if (newMeeting.hostMode === 'select') {
+        <div>
+          <label class="block text-xs font-semibold text-text-secondary mb-1.5">Host (You)</label>
+          <div class="p-3 bg-surface-50 border border-card-border rounded-lg text-xs space-y-1">
+            <div class="font-medium text-text-primary">{{ newMeeting.hostName }}</div>
+            <div class="text-text-muted truncate">{{ newMeeting.hostEmail }}</div>
           </div>
+          <p class="mt-1.5 text-[11px] text-text-muted">
+            This meeting will be scheduled on Teams on your behalf.
+          </p>
         </div>
-
-        @if (newMeeting.hostMode === 'select') {
-        <app-single-input label="Host Category" [options]="hostTypeOptions" placeHolder="Choose Lead or Support..."
-          [ngModel]="newMeeting.hostType" (ngModelChange)="onHostTypeChange($event)" name="hostType">
-        </app-single-input>
-        @if (showHostCategoryError) {
-        <p class="text-[11px] text-red-500">Please choose Lead or Support.</p>
-        }
-
-        <app-single-input label="Select Host" [required]="true" [options]="hostOptions"
-          [placeHolder]="loadingInitialData ? 'Loading...' : (newMeeting.hostType ? 'Select host...' : 'Choose category first')"
-          [disabled]="!newMeeting.hostType" [ngModel]="newMeeting.hostId" (ngModelChange)="onHostSelect($event)"
-          name="hostId" [enableSearch]="true">
-        </app-single-input>
-        @if (showHostSelectError) {
-        <p class="text-[11px] text-red-500">Please select a host from the list.</p>
-        }
-
-        @if (newMeeting.hostId) {
-        <div class="p-3 bg-surface-50 border border-card-border rounded-lg text-xs space-y-1">
-          <div class="font-medium text-text-primary">{{ newMeeting.hostName }}</div>
-          <div class="text-text-muted truncate">{{ newMeeting.hostEmail || 'No email registered' }}</div>
-        </div>
-        }
         } @else {
+        <div
+          class="flex items-start justify-between gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-[11px] text-red-600">
+          <span>Couldn't load your account details automatically. Enter host info manually, or retry.</span>
+          <button type="button" (click)="retryHostFetch()"
+            class="font-semibold text-red-700 hover:underline shrink-0">Retry</button>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-text-secondary mb-1">Host Name <span
               class="text-red-500">*</span></label>
