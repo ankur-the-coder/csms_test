@@ -1,6 +1,25 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { TelnyxRTC } from '@telnyx/webrtc';
 
-export type ConnectionState = 'Disconnected' | 'Connecting' | 'Connected' | 'Registered';
+// ─── State Types ────────────────────────────────────────────────────────────
+
+/** Overall softphone connection state */
+export type ConnectionState =
+  | 'idle'
+  | 'initializing'
+  | 'microphone_ready'
+  | 'registering'
+  | 'registered'
+  | 'connecting'
+  | 'connected'
+  | 'error'
+  // legacy aliases used by the existing template
+  | 'Disconnected'
+  | 'Connecting'
+  | 'Connected'
+  | 'Registered';
+
 export type MicPermissionState = 'Granted' | 'Denied' | 'Blocked' | 'Prompt';
 
 export interface ActiveCallInfo {
@@ -16,452 +35,436 @@ export interface ActiveCallInfo {
   durationSeconds: number;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
-export class WebRtcVoiceService {
-  private API_BASE = 'http://localhost:5000/api/voice';
+// ─── Service ─────────────────────────────────────────────────────────────────
 
-  // Connection State Signals
+@Injectable({ providedIn: 'root' })
+export class WebRtcVoiceService {
+  private readonly API_BASE = 'http://localhost:5000/api/voice';
+
+  // ── Public Signals ──────────────────────────────────────────────────────
   readonly connectionState = signal<ConnectionState>('Disconnected');
   readonly micPermission = signal<MicPermissionState>('Prompt');
   readonly errorMessage = signal<string | null>(null);
   readonly registrationToken = signal<string | null>(null);
-
-  // Active Call Signals
   readonly activeCall = signal<ActiveCallInfo | null>(null);
-
-  // Media & WebRTC references
-  private localStream: MediaStream | null = null;
-  private peerConnection: RTCPeerConnection | null = null;
-  private timerInterval: any = null;
-
-  constructor() {
-    this.checkMicrophonePermissionStatus();
-  }
-
-  /**
-   * Checks current Browser Microphone permissions
-   */
-  async checkMicrophonePermissionStatus(): Promise<MicPermissionState> {
-    try {
-      if (navigator.permissions && navigator.permissions.query) {
-        const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-        if (status.state === 'granted') {
-          this.micPermission.set('Granted');
-        } else if (status.state === 'denied') {
-          this.micPermission.set('Denied');
-        } else {
-          this.micPermission.set('Prompt');
-        }
-        status.onchange = () => {
-          if (status.state === 'granted') this.micPermission.set('Granted');
-          else if (status.state === 'denied') this.micPermission.set('Denied');
-        };
-      }
-    } catch (e) {
-      console.warn('Permissions API check not supported:', e);
-    }
-    return this.micPermission();
-  }
-
-  /**
-   * Request Microphone Access explicitly.
-   * Handles missing physical audio hardware by creating a Virtual Audio Stream.
-   */
-  async requestMicrophonePermission(): Promise<boolean> {
-    try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      this.micPermission.set('Granted');
-      this.errorMessage.set(null);
-      return true;
-    } catch (error: any) {
-      const errStr = (error.message || error.name || '').toLowerCase();
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        this.micPermission.set('Denied');
-        this.errorMessage.set('Microphone access denied. Please allow microphone permissions in your browser bar.');
-        return false;
-      } else if (
-        error.name === 'NotFoundError' ||
-        error.name === 'DevicesNotFoundError' ||
-        errStr.includes('not found') ||
-        errStr.includes('device')
-      ) {
-        console.warn('No physical microphone device detected. Initializing Virtual Audio Stream for softphone session.');
-        this.localStream = this.createVirtualAudioStream();
-        this.micPermission.set('Granted');
-        this.errorMessage.set('Notice: No physical microphone detected. Running in Virtual Audio mode.');
-        return true;
-      } else {
-        this.micPermission.set('Blocked');
-        this.errorMessage.set(`Microphone error: ${error.message}`);
-        return false;
-      }
-    }
-  }
-
-  /**
-   * Generates a Web Audio API virtual stream for environments without physical microphone hardware
-   */
-  private createVirtualAudioStream(): MediaStream {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const dst = ctx.createMediaStreamDestination();
-        gain.gain.value = 0; // Silent virtual track
-        osc.connect(gain);
-        gain.connect(dst);
-        osc.start();
-        return dst.stream;
-      }
-    } catch (e) {
-      console.warn('Could not instantiate Web Audio Virtual Stream:', e);
-    }
-    return new MediaStream();
-  }
-
-  /**
-   * Fetches WebRTC token from AdonisJS Backend and registers browser softphone
-   */
-  async registerSoftphone(): Promise<void> {
-    try {
-      this.connectionState.set('Connecting');
-      
-      // Request microphone access (or virtual audio fallback)
-      const micGranted = await this.requestMicrophonePermission();
-      if (!micGranted) {
-        this.connectionState.set('Disconnected');
-        return;
-      }
-
-      let token = 'webrtc_session_token_' + Date.now();
-
-      // Fetch temporary WebRTC token from backend (Port 5000)
-      try {
-        const res = await fetch(`${this.API_BASE}/token`);
-        if (res.ok) {
-          const json = await res.json();
-          token = json.data?.token || json.token || token;
-          console.log('Successfully fetched WebRTC token from AdonisJS Backend on Port 5000');
-        } else {
-          console.warn(`Backend token endpoint returned ${res.status}. Falling back to WebRTC session mode.`);
-        }
-      } catch (netErr: any) {
-        console.warn('Backend server on port 5000 unreachable. Operating softphone with WebRTC session token fallback.', netErr);
-        if (!this.errorMessage()) {
-          this.errorMessage.set('Notice: Backend on http://localhost:5000 is not running. Softphone operating in local WebRTC session mode.');
-        }
-      }
-
-      this.registrationToken.set(token);
-      this.connectionState.set('Connected');
-
-      // Initialize real-time Server-Sent Events (SSE) connection with backend
-      this.initSSE('1');
-
-      // Complete Telnyx WebRTC Softphone registration state
-      setTimeout(() => {
-        this.connectionState.set('Registered');
-        console.log('WebRTC Softphone successfully registered');
-      }, 300);
-
-    } catch (err: any) {
-      console.error('WebRTC Registration Error:', err);
-      this.connectionState.set('Disconnected');
-      this.errorMessage.set(`Registration Failed: ${err.message}`);
-    }
-  }
-
-  // SSE State & Notification Signals
   readonly sseConnected = signal<boolean>(false);
   readonly lastNotification = signal<{ message: string; type: 'info' | 'success' | 'warn' | 'error' } | null>(null);
+
+  // ── Private State ───────────────────────────────────────────────────────
+  private telnyxClient: TelnyxRTC | null = null;
+  private activeRTCCall: any = null;          // TelnyxRTC Call instance
+  private localStream: MediaStream | null = null;
+  private remoteAudioEl: HTMLAudioElement | null = null;
 
   private eventSource: EventSource | null = null;
   private sseReconnectTimer: any = null;
   private currentEmployeeId: string = '1';
-  private isIntentionallyClosed: boolean = false;
+  private isIntentionallyClosed = false;
+  private timerInterval: any = null;
+
+  private readonly platformId = inject(PLATFORM_ID);
+  private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
+
+  constructor() {
+    if (this.isBrowser) {
+      this.checkMicrophonePermissionStatus();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AUDIO ELEMENT
+  // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Initializes HTML5 EventSource SSE connection to AdonisJS backend
-   * Handled with auto-reconnect, duplicate protection, memory cleanup, and sanitized logs.
+   * Called from VoiceComponent with the #remoteAudio ViewChild reference.
+   * Must be called before registerSoftphone().
    */
-  initSSE(employeeId: string = '1'): void {
-    this.currentEmployeeId = employeeId;
-    this.isIntentionallyClosed = false;
+  setRemoteAudioElement(el: HTMLAudioElement): void {
+    this.remoteAudioEl = el;
+    console.log('[Voice][Media] Remote audio element registered.');
+  }
 
-    // Prevent duplicate active connections
-    if (this.eventSource) {
-      console.log('[SSE] Closing existing EventSource connection prior to re-initialization.');
-      this.closeSSE(false);
+  // ─────────────────────────────────────────────────────────────────────────
+  // MICROPHONE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async checkMicrophonePermissionStatus(): Promise<MicPermissionState> {
+    try {
+      if (navigator.permissions?.query) {
+        const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        this.micPermission.set(status.state === 'granted' ? 'Granted' : status.state === 'denied' ? 'Denied' : 'Prompt');
+        status.onchange = () => {
+          this.micPermission.set(status.state === 'granted' ? 'Granted' : status.state === 'denied' ? 'Denied' : 'Prompt');
+        };
+      }
+    } catch { /* Permissions API not supported */ }
+    return this.micPermission();
+  }
+
+  /**
+   * Requests real microphone access. No silent fallback.
+   * Returns true if microphone is available, false otherwise.
+   */
+  async requestMicrophonePermission(): Promise<boolean> {
+    if (!this.isBrowser) return false;
+    console.log('[Voice][Audio] Microphone permission requested');
+    try {
+      if (this.localStream && this.localStream.getAudioTracks().some(track => track.readyState === 'live')) {
+        console.log('[Voice][Audio] Reusing active microphone stream');
+        return true;
+      }
+      if (this.localStream) {
+        console.log('[Voice][Audio] Stopping old microphone stream tracks before re-acquiring');
+        this.localStream.getTracks().forEach(t => t.stop());
+        this.localStream = null;
+      }
+      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.micPermission.set('Granted');
+      this.errorMessage.set(null);
+      console.log('[Voice][Audio] Microphone acquired');
+      return true;
+    } catch (error: any) {
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        this.micPermission.set('Denied');
+        this.errorMessage.set('Microphone permission was denied. Please allow microphone access in your browser settings.');
+        console.error('[Voice][Audio] Microphone unavailable — permission denied');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        this.micPermission.set('Blocked');
+        this.errorMessage.set('Microphone/input device not found. Please connect a microphone to use the softphone.');
+        console.error('[Voice][Audio] Microphone unavailable — no device found');
+      } else {
+        this.micPermission.set('Blocked');
+        this.errorMessage.set(`Microphone error: ${error.message}`);
+        console.error('[Voice][Audio] Microphone unavailable —', error.message);
+      }
+      return false;
     }
+  }
 
-    if (!employeeId || employeeId.trim() === '') {
-      console.warn('[SSE Error] Invalid employee session ID. SSE connection aborted.');
-      this.errorMessage.set('Invalid employee session. Cannot establish real-time SSE stream.');
+  // ─────────────────────────────────────────────────────────────────────────
+  // REGISTRATION / WEBRTC SESSION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Main entry point. Called from VoiceComponent.ngOnInit().
+   * Steps:
+   *  1. Request microphone
+   *  2. Fetch JWT token from backend (credentials generated against SIP Connection)
+   *  3. Initialize TelnyxRTC client with the JWT
+   *  4. Connect — 'telnyx.ready' fires when actually registered
+   *  5. Start SSE for call state signaling
+   */
+  async registerSoftphone(): Promise<void> {
+    if (!this.isBrowser) return;
+    if (
+      this.telnyxClient ||
+      this.connectionState() === 'registering' ||
+      this.connectionState() === 'Registered' ||
+      this.connectionState() === 'registered' ||
+      this.connectionState() === 'initializing'
+    ) {
+      console.log('[Voice][WebRTC] Softphone client registration already active or ready. Ignoring duplicate call.');
       return;
     }
 
+    this.connectionState.set('Connecting');
+    this.errorMessage.set(null);
+
+    // Step 1: Microphone
+    this.connectionState.set('initializing');
+    const micOk = await this.requestMicrophonePermission();
+    if (!micOk) {
+      this.connectionState.set('Disconnected');
+      return;
+    }
+
+    // Step 2: Fetch real WebRTC JWT from backend
+    let token: string;
+    let sipUsername: string;
+
+    console.log('[Voice][WebRTC] Fetching WebRTC token from backend...');
     try {
-      // Build safe URL without credentials/tokens in logs
-      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(employeeId)}`;
-      console.log(`[SSE Log] Establishing SSE connection for Employee [ID: ${employeeId}]`);
+      const res = await fetch(`${this.API_BASE}/token`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.message || `Token endpoint returned HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      token = json.data?.token;
+      sipUsername = json.data?.sipUsername;
 
-      this.eventSource = new EventSource(url);
+      if (!token) {
+        throw new Error('Backend returned no token. Check TELNYX_CONNECTION_ID configuration.');
+      }
+      console.log('[Voice][WebRTC] JWT token received for sip_username:', sipUsername);
+    } catch (err: any) {
+      this.connectionState.set('error');
+      this.errorMessage.set(`Unable to initialize browser calling: ${err.message}`);
+      console.error('[Voice][WebRTC] Token fetch failed:', err.message);
+      return;
+    }
 
-      this.eventSource.onopen = () => {
-        console.log(`[SSE Log] SSE connection established successfully.`);
-        this.sseConnected.set(true);
-        if (this.sseReconnectTimer) {
-          clearTimeout(this.sseReconnectTimer);
-          this.sseReconnectTimer = null;
-        }
-      };
+    this.registrationToken.set(token);
 
-      // Native voice_event listener
-      this.eventSource.addEventListener('voice_event', (e: MessageEvent) => {
-        try {
-          const payload = JSON.parse(e.data);
-          console.log('[SSE Log] Event received:', payload.type || 'unknown_event');
-          this.handleIncomingSSEEvent(payload);
-        } catch (err) {
-          console.warn('[SSE Log] Failed event delivery - Error parsing payload JSON:', err);
+    // Step 3: Initialize TelnyxRTC client
+    console.log('[Voice][WebRTC] Initializing TelnyxRTC client...');
+    this.connectionState.set('registering');
+
+    try {
+      // Destroy any previous client
+      if (this.telnyxClient) {
+        (this.telnyxClient as any).disconnect();
+        this.telnyxClient = null;
+      }
+
+      this.telnyxClient = new TelnyxRTC({
+        login_token: token,   // JWT-based auth (preferred over login/password)
+        debug: false,
+      });
+
+      // ── TelnyxRTC Event Handlers ──────────────────────────────────────
+
+      this.telnyxClient.on('telnyx.ready', () => {
+        console.log('[Voice][WebRTC] Connected — TelnyxRTC is ready');
+        this.connectionState.set('Registered');
+        this.errorMessage.set(null);
+      });
+
+      this.telnyxClient.on('telnyx.error', (error: any) => {
+        const msg = error?.error?.message || error?.message || JSON.stringify(error);
+        console.error('[Voice][WebRTC] TelnyxRTC error:', msg);
+        this.connectionState.set('error');
+        this.errorMessage.set(`Browser calling error: ${msg}`);
+      });
+
+      this.telnyxClient.on('telnyx.socket.close', () => {
+        console.warn('[Voice][WebRTC] Disconnected — WebSocket closed');
+        if (this.connectionState() === 'Registered' || this.connectionState() === 'registered') {
+          this.connectionState.set('Disconnected');
         }
       });
 
-      // Global message listener fallback
-      this.eventSource.onmessage = (e: MessageEvent) => {
-        try {
-          const payload = JSON.parse(e.data);
-          console.log('[SSE Log] Generic SSE message received:', payload.type || 'message');
-          this.handleIncomingSSEEvent(payload);
-        } catch (err) {
-          // Ignore non-json ping/heartbeat keep-alive messages
-        }
-      };
+      this.telnyxClient.on('telnyx.notification', (notification: any) => {
+        this.handleTelnyxNotification(notification);
+      });
 
-      this.eventSource.onerror = (err) => {
-        this.sseConnected.set(false);
-        if (this.isIntentionallyClosed) return;
+      // Step 4: Connect (triggers SIP registration)
+      console.log('[Voice][WebRTC] Connecting...');
+      this.telnyxClient.connect();
 
-        console.warn('[SSE Log] SSE connection interrupted or backend offline.');
-        
-        // Ensure connection closed before scheduling reconnect to prevent leak
-        if (this.eventSource) {
-          this.eventSource.close();
-          this.eventSource = null;
-        }
-
-        // Automatic reconnect retry logic
-        if (!this.sseReconnectTimer) {
-          console.log('[SSE Log] Scheduling automatic reconnection in 5 seconds...');
-          this.sseReconnectTimer = setTimeout(() => {
-            this.sseReconnectTimer = null;
-            if (!this.isIntentionallyClosed && this.connectionState() !== 'Disconnected') {
-              console.log('[SSE Log] Attempting SSE reconnection...');
-              this.initSSE(this.currentEmployeeId);
-            }
-          }, 5000);
-        }
-      };
-    } catch (e: any) {
-      console.error('[SSE Log] Failed event delivery - Could not create EventSource:', e?.message || e);
-      this.sseConnected.set(false);
+    } catch (err: any) {
+      this.connectionState.set('error');
+      this.errorMessage.set(`TelnyxRTC initialization failed: ${err.message}`);
+      console.error('[Voice][WebRTC] Failed:', err.message);
+      return;
     }
+
+    // Step 5: SSE for call state signaling
+    this.initSSE('1');
   }
 
-  /**
-   * Closes SSE connection and cleans up reconnect timers to prevent memory leaks
-   */
-  closeSSE(isExplicitLogout: boolean = true): void {
-    if (isExplicitLogout) {
-      this.isIntentionallyClosed = true;
-    }
+  // ─────────────────────────────────────────────────────────────────────────
+  // TELNYX NOTIFICATION HANDLER (WebRTC call state)
+  // ─────────────────────────────────────────────────────────────────────────
 
-    if (this.sseReconnectTimer) {
-      clearTimeout(this.sseReconnectTimer);
-      this.sseReconnectTimer = null;
-    }
+  private handleTelnyxNotification(notification: any): void {
+    const call = notification?.call;
+    const type = notification?.type;
 
-    if (this.eventSource) {
-      try {
-        this.eventSource.close();
-      } catch (e) {
-        console.warn('[SSE Log] Error closing EventSource:', e);
-      }
-      this.eventSource = null;
-      console.log('[SSE Log] SSE connection closed.');
-    }
-    this.sseConnected.set(false);
-  }
-
-  /**
-   * Real-time event handler updating softphone UI state without polling
-   */
-  private handleIncomingSSEEvent(payload: any): void {
-    if (!payload || typeof payload !== 'object') return;
-
-    const { type, callLogId, phoneNumber, customerName, recordingUrl, message } = payload;
+    console.log('[Voice][WebRTC] Notification:', type, call?.state);
 
     switch (type) {
-      case 'incoming_call':
-        console.log(`[SSE UI State] Incoming call popup triggered: ${phoneNumber || 'Unknown'}`);
-        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName || 'Incoming PSTN Call');
-        this.lastNotification.set({ message: `Incoming Call from ${phoneNumber || 'Unknown'}`, type: 'info' });
-        break;
+      case 'callUpdate': {
+        if (!call) return;
+        const state: string = call.state;
 
-      case 'call_ringing':
-        console.log(`[SSE UI State] Call ringing state: Call ${callLogId}`);
-        const curRinging = this.activeCall();
-        if (curRinging) {
-          this.activeCall.set({ ...curRinging, status: 'ringing', callLogId });
+        if (state === 'ringing') {
+          // Outbound: remote side is ringing
+          console.log('[Voice][Call] Call state changed → ringing');
+          const cur = this.activeCall();
+          if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
         }
-        break;
 
-      case 'call_answered':
-        console.log(`[SSE UI State] Connected state: Call ${callLogId}`);
-        const curAns = this.activeCall();
-        if (curAns) {
-          this.activeCall.set({ ...curAns, status: 'active', callLogId });
-          this.startTimer();
-        } else {
+        if (state === 'active') {
+          // Both sides connected — wire up remote audio
+          console.log('[Voice][Call] Call state changed → active');
+          this.attachRemoteAudio(call);
+          const cur = this.activeCall();
+          if (cur) {
+            this.activeCall.set({ ...cur, status: 'active', startTime: new Date() });
+            this.startTimer();
+          }
+        }
+
+        if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+          console.log('[Voice][Call] Call state changed → ended');
+          this.cleanupCallMedia();
+          this.endCallSession();
+        }
+
+        if (state === 'held') {
+          const cur = this.activeCall();
+          if (cur) this.activeCall.set({ ...cur, status: 'held', isHeld: true });
+        }
+
+        break;
+      }
+
+      case 'participantData': {
+        // Inbound call ringing in browser
+        if (!call) return;
+        console.log('[Voice][Call] Inbound call notification received');
+        const fromNumber = call.options?.remoteCallerNumber || call.options?.destinationNumber || 'Unknown';
+        const fromName = call.options?.remoteCallerName || fromNumber;
+
+        const existing = this.activeCall();
+        if (!existing || existing.status === 'ended') {
+          this.activeRTCCall = call;
           this.activeCall.set({
-            callLogId,
-            customerNumber: phoneNumber || 'Connected Call',
-            customerName: customerName || 'Customer',
+            providerCallId: call.id,
+            customerNumber: fromNumber,
+            customerName: fromName,
             direction: 'inbound',
-            status: 'active',
+            status: 'ringing',
             isMuted: false,
             isHeld: false,
             durationSeconds: 0,
-            startTime: new Date()
           });
-          this.startTimer();
         }
-        this.lastNotification.set({ message: 'Call connected', type: 'success' });
         break;
-
-      case 'call_hold':
-        console.log(`[SSE UI State] Hold state: Call ${callLogId}`);
-        const curHold = this.activeCall();
-        if (curHold) {
-          this.activeCall.set({ ...curHold, status: 'held', isHeld: true, callLogId });
-        }
-        this.lastNotification.set({ message: 'Call placed on hold', type: 'info' });
-        break;
-
-      case 'call_resume':
-        console.log(`[SSE UI State] Resume state: Call ${callLogId}`);
-        const curResume = this.activeCall();
-        if (curResume) {
-          this.activeCall.set({ ...curResume, status: 'active', isHeld: false, callLogId });
-        }
-        this.lastNotification.set({ message: 'Call resumed', type: 'info' });
-        break;
-
-      case 'call_completed':
-        console.log(`[SSE UI State] Call completed: Call ${callLogId}`);
-        this.endCallSession();
-        this.lastNotification.set({ message: 'Call completed', type: 'info' });
-        break;
-
-      case 'call_rejected':
-        console.log(`[SSE UI State] Call rejected: Call ${callLogId}`);
-        this.endCallSession();
-        this.lastNotification.set({ message: 'Call rejected', type: 'warn' });
-        break;
-
-      case 'call_failed':
-        console.log(`[SSE UI State] Failed call notification: Call ${callLogId}`);
-        this.endCallSession();
-        this.errorMessage.set(message || 'Call failed or network error occurred.');
-        this.lastNotification.set({ message: message || 'Call failed notification', type: 'error' });
-        break;
-
-      case 'recording_ready':
-        console.log(`[SSE UI State] Recording available notification for Call [${callLogId}]: ${recordingUrl}`);
-        this.lastNotification.set({ 
-          message: `Recording available for call ${callLogId || ''}`, 
-          type: 'success' 
-        });
-        break;
-      
-      default:
-        console.log(`[SSE Log] Handled unmapped event type: ${type}`);
-        break;
+      }
     }
   }
 
-  /**
-   * Place an outbound PSTN call using browser softphone
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // REMOTE AUDIO
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private attachRemoteAudio(call: any): void {
+    // Check multiple locations for the remote stream: direct stream, options stream, peer stream, or fallback to peerConnection receivers
+    const remoteStream: MediaStream | undefined = 
+      call.remoteStream || 
+      call.options?.remoteStream || 
+      call.peer?.remoteStream ||
+      (call.peerConnection && call.peerConnection.getReceivers && new MediaStream(call.peerConnection.getReceivers().map((r: any) => r.track).filter(Boolean)));
+
+    if (!remoteStream) {
+      console.warn('[Voice][Media] No remote stream on call object yet — relying on remoteElement auto-attach');
+      return;
+    }
+
+    if (this.remoteAudioEl) {
+      // Prevent resetting the stream if it's already assigned to avoid audio glitched restarts
+      if (this.remoteAudioEl.srcObject !== remoteStream) {
+        this.remoteAudioEl.srcObject = remoteStream;
+      }
+      this.remoteAudioEl.play().then(() => {
+        console.log('[Voice][Media] Remote audio attached and playing');
+      }).catch((e: any) => {
+        console.warn('[Voice][Media] Remote audio autoplay blocked, will play on next user gesture:', e.message);
+        // Attach a one-shot click handler to unblock autoplay
+        const resume = () => {
+          this.remoteAudioEl?.play().catch(() => { });
+          document.removeEventListener('click', resume);
+        };
+        document.addEventListener('click', resume, { once: true });
+      });
+    } else {
+      console.warn('[Voice][Media] No remoteAudioEl registered — call setRemoteAudioElement() from component');
+    }
+  }
+
+  private cleanupCallMedia(): void {
+    console.log('[Voice][Media] Cleaning up call media...');
+    if (this.isBrowser && this.remoteAudioEl) {
+      try {
+        if (typeof this.remoteAudioEl.pause === 'function') {
+          this.remoteAudioEl.pause();
+        }
+        this.remoteAudioEl.srcObject = null;
+      } catch (err) {
+        console.warn('[Voice][Media] Error pausing or cleaning remote audio element:', err);
+      }
+    }
+    this.activeRTCCall = null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // OUTBOUND CALL
+  // ─────────────────────────────────────────────────────────────────────────
+
   async makeOutboundCall(phoneNumber: string, customerName?: string): Promise<void> {
     if (this.connectionState() !== 'Registered') {
       this.errorMessage.set('Browser softphone must be registered before placing calls.');
       return;
     }
+    if (!this.telnyxClient) {
+      this.errorMessage.set('TelnyxRTC client is not initialized.');
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.activeCall.set({
+      customerNumber: phoneNumber,
+      customerName: customerName || 'Customer',
+      direction: 'outbound',
+      status: 'dialing',
+      isMuted: false,
+      isHeld: false,
+      durationSeconds: 0,
+    });
+
+    console.log('[Voice][Call] Call requested to:', phoneNumber);
 
     try {
-      this.errorMessage.set(null);
-      this.activeCall.set({
-        customerNumber: phoneNumber,
-        customerName: customerName || 'Customer',
-        direction: 'outbound',
-        status: 'dialing',
-        isMuted: false,
-        isHeld: false,
-        durationSeconds: 0,
+      // Fix 1 & 2: Re-acquire fresh mic stream specifically for this call
+      console.log('[Voice][Audio] Acquiring fresh mic stream for outbound call');
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(t => t.stop());
+      }
+      
+      const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.localStream = freshStream;
+
+      const audioTracks = this.localStream.getAudioTracks();
+      console.log('[Voice][Debug] Outbound Mic tracks:', audioTracks.map(t => ({ enabled: t.enabled, readyState: t.readyState })));
+
+      // Place the call through TelnyxRTC — this dials via the SIP Connection
+      // which is linked to the Telnyx network and routes to PSTN.
+      this.activeRTCCall = this.telnyxClient.newCall({
+        destinationNumber: phoneNumber,
+        callerNumber: '+14029489500',
+        audio: true,
+        video: false,
+        // Attach remote audio automatically to our audio element
+        remoteElement: this.remoteAudioEl || undefined,
+        // Attach local microphone stream
+        localStream: this.localStream,
       });
 
-      // Invoke backend outbound call API
-      const res = await fetch(`${this.API_BASE}/call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to_number: phoneNumber }),
-      });
+      console.log('[Voice][Media] Local audio track added, outbound call initiated');
+      // Call state transitions (ringing → active → hangup) come via telnyx.notification
 
-      const data = await res.json();
-      if (!res.ok || !data.status) {
-        throw new Error(data.message || 'Call initiation failed');
-      }
-
-      const callLogId = data.call_log_id;
-      const providerCallId = data.provider_call_id;
-
-      // Update call status to active & start timer
-      const current = this.activeCall();
-      if (current) {
-        this.activeCall.set({
-          ...current,
-          callLogId,
-          providerCallId,
-          status: 'active',
-          startTime: new Date(),
-        });
-        this.startTimer();
-      }
-
-    } catch (error: any) {
-      this.errorMessage.set(`Outbound Call Error: ${error.message}`);
+    } catch (err: any) {
+      this.errorMessage.set(`Outbound Call Error: ${err.message}`);
+      console.error('[Voice][Call] Call failed:', err.message);
       this.endCallSession();
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // INBOUND CALL
+  // ─────────────────────────────────────────────────────────────────────────
+
   /**
-   * Handle an incoming PSTN call event with Concurrent Call Protection
+   * Called by SSE handler when an incoming_call event arrives.
+   * Sets up UI state; actual media comes via telnyx.notification.
    */
   receiveIncomingCall(callLogId: number, fromNumber: string, customerName?: string): void {
     const existing = this.activeCall();
-
-    // Concurrent Call Protection: If employee is already on an active/dialing call, do NOT replace it automatically
     if (existing && (existing.status === 'active' || existing.status === 'dialing' || existing.status === 'held')) {
-      console.warn(`[Concurrent Call Protection] Busy on existing call ${existing.callLogId}. Incoming call ${callLogId} from ${fromNumber} rejected auto-replacement.`);
-      this.lastNotification.set({
-        message: `Incoming call from ${fromNumber} ignored - already on an active call.`,
-        type: 'warn'
-      });
+      console.warn('[Concurrent Call Protection] Already on an active call. Ignoring incoming call from', fromNumber);
+      this.lastNotification.set({ message: `Incoming call from ${fromNumber} ignored — already on an active call.`, type: 'warn' });
       return;
     }
 
@@ -477,13 +480,39 @@ export class WebRtcVoiceService {
     });
   }
 
-  /**
-   * Answer a ringing incoming PSTN call
-   */
   async answerCall(): Promise<void> {
     const current = this.activeCall();
-    if (!current || !current.callLogId) return;
+    if (!current) return;
 
+    // If TelnyxRTC already has the inbound call, answer via SDK (WebRTC media is immediate)
+    if (this.activeRTCCall && typeof this.activeRTCCall.answer === 'function') {
+      try {
+        console.log('[Voice][Audio] Acquiring fresh mic stream to answer inbound call');
+        if (this.localStream) {
+          this.localStream.getTracks().forEach(t => t.stop());
+        }
+        
+        const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        this.localStream = freshStream;
+
+        const audioTracks = this.localStream.getAudioTracks();
+        console.log('[Voice][Debug] Inbound Answer Mic tracks:', audioTracks.map(t => ({ enabled: t.enabled, readyState: t.readyState })));
+
+        await this.activeRTCCall.answer({
+          audio: true,
+          video: false,
+          remoteElement: this.remoteAudioEl || undefined,
+          localStream: this.localStream,
+        });
+        console.log('[Voice][Call] Inbound call answered via TelnyxRTC SDK');
+        return;
+      } catch (e: any) {
+        console.warn('[Voice][Call] SDK answer failed, falling back to REST answer:', e.message);
+      }
+    }
+
+    // Fallback: answer via Call Control REST API
+    if (!current.callLogId) return;
     try {
       this.errorMessage.set(null);
       const res = await fetch(`${this.API_BASE}/answer`, {
@@ -491,76 +520,85 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callLogId: current.callLogId }),
       });
-
       const data = await res.json();
-      if (!res.ok || !data.status) {
-        throw new Error(data.message || 'Answer failed');
-      }
+      if (!res.ok || !data.status) throw new Error(data.message || 'Answer failed');
 
-      this.activeCall.set({
-        ...current,
-        status: 'active',
-        startTime: new Date(),
-      });
-
+      this.activeCall.set({ ...current, status: 'active', startTime: new Date() });
       this.startTimer();
-    } catch (error: any) {
-      this.errorMessage.set(`Answer Call Failed: ${error.message}`);
+    } catch (err: any) {
+      this.errorMessage.set(`Answer Call Failed: ${err.message}`);
     }
   }
 
-  /**
-   * Reject a ringing incoming call
-   */
   async rejectCall(): Promise<void> {
     const current = this.activeCall();
-    if (!current || !current.callLogId) {
-      this.endCallSession();
-      return;
+
+    // Reject via SDK if we have the call
+    if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
+      try { this.activeRTCCall.hangup(); } catch { /* ignore */ }
     }
 
-    try {
-      await fetch(`${this.API_BASE}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callLogId: current.callLogId }),
-      });
-    } catch (e) {
-      console.warn('Reject call network notice:', e);
-    } finally {
-      this.endCallSession();
+    if (current?.callLogId) {
+      try {
+        await fetch(`${this.API_BASE}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callLogId: current.callLogId }),
+        });
+      } catch (e) {
+        console.warn('[Voice][Call] Reject network error:', e);
+      }
     }
+    this.cleanupCallMedia();
+    this.endCallSession();
   }
 
-  /**
-   * Toggle Mute / Unmute local microphone audio track
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // IN-CALL CONTROLS
+  // ─────────────────────────────────────────────────────────────────────────
+
   toggleMute(): void {
     const current = this.activeCall();
     if (!current) return;
 
     const nextMuteState = !current.isMuted;
-    if (this.localStream) {
-      this.localStream.getAudioTracks().forEach(track => {
-        track.enabled = !nextMuteState;
-      });
+
+    // Mute via SDK (preferred — affects WebRTC track)
+    if (this.activeRTCCall) {
+      try {
+        if (nextMuteState) {
+          this.activeRTCCall.muteAudio?.();
+        } else {
+          this.activeRTCCall.unmuteAudio?.();
+        }
+      } catch { /* ignore */ }
     }
 
-    this.activeCall.set({
-      ...current,
-      isMuted: nextMuteState,
-    });
+    // Also mute local MediaStream track directly as backup
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(t => (t.enabled = !nextMuteState));
+    }
+
+    this.activeCall.set({ ...current, isMuted: nextMuteState });
   }
 
-  /**
-   * Toggle Hold / Resume call
-   */
   async toggleHold(): Promise<void> {
     const current = this.activeCall();
-    if (!current || !current.callLogId) return;
+    if (!current?.callLogId) return;
 
     const isHolding = current.isHeld;
     const endpoint = isHolding ? 'resume' : 'hold';
+
+    // SDK hold/unhold if available
+    if (this.activeRTCCall) {
+      try {
+        if (isHolding) {
+          this.activeRTCCall.unhold?.();
+        } else {
+          this.activeRTCCall.hold?.();
+        }
+      } catch { /* fall through to REST */ }
+    }
 
     try {
       const res = await fetch(`${this.API_BASE}/${endpoint}`, {
@@ -568,28 +606,28 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callLogId: current.callLogId }),
       });
-
       const data = await res.json();
-      if (!res.ok || !data.status) {
-        throw new Error(data.message || `${endpoint} failed`);
-      }
+      if (!res.ok || !data.status) throw new Error(data.message || `${endpoint} failed`);
 
-      this.activeCall.set({
-        ...current,
-        isHeld: !isHolding,
-        status: !isHolding ? 'held' : 'active',
-      });
-    } catch (error: any) {
-      this.errorMessage.set(`Hold/Resume Action Failed: ${error.message}`);
+      this.activeCall.set({ ...current, isHeld: !isHolding, status: !isHolding ? 'held' : 'active' });
+    } catch (err: any) {
+      this.errorMessage.set(`Hold/Resume Failed: ${err.message}`);
     }
   }
 
-  /**
-   * Hangup active call
-   */
   async hangupCall(): Promise<void> {
     const current = this.activeCall();
-    if (current && current.callLogId) {
+
+    // Hangup via SDK (terminates WebRTC media immediately)
+    if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
+      try {
+        this.activeRTCCall.hangup();
+        console.log('[Voice][Call] Call hung up via TelnyxRTC SDK');
+      } catch { /* ignore */ }
+    }
+
+    // Also tell the backend (Call Control hangup)
+    if (current?.callLogId) {
       try {
         await fetch(`${this.API_BASE}/hangup`, {
           method: 'POST',
@@ -597,44 +635,206 @@ export class WebRtcVoiceService {
           body: JSON.stringify({ callLogId: current.callLogId }),
         });
       } catch (e) {
-        console.warn('Hangup network error:', e);
+        console.warn('[Voice][Call] Hangup REST error:', e);
       }
     }
+
+    this.cleanupCallMedia();
     this.endCallSession();
   }
 
-  /**
-   * Unregisters softphone session
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // UNREGISTER / CLEANUP
+  // ─────────────────────────────────────────────────────────────────────────
+
   unregister(): void {
     this.endCallSession();
+    this.cleanupCallMedia();
     this.closeSSE(true);
+
+    if (this.telnyxClient) {
+      try { this.telnyxClient.disconnect(); } catch { /* ignore */ }
+      this.telnyxClient = null;
+      console.log('[Voice][WebRTC] Disconnected — TelnyxRTC client destroyed');
+    }
+
     if (this.localStream) {
       this.localStream.getTracks().forEach(t => t.stop());
       this.localStream = null;
+      console.log('[Voice][Audio] Local microphone tracks stopped');
     }
+
     this.connectionState.set('Disconnected');
     this.registrationToken.set(null);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // SSE — Call State Signaling (unchanged responsibility)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  initSSE(employeeId: string = '1'): void {
+    this.currentEmployeeId = employeeId;
+    this.isIntentionallyClosed = false;
+
+    if (this.eventSource) {
+      console.log('[SSE] Closing existing connection before re-init.');
+      this.closeSSE(false);
+    }
+
+    if (!employeeId?.trim()) {
+      console.warn('[SSE] Invalid employee ID. SSE aborted.');
+      return;
+    }
+
+    try {
+      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(employeeId)}`;
+      console.log(`[SSE] Establishing SSE for Employee [${employeeId}]`);
+      this.eventSource = new EventSource(url);
+
+      this.eventSource.onopen = () => {
+        console.log('[SSE] Connection established.');
+        this.sseConnected.set(true);
+        if (this.sseReconnectTimer) { clearTimeout(this.sseReconnectTimer); this.sseReconnectTimer = null; }
+      };
+
+      this.eventSource.addEventListener('voice_event', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data);
+          console.log('[SSE] Event:', payload.type || 'unknown');
+          this.handleIncomingSSEEvent(payload);
+        } catch { /* ignore parse errors */ }
+      });
+
+      this.eventSource.onmessage = (e: MessageEvent) => {
+        try { this.handleIncomingSSEEvent(JSON.parse(e.data)); } catch { /* ignore */ }
+      };
+
+      this.eventSource.onerror = () => {
+        this.sseConnected.set(false);
+        if (this.isIntentionallyClosed) return;
+        console.warn('[SSE] Connection interrupted.');
+        if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
+        if (!this.sseReconnectTimer) {
+          this.sseReconnectTimer = setTimeout(() => {
+            this.sseReconnectTimer = null;
+            if (!this.isIntentionallyClosed && this.connectionState() !== 'Disconnected') {
+              this.initSSE(this.currentEmployeeId);
+            }
+          }, 5000);
+        }
+      };
+    } catch (e: any) {
+      console.error('[SSE] Could not create EventSource:', e?.message);
+      this.sseConnected.set(false);
+    }
+  }
+
+  closeSSE(isExplicitLogout = true): void {
+    if (isExplicitLogout) this.isIntentionallyClosed = true;
+    if (this.sseReconnectTimer) { clearTimeout(this.sseReconnectTimer); this.sseReconnectTimer = null; }
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch { /* ignore */ }
+      this.eventSource = null;
+      console.log('[SSE] Connection closed.');
+    }
+    this.sseConnected.set(false);
+  }
+
+  private handleIncomingSSEEvent(payload: any): void {
+    if (!payload || typeof payload !== 'object') return;
+    const { type, callLogId, phoneNumber, customerName, recordingUrl, message } = payload;
+
+    switch (type) {
+      case 'incoming_call':
+        console.log('[SSE UI State] Incoming call from:', phoneNumber);
+        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName || 'Incoming PSTN Call');
+        this.lastNotification.set({ message: `Incoming Call from ${phoneNumber || 'Unknown'}`, type: 'info' });
+        break;
+
+      case 'call_ringing': {
+        const cur = this.activeCall();
+        if (cur) this.activeCall.set({ ...cur, status: 'ringing', callLogId });
+        console.log('[SSE UI State] Call ringing, callLogId:', callLogId);
+        break;
+      }
+
+      case 'call_answered': {
+        const cur = this.activeCall();
+        if (cur) {
+          this.activeCall.set({ ...cur, status: 'active', callLogId });
+          this.startTimer();
+        } else {
+          this.activeCall.set({
+            callLogId, customerNumber: phoneNumber || 'Connected', customerName: customerName || 'Customer',
+            direction: 'inbound', status: 'active', isMuted: false, isHeld: false,
+            durationSeconds: 0, startTime: new Date(),
+          });
+          this.startTimer();
+        }
+        this.lastNotification.set({ message: 'Call connected', type: 'success' });
+        console.log('[Voice][Call] Call state changed → active (via SSE)');
+        break;
+      }
+
+      case 'call_hold': {
+        const cur = this.activeCall();
+        if (cur) this.activeCall.set({ ...cur, status: 'held', isHeld: true, callLogId });
+        this.lastNotification.set({ message: 'Call placed on hold', type: 'info' });
+        break;
+      }
+
+      case 'call_resume': {
+        const cur = this.activeCall();
+        if (cur) this.activeCall.set({ ...cur, status: 'active', isHeld: false, callLogId });
+        this.lastNotification.set({ message: 'Call resumed', type: 'info' });
+        break;
+      }
+
+      case 'call_completed':
+        console.log('[Voice][Call] Call state changed → ended (via SSE)');
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.lastNotification.set({ message: 'Call completed', type: 'info' });
+        break;
+
+      case 'call_rejected':
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.lastNotification.set({ message: 'Call rejected', type: 'warn' });
+        break;
+
+      case 'call_failed':
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.errorMessage.set(message || 'Call failed or network error.');
+        this.lastNotification.set({ message: message || 'Call failed', type: 'error' });
+        break;
+
+      case 'recording_ready':
+        this.lastNotification.set({ message: `Recording available for call ${callLogId || ''}`, type: 'success' });
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TIMER & HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
   private startTimer(): void {
     this.stopTimer();
     this.timerInterval = setInterval(() => {
-      const current = this.activeCall();
-      if (current && current.status === 'active') {
-        this.activeCall.set({
-          ...current,
-          durationSeconds: current.durationSeconds + 1,
-        });
+      const cur = this.activeCall();
+      if (cur?.status === 'active') {
+        this.activeCall.set({ ...cur, durationSeconds: cur.durationSeconds + 1 });
       }
     }, 1000);
   }
 
   private stopTimer(): void {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-      this.timerInterval = null;
-    }
+    if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
   }
 
   private endCallSession(): void {
@@ -642,9 +842,6 @@ export class WebRtcVoiceService {
     this.activeCall.set(null);
   }
 
-  /**
-   * Formats duration in MM:SS
-   */
   formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

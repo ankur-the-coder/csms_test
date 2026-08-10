@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WebRtcVoiceService } from './voice.service';
@@ -21,23 +21,33 @@ import { WebRtcVoiceService } from './voice.service';
     }
   `]
 })
-export class VoiceComponent implements OnInit, OnDestroy {
+export class VoiceComponent implements OnInit, AfterViewInit, OnDestroy {
   public voiceService = inject(WebRtcVoiceService);
+
+  /** Hidden audio element that receives the remote WebRTC stream */
+  @ViewChild('remoteAudio') remoteAudioRef!: ElementRef<HTMLAudioElement>;
 
   dialNumber = '+13055550100';
   customerNameInput = 'John Doe (Acme Corp)';
 
-  // Keypad buttons
   keypad = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 
   ngOnInit(): void {
-    // Automatically attempt browser softphone registration on load
+    // Registration is deferred to ngAfterViewInit so the audio element exists first
+  }
+
+  ngAfterViewInit(): void {
+    // Register the native audio element with the service BEFORE connecting,
+    // so TelnyxRTC can attach the remote stream as soon as a call goes active.
+    if (this.remoteAudioRef?.nativeElement) {
+      this.voiceService.setRemoteAudioElement(this.remoteAudioRef.nativeElement);
+    }
+    // Now start the softphone registration flow
     this.voiceService.registerSoftphone();
   }
 
   ngOnDestroy(): void {
-    // Clean up softphone session and SSE stream when leaving component to prevent leaks
-    this.voiceService.closeSSE(true);
+    this.voiceService.unregister();
   }
 
   appendDigit(digit: string): void {
