@@ -48,15 +48,13 @@ export class DashboardService {
     }
     return this.http.post<OnboardingDataTableResponse>(`${this.baseUrl}/onboardingDashboardTable`, payload);
   }
-
-  fetchOnboardCardData(): Observable<any> {
-    return this.http.post<OnboardingCardData>(`${this.baseUrl}/imp/fetchImpCardData`, {});
-
-
-    // .pipe(
-    //   map(res => res.data)
-    // );
+  fetchOnboardCardData(): Observable<CardData> {
+    return this.http
+      .post<OnboardingCardData>(`${this.baseUrl}/imp/fetchImpCardData`, {})
+      .pipe(map((res) => res.data));
   }
+
+
 
 }
 

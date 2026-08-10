@@ -77,7 +77,7 @@ export class Dashboard {
         takeUntil(this.destroy$),
       )
       .subscribe((data) => {
-// console.log(data);
+        // console.log(data);
 
         if (!data) return;
         this.cardData.set(data);
@@ -90,9 +90,9 @@ export class Dashboard {
     this.fetchCardTrigger$.next();
   }
 
-  loadData() {}
+  loadData() { }
 
-  openClientDetails(client: ClientRow) {}
+  openClientDetails(client: ClientRow) { }
 
   private mapDatumToClientRow(raw: Datum): ClientRow {
     return {
@@ -274,5 +274,8 @@ export class Dashboard {
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
       ],
     };
-  });
+  }); ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 }
