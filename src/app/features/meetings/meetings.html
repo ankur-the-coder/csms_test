@@ -226,7 +226,7 @@
 
     <!-- Table View — powered by the shared DataTable component -->
     @if (activeView === 'table') {
-    <app-data-table [config]="tableConfig()">
+    <app-data-table [config]="tableConfig()" [filterNames]="['meetingStatus','meetingPriority']">
 
       <!-- ── Meeting Title column ──────────────────────────────────────── -->
       <ng-template appCustomColumn="title" let-row>

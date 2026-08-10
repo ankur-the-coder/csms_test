@@ -213,8 +213,10 @@
   @if (hasActiveFilter()) {
   <div
     class="st-filter-chips flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-[--st-border] bg-[--st-surface]">
-    <span class="st-filter-chips-label text-[12px] font-bold text-[--st-accent] uppercase tracking-[0.04em]">Active
-      Filters:</span>
+    <span
+      class="st-filter-chips-label text-[12px] font-bold text-[--st-accent] uppercase tracking-[0.04em] border-r border-[--st-border] pr-3">
+      Active Filters:
+    </span>
     @for (filter of allFilters(); track filter.key) {
     @if (hasFilterChip(filter)) {
     <div
