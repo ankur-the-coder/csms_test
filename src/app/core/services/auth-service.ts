@@ -67,6 +67,10 @@ export class AuthService {
     return this.isBrowser ? (localStorage.getItem('designation') ?? '') : '';
   }
 
+  getEmpId(): string {
+    return this.isBrowser ? (localStorage.getItem('empId') ?? '') : '';
+  }
+
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
       return;
