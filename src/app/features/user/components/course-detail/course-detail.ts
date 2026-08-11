@@ -1,10 +1,12 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { CircularProgress } from '../circular-progress/circular-progress';
 import { CommonModule } from '@angular/common';
 import { SafeResourceUrl, DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LearnerCourseService } from '../../services/learner-course.service';
 import { CourseDetail as CourseDetailModel, CourseModuleDetail } from '../../models/course.model';
+import { environment } from '../../../../../environments/environment';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -22,16 +24,17 @@ export class CourseDetail implements OnInit {
   activePdfUrl: SafeResourceUrl | null = null;
   activePdfTitle: string | null = null;
 
-  loading = false;
+  loading = true;
   error = '';
-  wasAlreadyCompleted = false;
+  isLastModuleFlag = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private learnerCourseService: LearnerCourseService,
     private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit(): void {
@@ -42,7 +45,9 @@ export class CourseDetail implements OnInit {
       this.cdr.markForCheck();
       return;
     }
-    this.fetchCourse(courseId);
+    if (isPlatformBrowser(this.platformId)) {
+      this.fetchCourse(courseId);
+    }
   }
 
   fetchCourse(courseId: string): void {
@@ -61,7 +66,6 @@ export class CourseDetail implements OnInit {
         next: (res) => {
           try {
             this.course = res;
-            this.wasAlreadyCompleted = res?.enrollment?.status === 'completed';
             this.loading = false;
             if (res?.modules?.length) {
               const firstIncomplete = res.modules.find((m) => !m.is_completed);
@@ -84,6 +88,11 @@ export class CourseDetail implements OnInit {
     this.safeVideoUrl = module.video_url
       ? this.sanitizer.bypassSecurityTrustResourceUrl(this.toEmbedUrl(module.video_url))
       : null;
+    // Compute once and store so the template never relies on a getter that can return stale -1
+    if (this.course) {
+      const idx = this.course.modules.findIndex((m) => String(m.id) === String(module.id));
+      this.isLastModuleFlag = idx === this.course.modules.length - 1;
+    }
     this.closePdfViewer();
     this.cdr.markForCheck();
   }
@@ -138,7 +147,8 @@ export class CourseDetail implements OnInit {
   // ── Step navigation (Back / Next / Finish) ──────────────────────────
   get activeModuleIndex(): number {
     if (!this.course || !this.activeModule) return -1;
-    return this.course.modules.findIndex((m) => m.id === this.activeModule!.id);
+    // eslint-disable-next-line eqeqeq
+    return this.course.modules.findIndex((m) => m.id == this.activeModule!.id);
   }
 
   get isFirstModule(): boolean {
@@ -146,8 +156,7 @@ export class CourseDetail implements OnInit {
   }
 
   get isLastModule(): boolean {
-    if (!this.course) return true;
-    return this.activeModuleIndex === this.course.modules.length - 1;
+    return this.isLastModuleFlag;
   }
 
   goToPreviousModule(): void {
@@ -160,36 +169,27 @@ export class CourseDetail implements OnInit {
     this.selectModule(this.course.modules[this.activeModuleIndex + 1]);
   }
 
-  showCongratsModal = false;
-
   finishCourse(): void {
-    if (this.activeModule && !this.activeModule.is_completed) {
-      this.markComplete(this.activeModule);
-    }
-    
-    const allCompleted = this.course?.modules.every(m => m.is_completed) ?? false;
-
-    if (this.wasAlreadyCompleted || !allCompleted) {
-      this.router.navigate(['/courses']);
-    } else {
-      this.showCongratsModal = true;
-      this.cdr.markForCheck();
-    }
-  }
-
-  closeCongratsModal(): void {
-    this.showCongratsModal = false;
     this.router.navigate(['/courses']);
   }
 
   // ── Materials / full-screen PDF viewer ──────────────────────────────
+  getFullUrl(mat: { file_url?: string; file_path?: string }): string {
+    let url = mat.file_url || mat.file_path || '';
+    if (url && !url.startsWith('http')) {
+      const baseUrl = environment.apiUrl.endsWith('/') ? environment.apiUrl.slice(0, -1) : environment.apiUrl;
+      url = `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    }
+    return url;
+  }
+
   isPdf(mat: { file_url?: string; file_path?: string }): boolean {
-    const url = mat.file_url || mat.file_path || '';
+    const url = this.getFullUrl(mat);
     return url.toLowerCase().split('?')[0].endsWith('.pdf');
   }
 
   openMaterial(mat: { title: string; file_url?: string; file_path?: string }): void {
-    const url = mat.file_url || mat.file_path || '';
+    const url = this.getFullUrl(mat);
     if (!url) return;
 
     if (this.isPdf(mat)) {
@@ -200,6 +200,29 @@ export class CourseDetail implements OnInit {
     } else {
       window.open(url, '_blank');
     }
+  }
+
+  /** Returns a safe URL for PDF inline viewing */
+  getPdfSafeUrl(mat: { file_url?: string; file_path?: string }): SafeResourceUrl {
+    const url = this.getFullUrl(mat);
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  downloadMaterial(mat: { title: string; file_url?: string; file_path?: string }): void {
+    const url = this.getFullUrl(mat);
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = mat.title || 'download';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.click();
+  }
+
+  /** Returns the first PDF material from the active module (used as fallback when no video) */
+  get firstModulePdf(): { title: string; file_url?: string; file_path?: string } | null {
+    if (!this.activeModule?.materials?.length) return null;
+    return this.activeModule.materials.find(m => this.isPdf(m)) ?? null;
   }
 get completedModulesCount(): number {
   if (!this.course?.modules) return 0;
