@@ -59,12 +59,12 @@ export class AuthService {
     return this.isBrowser ? (localStorage.getItem('userName') ?? '') : '';
   }
 
-  getDesignation(): string {
-    return this.isBrowser ? (localStorage.getItem('designation') ?? '') : '';
-  }
-
   getEmpId(): string {
     return this.isBrowser ? (localStorage.getItem('empId') ?? '') : '';
+  }
+
+  getDesignation(): string {
+    return this.isBrowser ? (localStorage.getItem('designation') ?? '') : '';
   }
 
   private persistSession(data: Data): void {
