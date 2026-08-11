@@ -29,6 +29,9 @@ export interface TrainingResponse {
   providedIn: 'root'
 })
 export class TrainingService {
+  updateModule(id: number, payload: any): Observable<any> {
+    return this.http.put<any>(`${this.API_URL}/courses/admin/modules/${id}`, payload);
+  }
 
   private http = inject(HttpClient);
 
@@ -51,7 +54,7 @@ export class TrainingService {
     return this.http.post<any>(`${this.API_URL}/courses/admin/create`, payload);
   }
 
-  getCourseDetails(courseId: number, userId: number = 2254960): Observable<any> {
+  getCourseDetails(courseId: number, userId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/courses/learner/${courseId}?user_id=${userId}`);
   }
 
@@ -70,5 +73,9 @@ export class TrainingService {
   deleteModule(id: number): Observable<any> {
     return this.http.delete<any>(`${this.API_URL}/courses/admin/modules/${id}`);
   }
+
+  
+
+  
 
 }  

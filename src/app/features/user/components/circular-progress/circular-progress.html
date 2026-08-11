@@ -1,0 +1,41 @@
+<div class="relative inline-flex items-center justify-center">
+  <svg
+    [attr.width]="size"
+    [attr.height]="size"
+    [attr.viewBox]="'0 0 ' + size + ' ' + size"
+    class="-rotate-90"
+  >
+    <!-- Track -->
+    <circle
+      [attr.cx]="size / 2"
+      [attr.cy]="size / 2"
+      [attr.r]="radius"
+      fill="none"
+      stroke="#e2e8f0"
+      [attr.stroke-width]="strokeWidth"
+    ></circle>
+    <!-- Progress arc -->
+    <circle
+      [attr.cx]="size / 2"
+      [attr.cy]="size / 2"
+      [attr.r]="radius"
+      fill="none"
+      [attr.stroke]="strokeColor"
+      [attr.stroke-width]="strokeWidth"
+      stroke-linecap="round"
+      [attr.stroke-dasharray]="circumference"
+      [attr.stroke-dashoffset]="dashOffset"
+      class="transition-all duration-500"
+    ></circle>
+  </svg>
+  <!-- Label -->
+  <span
+    class="absolute text-center font-bold leading-none"
+    [style.font-size.px]="size * 0.22"
+    [ngClass]="{
+      'text-emerald-600': percent >= 100,
+      'text-amber-500':   percent > 0 && percent < 100,
+      'text-slate-400':   percent === 0
+    }"
+  >{{ percent }}%</span>
+</div>

@@ -43,6 +43,8 @@ export class Layout {
     if (url.includes('health')) return 'health';
     if (url.includes('support')) return 'support';
     if (url.includes('settings')) return 'settings';
+    if (url.includes('my-learning')) return 'my-learning';
+    if (url.includes('courses')) return 'courses';
     return '';
   }
 
