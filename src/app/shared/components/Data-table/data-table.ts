@@ -331,7 +331,9 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (!this.config().apiConfig) {
       this.totalCount.set(this.clientRows().length);
     }
-  }, { allowSignalWrites: true });
+  },
+  // { allowSignalWrites: true }
+);
 
   displayRows = computed<any[]>(() =>
     this.config().apiConfig ? this.rows() : this.clientPagedRows()
@@ -1326,7 +1328,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
   toggleDropdown(key: string, event?: MouseEvent): void {
     const opening = this.activeDropdownKey() !== key;
-    
+
     // Close all SingleInput components
     this.singleInputComponents?.forEach(comp => comp.closeDropdown());
 
