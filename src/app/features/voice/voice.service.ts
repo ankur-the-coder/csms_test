@@ -187,6 +187,39 @@ export class WebRtcVoiceService {
   setRemoteAudioElement(el: HTMLAudioElement): void {
     this.remoteAudioEl = el;
     console.log('[Voice][Media] Remote audio element registered.');
+    this.wireRemoteAudioActiveDetection();
+  }
+
+  /**
+   * Ground-truth 'call is actually connected' detection, independent of
+   * the Telnyx SDK's call.state notification strings.
+   *
+   * newCall()/answer() are passed `remoteElement: this.remoteAudioEl`,
+   * which lets the SDK auto-attach and play the remote stream on that
+   * element *internally* -- decoupled from whatever callUpdate state
+   * string handleTelnyxNotification happens to recognize. That's how
+   * audio was confirmed working (both sides talking) while `status` never
+   * flipped to 'active' and Hold stayed disabled: the SDK's own auto-wire
+   * doesn't route through our state-string matching at all.
+   *
+   * The browser's native 'playing' event on the <audio> element is the one
+   * signal that can't lie -- it only fires once audio is genuinely
+   * decoding and playing. Wired once per element (idempotent via a flag on
+   * the element itself, since setRemoteAudioElement could theoretically be
+   * called more than once with the same element).
+   */
+  private wireRemoteAudioActiveDetection(): void {
+    if (!this.remoteAudioEl || (this.remoteAudioEl as any).__activeDetectionWired) return;
+    (this.remoteAudioEl as any).__activeDetectionWired = true;
+
+    this.remoteAudioEl.addEventListener('playing', () => {
+      const cur = this.activeCall();
+      if (cur && cur.status !== 'active' && cur.status !== 'held') {
+        console.log('[Voice][Call] Remote audio element fired "playing" -- forcing status → active (SDK notification state was stale/unmatched).');
+        this.activeCall.set({ ...cur, status: 'active', startTime: cur.startTime || new Date() });
+        this.startTimer();
+      }
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -712,12 +745,11 @@ export class WebRtcVoiceService {
   async rejectCall(): Promise<void> {
     const current = this.activeCall();
 
-    // Reject via SDK if we have the call
+    // Same reasoning as hangupCall: SDK hangup already ends the call at
+    // Telnyx's end -- a follow-up REST /reject would 422 the same way.
     if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
       try { this.activeRTCCall.hangup(); } catch { /* ignore */ }
-    }
-
-    if (current?.callLogId) {
+    } else if (current?.callLogId) {
       try {
         await fetch(`${this.API_BASE}/reject`, {
           method: 'POST',
@@ -767,60 +799,54 @@ export class WebRtcVoiceService {
 
     const isHolding = current.isHeld;
 
-    // SDK hold/unhold if available — this must run regardless of whether
-    // callLogId has arrived yet, since the WebRTC-level hold/unhold is
-    // independent of the backend record. Previously this whole method
-    // returned early on missing callLogId, silently skipping even the
-    // SDK-level toggle for freshly-answered outbound calls.
-    if (this.activeRTCCall) {
-      try {
-        if (isHolding) {
-          this.activeRTCCall.unhold?.();
-        } else {
-          this.activeRTCCall.hold?.();
-        }
-      } catch { /* fall through to REST */ }
-    }
-
-    if (!current.callLogId) {
-      // No backend record yet to sync against — still reflect the SDK-level
-      // toggle locally so the UI isn't stuck, but warn since the backend
-      // (and other connected clients via SSE) won't know about this yet.
-      console.warn('[Voice][Hold] No callLogId yet — toggled via SDK only, backend not notified. It will resync once callLogId arrives via SSE.');
-      this.activeCall.set({ ...current, isHeld: !isHolding, status: !isHolding ? 'held' : 'active' });
+    if (!this.activeRTCCall) {
+      console.warn('[Voice][Hold] No activeRTCCall -- there is no live SDK call session to hold.');
+      this.errorMessage.set('No active call session to hold.');
       return;
     }
 
-    const endpoint = isHolding ? 'resume' : 'hold';
-
+    // hold()/unhold() are async -- they send a signaling message to Telnyx
+    // and wait for the server to confirm. The previous code called these
+    // without awaiting them (`activeRTCCall.hold?.()`), so it flipped the UI
+    // to 'held' immediately regardless of whether Telnyx actually confirmed
+    // it -- and if the request failed, that rejection happened *after* this
+    // function had already returned, so the surrounding try/catch (which
+    // only catches synchronous throws) never saw it. The call kept flowing
+    // normally (mic still live, other party still hearing you) while the UI
+    // silently lied about being on hold. Awaiting it here means we only
+    // update the UI once Telnyx has genuinely confirmed the hold/unhold.
     try {
-      const res = await fetch(`${this.API_BASE}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callLogId: current.callLogId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.status) throw new Error(data.message || `${endpoint} failed`);
-
-      this.activeCall.set({ ...current, isHeld: !isHolding, status: !isHolding ? 'held' : 'active' });
+      if (isHolding) {
+        await this.activeRTCCall.unhold();
+        console.log('[Voice][Call] Telnyx confirmed UNHOLD.');
+      } else {
+        await this.activeRTCCall.hold();
+        console.log('[Voice][Call] Telnyx confirmed HOLD.');
+      }
     } catch (err: any) {
-      this.errorMessage.set(`Hold/Resume Failed: ${err.message}`);
+      console.error(`[Voice][Call] Telnyx REJECTED ${isHolding ? 'unhold' : 'hold'}:`, err);
+      this.errorMessage.set(`Hold/Resume was rejected by Telnyx: ${err?.message || err}`);
+      return; // do NOT flip the UI -- the call is genuinely still not held
     }
+
+    this.activeCall.set({ ...current, isHeld: !isHolding, status: !isHolding ? 'held' : 'active' });
   }
 
   async hangupCall(): Promise<void> {
     const current = this.activeCall();
 
-    // Hangup via SDK (terminates WebRTC media immediately)
+    // SDK hangup already terminates the call at Telnyx's end -- the WebRTC
+    // leg *is* the Call Control leg, same session. A follow-up REST /hangup
+    // 422s ("Call has already ended") since Telnyx already closed it, and
+    // call_logs still updates to 'completed' independently via the
+    // call.hangup webhook regardless of which side ended it. Only fall back
+    // to REST when there's no SDK call object to act on.
     if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
       try {
         this.activeRTCCall.hangup();
         console.log('[Voice][Call] Call hung up via TelnyxRTC SDK');
       } catch { /* ignore */ }
-    }
-
-    // Also tell the backend (Call Control hangup)
-    if (current?.callLogId) {
+    } else if (current?.callLogId) {
       try {
         await fetch(`${this.API_BASE}/hangup`, {
           method: 'POST',

@@ -92,13 +92,13 @@ import { WebRtcVoiceService } from '../../features/voice/voice.service';
             <span>{{ activeCall()?.isMuted ? '🔇 Unmute' : '🎙️ Mute' }}</span>
           </button>
 
-          <button
+          <!-- <button
             (click)="onHoldToggle()"
             [class.bg-amber-900\/50]="activeCall()?.isHeld"
             class="py-2 px-3 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex flex-col items-center gap-1"
           >
             <span>{{ activeCall()?.isHeld ? '▶️ Resume' : '⏸️ Hold' }}</span>
-          </button>
+          </button> -->
 
           <button
             (click)="onHangup()"

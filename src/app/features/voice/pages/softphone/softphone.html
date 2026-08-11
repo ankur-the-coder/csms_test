@@ -281,12 +281,12 @@
             </button>
 
             <!-- Hold / Resume Button -->
-            <button (click)="voiceService.toggleHold()" [disabled]="call.status !== 'active' && call.status !== 'held'"
+            <!-- <button (click)="voiceService.toggleHold()" [disabled]="call.status !== 'active' && call.status !== 'held'"
               class="py-3 px-4 rounded-xl border border-slate-700 hover:bg-slate-800 disabled:opacity-40 text-slate-200 font-semibold text-sm transition-all flex items-center justify-center gap-2"
               [ngClass]="{ 'bg-purple-500/20 border-purple-500 text-purple-300': call.isHeld }">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <span>{{ call.isHeld ? 'Resume Call' : 'Hold Call' }}</span>
-            </button>
+            </button> -->
           </div>
 
           <!-- End Call / Hangup Button -->
