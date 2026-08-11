@@ -1,8 +1,10 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, OnInit, signal, WritableSignal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
 import { Charts } from '../../../../shared/components/inputs/charts/charts';
+import { DashboardService } from '../../service/dashboard-service';
+import { Data } from '../../models/dashboardModel';
 
 @Component({
   selector: 'app-dashboard',
@@ -10,12 +12,92 @@ import { Charts } from '../../../../shared/components/inputs/charts/charts';
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
+  cardData = signal<Data | null>(null);
 
-  constructor(private router: Router) {}
+  // Animated (count-up) display values for the top stat cards — these start
+  // at 0 and tween up to the real API value whenever cardData() updates.
+  animatedTotalClients = signal(0);
+  animatedLiveClients = signal(0);
+  animatedImplPending = signal(0);
+  animatedTrainingPending = signal(0);
+  animatedMeeting = signal(0);
+
+  constructor(
+    private router: Router,
+    private dashboardService: DashboardService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.fetchDashboardCards();
+  }
+
+  fetchDashboardCards(): void {
+    this.dashboardService.getDashboardCards().subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.cardData.set(res.data);
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+
+          this.animateCount(this.animatedTotalClients, res.data.totalClients);
+          this.animateCount(this.animatedLiveClients, res.data.liveClients);
+          this.animateCount(this.animatedImplPending, res.data.implPending);
+          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+          this.animateCount(this.animatedMeeting, res.data.meeting);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching dashboard cards:', err);
+      }
+    });
+  }
+
+  /** Tweens a signal from its current value up (or down) to `target` over `duration`ms. */
+  private animateCount(target$: WritableSignal<number>, target: number, duration = 900): void {
+    if (typeof window === 'undefined') {
+      // SSR — no requestAnimationFrame available, just set the final value.
+      target$.set(target);
+      return;
+    }
+
+    const start = target$();
+    if (start === target) return;
+
+    const startTime = performance.now();
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+      target$.set(Math.round(start + (target - start) * eased));
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        target$.set(target);
+      }
+    };
+
+    requestAnimationFrame(step);
+  }
+
+  navigateToClient() {
+    this.router.navigate(['/client']);
+  }
 
   navigateToImplementation() {
     this.router.navigate(['/implementation']);
+  }
+
+  navigateToTraining() {
+    this.router.navigate(['/training']);
+  }
+
+  navigateToMeetings() {
+    this.router.navigate(['/meetings']);
   }
 
   // Health Score Distribution donut data
