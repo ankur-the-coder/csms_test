@@ -1,0 +1,117 @@
+﻿<div class="mdp-root" (click)="$event.stopPropagation()">
+
+  <!-- ── Tabs ─────────────────────────────────────── -->
+  <div class="mdp-tabs-bar">
+    @for (tab of tabs; track tab) {
+      <button
+        class="mdp-tab-btn"
+        [class.active]="activeTab() === tab"
+        (click)="setTab(tab)"
+      >{{ tab | titlecase }}</button>
+    }
+  </div>
+
+  <!-- ── Body: sidebar + panel ────────────────────── -->
+  <div class="mdp-body">
+
+    <!-- Sidebar quick-selectors -->
+    <div class="mdp-sidebar">
+      @if (activeTab() === "month") {
+        <button class="mdp-quick" (click)="selectThisMonth()">This Month</button>
+        <button class="mdp-quick" (click)="selectLastMonth()">Last Month</button>
+        <button class="mdp-quick" (click)="selectNextMonth()">Next Month</button>
+      }
+      @if (activeTab() === "week") {
+        <button class="mdp-quick" (click)="selectThisWeek()">This Week</button>
+        <button class="mdp-quick" (click)="selectLastWeek()">Last Week</button>
+        <button class="mdp-quick" (click)="selectNextWeek()">Next Week</button>
+      }
+      @if (activeTab() === "day") {
+        <button class="mdp-quick" (click)="selectThisDay()">This Day</button>
+        <button class="mdp-quick" (click)="selectLastDay()">Last Day</button>
+        <button class="mdp-quick" (click)="selectNextDay()">Next Day</button>
+      }
+      <div class="mdp-sidebar-spacer"></div>
+      <button class="mdp-reset" (click)="reset()">Reset</button>
+    </div>
+
+    <!-- Main panel -->
+    <div class="mdp-panel">
+
+      <!-- Navigator row -->
+      <div class="mdp-nav-row">
+        <span class="mdp-period-label">
+          @if (activeTab() === "month") { {{ displayYear() }} }
+          @else { {{ displayMonthLabel() }} }
+        </span>
+        <div class="mdp-nav-arrows">
+          <button class="mdp-arrow-btn" (click)="prevPeriod()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <button class="mdp-arrow-btn" (click)="nextPeriod()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ Month grid (3 x 4) ══ -->
+      @if (activeTab() === "month") {
+        <div class="mdp-month-grid">
+          @for (mn of monthNames; track $index; let i = $index) {
+            <button
+              class="mdp-month-cell"
+              [class.selected]="isSelectedMonth(i)"
+              [class.is-today]="isTodayMonth(i) && !isSelectedMonth(i)"
+              (click)="selectMonth(i)"
+            >
+              <span class="mdp-mc-name">{{ mn }}</span>
+              <span class="mdp-mc-year">{{ displayYear() }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- ══ Week list ══ -->
+      @if (activeTab() === "week") {
+        <div class="mdp-week-list">
+          @for (w of weeksInMonth(); track w.num) {
+            <button
+              class="mdp-week-row"
+              [class.selected]="isSelectedWeek(w)"
+              [class.is-today]="isTodayWeek(w) && !isSelectedWeek(w)"
+              (click)="selectWeek(w)"
+            >
+              <span class="mdp-wk-label">{{ w.label }}</span>
+              <span class="mdp-wk-range">{{ formatWeekRange(w.start, w.end) }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- ══ Day grid ══ -->
+      @if (activeTab() === "day") {
+        <div class="mdp-dow-header">
+          @for (d of dowLabels; track d) {
+            <div class="mdp-dow-label">{{ d }}</div>
+          }
+        </div>
+        <div class="mdp-day-grid">
+          @for (d of daysGrid(); track $index) {
+            <button
+              class="mdp-day-cell"
+              [class.selected]="isSelectedDay(d)"
+              [class.is-today]="isToday(d) && !isSelectedDay(d)"
+              [class.other-month]="!isCurrentMonthDay(d)"
+              (click)="selectDay(d)"
+            >{{ d.getDate() }}</button>
+          }
+        </div>
+      }
+
+    </div><!-- /mdp-panel -->
+  </div><!-- /mdp-body -->
+</div>

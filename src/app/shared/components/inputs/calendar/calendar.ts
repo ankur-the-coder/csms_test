@@ -1,5 +1,6 @@
 import { Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MonthDatePicker } from '../month-date-picker/month-date-picker';
 
 export interface DayEvent {
   title: string;
@@ -32,7 +33,7 @@ export interface CalendarDay {
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule],
+  imports: [CommonModule, MonthDatePicker],
   templateUrl: './calendar.html',
   styleUrl: './calendar.css',
 })
@@ -45,6 +46,8 @@ export class Calendar {
   viewMode = signal<'day' | 'week' | 'month'>('month');
   readonly viewModes: Array<'day' | 'week' | 'month'> = ['day', 'week', 'month'];
   anchorDate = signal<Date>(new Date());
+
+  pickerOpen = signal(false);
 
   scheduleDrawerOpen = signal(false);
   scheduleDrawerDate = signal<Date | null>(null);
@@ -87,7 +90,7 @@ export class Calendar {
     const month = ref.getMonth();
 
     const firstOfMonth = new Date(year, month, 1);
-    const firstWeekday = (firstOfMonth.getDay() + 6) % 7;
+    const firstWeekday = firstOfMonth.getDay();
     const gridStart = new Date(year, month, 1 - firstWeekday);
 
     const days: CalendarDay[] = [];
@@ -105,7 +108,7 @@ export class Calendar {
   // Week View
   readonly weekDays = computed<CalendarDay[]>(() => {
     const ref = this.anchorDate();
-    const weekday = (ref.getDay() + 6) % 7;
+    const weekday = ref.getDay();
     const weekStart = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - weekday);
     const days: CalendarDay[] = [];
     for (let i = 0; i < 7; i++) {
@@ -168,6 +171,24 @@ export class Calendar {
   setViewMode(mode: 'day' | 'week' | 'month') {
     this.viewMode.set(mode);
     this.viewModeChange.emit(mode);
+  }
+
+  togglePicker() {
+    this.pickerOpen.update(v => !v);
+  }
+
+  closePicker() {
+    this.pickerOpen.set(false);
+  }
+
+  onPickerDateSelected(d: Date) {
+    this.anchorDate.set(d);
+    this.pickerOpen.set(false);
+    this.dateSelect.emit(d);
+  }
+
+  onPickerModeChange(mode: 'month' | 'week' | 'day') {
+    this.setViewMode(mode);
   }
 
   selectDay(date: Date) {
