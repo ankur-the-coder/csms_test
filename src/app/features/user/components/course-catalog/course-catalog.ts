@@ -22,7 +22,7 @@ export class FilterByStatusPipe implements PipeTransform {
 export class CourseCatalog implements OnInit {
   courses: CatalogCourse[] = [];
   totalCourses = 0;
-  loading = false;
+  loading = true;
   error = '';
 
   constructor(

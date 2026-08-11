@@ -30,6 +30,9 @@ export class Sidebar {
 
   collapsed = false;
 
+  // Controls whether the "Training" accordion is open or closed
+  trainingExpanded = true;
+
   mainNavItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
@@ -52,6 +55,12 @@ export class Sidebar {
 
   toggleCollapse() {
     this.collapsed = !this.collapsed;
+  }
+
+  toggleTraining() {
+    if (!this.collapsed) {
+      this.trainingExpanded = !this.trainingExpanded;
+    }
   }
 
   selectNav(id: string) {

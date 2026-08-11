@@ -49,17 +49,30 @@
     <header class="bg-white border-b border-slate-200 h-25 shadow-xs">
       <div class="w-full px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
         
+        <!-- Back Arrow Button -->
+        <button
+          (click)="backToCatalog()"
+          class="shrink-0 h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200
+                 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-500 hover:text-slate-800
+                 transition-all active:scale-95 shadow-xs"
+          title="Back to catalog"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+
         <!-- Course Title & Meta -->
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 mb-0.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
               Course
             </span>
-            <span class="text-[11px] font-semibold text-slate-400">
+            <!-- <span class="text-[11px] font-semibold text-slate-400">
               CRS-{{ course.id.toString().padStart(3, '0') }}
-            </span>
+            </span> -->
           </div>
-          <div class="font-semibold sm:text-3xl  font-black text-slate-800 truncate tracking-tight">
+          <div class="font-semibold sm:text-3xl text-2xl font-black text-slate-800 truncate tracking-tight">
             {{ course.title }}
           </div>
         </div>
@@ -325,10 +338,10 @@
           *ngIf="isLastModule"
           (click)="finishCourse()"
           class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
-                 bg-slate-900 hover:bg-slate-800 active:scale-95 transition-all
-                 shadow-sm shadow-slate-900/20"
+                 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
+                 shadow-sm shadow-emerald-600/20"
         >
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
           </svg>
           Finish Course
@@ -362,6 +375,40 @@
       </button>
     </div>
     <iframe [src]="activePdfUrl" class="flex-1 w-full bg-slate-800" frameborder="0"></iframe>
+  </div>
+
+  <!-- ── Congratulations Modal ──────────────────────────────────────── -->
+  <div *ngIf="showCongratsModal"
+       class="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border border-slate-100 relative overflow-hidden transform transition-all duration-300 scale-100">
+      
+      <!-- Sparkle/Confetti decorative background details -->
+      <div class="absolute -top-10 -left-10 w-32 h-32 bg-emerald-100 rounded-full blur-3xl opacity-50"></div>
+      <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-100 rounded-full blur-3xl opacity-50"></div>
+
+      <!-- Celebratory Trophy Icon Container -->
+      <div class="mx-auto w-20 h-20 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6 shadow-sm relative z-10">
+        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
+      </div>
+
+      <!-- Content -->
+      <h3 class="text-2xl font-black text-slate-800 mb-2 relative z-10">
+        Congratulations!
+      </h3>
+      <p class="text-sm text-slate-500 mb-6 leading-relaxed relative z-10">
+        You have successfully completed the course <strong class="text-slate-800">{{ course?.title }}</strong>. We are proud of your dedication and achievement!
+      </p>
+
+      <!-- Action Button -->
+      <button (click)="closeCongratsModal()"
+              class="w-full py-3.5 px-6 rounded-2xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98] transition-all shadow-md shadow-emerald-600/20 relative z-10">
+        Back to Catalog
+      </button>
+
+    </div>
   </div>
 
 </div>

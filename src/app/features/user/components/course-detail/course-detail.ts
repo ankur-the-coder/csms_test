@@ -24,6 +24,7 @@ export class CourseDetail implements OnInit {
 
   loading = false;
   error = '';
+  wasAlreadyCompleted = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -60,6 +61,7 @@ export class CourseDetail implements OnInit {
         next: (res) => {
           try {
             this.course = res;
+            this.wasAlreadyCompleted = res?.enrollment?.status === 'completed';
             this.loading = false;
             if (res?.modules?.length) {
               const firstIncomplete = res.modules.find((m) => !m.is_completed);
@@ -158,10 +160,25 @@ export class CourseDetail implements OnInit {
     this.selectModule(this.course.modules[this.activeModuleIndex + 1]);
   }
 
+  showCongratsModal = false;
+
   finishCourse(): void {
     if (this.activeModule && !this.activeModule.is_completed) {
       this.markComplete(this.activeModule);
     }
+    
+    const allCompleted = this.course?.modules.every(m => m.is_completed) ?? false;
+
+    if (this.wasAlreadyCompleted || !allCompleted) {
+      this.router.navigate(['/courses']);
+    } else {
+      this.showCongratsModal = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  closeCongratsModal(): void {
+    this.showCongratsModal = false;
     this.router.navigate(['/courses']);
   }
 
