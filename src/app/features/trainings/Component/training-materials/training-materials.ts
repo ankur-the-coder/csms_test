@@ -66,6 +66,13 @@ export class TrainingMaterials implements OnInit {
     return modules.filter((m) => m.title.toLowerCase().includes(term));
   });
 
+  // Delete Confirmation Modal State
+  isDeleteConfirmOpen = signal<boolean>(false);
+  isDeleting = signal<boolean>(false);
+  deleteConfirmMessage = signal<string>('');
+  private deleteTargetType: 'module' | 'material' | null = null;
+  private deleteTargetId: string | null = null;
+
   // Modal / Form States
   isUploadModalOpen = false;
   isAddModuleModalOpen = false;
@@ -93,27 +100,39 @@ export class TrainingMaterials implements OnInit {
     this.loadCourses();
   }
 
-  loadCourses(selectId?: number): void {
+  loadCourses(): void {
     this.loading.set(true);
     this.error.set(null);
+
     this.trainingService.getCourses().subscribe({
       next: (res) => {
         this.loading.set(false);
-        if (res.status && res.data) {
-          this.courses.set(res.data);
-          if (res.data.length > 0) {
-            const idToSelect = selectId || res.data[0].id;
-            this.selectCourse(idToSelect);
-          } else {
-            this.courses.set([]);
-          }
+
+        if (res.status && res.data?.length > 0) {
+
+          const sorted = [...res.data].sort(
+            (a: Course, b: Course) => a.id - b.id
+          );
+
+          this.courses.set(sorted);
+
+          // Always select the first course
+          this.selectCourse(sorted[0].id);
+
         } else {
           this.courses.set([]);
+          this.selectedCourseId.set(null);
+          this.courseModules.set([]);
+          this.courseMaterials.set([]);
         }
       },
+
       error: (err) => {
         this.loading.set(false);
-        this.error.set('Unable to load courses. The backend service or API may be temporarily unavailable.');
+        this.error.set(
+          'Unable to load courses. The backend service or API may be temporarily unavailable.'
+        );
+
         console.error('Failed to load courses', err);
       }
     });
@@ -124,6 +143,68 @@ export class TrainingMaterials implements OnInit {
     this.searchTerm.set(''); // Reset search when switching courses
     this.loadCourseDetails(courseId);
   }
+
+  deleteModule(id: string): void {
+    this.deleteTargetType = 'module';
+    this.deleteTargetId = id;
+    this.deleteConfirmMessage.set('Are you sure you want to delete this module and all its materials?');
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  deleteMaterial(id: string): void {
+    this.deleteTargetType = 'material';
+    this.deleteTargetId = id;
+    this.deleteConfirmMessage.set('Are you sure you want to delete this material?');
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  cancelDelete(): void {
+    this.isDeleteConfirmOpen.set(false);
+    this.isDeleting.set(false);
+    this.deleteTargetType = null;
+    this.deleteTargetId = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteTargetType || !this.deleteTargetId) return;
+
+    this.isDeleting.set(true);
+
+    if (this.deleteTargetType === 'module') {
+      this.trainingService.deleteModule(Number(this.deleteTargetId)).subscribe({
+        next: (res) => {
+          this.isDeleting.set(false);
+          if (res.status) {
+            const courseId = this.selectedCourseId();
+            if (courseId) this.loadCourseDetails(courseId);
+          }
+          this.cancelDelete();
+        },
+        error: (err) => {
+          this.isDeleting.set(false);
+          console.error('Failed to delete module', err);
+          this.cancelDelete();
+        }
+      });
+    } else if (this.deleteTargetType === 'material') {
+      this.trainingService.deleteMaterial(Number(this.deleteTargetId)).subscribe({
+        next: (res) => {
+          this.isDeleting.set(false);
+          if (res.status) {
+            const courseId = this.selectedCourseId();
+            if (courseId) this.loadCourseDetails(courseId);
+          }
+          this.cancelDelete();
+        },
+        error: (err) => {
+          this.isDeleting.set(false);
+          console.error('Failed to delete material', err);
+          this.cancelDelete();
+        }
+      });
+    }
+  }
+
 
   loadCourseDetails(courseId: number): void {
     this.trainingService.getCourseDetails(courseId, Number(this.authService.getEmpId())).subscribe({
@@ -271,19 +352,19 @@ export class TrainingMaterials implements OnInit {
     });
   }
 
-  deleteMaterial(id: string): void {
-    if (confirm('Are you sure you want to delete this material?')) {
-      this.trainingService.deleteMaterial(Number(id)).subscribe({
-        next: (res) => {
-          if (res.status) {
-            const courseId = this.selectedCourseId();
-            if (courseId) this.loadCourseDetails(courseId);
-          }
-        },
-        error: (err) => console.error('Failed to delete material', err)
-      });
-    }
-  }
+  // deleteMaterial(id: string): void {
+  //   if (confirm('Are you sure you want to delete this material?')) {
+  //     this.trainingService.deleteMaterial(Number(id)).subscribe({
+  //       next: (res) => {
+  //         if (res.status) {
+  //           const courseId = this.selectedCourseId();
+  //           if (courseId) this.loadCourseDetails(courseId);
+  //         }
+  //       },
+  //       error: (err) => console.error('Failed to delete material', err)
+  //     });
+  //   }
+  // }
 
   addCourse(): void {
     if (!this.newCourseTitle.trim()) return;
@@ -302,7 +383,7 @@ export class TrainingMaterials implements OnInit {
       next: (res) => {
         this.isSavingCourse.set(false);
         if (res.status && res.data) {
-          this.loadCourses(res.data.id);
+          this.loadCourses();
           this.closeAddCourseModal();
         }
       },
@@ -434,19 +515,19 @@ export class TrainingMaterials implements OnInit {
     });
   }
 
-  deleteModule(id: string): void {
-    if (confirm('Are you sure you want to delete this module and all its materials?')) {
-      this.trainingService.deleteModule(Number(id)).subscribe({
-        next: (res) => {
-          if (res.status) {
-            const courseId = this.selectedCourseId();
-            if (courseId) this.loadCourseDetails(courseId);
-          }
-        },
-        error: (err) => console.error('Failed to delete module', err)
-      });
-    }
-  }
+  // deleteModule(id: string): void {
+  //   if (confirm('Are you sure you want to delete this module and all its materials?')) {
+  //     this.trainingService.deleteModule(Number(id)).subscribe({
+  //       next: (res) => {
+  //         if (res.status) {
+  //           const courseId = this.selectedCourseId();
+  //           if (courseId) this.loadCourseDetails(courseId);
+  //         }
+  //       },
+  //       error: (err) => console.error('Failed to delete module', err)
+  //     });
+  //   }
+  // }
 
   getSafeVideoUrl(url: string): SafeResourceUrl {
     const videoId = this.extractYoutubeId(url);
