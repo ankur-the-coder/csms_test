@@ -15,7 +15,7 @@ import { TrainingMaterials } from './features/trainings/Component/training-mater
 import { VoiceShell } from './features/voice/voice-shell/voice-shell.component';
 import { Softphone } from './features/voice/pages/softphone/softphone';
 import { History } from './features/voice/pages/history/history';
-import { Notes } from './features/voice/pages/notes/notes';
+// import { Notes } from './features/voice/pages/notes/notes';
 import { Recordings } from './features/voice/pages/recordings/recordings';
 import { Clients } from './features/voice/pages/clients/clients';
 import { Login } from './layout/login/login';
@@ -52,7 +52,7 @@ export const routes: Routes = [
           { path: '', redirectTo: 'softphone', pathMatch: 'full' },
           { path: 'softphone', component: Softphone },
           { path: 'history', component: History },
-          { path: 'notes', component: Notes },
+          // { path: 'notes', component: Notes },
           { path: 'recordings', component: Recordings },
           { path: 'clients', component: Clients },
         ],

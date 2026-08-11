@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { WebRtcVoiceService } from '../../voice.service';
+import { SingleInput, SelectOption } from '../../../../shared/components/inputs/single-input/single-input';
 
 @Component({
   selector: 'app-voice-softphone',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SingleInput],
   templateUrl: './softphone.html',
   styles: [`
     .softphone-card {
@@ -56,6 +57,14 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
     this.clientSearchDebounce = setTimeout(() => {
       this.voiceService.fetchAdminClients(term);
     }, 300);
+  }
+
+  /** Options for the "Calling From (DID)" custom dropdown, built from synced voice_numbers. */
+  get numberOptions(): SelectOption[] {
+    return this.voiceService.voiceNumbers().map(n => ({
+      value: n.id,
+      label: `${n.phone_number}${n.label ? ' — ' + n.label : ''}${!n.is_active ? ' (inactive)' : ''}`,
+    }));
   }
 
   onSelectClient(orgId: number | string): void {

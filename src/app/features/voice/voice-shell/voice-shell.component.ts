@@ -17,7 +17,6 @@ export class VoiceShell {
   readonly tabs: VoiceTab[] = [
     { path: 'softphone', label: 'Dialer' },
     { path: 'history', label: 'Call History' },
-    { path: 'notes', label: 'Notes' },
     { path: 'recordings', label: 'Recordings' },
     { path: 'clients', label: 'Clients' },
   ];

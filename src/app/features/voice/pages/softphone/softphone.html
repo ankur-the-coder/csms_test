@@ -136,13 +136,12 @@
         <!-- Calling From (DID) -->
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Calling From (DID)</label>
-          <select [ngModel]="voiceService.selectedNumberId()" (ngModelChange)="voiceService.selectNumber($event)"
-            class="w-full px-3 py-2.5 text-sm text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-            <option *ngIf="voiceService.voiceNumbers().length === 0" [ngValue]="null" disabled>No numbers synced yet — click Sync from Telnyx</option>
-            <option *ngFor="let n of voiceService.voiceNumbers()" [ngValue]="n.id">
-              {{ n.phone_number }}{{ n.label ? ' — ' + n.label : '' }}{{ !n.is_active ? ' (inactive)' : '' }}
-            </option>
-          </select>
+          <app-single-input
+            [options]="numberOptions"
+            [ngModel]="voiceService.selectedNumberId()"
+            (ngModelChange)="voiceService.selectNumber($event)"
+            placeHolder="No numbers synced yet — click Sync from Telnyx">
+          </app-single-input>
         </div>
 
         <!-- Phone Number Input -->
