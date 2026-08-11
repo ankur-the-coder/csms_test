@@ -416,12 +416,27 @@ export class WebRtcVoiceService {
         if (!call) return;
         const state: string = call.state;
 
-        if (state === 'ringing') {
-          // Outbound: remote side is ringing
-          console.log('[Voice][Call] Call state changed → ringing');
-          const cur = this.activeCall();
-          if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
-        }
+       if (state === 'ringing') {
+  this.activeRTCCall = call; // ← ADD THIS
+  const fromNumber = call.options?.remoteCallerNumber || 'Unknown';
+  const direction = call.options?.direction || 'inbound';
+
+  if (direction === 'inbound' && (!this.activeCall() || this.activeCall()?.status === 'ended')) {
+    this.activeCall.set({
+      providerCallId: call.id,
+      customerNumber: fromNumber,
+      customerName: call.options?.remoteCallerName || fromNumber,
+      direction: 'inbound',
+      status: 'ringing',
+      isMuted: false,
+      isHeld: false,
+      durationSeconds: 0,
+    });
+  } else {
+    const cur = this.activeCall();
+    if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
+  }
+}
 
         if (state === 'active') {
           // Both sides connected — wire up remote audio
@@ -436,6 +451,7 @@ export class WebRtcVoiceService {
 
         if (state === 'hangup' || state === 'destroy' || state === 'purge') {
           console.log('[Voice][Call] Call state changed → ended');
+          this.logCallEndToBackend();
           this.cleanupCallMedia();
           this.endCallSession();
         }
@@ -622,6 +638,14 @@ export class WebRtcVoiceService {
       console.warn('[Voice][Call] No DID selected from voice_numbers -- falling back to hardcoded number. Sync/select a number first.');
     }
 
+    // Log this call to call_logs immediately -- the browser dials Telnyx
+    // directly via the SDK below, which never touches the backend, so
+    // without this the row only ever gets created by the call.initiated
+    // webhook (which depends on Telnyx being able to reach this backend
+    // AND that webhook being configured on the right connection). This
+    // makes Call History work regardless of whether that webhook arrives.
+    this.logOutboundCallToBackend(phoneNumber, callerNumber);
+
     try {
       // Fix 1 & 2: Re-acquire fresh mic stream specifically for this call
       console.log('[Voice][Audio] Acquiring fresh mic stream for outbound call');
@@ -650,6 +674,15 @@ export class WebRtcVoiceService {
 
       console.log('[Voice][Media] Local audio track added, outbound call initiated');
 
+      // Best-effort: if the SDK call object exposes an id that lines up
+      // with Telnyx's call_control_id, link it onto the call_logs row so a
+      // later webhook (call.answered/call.hangup) can find and update it.
+      // Harmless no-op server-side if it doesn't match anything.
+      const sdkCallId = (this.activeRTCCall as any)?.id || (this.activeRTCCall as any)?.telnyxIDs?.callId;
+      if (sdkCallId) {
+        this.attachProviderCallIdToBackend(sdkCallId);
+      }
+
       // DEBUG: verify the mic track actually landed on the peer connection.
       this.diagnosePeerConnectionAudio('outbound');
       // Call state transitions (ringing → active → hangup) come via telnyx.notification
@@ -658,6 +691,79 @@ export class WebRtcVoiceService {
       this.errorMessage.set(`Outbound Call Error: ${err.message}`);
       console.error('[Voice][Call] Call failed:', err.message);
       this.endCallSession();
+    }
+  }
+
+  /** POST /api/voice/log-outbound -- creates the call_logs row up front (see makeOutboundCall). */
+  private async logOutboundCallToBackend(toNumber: string, fromNumber: string): Promise<void> {
+    try {
+      const res = await fetch(`${this.API_BASE}/log-outbound`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to_number: toNumber, from_number: fromNumber }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.status) {
+        console.warn('[Voice][History] Failed to log outbound call:', data.message);
+        return;
+      }
+      const cur = this.activeCall();
+      // Guard: only attach if this is still the same outbound call (user
+      // hasn't already hung up/started a new one while this request was in flight).
+      if (cur && cur.direction === 'outbound' && !cur.callLogId) {
+        this.activeCall.set({ ...cur, callLogId: data.call_log_id });
+      }
+    } catch (err: any) {
+      console.warn('[Voice][History] Network error logging outbound call:', err.message);
+    }
+  }
+
+  /** POST /api/voice/attach-provider-call-id -- best-effort, see makeOutboundCall. */
+  private async attachProviderCallIdToBackend(providerCallId: string): Promise<void> {
+    const cur = this.activeCall();
+    if (!cur?.callLogId) {
+      // callLogId may not have come back from logOutboundCallToBackend yet --
+      // that's fine, the webhook path (if it arrives) still finds the row by
+      // provider_call_id once call.initiated processes it independently.
+      return;
+    }
+    try {
+      await fetch(`${this.API_BASE}/attach-provider-call-id`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callLogId: cur.callLogId, providerCallId }),
+      });
+    } catch (err: any) {
+      console.warn('[Voice][History] Network error attaching provider call id:', err.message);
+    }
+  }
+
+  /**
+   * POST /api/voice/log-call-end -- called the moment the WebRTC SDK
+   * reports the call ended (hangup/destroy/purge), so Call History shows
+   * a final status/duration even if the call.hangup webhook never
+   * reaches this backend. Must run BEFORE endCallSession() clears
+   * activeCall(), since that's where callLogId/durationSeconds live.
+   */
+  private async logCallEndToBackend(explicitStatus?: 'completed' | 'rejected' | 'no_answer' | 'failed' | 'busy'): Promise<void> {
+    const cur = this.activeCall();
+    if (!cur?.callLogId) return; // nothing to update -- row was never linked (e.g. log-outbound request hadn't resolved yet)
+
+    const finalStatus = explicitStatus
+      ?? (cur.status === 'active' || cur.status === 'held' ? 'completed' : 'no_answer');
+
+    try {
+      await fetch(`${this.API_BASE}/log-call-end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callLogId: cur.callLogId,
+          status: finalStatus,
+          durationSeconds: cur.durationSeconds,
+        }),
+      });
+    } catch (err: any) {
+      console.warn('[Voice][History] Network error logging call end:', err.message);
     }
   }
 
@@ -744,6 +850,10 @@ export class WebRtcVoiceService {
 
   async rejectCall(): Promise<void> {
     const current = this.activeCall();
+
+    // Same timing reasoning as hangupCall() above -- log before clearing.
+    // 'rejected' since this is an explicit user decline, not a plain hangup.
+    this.logCallEndToBackend('rejected');
 
     // Same reasoning as hangupCall: SDK hangup already ends the call at
     // Telnyx's end -- a follow-up REST /reject would 422 the same way.
@@ -834,6 +944,14 @@ export class WebRtcVoiceService {
 
   async hangupCall(): Promise<void> {
     const current = this.activeCall();
+
+    // Log the end BEFORE clearing activeCall() below -- endCallSession()
+    // nulls it out synchronously, but the SDK's own 'hangup' notification
+    // (which also calls logCallEndToBackend) arrives asynchronously after
+    // that, so by then there'd be nothing left to read. Calling it here
+    // first is what actually gets this call marked complete when the
+    // local user is the one who hung up.
+    this.logCallEndToBackend();
 
     // SDK hangup already terminates the call at Telnyx's end -- the WebRTC
     // leg *is* the Call Control leg, same session. A follow-up REST /hangup
