@@ -2,7 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization } from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -105,9 +105,27 @@ export class MeetingsComponent implements OnInit {
   // ============ Organizations & API Meetings ============
   organizations: Organization[] = [];
   loadingOrganizations = false;
-  apiMeetings: MeetingRow[] = [];
+  apiMeetings = signal<MeetingRow[]>([]);
   filterDateFrom: string = '';
   filterDateTo: string = '';
+
+  // ============ Dashboard KPI Cards (from /meetings/dashboard-stats) ============
+  // A signal, not a plain property — under zoneless change detection, a signal
+  // write notifies the renderer directly regardless of where it happens (an
+  // RxJS subscribe callback, a setTimeout, etc). A plain property assignment
+  // has no such notification, so the view only ever updated when *something
+  // else* happened to trigger a check.
+  dashboardStats = signal<DashboardStats>({
+    todayMeetings: 0,
+    upcoming7Days: 0,
+    completedThisMonth: 0,
+    followUpsPending: 0,
+    thisWeekMeetings: 0,
+    overdueCount: 0,
+    completionRate: 0,
+    totalMeetings: 0
+  });
+  loadingDashboardStats = false;
 
   // ============ Meetings DataTable Config ============
   private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
@@ -160,9 +178,10 @@ export class MeetingsComponent implements OnInit {
         align: 'center' as const,
         badgeMap: {
           '0': { label: 'Scheduled' },
-          '1': { label: 'In Progress' },
-          '2': { label: 'Completed' },
+          '1': { label: 'Completed' },
+          '2': { label: 'Rescheduled' },
           '3': { label: 'Pending' },
+          '4': { label: 'Cancelled' },
         } as Record<string, BadgeMapEntry>,
       },
       {
@@ -260,15 +279,16 @@ export class MeetingsComponent implements OnInit {
   }
 
   getStatusLabel(s: number): string {
-    return ['Scheduled', 'In Progress', 'Completed', 'Pending'][s] ?? 'Scheduled';
+    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled'][s] ?? 'Scheduled';
   }
 
   getStatusClass(s: number): string {
     const map: Record<number, string> = {
-      0: 'bg-blue-50   text-blue-700   border border-blue-200',
-      1: 'bg-purple-50 text-purple-700 border border-purple-200',
-      2: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-      3: 'bg-amber-50  text-amber-700  border border-amber-200',
+      0: 'bg-blue-50    text-blue-700    border border-blue-200',
+      1: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      2: 'bg-purple-50  text-purple-700  border border-purple-200',
+      3: 'bg-amber-50   text-amber-700   border border-amber-200',
+      4: 'bg-rose-50    text-rose-700    border border-rose-200',
     };
     return map[s] ?? map[0];
   }
@@ -278,6 +298,7 @@ export class MeetingsComponent implements OnInit {
   ngOnInit(): void {
     this.fetchOrganizations();
     this.fetchApiMeetings();
+    this.fetchDashboardStats();
   }
 
   fetchApiMeetings(): void {
@@ -292,10 +313,25 @@ export class MeetingsComponent implements OnInit {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
-          this.apiMeetings = res.data;
+          this.apiMeetings.set(res.data);
         }
       },
       error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
+    });
+  }
+
+  /** Pulls the dashboard KPI card numbers from GET /meetings/dashboard-stats. */
+  fetchDashboardStats(): void {
+    this.loadingDashboardStats = true;
+    this.meetingService.getDashboardStats().subscribe({
+      next: (stats) => {
+        this.dashboardStats.set(stats);
+        this.loadingDashboardStats = false;
+      },
+      error: (err) => {
+        console.error('Failed to fetch dashboard stats:', err);
+        this.loadingDashboardStats = false;
+      }
     });
   }
 
@@ -516,12 +552,16 @@ export class MeetingsComponent implements OnInit {
   }
 
   // ============ KPI Helper Methods ============
+  // These now read from the /meetings/dashboard-stats API (this.dashboardStats)
+  // instead of computing off the local mock `meetings` array.
 
   getTodayMeetings(): number {
-    const today = new Date().toISOString().split('T')[0];
-    return this.meetings.filter(m => m.date === today && m.status !== 'Completed').length;
+    return this.dashboardStats().todayMeetings;
   }
 
+  // NOTE: the dashboard-stats API doesn't return a "yesterday" count, so this
+  // still falls back to the local mock `meetings` array. Real backend
+  // support would need a new field on GET /meetings/dashboard-stats.
   getYesterdayMeetings(): number {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -536,14 +576,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getUpcomingMeetings(): number {
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const todayStr = today.toISOString().split('T')[0];
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= todayStr && m.date <= nextWeekStr && m.status !== 'Completed'
-    ).length;
+    return this.dashboardStats().upcoming7Days;
   }
 
   getUpcomingTrend(): number {
@@ -551,32 +584,15 @@ export class MeetingsComponent implements OnInit {
   }
 
   getThisWeekMeetings(): number {
-    const today = new Date();
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(endOfWeek.getDate() + 7 - today.getDay());
-    const todayStr = today.toISOString().split('T')[0];
-    const endStr = endOfWeek.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= todayStr && m.date <= endStr && m.status !== 'Completed'
-    ).length;
+    return this.dashboardStats().thisWeekMeetings;
   }
 
   getCompletedCount(): number {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= monthStartStr && m.status === 'Completed'
-    ).length;
+    return this.dashboardStats().completedThisMonth;
   }
 
   getCompletionRate(): number {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
-    const monthMeetings = this.meetings.filter(m => m.date >= monthStartStr);
-    const completed = monthMeetings.filter(m => m.status === 'Completed').length;
-    return monthMeetings.length === 0 ? 0 : Math.round((completed / monthMeetings.length) * 100);
+    return this.dashboardStats().completionRate;
   }
 
   getCompletionTrend(): number {
@@ -584,7 +600,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getPendingFollowUps(): number {
-    return this.meetings.filter(m => m.status === 'Pending').length;
+    return this.dashboardStats().followUpsPending;
   }
 
   getFollowUpTrend(): number {
@@ -592,14 +608,11 @@ export class MeetingsComponent implements OnInit {
   }
 
   getOverdueCount(): number {
-    const today = new Date().toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date < today && m.status === 'Pending'
-    ).length;
+    return this.dashboardStats().overdueCount;
   }
 
   getTotalMeetings(): number {
-    return this.meetings.length;
+    return this.dashboardStats().totalMeetings;
   }
 
   getWeeklyGrowth(): number {
@@ -656,7 +669,7 @@ export class MeetingsComponent implements OnInit {
   // ============ Calendar & Timeline API Helper Methods ============
 
   getApiMeetingsForDay(dateStr: string): MeetingRow[] {
-    return this.apiMeetings.filter(m => {
+    return this.apiMeetings().filter(m => {
       if (!m.startTime) return false;
       return m.startTime.split('T')[0] === dateStr;
     });
@@ -664,7 +677,7 @@ export class MeetingsComponent implements OnInit {
 
   get calendarEventsByDay(): Record<number, DayEvent[]> {
     const map: Record<number, DayEvent[]> = {};
-    for (const m of this.apiMeetings) {
+    for (const m of this.apiMeetings()) {
       if (!m.startTime) continue;
       const d = new Date(m.startTime);
       const dayNum = d.getDate();
@@ -689,7 +702,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getFilteredApiMeetings(): MeetingRow[] {
-    let result = [...this.apiMeetings];
+    let result = [...this.apiMeetings()];
     if (this.searchTerm) {
       const q = this.searchTerm.toLowerCase();
       result = result.filter(m =>
@@ -1021,6 +1034,9 @@ export class MeetingsComponent implements OnInit {
 
     // Update meeting types distribution
     this.updateMeetingTypes();
+
+    // Refresh KPI cards so the new meeting is reflected in the counts.
+    this.fetchDashboardStats();
   }
 
   saveAsDraft(): void {
@@ -1111,6 +1127,8 @@ export class MeetingsComponent implements OnInit {
   refreshData(): void {
     this.refreshing = true;
     this.showToastMessage('Refreshing data...');
+    this.fetchDashboardStats();
+    this.fetchApiMeetings();
     setTimeout(() => {
       this.refreshing = false;
       this.showToastMessage('Data refreshed successfully');
