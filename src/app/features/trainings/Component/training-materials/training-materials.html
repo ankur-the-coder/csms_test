@@ -10,219 +10,231 @@
   <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" />
 
   @if (loading()) {
-    <!-- Loading skeleton -->
-    <div class="card p-6 space-y-4 animate-pulse">
-      <div class="h-8 bg-surface-200 rounded-xl w-1/4"></div>
-      <div class="h-12 bg-surface-200 rounded-xl w-full"></div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <div class="h-48 bg-surface-200 rounded-2xl"></div>
-        <div class="h-48 bg-surface-200 rounded-2xl"></div>
-        <div class="h-48 bg-surface-200 rounded-2xl"></div>
-      </div>
+  <!-- Loading skeleton -->
+  <div class="card p-6 space-y-4 animate-pulse">
+    <div class="h-8 bg-surface-200 rounded-xl w-1/4"></div>
+    <div class="h-12 bg-surface-200 rounded-xl w-full"></div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div class="h-48 bg-surface-200 rounded-2xl"></div>
+      <div class="h-48 bg-surface-200 rounded-2xl"></div>
+      <div class="h-48 bg-surface-200 rounded-2xl"></div>
     </div>
+  </div>
   } @else if (error()) {
-    <!-- Error / Unreachable Backend state -->
-    <div class="card p-8 text-center space-y-4 my-6">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500 mb-2">
-        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-      </div>
-      <h3 class="text-lg font-bold text-text-primary">Unable to load data</h3>
-      <p class="text-sm text-text-muted">{{ error() }}</p>
-      <button (click)="loadCourses()"
-        class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
-        </svg>
-        Retry
-      </button>
+  <!-- Error / Unreachable Backend state -->
+  <div class="card p-8 text-center space-y-4 my-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500 mb-2">
+      <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
     </div>
+    <h3 class="text-lg font-bold text-text-primary">Unable to load data</h3>
+    <p class="text-sm text-text-muted">{{ error() }}</p>
+    <button (click)="loadCourses()"
+      class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
+      </svg>
+      Retry
+    </button>
+  </div>
   } @else if (courses().length === 0) {
-    <!-- Empty state -->
-    <div class="card p-12 text-center max-w-lg mx-auto space-y-4 my-6">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-100 text-text-muted mb-2">
-        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      </div>
-      <h3 class="text-lg font-bold text-text-primary">No Courses Available</h3>
-      <p class="text-sm text-text-muted">Start by creating a new training course module to manage sessions and study materials.</p>
-      <button (click)="openAddCourseModal()"
-        class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Module
-      </button>
+  <!-- Empty state -->
+  <div class="card p-12 text-center max-w-lg mx-auto space-y-4 my-6">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-100 text-text-muted mb-2">
+      <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
     </div>
+    <h3 class="text-lg font-bold text-text-primary">No Courses Available</h3>
+    <p class="text-sm text-text-muted">Start by creating a new training course module to manage sessions and study
+      materials.</p>
+    <button (click)="openAddCourseModal()"
+      class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Add Module
+    </button>
+  </div>
   } @else {
-    <!-- Course Tabs -->
-    <div class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-surface-100 p-1">
-        @for (course of courses(); track course.id) {
-        <button (click)="selectCourse(course.id)" class="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
-          [ngClass]="selectedCourseId() === course.id
+  <!-- Course Tabs -->
+  <div class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-surface-100 p-1">
+      @for (course of courses(); track course.id) {
+      <button (click)="selectCourse(course.id)" class="rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
+        [ngClass]="selectedCourseId() === course.id
             ? 'bg-white text-text-primary shadow-sm'
             : 'text-text-secondary hover:text-text-primary'">
-          {{ course.title }}
-        </button>
+        {{ course.title }}
+      </button>
+      }
+    </div>
+    <!-- Add Module Button -->
+    <button (click)="openAddCourseModal()"
+      class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 shrink-0">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Add Module
+    </button>
+  </div>
+
+  <!-- Search Bar + Add Session Row -->
+  <div class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <!-- Search Bar (left) -->
+    <div class="relative w-full sm:max-w-xs">
+      <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" fill="none"
+        stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
+        placeholder="Search sessions..."
+        class="w-full rounded-xl border border-card-border bg-card-bg py-2.5 pl-10 pr-4 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+    </div>
+
+    <!-- Add Session Button (right) -->
+    <button (click)="openAddModuleModal()"
+      class="inline-flex items-center gap-2 rounded-xl border border-card-border bg-white px-4 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-50 shrink-0">
+      <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      Add Session
+    </button>
+  </div>
+
+  <!-- Modules List (Compact Grid) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @for (module of filteredModules(); track module.id) {
+    <div
+      class="card p-5 space-y-4 border border-card-border/60 hover:border-brand-300 transition-all flex flex-col justify-between group">
+      <div class="space-y-3">
+        <!-- Badge & Actions -->
+        <div class="flex items-center justify-between">
+          <span
+            class="inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 border border-brand-100">
+            Session {{ $index + 1 }}
+          </span>
+          <div class="flex items-center gap-1.5">
+            <button (click)="openAddModuleModal(module)"
+              class="rounded-lg p-1 text-text-muted hover:bg-surface-200 transition-colors" title="Edit Session">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+            <button (click)="deleteModule(module.id)"
+              class="rounded-lg p-1 text-text-muted hover:bg-red-50 hover:text-red-600 transition-colors"
+              title="Delete Module">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Title & Description (fixed height so video/PDF starts at the same spot on every card) -->
+        <div>
+          <h3 class="text-base font-bold text-text-primary line-clamp-1 h-6 leading-6" [title]="module.title">{{
+            module.title }}</h3>
+          <p class="text-xs text-text-muted line-clamp-2 mt-1 h-8 leading-4">{{ module.description }}</p>
+        </div>
+
+        <!-- YouTube Video Frame (shown whenever a video is attached) -->
+        @if (module.video_url && module.safeVideoUrl) {
+        <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-black shadow-sm">
+          <iframe [src]="module.safeVideoUrl" class="h-full w-full" frameborder="0" allowfullscreen></iframe>
+        </div>
+        }
+
+        <!-- Inline PDF Preview Frame (only shown when there is NO video for this session) -->
+        @if (!module.video_url && module.pdfMaterial && module.pdfMaterial.safeUrl) {
+        <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-white shadow-sm">
+          <iframe [src]="module.pdfMaterial.safeUrl" class="h-full w-[calc(100%+20px)] -mr-5 border-0" frameborder="0"
+            scrolling="no"></iframe>
+        </div>
+        }
+
+        <!-- Empty state: neither video nor PDF attached -->
+        @if (!module.video_url && !module.pdfMaterial) {
+        <div
+          class="aspect-video w-full flex flex-col items-center justify-center rounded-xl border border-dashed border-surface-300 bg-surface-50 text-text-muted text-xs p-4">
+          <svg class="h-8 w-8 mb-1 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span>No Video or PDF attached</span>
+        </div>
         }
       </div>
-      <!-- Add Module Button -->
-      <button (click)="openAddCourseModal()"
-        class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 shrink-0">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Module
-      </button>
-    </div>
 
-    <!-- Search Bar + Add Session Row -->
-    <div class="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <!-- Search Bar (left) -->
-      <div class="relative w-full sm:max-w-xs">
-        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-          placeholder="Search sessions..."
-          class="w-full rounded-xl border border-card-border bg-card-bg py-2.5 pl-10 pr-4 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
-      </div>
 
-      <!-- Add Session Button (right) -->
-      <button (click)="openAddModuleModal()"
-        class="inline-flex items-center gap-2 rounded-xl border border-card-border bg-white px-4 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-50 shrink-0">
-        <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Add Session
-      </button>
-    </div>
-
-    <!-- Modules List (Compact Grid) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      @for (module of filteredModules(); track module.id) {
-      <div
-        class="card p-5 space-y-4 border border-card-border/60 hover:border-brand-300 transition-all flex flex-col justify-between group">
-        <div class="space-y-3">
-          <!-- Badge & Actions -->
-          <div class="flex items-center justify-between">
-            <span
-              class="inline-flex items-center rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 border border-brand-100">
-              Session {{ $index + 1 }}
-            </span>
-            <div class="flex items-center gap-1.5">
-              <button (click)="openUploadModal(module.id)"
-                class="rounded-lg p-1 text-text-muted hover:bg-surface-200 transition-colors"
-                title="Attach Study Material">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-              </button>
-              <button (click)="deleteModule(module.id)"
-                class="rounded-lg p-1 text-text-muted hover:bg-red-50 hover:text-red-600 transition-colors"
-                title="Delete Module">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Title & Description (fixed height so video/PDF starts at the same spot on every card) -->
-          <div>
-            <h3 class="text-base font-bold text-text-primary line-clamp-1 h-6 leading-6" [title]="module.title">{{ module.title }}</h3>
-            <p class="text-xs text-text-muted line-clamp-2 mt-1 h-8 leading-4">{{ module.description }}</p>
-          </div>
-
-          <!-- YouTube Video Frame (shown whenever a video is attached) -->
-          @if (module.video_url && module.safeVideoUrl) {
-          <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-black shadow-sm">
-            <iframe [src]="module.safeVideoUrl" class="h-full w-full" frameborder="0" allowfullscreen></iframe>
-          </div>
-          }
-
-          <!-- Inline PDF Preview Frame (only shown when there is NO video for this session) -->
-          @if (!module.video_url && module.pdfMaterial && module.pdfMaterial.safeUrl) {
-          <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-white shadow-sm">
-            <iframe [src]="module.pdfMaterial.safeUrl" class="h-full w-[calc(100%+20px)] -mr-5 border-0"
-              frameborder="0" scrolling="no"></iframe>
-          </div>
-          }
-
-          <!-- Empty state: neither video nor PDF attached -->
-          @if (!module.video_url && !module.pdfMaterial) {
-          <div
-            class="aspect-video w-full flex flex-col items-center justify-center rounded-xl border border-dashed border-surface-300 bg-surface-50 text-text-muted text-xs p-4">
-            <svg class="h-8 w-8 mb-1 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            <span>No Video or PDF attached</span>
-          </div>
-          }
-        </div>
-
-        <!-- Module Materials (Document Links) -->
-        <div class="border-t border-card-border/60 pt-3 mt-3">
-          <h4 class="text-[10px] font-bold uppercase tracking-wider text-text-muted mb-2">Study Materials ({{
+      <!-- Module Materials (Document Links) -->
+      <div class="border-t border-card-border/60 pt-3 mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-[10px] font-bold uppercase tracking-wider text-text-muted">Study Materials ({{
             module.materials.length }})</h4>
-          <div class="space-y-1.5 max-h-[96px] overflow-y-auto pr-1">
-            @for (material of module.materials; track material.id) {
-            <div class="flex items-center justify-between text-xs p-1.5 hover:bg-surface-100 rounded-lg group/file">
-              <a [href]="material.file_path" target="_blank"
-                class="truncate font-medium text-text-primary hover:text-brand-500 min-w-0 flex-1 flex items-center gap-1.5">
-                <span [class]="getTypeIconColor(material.type)"
-                  class="px-1.5 py-0.5 rounded border text-[8px] font-bold">{{ material.type }}</span>
-                <span class="truncate">{{ material.name }}</span>
-              </a>
-              <button (click)="deleteMaterial(material.id)"
-                class="text-text-muted hover:text-red-600 opacity-0 group-hover/file:opacity-100 transition-opacity ml-2">
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            }
-            @if (module.materials.length === 0) {
-            <span class="text-[11px] text-text-muted">No files attached</span>
-            }
+          <!-- <button (click)="openAddModuleModal(module)"
+            class="text-[10px] font-semibold text-brand-600 hover:text-brand-700 transition-colors cursor-pointer"
+            title="Edit Session Materials">
+            + Manage
+          </button> -->
+        </div>
+        <div class="space-y-1.5 max-h-[96px] overflow-y-auto pr-1">
+          @for (material of module.materials; track material.id) {
+          <div class="flex items-center justify-between text-xs p-1.5 hover:bg-surface-100 rounded-lg group/file">
+            <a [href]="material.file_path" target="_blank"
+              class="truncate font-medium text-text-primary hover:text-brand-500 min-w-0 flex-1 flex items-center gap-1.5">
+              <span [class]="getTypeIconColor(material.type)"
+                class="px-1.5 py-0.5 rounded border text-[8px] font-bold">{{ material.type }}</span>
+              <span class="truncate">{{ material.name }}</span>
+            </a>
+            <button (click)="deleteMaterial(material.id)"
+              class="text-text-muted hover:text-red-600 opacity-0 group-hover/file:opacity-100 transition-opacity ml-2">
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+          }
+          @if (module.materials.length === 0) {
+          <span class="text-[11px] text-text-muted">No files attached</span>
+          }
         </div>
       </div>
-      }
-
-      <!-- No modules created at all -->
-      @if (courseModules().length === 0) {
-      <div class="col-span-full card p-12 text-center text-text-muted">
-        <svg class="mx-auto mb-3 h-12 w-12 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-        <p class="text-sm font-semibold">No Modules Created</p>
-        <p class="text-xs text-text-muted mt-1">Start by adding a module with video and document resources.</p>
-      </div>
-      }
-
-      <!-- Modules exist, but none match the search term -->
-      @if (courseModules().length > 0 && filteredModules().length === 0) {
-      <div class="col-span-full card p-12 text-center text-text-muted">
-        <svg class="mx-auto mb-3 h-12 w-12 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <p class="text-sm font-semibold">No Sessions Found</p>
-        <p class="text-xs text-text-muted mt-1">No sessions match "{{ searchTerm() }}". Try a different search term.</p>
-      </div>
-      }
     </div>
+    }
+
+    <!-- No modules created at all -->
+    @if (courseModules().length === 0) {
+    <div class="col-span-full card p-12 text-center text-text-muted">
+      <svg class="mx-auto mb-3 h-12 w-12 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+      <p class="text-sm font-semibold">No Modules Created</p>
+      <p class="text-xs text-text-muted mt-1">Start by adding a module with video and document resources.</p>
+    </div>
+    }
+
+    <!-- Modules exist, but none match the search term -->
+    @if (courseModules().length > 0 && filteredModules().length === 0) {
+    <div class="col-span-full card p-12 text-center text-text-muted">
+      <svg class="mx-auto mb-3 h-12 w-12 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <p class="text-sm font-semibold">No Sessions Found</p>
+      <p class="text-xs text-text-muted mt-1">No sessions match "{{ searchTerm() }}". Try a different search term.</p>
+    </div>
+    }
+  </div>
   }
 
   <!-- Add Course Modal -->
@@ -246,14 +258,14 @@
       <div class="space-y-4">
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Module Title *</span>
-          <input type="text" [(ngModel)]="newModuleTitle"
+          <input type="text" [(ngModel)]="newCourseTitle"
             class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500"
             placeholder="e.g. Leave Tracking" />
         </div>
 
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Description</span>
-          <textarea [(ngModel)]="newModuleDescription" rows="3"
+          <textarea [(ngModel)]="newCourseDescription" rows="3"
             class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 resize-none"
             placeholder="Brief summary of what this module covers..."></textarea>
         </div>
@@ -263,9 +275,17 @@
         <button (click)="closeAddCourseModal()"
           class="rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200">Cancel</button>
         <button (click)="addCourse()"
-          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
-          [disabled]="!newCourseTitle.trim()">
+          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+          [disabled]="!newCourseTitle.trim() || isSavingCourse()">
+          @if (isSavingCourse()) {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Saving...
+          } @else {
           Save Module
+          }
         </button>
       </div>
     </div>
@@ -337,8 +357,16 @@
     <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-card-border">
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-text-primary">Add New Session</h2>
-          <p class="mt-1 text-sm text-text-muted">Create a learning session with video and study file resources.</p>
+          <h2 class="text-lg font-bold text-text-primary">
+            {{ editingModuleId ? 'Edit Session' : 'Add New Session' }}
+          </h2>
+          <p class="mt-1 text-sm text-text-muted">
+            {{
+            editingModuleId
+            ? 'Update the session details and study resources.'
+            : 'Create a learning session with video and study file resources.'
+            }}
+          </p>
         </div>
         <button (click)="closeAddModuleModal()"
           class="rounded-full border border-surface-200 p-2 text-text-muted transition-colors hover:bg-surface-100">
@@ -372,7 +400,8 @@
             <div>
               <span class="block text-xs font-bold text-text-primary">Attach Study File (PDF/Image)</span>
               <span class="block text-[10px] text-text-muted truncate max-w-[200px]">
-                {{ newModuleFile ? newModuleFile.name : 'No file selected yet' }}
+                {{ newModuleFile ? newModuleFile.name : (existingMaterialName ? 'Existing: ' + existingMaterialName :
+                'No file selected yet') }}
               </span>
             </div>
             <button type="button" (click)="newModuleFileInput.click()"
@@ -400,9 +429,17 @@
         <button (click)="closeAddModuleModal()"
           class="rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200">Cancel</button>
         <button (click)="addModule()"
-          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
-          [disabled]="!newModuleTitle.trim()">
-          Save Session
+          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+          [disabled]="!newModuleTitle.trim() || isSavingModule()">
+          @if (isSavingModule()) {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ editingModuleId ? 'Updating...' : 'Saving...' }}
+          } @else {
+          {{ editingModuleId ? 'Update Session' : 'Save Session' }}
+          }
         </button>
       </div>
     </div>
