@@ -29,7 +29,7 @@
       <div class="flex items-center justify-between mb-2">
         <span class="text-sm text-text-secondary">Today's Meetings</span>
         <span class="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-1 rounded-full"><i
-            class="fas fa-arrow-up mr-0.5"></i> {{ getTodayTrend() }}%</span>
+            class="fas fa-arrow-up mr-0.5"></i> {{ getTodayMeetings() }}%</span>
       </div>
       <div class="text-3xl font-bold text-text-primary mb-1">{{ getTodayMeetings() }}</div>
       <div class="flex items-center justify-between text-xs text-text-muted">
@@ -291,7 +291,7 @@
 
 
     <!-- Timeline View -->
-    <div *ngIf="activeView === 'timeline'" class="p-6">
+    <div *ngIf="activeView === 'timeline'" class="p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
       @if (getFilteredApiMeetings().length === 0) {
       <div class="p-8 text-center text-slate-500">
         <i class="fas fa-calendar-times text-4xl text-slate-300 mb-2 block"></i>
