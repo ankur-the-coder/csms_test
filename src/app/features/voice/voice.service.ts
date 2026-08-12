@@ -84,6 +84,10 @@ export class WebRtcVoiceService {
   private currentEmployeeId: string = '1';
   private isIntentionallyClosed = false;
   private timerInterval: any = null;
+  // Guards against stale SSE events (e.g. delayed call.answered webhook
+  // arriving after the call has already been terminated). Once a callLogId
+  // is in this set, all "call is alive" SSE events for it are ignored.
+  private terminatedCallLogIds = new Set<number>();
   // Set true the instant the agent clicks Answer on an inbound call, until
   // the bridged WebRTC leg is auto-accepted (or the call ends). The
   // backend's answer() now only picks up the PSTN side and then transfers
@@ -222,12 +226,7 @@ export class WebRtcVoiceService {
     (this.remoteAudioEl as any).__activeDetectionWired = true;
 
     this.remoteAudioEl.addEventListener('playing', () => {
-      const cur = this.activeCall();
-      if (cur && cur.status !== 'active' && cur.status !== 'held') {
-        console.log('[Voice][Call] Remote audio element fired "playing" -- forcing status → active (SDK notification state was stale/unmatched).');
-        this.activeCall.set({ ...cur, status: 'active', startTime: cur.startTime || new Date() });
-        this.startTimer();
-      }
+      console.log('[Voice][Call] Remote audio element fired "playing" (early media/audio started playing).');
     });
   }
 
@@ -380,6 +379,10 @@ export class WebRtcVoiceService {
       this.telnyxClient.on('telnyx.error', (error: any) => {
         const msg = error?.error?.message || error?.message || JSON.stringify(error);
         console.error('[Voice][WebRTC] TelnyxRTC error:', msg);
+        if (msg.includes('hang up') || msg.includes('CALL DOES NOT EXIST') || msg.includes('bye failed') || msg.includes('cleanly')) {
+          console.warn('[Voice][WebRTC] Ignored expected hangup/bye error:', msg);
+          return;
+        }
         this.connectionState.set('error');
         this.errorMessage.set(`Browser calling error: ${msg}`);
       });
@@ -467,14 +470,23 @@ export class WebRtcVoiceService {
             this.startTimer();
           }
         }
+     if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+  const cause: string = (call.cause || '').toLowerCase();
+  console.log('[Voice][Call] Terminal state:', state, 'cause:', cause);
 
-        if (state === 'hangup' || state === 'destroy' || state === 'purge') {
-          console.log('[Voice][Call] Call state changed → ended');
-          this.logCallEndToBackend();
-          this.cleanupCallMedia();
-          this.endCallSession();
-        }
+  const unansweredCauses = ['rejected', 'userbusy', 'user_busy', 'noanswer', 'originatorcancel', 'timeout', 'busy'];
+  const explicitStatus = unansweredCauses.some(c => cause.includes(c)) ? 'no_answer' : 'completed';
 
+  // Immediately log to backend before clearing local activeCall state
+  this.logCallEndToBackend(explicitStatus);
+  this.endCallSession();
+
+  // Only attempt SDK hangup on first terminal state
+  if (state === 'hangup') {
+    this.cleanupCallMedia();
+  }
+  return;
+}
         if (state === 'held') {
           const cur = this.activeCall();
           if (cur) this.activeCall.set({ ...cur, status: 'held', isHeld: true });
@@ -614,20 +626,29 @@ export class WebRtcVoiceService {
     }, 2000);
   }
 
-  private cleanupCallMedia(): void {
-    console.log('[Voice][Media] Cleaning up call media...');
-    if (this.isBrowser && this.remoteAudioEl) {
-      try {
-        if (typeof this.remoteAudioEl.pause === 'function') {
-          this.remoteAudioEl.pause();
-        }
-        this.remoteAudioEl.srcObject = null;
-      } catch (err) {
-        console.warn('[Voice][Media] Error pausing or cleaning remote audio element:', err);
-      }
+ private cleanupCallMedia(): void {
+  const callToHangup = this.activeRTCCall;
+  this.activeRTCCall = null; // clear immediately
+
+  if (callToHangup && typeof callToHangup.hangup === 'function') {
+    const state = callToHangup.state;
+    const cause = (callToHangup.cause || '').toLowerCase();
+    const alreadyEnded = ['hangup', 'destroy', 'ended'].includes(state)
+      || ['user_busy', 'userbusy', 'rejected', 'busy'].includes(cause);
+
+    if (!alreadyEnded) {
+      try { callToHangup.hangup(); } catch { /* ignore */ }
     }
-    this.activeRTCCall = null;
   }
+
+  // Always clean audio element
+  if (this.isBrowser && this.remoteAudioEl) {
+    try {
+      this.remoteAudioEl.pause();
+      this.remoteAudioEl.srcObject = null;
+    } catch { /* ignore */ }
+  }
+}
 
   // ─────────────────────────────────────────────────────────────────────────
   // OUTBOUND CALL
@@ -1160,6 +1181,17 @@ export class WebRtcVoiceService {
     if (!payload || typeof payload !== 'object') return;
     const { type, callLogId, phoneNumber, customerName, recordingUrl, message } = payload;
 
+    // Reject "call is alive" SSE events for call IDs we have already
+    // terminated locally. This prevents a delayed call.answered webhook
+    // (arriving after call.hangup due to Telnyx delivery reordering) from
+    // resurrecting a phantom activeCall on the UI and causing a loop where
+    // the agent can never end the call and the customer keeps getting redialed.
+    const ALIVE_EVENTS = new Set(['incoming_call', 'call_ringing', 'call_answered', 'call_hold', 'call_resume']);
+    if (ALIVE_EVENTS.has(type) && callLogId && this.terminatedCallLogIds.has(callLogId)) {
+      console.warn(`[SSE] Ignoring stale "${type}" event for already-terminated callLogId:`, callLogId);
+      return;
+    }
+
     switch (type) {
       case 'incoming_call':
         console.log('[SSE UI State] Incoming call from:', phoneNumber);
@@ -1177,18 +1209,20 @@ export class WebRtcVoiceService {
       case 'call_answered': {
         const cur = this.activeCall();
         if (cur) {
+          // Only update the existing active call — do NOT create a new activeCall
+          // from SSE alone. If there is no current call when call_answered arrives
+          // it means the call was already ended (WebRTC SDK fired hangup/destroy
+          // first, or the agent already clicked End). Creating a new activeCall
+          // here was the source of the "ghost active call" / repeated-redial bug:
+          // the SSE event arrived after endCallSession() nulled everything out,
+          // leaving the UI stuck showing an active call with no backing RTC session.
           this.activeCall.set({ ...cur, status: 'active', callLogId });
           this.startTimer();
+          this.lastNotification.set({ message: 'Call connected', type: 'success' });
+          console.log('[Voice][Call] Call state changed → active (via SSE)');
         } else {
-          this.activeCall.set({
-            callLogId, customerNumber: phoneNumber || 'Connected', customerName: customerName || 'Customer',
-            direction: 'inbound', status: 'active', isMuted: false, isHeld: false,
-            durationSeconds: 0, startTime: new Date(),
-          });
-          this.startTimer();
+          console.warn('[SSE] call_answered received but no activeCall exists — ignoring (likely a stale/reordered webhook).');
         }
-        this.lastNotification.set({ message: 'Call connected', type: 'success' });
-        console.log('[Voice][Call] Call state changed → active (via SSE)');
         break;
       }
 
@@ -1208,18 +1242,31 @@ export class WebRtcVoiceService {
 
       case 'call_completed':
         console.log('[Voice][Call] Call state changed → ended (via SSE)');
+        if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
         this.lastNotification.set({ message: 'Call completed', type: 'info' });
         break;
 
       case 'call_rejected':
+        if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
         this.lastNotification.set({ message: 'Call rejected', type: 'warn' });
         break;
 
+      case 'call_no_answer':
+        // Fired by the backend when call.machine.detection.ended has result != 'human',
+        // or when the call times out without the customer picking up.
+        console.log('[Voice][Call] Call state changed → no answer (via SSE)');
+        if (callLogId) this.terminatedCallLogIds.add(callLogId);
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.lastNotification.set({ message: 'No answer', type: 'warn' });
+        break;
+
       case 'call_failed':
+        if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
         this.errorMessage.set(message || 'Call failed or network error.');
@@ -1256,6 +1303,18 @@ export class WebRtcVoiceService {
   private endCallSession(): void {
     this.stopTimer();
     this.awaitingBridgeAnswer = false;
+    // Record the callLogId before clearing so the terminatedCallLogIds guard
+    // can reject any delayed SSE events that arrive after this point.
+    const ending = this.activeCall();
+    if (ending?.callLogId) {
+      this.terminatedCallLogIds.add(ending.callLogId);
+      // Keep the set bounded — prune entries older than the last 20 calls so
+      // it doesn't grow unboundedly in long-running sessions.
+      if (this.terminatedCallLogIds.size > 20) {
+        const oldest = this.terminatedCallLogIds.values().next().value;
+        if (oldest !== undefined) this.terminatedCallLogIds.delete(oldest);
+      }
+    }
     this.activeCall.set(null);
   }
 
