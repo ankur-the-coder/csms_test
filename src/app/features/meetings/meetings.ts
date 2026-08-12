@@ -2,7 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization, DashboardStats } from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -71,6 +71,13 @@ import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/cale
   `]
 })
 export class MeetingsComponent implements OnInit {
+
+  // Reference to the table so we can ask it to reload after cancelling a
+  // meeting. NOTE: '.refresh()' below is a guess at the method name — check
+  // your actual DataTable component's public API and rename if different
+  // (common alternatives: reload(), fetchData(), loadData()).
+  @ViewChild(DataTable) meetingsTable?: DataTable<any>;
+
   // ============ UI State ============
   activeView = 'table';
   timeRange = 'Week';
@@ -127,6 +134,14 @@ export class MeetingsComponent implements OnInit {
   });
   loadingDashboardStats = false;
 
+  // ============ Meeting Detail (Attendance) Modal ============
+  showAttendanceModal = false;
+  attendanceLoading = false;
+  attendanceError: string | null = null;
+  attendanceResult: AttendanceCheckResponse | null = null;
+  /** Title of the meeting currently shown in the modal (row data isn't kept around otherwise). */
+  attendanceMeetingTitle = '';
+
   // ============ Meetings DataTable Config ============
   private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
 
@@ -182,7 +197,15 @@ export class MeetingsComponent implements OnInit {
           '2': { label: 'Rescheduled' },
           '3': { label: 'Pending' },
           '4': { label: 'Cancelled' },
+          '5': { label: 'Client No-Show' },
+          '6': { label: 'Host No-Show' },
         } as Record<string, BadgeMapEntry>,
+      },
+      {
+        key: 'attendance',
+        label: 'Meeting Detail',
+        sortable: false,
+        align: 'center' as const,
       },
       {
         key: 'clientMail',
@@ -195,18 +218,45 @@ export class MeetingsComponent implements OnInit {
       endpoint: this.meetingsEndpoint,
       dataPath: 'data',
       totalPath: 'meta.total',
+
+      
+
       buildRequest: (ctx: RequestContext) => {
-        const body = {
-          start: ctx.page * ctx.pageSize,
-          length: ctx.pageSize,
-          search: ctx.search ?? '',
-          sorting: `startTime,desc`,
-          filter: JSON.stringify({ status: 0 }),
-          fromDate: ctx.dateFrom ?? '',
-          toDate: ctx.dateTo ?? '',
-        };
-        return { method: 'POST' as const, body };
-      },
+  const filters: Record<string, any> = {};
+
+  // Status — only filter when the user actually picks one from the
+  // dropdown. Previously this defaulted to 0 (Scheduled), which hid
+  // every meeting the backend moves out of Scheduled (Pending,
+  // Completed, Cancelled, Host/Client No-Show).
+  if (ctx.filters?.['meetingStatus'] !== undefined) {
+    filters['status'] = Number(ctx.filters['meetingStatus']);
+  }
+
+  // Priority
+  if (ctx.filters?.['meetingPriority'] !== undefined) {
+    filters['priority'] = Number(ctx.filters['meetingPriority']);
+  }
+
+  // Organization
+  if (ctx.filters?.['organization'] !== undefined) {
+    filters['orgId'] = Number(ctx.filters['organization']);
+  }
+
+  const body = {
+    start: ctx.page * ctx.pageSize,
+    length: ctx.pageSize,
+    search: ctx.search ?? '',
+    sorting: `${ctx.sortKey ?? 'startTime'},${ctx.sortDir}`,
+    filter: JSON.stringify(filters),
+    fromDate: ctx.dateFrom ?? '',
+    toDate: ctx.dateTo ?? '',
+  };
+
+  return {
+    method: 'POST' as const,
+    body
+  };
+},
       transformRow: (raw: any): MeetingRow => raw as MeetingRow,
     },
 
@@ -233,6 +283,13 @@ export class MeetingsComponent implements OnInit {
         tooltip: 'View meeting details',
         onClick: (row: MeetingRow) => this.openMeetingLink(row),
       },
+      {
+        id: 'cancel',
+        icon: 'delete',  // <-- must be one of ActionIcon values
+        label: 'Cancel',
+        tooltip: 'Cancel this meeting',
+        onClick: (row: MeetingRow) => this.confirmCancelMeeting(row),
+      },
     ],
   }));
 
@@ -242,6 +299,104 @@ export class MeetingsComponent implements OnInit {
     } else {
       this.showToastMessage('No meeting link available for this entry.');
     }
+  }
+
+  /**
+   * Confirms with the user, then cancels the meeting via Microsoft Graph
+   * (POST /meetings/cancel) and refreshes the table so the new "Cancelled"
+   * status shows immediately. The backend already rejects cancelling a
+   * meeting that's already Cancelled or Completed — that error message is
+   * shown as-is via the toast.
+   */
+  confirmCancelMeeting(row: MeetingRow): void {
+    const confirmed = confirm(`Cancel "${row.title}"? All attendees will be notified.`);
+    if (!confirmed) return;
+
+    this.meetingService.cancelMeeting(row.id).subscribe({
+      next: () => {
+        this.showToastMessage(`"${row.title}" was cancelled.`);
+        // See the ViewChild comment above — swap .refresh() for whatever
+        // your DataTable component's actual reload method is named.
+        this.meetingsTable?.refresh?.();
+        this.fetchDashboardStats();
+      },
+      error: (err) => {
+        this.showToastMessage(err?.error?.message || 'Failed to cancel meeting.');
+      }
+    });
+  }
+
+  /**
+   * Opens the "Meeting Detail" modal for a row and checks attendance live
+   * against Microsoft Graph. If the meeting was never created as an online
+   * Teams meeting, or hasn't happened yet, the backend returns an error
+   * message which is shown in the modal instead of attendance data.
+   */
+  openAttendanceModal(row: MeetingRow): void {
+    this.attendanceMeetingTitle = row.title || 'Meeting';
+    this.showAttendanceModal = true;
+    this.attendanceLoading = true;
+    this.attendanceError = null;
+    this.attendanceResult = null;
+
+    this.meetingService.checkAttendance(row.id).subscribe({
+      next: (res) => {
+        this.attendanceResult = res;
+        this.attendanceLoading = false;
+      },
+      error: (err) => {
+        this.attendanceError = err?.error?.message || 'Failed to check meeting attendance.';
+        this.attendanceLoading = false;
+      }
+    });
+  }
+
+  closeAttendanceModal(): void {
+    this.showAttendanceModal = false;
+    this.attendanceResult = null;
+    this.attendanceError = null;
+  }
+
+  /** "2026-08-12T05:11:40.241Z" -> "05:11 AM" for the modal's time labels. */
+  formatAttendanceTime(iso: string | null): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** 125 -> "2m 5s", 45 -> "45s" — for per-attendee duration in the modal. */
+  formatAttendanceDuration(totalSeconds: number): string {
+    if (!totalSeconds) return '0s';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  }
+
+  /**
+   * Turns the raw attendance result into one of 4 real-world outcomes —
+   * `wasHeld` alone can't distinguish who actually showed up:
+   *   - Not Held        -> nobody joined at all
+   *   - Client No-Show   -> host joined, nobody else did
+   *   - Host No-Show     -> someone else joined, but the host never did
+   *   - Held             -> host + at least one other attendee joined
+   */
+  getAttendanceOutcome(result: AttendanceCheckResponse): { label: string; badgeClass: string; icon: string } {
+    if (!result.wasHeld || result.attendeeCount === 0) {
+      return { label: 'Not Held', badgeClass: 'text-slate-500 bg-slate-50 border-slate-200', icon: 'fa-circle-xmark' };
+    }
+
+    const hostJoined = result.attendees.some(a => a.role.toLowerCase() === 'organizer');
+    const someoneElseJoined = result.attendees.some(a => a.role.toLowerCase() !== 'organizer');
+
+    if (hostJoined && someoneElseJoined) {
+      return { label: 'Held', badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: 'fa-circle-check' };
+    }
+
+    if (hostJoined && !someoneElseJoined) {
+      return { label: 'Client No-Show', badgeClass: 'text-amber-700 bg-amber-50 border-amber-200', icon: 'fa-user-slash' };
+    }
+
+    // !hostJoined && someoneElseJoined
+    return { label: 'Host No-Show', badgeClass: 'text-rose-700 bg-rose-50 border-rose-200', icon: 'fa-user-clock' };
   }
 
   /** Converts '01:00:00.000000' → '01:00:00' */
@@ -279,7 +434,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getStatusLabel(s: number): string {
-    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled'][s] ?? 'Scheduled';
+    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled', 'Client No-Show', 'Host No-Show'][s] ?? 'Scheduled';
   }
 
   getStatusClass(s: number): string {
@@ -289,6 +444,8 @@ export class MeetingsComponent implements OnInit {
       2: 'bg-purple-50  text-purple-700  border border-purple-200',
       3: 'bg-amber-50   text-amber-700   border border-amber-200',
       4: 'bg-rose-50    text-rose-700    border border-rose-200',
+      5: 'bg-amber-50   text-amber-700   border border-amber-200',
+      6: 'bg-rose-50    text-rose-700    border border-rose-200',
     };
     return map[s] ?? map[0];
   }
