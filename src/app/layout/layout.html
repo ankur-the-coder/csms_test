@@ -27,7 +27,8 @@
 
   </div>
 
-  <!-- Global Live WebRTC/SSE Incoming Call Popup Modal -->
-  <app-global-call-popup></app-global-call-popup>
+  <!-- Global Live WebRTC/SSE Incoming Call Popup Modal — suppressed on the
+       softphone page itself, which already has its own full call UI. -->
+  <app-global-call-popup *ngIf="!isSoftphonePage"></app-global-call-popup>
 
 </div>

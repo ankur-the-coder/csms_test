@@ -15,11 +15,19 @@ import { SingleInput, SelectOption } from '../../../../shared/components/inputs/
       box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
     }
     .pulse-ring {
-      animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation: sonar 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.05); }
+    @keyframes sonar {
+      0% { opacity: 0.55; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.6); }
+    }
+    .waveform-bar {
+      height: 100%;
+      animation: waveform 0.9s ease-in-out infinite;
+    }
+    @keyframes waveform {
+      0%, 100% { height: 30%; }
+      50% { height: 100%; }
     }
   `]
 })
@@ -81,7 +89,7 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     // Registration is deferred to ngAfterViewInit so the audio element exists first
-
+  this.voiceService.registerSoftphone(); // registers once, stays alive
     // Pre-fill from ?orgId=&number=&name= when navigated here from the
     // Clients tab's "Call" button (see clients.ts -> callClient()).
     const qp = this.route.snapshot.queryParamMap;
@@ -93,18 +101,14 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
     if (name) this.customerNameInput = name;
   }
 
-  ngAfterViewInit(): void {
-    // Register the native audio element with the service BEFORE connecting,
-    // so TelnyxRTC can attach the remote stream as soon as a call goes active.
-    if (this.remoteAudioRef?.nativeElement) {
-      this.voiceService.setRemoteAudioElement(this.remoteAudioRef.nativeElement);
-    }
-    // Now start the softphone registration flow
-    this.voiceService.registerSoftphone();
+ngAfterViewInit(): void {
+  if (this.remoteAudioRef?.nativeElement) {
+    this.voiceService.setRemoteAudioElement(this.remoteAudioRef.nativeElement);
   }
-
+  // ← REMOVE voiceService.registerSoftphone() from here
+}
   ngOnDestroy(): void {
-    this.voiceService.unregister();
+    // this.voiceService.unregister();
   }
 
   appendDigit(digit: string): void {

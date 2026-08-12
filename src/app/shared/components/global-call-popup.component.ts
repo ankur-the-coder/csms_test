@@ -8,109 +8,113 @@ import { WebRtcVoiceService } from '../../features/voice/voice.service';
   imports: [CommonModule],
   template: `
     <!-- Global Floating Call Modal Overlay -->
-    <div *ngIf="activeCall()" class="fixed bottom-6 right-6 z-50 animate-bounce-in max-w-md w-full sm:w-96 shadow-2xl rounded-2xl border border-slate-700/50 bg-slate-900/95 backdrop-blur-md text-white p-5">
-      
+    <div *ngIf="activeCall()" class="fixed bottom-6 right-6 z-50 animate-bounce-in max-w-md w-full sm:w-96 rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-lg shadow-slate-200/60">
+
       <!-- Incoming Call Card -->
-      <div *ngIf="activeCall()?.status === 'ringing'" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="relative flex h-4 w-4">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
-            </div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Incoming PSTN Call</span>
-          </div>
-          <span class="text-xs text-slate-400 font-mono">Live SSE</span>
+      <div *ngIf="activeCall()?.status === 'ringing' && activeCall()?.direction === 'inbound'" class="flex flex-col items-center gap-6">
+        <div class="flex w-full items-center justify-between">
+          <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-600">
+            <span class="relative flex h-2 w-2">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            </span>
+            Incoming call
+          </span>
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Live</span>
         </div>
 
-        <div class="text-center py-2">
-          <div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
-            📞
+        <div class="relative flex h-16 w-16 items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-emerald-100 opacity-70 blur-lg"></div>
+          <div class="relative flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
           </div>
-          <h3 class="text-xl font-bold text-slate-100 tracking-tight">
-            {{ activeCall()?.customerNumber }}
-          </h3>
-          <p class="text-sm text-slate-400 mt-1">
-            {{ activeCall()?.customerName || 'Incoming Customer Line' }}
-          </p>
         </div>
+
+        <div>
+          <h3 class="text-lg font-bold tracking-tight text-slate-800">{{ activeCall()?.customerNumber }}</h3>
+          <p class="mt-0.5 text-xs text-slate-500">{{ activeCall()?.customerName || 'Incoming customer line' }}</p>
+        </div>
+
+        <div class="h-px w-4/5 bg-slate-100"></div>
 
         <!-- Action Buttons: Answer & Reject -->
-        <div class="grid grid-cols-2 gap-3 pt-2">
-          <button
-            (click)="onReject()"
-            class="w-full py-2.5 px-4 rounded-xl font-medium text-sm bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-all flex items-center justify-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            Reject
+        <div class="flex items-center gap-8">
+          <button (click)="onReject()" class="group flex flex-col items-center gap-2">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-md shadow-rose-200 transition-all group-hover:bg-rose-600 group-active:scale-95">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </span>
+            <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Decline</span>
           </button>
-          
-          <button
-            (click)="onAnswer()"
-            class="w-full py-2.5 px-4 rounded-xl font-medium text-sm bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-            </svg>
-            Answer
+
+          <button (click)="onAnswer()" class="group flex flex-col items-center gap-2">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-200 transition-all group-hover:bg-emerald-600 group-active:scale-95">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            </span>
+            <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Answer</span>
           </button>
         </div>
       </div>
 
-      <!-- Active Connected Call Card -->
-      <div *ngIf="activeCall()?.status === 'active' || activeCall()?.status === 'held'" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="inline-block w-2.5 h-2.5 rounded-full" [ngClass]="activeCall()?.isHeld ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'"></span>
-            <span class="text-xs font-semibold uppercase tracking-wider" [ngClass]="activeCall()?.isHeld ? 'text-amber-400' : 'text-emerald-400'">
-              {{ activeCall()?.isHeld ? 'Call On Hold' : 'Call Connected' }}
-            </span>
-          </div>
-          <span class="text-sm font-mono font-bold text-slate-200 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700">
+      <!-- Active Connected Call Card (also covers outbound dialing/ringing, which has no answer/reject step) -->
+      <div *ngIf="activeCall()?.status === 'active' || activeCall()?.status === 'held' || activeCall()?.status === 'dialing' || (activeCall()?.status === 'ringing' && activeCall()?.direction === 'outbound')" class="flex flex-col items-center gap-6">
+        <div class="flex w-full items-center justify-between">
+          <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest"
+            [ngClass]="activeCall()?.isHeld ? 'text-purple-600' : 'text-emerald-600'">
+            <span class="h-2 w-2 rounded-full" [ngClass]="activeCall()?.isHeld ? 'bg-purple-500' : 'bg-emerald-500'"></span>
+            {{ activeCall()?.isHeld ? 'Held' : (activeCall()?.status === 'dialing' ? 'Dialing' : activeCall()?.status === 'ringing' ? 'Ringing' : 'Connected') }}
+          </span>
+          <span *ngIf="activeCall()?.status === 'active' || activeCall()?.status === 'held'" class="font-mono text-xs tabular-nums text-slate-400">
             {{ voiceService.formatDuration(activeCall()?.durationSeconds || 0) }}
           </span>
         </div>
 
-        <div class="text-center py-1">
-          <h3 class="text-lg font-bold text-slate-100">
-            {{ activeCall()?.customerNumber }}
-          </h3>
-          <p class="text-xs text-slate-400">
-            {{ activeCall()?.direction === 'inbound' ? 'Inbound Customer Call' : 'Outbound Dial' }}
-          </p>
+        <div>
+          <h3 class="text-lg font-bold tracking-tight text-slate-800">{{ activeCall()?.customerNumber }}</h3>
+          <p class="mt-0.5 text-xs text-slate-500">{{ activeCall()?.direction === 'inbound' ? 'Inbound customer call' : 'Outbound dial' }}</p>
         </div>
 
-        <!-- Controls: Mute, Hold, Hangup -->
-        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800">
-          <button
-            (click)="onMuteToggle()"
-            [class.bg-slate-700]="activeCall()?.isMuted"
-            class="py-2 px-3 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex flex-col items-center gap-1"
-          >
-            <span>{{ activeCall()?.isMuted ? '🔇 Unmute' : '🎙️ Mute' }}</span>
+        <!-- Decorative live waveform, only while actually connected -->
+        <div *ngIf="activeCall()?.status === 'active'" class="flex h-5 items-end gap-0.5" aria-hidden="true">
+          <span class="waveform-bar w-0.5 rounded-full" [ngClass]="activeCall()?.isMuted ? 'bg-slate-200' : 'bg-emerald-300'" style="animation-delay: 0ms"></span>
+          <span class="waveform-bar w-0.5 rounded-full" [ngClass]="activeCall()?.isMuted ? 'bg-slate-200' : 'bg-emerald-400'" style="animation-delay: 120ms"></span>
+          <span class="waveform-bar w-0.5 rounded-full" [ngClass]="activeCall()?.isMuted ? 'bg-slate-200' : 'bg-emerald-300'" style="animation-delay: 240ms"></span>
+          <span class="waveform-bar w-0.5 rounded-full" [ngClass]="activeCall()?.isMuted ? 'bg-slate-200' : 'bg-emerald-400'" style="animation-delay: 360ms"></span>
+          <span class="waveform-bar w-0.5 rounded-full" [ngClass]="activeCall()?.isMuted ? 'bg-slate-200' : 'bg-emerald-300'" style="animation-delay: 480ms"></span>
+        </div>
+
+        <div class="h-px w-4/5 bg-slate-100"></div>
+
+        <!-- Controls: Mute, Hangup -->
+        <div class="flex items-center gap-8">
+          <button (click)="onMuteToggle()" class="group flex flex-col items-center gap-2">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full border bg-white shadow-sm transition-all group-hover:shadow-md group-active:scale-95"
+              [ngClass]="activeCall()?.isMuted ? 'border-amber-300 bg-amber-50 text-amber-500' : 'border-slate-200 text-emerald-600 group-hover:border-emerald-200'">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+            </span>
+            <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{{ activeCall()?.isMuted ? 'Unmute' : 'Mute' }}</span>
           </button>
 
-          <!-- <button
-            (click)="onHoldToggle()"
-            [class.bg-amber-900\/50]="activeCall()?.isHeld"
-            class="py-2 px-3 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex flex-col items-center gap-1"
-          >
-            <span>{{ activeCall()?.isHeld ? '▶️ Resume' : '⏸️ Hold' }}</span>
-          </button> -->
-
-          <button
-            (click)="onHangup()"
-            class="py-2 px-3 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition flex flex-col items-center gap-1 shadow-md shadow-rose-600/30"
-          >
-            <span>🛑 Hang Up</span>
+          <button (click)="onHangup()" class="group flex flex-col items-center gap-2">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-md shadow-rose-200 transition-all group-hover:bg-rose-600 group-active:scale-95">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 00-5.516-5.516l2.257-1.13a1 1 0 00.502-1.21L9.228 3.684A1 1 0 008.279 3H5z"/></svg>
+            </span>
+            <span class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">End</span>
           </button>
         </div>
       </div>
 
     </div>
-  `
+  `,
+  styles: [`
+    .waveform-bar {
+      height: 100%;
+      animation: waveform 0.9s ease-in-out infinite;
+    }
+    @keyframes waveform {
+      0%, 100% { height: 30%; }
+      50% { height: 100%; }
+    }
+  `]
 })
 export class GlobalCallPopupComponent implements OnInit {
   public voiceService = inject(WebRtcVoiceService);

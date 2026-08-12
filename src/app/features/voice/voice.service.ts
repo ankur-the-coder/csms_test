@@ -84,6 +84,15 @@ export class WebRtcVoiceService {
   private currentEmployeeId: string = '1';
   private isIntentionallyClosed = false;
   private timerInterval: any = null;
+  // Set true the instant the agent clicks Answer on an inbound call, until
+  // the bridged WebRTC leg is auto-accepted (or the call ends). The
+  // backend's answer() now only picks up the PSTN side and then transfers
+  // it to this browser's SIP session (see VoiceService.answerCall) -- that
+  // transfer surfaces here as a completely new native inbound ring, which
+  // this flag tells handleTelnyxNotification to auto-accept immediately
+  // rather than showing the agent a second "incoming call" prompt for a
+  // call they already answered.
+  private awaitingBridgeAnswer = false;
 
   private readonly platformId = inject(PLATFORM_ID);
   private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
@@ -322,7 +331,7 @@ export class WebRtcVoiceService {
 
     console.log('[Voice][WebRTC] Fetching WebRTC token from backend...');
     try {
-      const res = await fetch(`${this.API_BASE}/token`);
+      const res = await fetch(`${this.API_BASE}/token?employeeId=${encodeURIComponent(this.currentEmployeeId)}`);
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
         throw new Error(errBody.message || `Token endpoint returned HTTP ${res.status}`);
@@ -416,27 +425,37 @@ export class WebRtcVoiceService {
         if (!call) return;
         const state: string = call.state;
 
-       if (state === 'ringing') {
-  this.activeRTCCall = call; // ← ADD THIS
-  const fromNumber = call.options?.remoteCallerNumber || 'Unknown';
-  const direction = call.options?.direction || 'inbound';
+        if (state === 'ringing') {
+          this.activeRTCCall = call; // ← ADD THIS
+          console.log('[Voice][Debug] activeRTCCall set. direction=', call.options?.direction, 'call.id=', call.id);
 
-  if (direction === 'inbound' && (!this.activeCall() || this.activeCall()?.status === 'ended')) {
-    this.activeCall.set({
-      providerCallId: call.id,
-      customerNumber: fromNumber,
-      customerName: call.options?.remoteCallerName || fromNumber,
-      direction: 'inbound',
-      status: 'ringing',
-      isMuted: false,
-      isHeld: false,
-      durationSeconds: 0,
-    });
-  } else {
-    const cur = this.activeCall();
-    if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
-  }
-}
+          const fromNumber = call.options?.remoteCallerNumber || 'Unknown';
+          const direction = call.options?.direction || 'inbound';
+
+          // This is the bridged leg Telnyx dials as part of VoiceService
+          // .answerCall()'s transfer() call -- the agent already clicked
+          // Answer (that's what triggered the transfer in the first place),
+          // so auto-accept immediately instead of showing a second ring.
+          if (direction === 'inbound' && this.awaitingBridgeAnswer) {
+            this.awaitingBridgeAnswer = false;
+            console.log('[Voice][Call] Bridged WebRTC leg is ringing -- auto-accepting (agent already answered via REST).');
+            this.autoAcceptBridgedCall(call);
+          } else if (direction === 'inbound' && (!this.activeCall() || this.activeCall()?.status === 'ended')) {
+            this.activeCall.set({
+              providerCallId: call.id,
+              customerNumber: fromNumber,
+              customerName: call.options?.remoteCallerName || fromNumber,
+              direction: 'inbound',
+              status: 'ringing',
+              isMuted: false,
+              isHeld: false,
+              durationSeconds: 0,
+            });
+          } else {
+            const cur = this.activeCall();
+            if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
+          }
+        }
 
         if (state === 'active') {
           // Both sides connected — wire up remote audio
@@ -470,6 +489,13 @@ export class WebRtcVoiceService {
         console.log('[Voice][Call] Inbound call notification received');
         const fromNumber = call.options?.remoteCallerNumber || call.options?.destinationNumber || 'Unknown';
         const fromName = call.options?.remoteCallerName || fromNumber;
+
+        if (this.awaitingBridgeAnswer) {
+          this.awaitingBridgeAnswer = false;
+          console.log('[Voice][Call] Bridged WebRTC leg (participantData) -- auto-accepting.');
+          this.autoAcceptBridgedCall(call);
+          break;
+        }
 
         const existing = this.activeCall();
         if (!existing || existing.status === 'ended') {
@@ -690,6 +716,16 @@ export class WebRtcVoiceService {
     } catch (err: any) {
       this.errorMessage.set(`Outbound Call Error: ${err.message}`);
       console.error('[Voice][Call] Call failed:', err.message);
+      // Must clear activeRTCCall (not just activeCall) -- every other
+      // call-ending path in this file does this via cleanupCallMedia().
+      // Skipping it here left a dead outbound call's SDK object sitting
+      // in activeRTCCall, which the NEXT inbound call's answerCall() would
+      // then try to .answer() first (see answerCall() above), sending an
+      // "answer" for a call_control_id Telnyx still has on record as
+      // outbound -- surfacing as a 422 "Can not issue an answer command
+      // on an outbound call" when the agent tries to pick up a totally
+      // unrelated, genuinely inbound call.
+      this.cleanupCallMedia();
       this.endCallSession();
     }
   }
@@ -795,12 +831,46 @@ export class WebRtcVoiceService {
     });
   }
 
+  /**
+   * Auto-accepts the bridged WebRTC leg Telnyx dials as part of
+   * VoiceService.answerCall()'s transfer() call -- the agent already
+   * clicked Answer in the UI (that's what triggered the transfer), so
+   * this just needs to pick up the resulting native SIP ring without any
+   * further user interaction. Same mic-acquisition/answer sequence as
+   * the manual path in answerCall() above.
+   */
+  private async autoAcceptBridgedCall(call: any): Promise<void> {
+    this.activeRTCCall = call;
+    try {
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(t => t.stop());
+      }
+      const freshStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.localStream = freshStream;
+
+      await call.answer({
+        audio: true,
+        video: false,
+        remoteElement: this.remoteAudioEl || undefined,
+        localStream: this.localStream,
+      });
+      console.log('[Voice][Call] Bridged leg auto-answered successfully.');
+    } catch (e: any) {
+      console.error('[Voice][Call] Failed to auto-answer bridged leg:', e.message);
+      this.errorMessage.set(`Could not connect audio: ${e.message}`);
+    }
+  }
+
   async answerCall(): Promise<void> {
     const current = this.activeCall();
     if (!current) return;
+    const rtcCallMatchesCurrent =
+      this.activeRTCCall &&
+      typeof this.activeRTCCall.answer === 'function' &&
+      (this.activeRTCCall.id === current.providerCallId || !current.providerCallId);
 
     // If TelnyxRTC already has the inbound call, answer via SDK (WebRTC media is immediate)
-    if (this.activeRTCCall && typeof this.activeRTCCall.answer === 'function') {
+    if (rtcCallMatchesCurrent) {
       try {
         console.log('[Voice][Audio] Acquiring fresh mic stream to answer inbound call');
         if (this.localStream) {
@@ -833,10 +903,18 @@ export class WebRtcVoiceService {
     if (!current.callLogId) return;
     try {
       this.errorMessage.set(null);
+      // Set BEFORE the request resolves -- the backend's answer() now
+      // picks up the PSTN leg and immediately transfers it to this
+      // browser's SIP session (see VoiceService.answerCall), which can
+      // surface as a native inbound ring here before this fetch even
+      // returns. Without setting this first, that race would show the
+      // agent a duplicate "incoming call" prompt for a call they just
+      // clicked Answer on.
+      this.awaitingBridgeAnswer = true;
       const res = await fetch(`${this.API_BASE}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callLogId: current.callLogId }),
+        body: JSON.stringify({ callLogId: current.callLogId, employeeId: this.currentEmployeeId }),
       });
       const data = await res.json();
       if (!res.ok || !data.status) throw new Error(data.message || 'Answer failed');
@@ -844,6 +922,7 @@ export class WebRtcVoiceService {
       this.activeCall.set({ ...current, status: 'active', startTime: new Date() });
       this.startTimer();
     } catch (err: any) {
+      this.awaitingBridgeAnswer = false;
       this.errorMessage.set(`Answer Call Failed: ${err.message}`);
     }
   }
@@ -1176,6 +1255,7 @@ export class WebRtcVoiceService {
 
   private endCallSession(): void {
     this.stopTimer();
+    this.awaitingBridgeAnswer = false;
     this.activeCall.set(null);
   }
 
