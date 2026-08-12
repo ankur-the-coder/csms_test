@@ -195,18 +195,44 @@ export class MeetingsComponent implements OnInit {
       endpoint: this.meetingsEndpoint,
       dataPath: 'data',
       totalPath: 'meta.total',
+
+      
+
       buildRequest: (ctx: RequestContext) => {
-        const body = {
-          start: ctx.page * ctx.pageSize,
-          length: ctx.pageSize,
-          search: ctx.search ?? '',
-          sorting: `startTime,desc`,
-          filter: JSON.stringify({ status: 0 }),
-          fromDate: ctx.dateFrom ?? '',
-          toDate: ctx.dateTo ?? '',
-        };
-        return { method: 'POST' as const, body };
-      },
+  const filters: Record<string, any> = {};
+
+  // Status
+  if (ctx.filters?.['meetingStatus'] !== undefined) {
+    filters['status'] = Number(ctx.filters['meetingStatus']);
+  } else {
+    filters['status'] = 0;
+  }
+
+  // Priority
+  if (ctx.filters?.['meetingPriority'] !== undefined) {
+    filters['priority'] = Number(ctx.filters['meetingPriority']);
+  }
+
+  // Organization
+  if (ctx.filters?.['organization'] !== undefined) {
+    filters['orgId'] = Number(ctx.filters['organization']);
+  }
+
+  const body = {
+    start: ctx.page * ctx.pageSize,
+    length: ctx.pageSize,
+    search: ctx.search ?? '',
+    sorting: `${ctx.sortKey ?? 'startTime'},${ctx.sortDir}`,
+    filter: JSON.stringify(filters),
+    fromDate: ctx.dateFrom ?? '',
+    toDate: ctx.dateTo ?? '',
+  };
+
+  return {
+    method: 'POST' as const,
+    body
+  };
+},
       transformRow: (raw: any): MeetingRow => raw as MeetingRow,
     },
 
