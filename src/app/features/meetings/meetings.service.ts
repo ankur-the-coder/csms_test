@@ -64,6 +64,28 @@ interface DashboardStatsApiResponse {
   data: DashboardStats;
 }
 
+/** One attendee/host entry from a checked meeting's attendance report. */
+export interface AttendanceRecord {
+  name: string;
+  email: string | null;
+  role: string;
+  joinTime: string | null;
+  leaveTime: string | null;
+  totalDurationSeconds: number;
+}
+
+/** Response of POST /meetings/check-attendance. */
+export interface AttendanceCheckResponse {
+  status: boolean;
+  meetingId: number;
+  wasHeld: boolean;
+  meetingStart: string | null;
+  meetingEnd: string | null;
+  totalDurationMinutes: number | null;
+  attendeeCount: number;
+  attendees: AttendanceRecord[];
+}
+
 interface DataTablePayload {
   start: number;
   length: number;
@@ -122,6 +144,31 @@ export class MeetingService {
 
   fetchMeetings(payload: FetchMeetingsPayload): Observable<FetchMeetingsResponse> {
     return this.http.post<FetchMeetingsResponse>(`${this.imp}/meetings/fetchMeetings`, payload);
+  }
+
+  /**
+   * Asks the backend to check (live, against Microsoft Graph) whether a
+   * meeting actually happened — who joined, their role, how long they
+   * stayed, and the meeting's real duration. Not cached: each call re-checks
+   * against Microsoft, since attendance can only be known after the fact
+   * and may not exist yet if the meeting hasn't finished/report hasn't
+   * generated.
+   */
+  checkAttendance(meetingId: number): Observable<AttendanceCheckResponse> {
+    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId });
+  }
+
+  /**
+   * Cancels a meeting via Microsoft Graph (notifies attendees) and marks
+   * it Cancelled in MeetingTable. Backend rejects this if the meeting is
+   * already Cancelled or Completed — that error message passes through
+   * as-is for the component to show.
+   */
+  cancelMeeting(meetingId: number, comment?: string): Observable<{ status: boolean; message: string; meetingId: number }> {
+    return this.http.post<{ status: boolean; message: string; meetingId: number }>(
+      `${this.imp}/meetings/cancel`,
+      { meetingId, comment }
+    );
   }
 
   /**
