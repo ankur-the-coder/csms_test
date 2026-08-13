@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -70,7 +70,7 @@ import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/cale
     }
   `]
 })
-export class MeetingsComponent implements OnInit {
+export class MeetingsComponent implements OnInit, OnDestroy {
 
   // Reference to the table so we can ask it to reload after cancelling a
   // meeting. NOTE: '.refresh()' below is a guess at the method name — check
@@ -212,6 +212,14 @@ export class MeetingsComponent implements OnInit {
         label: 'Client Email',
         sortable: false,
       },
+      {
+        key: 'rowActions',
+        label: 'actions',
+        sortable: false,
+        
+        hideable: false,
+        sticky:true,
+      },
     ],
 
     apiConfig: {
@@ -275,23 +283,93 @@ export class MeetingsComponent implements OnInit {
       { id: 'refresh', type: 'refresh' },
       { id: 'columns', type: 'columnPicker', label: 'Columns' },
     ],
-    customRowActions: [
-      {
-        id: 'view',
-        icon: 'view',
-        label: 'View',
-        tooltip: 'View meeting details',
-        onClick: (row: MeetingRow) => this.openMeetingLink(row),
-      },
-      {
-        id: 'cancel',
-        icon: 'delete',  // <-- must be one of ActionIcon values
-        label: 'Cancel',
-        tooltip: 'Cancel this meeting',
-        onClick: (row: MeetingRow) => this.confirmCancelMeeting(row),
-      },
-    ],
   }));
+
+  // ============ Row Actions Menu (three-dot, rendered via appCustomColumn="rowActions") ============
+  //
+  // Deliberately kept out of the shared DataTable component — it's rendered
+  // through the same ng-template/appCustomColumn mechanism as the other
+  // custom columns (title, orgName, attendance...), so DataTable itself
+  // never needs to know about Join/Cancel.
+
+  /** id of the row whose menu is currently open, or null if none is open. */
+  actionMenuOpenRowId = signal<number | null>(null);
+  /** The full row for the currently open menu (kept alongside the id so the template can read it without re-searching apiMeetings/rows). */
+  actionMenuRow = signal<MeetingRow | null>(null);
+  /** Fixed-position coordinates for the floating menu, computed from the trigger button's own bounding rect so it isn't clipped by the table's scroll container. */
+  actionMenuPosition = signal<{ top: number; left: number } | null>(null);
+
+  toggleActionMenu(row: MeetingRow, event: MouseEvent): void {
+    event.stopPropagation();
+    const isOpeningSameRow = this.actionMenuOpenRowId() === row.id;
+
+    if (isOpeningSameRow) {
+      this.closeActionMenu();
+      return;
+    }
+
+    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 176; // matches w-44 below
+
+    this.actionMenuOpenRowId.set(row.id);
+    this.actionMenuRow.set(row);
+    this.actionMenuPosition.set({
+      top: trigger.bottom + 6,
+      // Right-align the menu to the trigger so it doesn't run off-screen
+      // for the right-most "Meeting Detail"/"Client Email" columns.
+      left: Math.max(8, trigger.right - menuWidth),
+    });
+  }
+
+  closeActionMenu(): void {
+    this.actionMenuOpenRowId.set(null);
+    this.actionMenuRow.set(null);
+    this.actionMenuPosition.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  // The menu's top/left are captured as fixed pixel coordinates from the
+  // trigger button's rect at the moment it opens. If the window is resized
+  // (or the page/table scrolls) afterward, that button moves but the menu
+  // wouldn't — so just close it rather than let it drift away from its row.
+  @HostListener('window:resize')
+  onWindowResizeCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  /**
+   * `scroll` events don't bubble, so a plain (window:scroll) HostListener
+   * won't fire when the table's own internal `overflow-x/y` container
+   * scrolls — only a capture-phase listener on `document` catches that.
+   * Added/removed manually since @HostListener has no capture option.
+   */
+  private closeActionMenuOnScroll = () => {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  };
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.closeActionMenuOnScroll, true);
+  }
+
+  onMenuJoin(row: MeetingRow): void {
+    this.closeActionMenu();
+    this.joinMeeting(row);
+  }
+
+  onMenuCancel(row: MeetingRow): void {
+    this.closeActionMenu();
+    this.cancelMeetingFromMenu(row);
+  }
 
   openMeetingLink(row: MeetingRow): void {
     if (row.meetingLink) {
@@ -299,6 +377,57 @@ export class MeetingsComponent implements OnInit {
     } else {
       this.showToastMessage('No meeting link available for this entry.');
     }
+  }
+
+  // ============ Row Actions: Join / Cancel eligibility ============
+  //
+  // Rendered as the DataTable's own customRowActions buttons (see
+  // tableConfig above) — it already handles the disabled state and click
+  // guarding natively, so this is just the eligibility logic those
+  // actions read from.
+
+  /**
+   * Whether Join / Cancel should be enabled for a row, based on its
+   * Status and — for a still-Scheduled meeting — whether its start time
+   * has arrived yet.
+   *
+   *   Completed / Cancelled / Host No-Show / Client No-Show -> both disabled (nothing left to do)
+   *   Pending                                                -> both enabled
+   *   Scheduled / Rescheduled                                -> Cancel always enabled;
+   *                                                              Join enables once StartTime <= now
+   */
+  private getRowActionState(row: MeetingRow): { canJoin: boolean; canCancel: boolean } {
+    const COMPLETED = 1, CANCELLED = 4, CLIENT_NO_SHOW = 5, HOST_NO_SHOW = 6, PENDING = 3;
+
+    if ([COMPLETED, CANCELLED, CLIENT_NO_SHOW, HOST_NO_SHOW].includes(row.status)) {
+      return { canJoin: false, canCancel: false };
+    }
+
+    if (row.status === PENDING) {
+      return { canJoin: true, canCancel: true };
+    }
+
+    // Scheduled (0) / Rescheduled (2)
+    const hasStarted = !!row.startTime && new Date(row.startTime).getTime() <= Date.now();
+    return { canJoin: hasStarted, canCancel: true };
+  }
+
+  canJoinMeeting(row: MeetingRow): boolean {
+    return this.getRowActionState(row).canJoin;
+  }
+
+  canCancelMeeting(row: MeetingRow): boolean {
+    return this.getRowActionState(row).canCancel;
+  }
+
+  joinMeeting(row: MeetingRow): void {
+    if (!this.canJoinMeeting(row)) return;
+    this.openMeetingLink(row);
+  }
+
+  cancelMeetingFromMenu(row: MeetingRow): void {
+    if (!this.canCancelMeeting(row)) return;
+    this.confirmCancelMeeting(row);
   }
 
   /**
@@ -456,6 +585,7 @@ export class MeetingsComponent implements OnInit {
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
+    document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
   fetchApiMeetings(): void {
