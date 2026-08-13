@@ -295,11 +295,17 @@ export class WebRtcVoiceService {
   /**
    * Main entry point. Called from VoiceComponent.ngOnInit().
    * Steps:
-   *  1. Request microphone
+   *  1. Attempt to acquire the microphone (non-blocking — see below)
    *  2. Fetch JWT token from backend (credentials generated against SIP Connection)
    *  3. Initialize TelnyxRTC client with the JWT
    *  4. Connect — 'telnyx.ready' fires when actually registered
    *  5. Start SSE for call state signaling
+   *
+   * NOTE: registration no longer requires a working microphone. An agent
+   * with no/broken mic can still register (get SIP presence, receive
+   * incoming-call notifications) — the mic is only required to actually
+   * transmit audio, which is checked separately in makeOutboundCall() and
+   * answerCall().
    */
   async registerSoftphone(): Promise<void> {
     if (!this.isBrowser) return;
@@ -317,12 +323,18 @@ export class WebRtcVoiceService {
     this.connectionState.set('Connecting');
     this.errorMessage.set(null);
 
-    // Step 1: Microphone
+    // Step 1: Microphone — attempted but no longer blocking. Registration
+    // (SIP presence / ability to receive call notifications) and the mic
+    // (ability to actually transmit audio) are independent concerns: an
+    // agent with a broken/missing mic can still register, see the dialer,
+    // and receive incoming-call notifications. They'll just be stopped by
+    // the mic check in makeOutboundCall()/answerCall() when they try to
+    // actually get on a call. requestMicrophonePermission() still sets
+    // micPermission + errorMessage on failure so the UI banner shows.
     this.connectionState.set('initializing');
     const micOk = await this.requestMicrophonePermission();
     if (!micOk) {
-      this.connectionState.set('Disconnected');
-      return;
+      console.warn('[Voice][WebRTC] Microphone unavailable — continuing registration without it. Calls will be blocked until a mic is available.');
     }
 
     // Step 2: Fetch real WebRTC JWT from backend
@@ -695,6 +707,14 @@ export class WebRtcVoiceService {
       this.errorMessage.set('TelnyxRTC client is not initialized.');
       return;
     }
+    // Registration no longer guarantees a working mic (see registerSoftphone).
+    // Check it explicitly here so a missing/blocked device fails fast with a
+    // clear message instead of surfacing as a raw getUserMedia error further
+    // down inside the try block below.
+    if (this.micPermission() === 'Blocked' || this.micPermission() === 'Denied') {
+      this.errorMessage.set('Microphone is unavailable. Connect a microphone (or grant permission) before placing a call.');
+      return;
+    }
 
     this.errorMessage.set(null);
     this.activeCall.set({
@@ -918,6 +938,14 @@ export class WebRtcVoiceService {
   async answerCall(): Promise<void> {
     const current = this.activeCall();
     if (!current) return;
+    // Registration no longer guarantees a working mic (see registerSoftphone).
+    // An agent can be registered and see an inbound call ring in with no
+    // mic connected -- catch that here with a clear message rather than
+    // letting it fail deeper inside the SDK/bridge answer path below.
+    if (this.micPermission() === 'Blocked' || this.micPermission() === 'Denied') {
+      this.errorMessage.set('Microphone is unavailable. Connect a microphone (or grant permission) before answering a call.');
+      return;
+    }
     const rtcCallMatchesCurrent =
       this.activeRTCCall &&
       typeof this.activeRTCCall.answer === 'function' &&
