@@ -97,7 +97,8 @@ export class WebRtcVoiceService {
   // rather than showing the agent a second "incoming call" prompt for a
   // call they already answered.
   private awaitingBridgeAnswer = false;
-
+  private ringTimeoutTimer: any = null;
+  private readonly RING_TIMEOUT_MS = 60000; // tune this — 15-25s is typical
   private readonly platformId = inject(PLATFORM_ID);
   private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
 
@@ -463,6 +464,7 @@ export class WebRtcVoiceService {
         if (state === 'active') {
           // Both sides connected — wire up remote audio
           console.log('[Voice][Call] Call state changed → active');
+          this.clearRingTimeout(); // ← add this — call is genuinely answered, stop the countdown
           this.attachRemoteAudio(call);
           const cur = this.activeCall();
           if (cur) {
@@ -470,23 +472,25 @@ export class WebRtcVoiceService {
             this.startTimer();
           }
         }
-     if (state === 'hangup' || state === 'destroy' || state === 'purge') {
-  const cause: string = (call.cause || '').toLowerCase();
-  console.log('[Voice][Call] Terminal state:', state, 'cause:', cause);
+        if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+          this.clearRingTimeout(); // ← add this
 
-  const unansweredCauses = ['rejected', 'userbusy', 'user_busy', 'noanswer', 'originatorcancel', 'timeout', 'busy'];
-  const explicitStatus = unansweredCauses.some(c => cause.includes(c)) ? 'no_answer' : 'completed';
+          const cause: string = (call.cause || '').toLowerCase();
+          console.log('[Voice][Call] Terminal state:', state, 'cause:', cause);
 
-  // Immediately log to backend before clearing local activeCall state
-  this.logCallEndToBackend(explicitStatus);
-  this.endCallSession();
+          const unansweredCauses = ['rejected', 'userbusy', 'user_busy', 'noanswer', 'originatorcancel', 'timeout', 'busy'];
+          const explicitStatus = unansweredCauses.some(c => cause.includes(c)) ? 'no_answer' : 'completed';
 
-  // Only attempt SDK hangup on first terminal state
-  if (state === 'hangup') {
-    this.cleanupCallMedia();
-  }
-  return;
-}
+          // Immediately log to backend before clearing local activeCall state
+          this.logCallEndToBackend(explicitStatus);
+          this.endCallSession();
+
+          // Only attempt SDK hangup on first terminal state
+          if (state === 'hangup') {
+            this.cleanupCallMedia();
+          }
+          return;
+        }
         if (state === 'held') {
           const cur = this.activeCall();
           if (cur) this.activeCall.set({ ...cur, status: 'held', isHeld: true });
@@ -626,30 +630,58 @@ export class WebRtcVoiceService {
     }, 2000);
   }
 
- private cleanupCallMedia(): void {
-  const callToHangup = this.activeRTCCall;
-  this.activeRTCCall = null; // clear immediately
+  private cleanupCallMedia(): void {
+    const callToHangup = this.activeRTCCall;
+    this.activeRTCCall = null; // clear immediately
 
-  if (callToHangup && typeof callToHangup.hangup === 'function') {
-    const state = callToHangup.state;
-    const cause = (callToHangup.cause || '').toLowerCase();
-    const alreadyEnded = ['hangup', 'destroy', 'ended'].includes(state)
-      || ['user_busy', 'userbusy', 'rejected', 'busy'].includes(cause);
+    if (callToHangup && typeof callToHangup.hangup === 'function') {
+      const state = callToHangup.state;
+      const cause = (callToHangup.cause || '').toLowerCase();
+      const alreadyEnded = ['hangup', 'destroy', 'ended'].includes(state)
+        || ['user_busy', 'userbusy', 'rejected', 'busy'].includes(cause);
 
-    if (!alreadyEnded) {
-      try { callToHangup.hangup(); } catch { /* ignore */ }
+      if (!alreadyEnded) {
+        try { callToHangup.hangup(); } catch { /* ignore */ }
+      }
+    }
+
+    // Always clean audio element
+    if (this.isBrowser && this.remoteAudioEl) {
+      try {
+        this.remoteAudioEl.pause();
+        this.remoteAudioEl.srcObject = null;
+      } catch { /* ignore */ }
     }
   }
+  private startRingTimeout(): void {
+    this.clearRingTimeout(); // safety, in case one is somehow already running
 
-  // Always clean audio element
-  if (this.isBrowser && this.remoteAudioEl) {
-    try {
-      this.remoteAudioEl.pause();
-      this.remoteAudioEl.srcObject = null;
-    } catch { /* ignore */ }
+    this.ringTimeoutTimer = setTimeout(() => {
+      const cur = this.activeCall();
+      // Only force-end if we're still waiting — if it already went active,
+      // this timer should have been cleared already, but double-check
+      // status here as a belt-and-suspenders guard against a race.
+      if (cur && (cur.status === 'dialing' || cur.status === 'ringing')) {
+        console.warn('[Voice][Call] Ring timeout hit — forcing hangup (no answer within', this.RING_TIMEOUT_MS / 1000, 's).');
+        this.logCallEndToBackend('no_answer');
+
+        if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
+          try { this.activeRTCCall.hangup(); } catch { /* ignore */ }
+        }
+
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.lastNotification.set({ message: 'No answer — call ended after timeout', type: 'warn' });
+      }
+    }, this.RING_TIMEOUT_MS);
   }
-}
 
+  private clearRingTimeout(): void {
+    if (this.ringTimeoutTimer) {
+      clearTimeout(this.ringTimeoutTimer);
+      this.ringTimeoutTimer = null;
+    }
+  }
   // ─────────────────────────────────────────────────────────────────────────
   // OUTBOUND CALL
   // ─────────────────────────────────────────────────────────────────────────
@@ -720,6 +752,7 @@ export class WebRtcVoiceService {
       });
 
       console.log('[Voice][Media] Local audio track added, outbound call initiated');
+      this.startRingTimeout();
 
       // Best-effort: if the SDK call object exposes an id that lines up
       // with Telnyx's call_control_id, link it onto the call_logs row so a
@@ -955,9 +988,31 @@ export class WebRtcVoiceService {
     // 'rejected' since this is an explicit user decline, not a plain hangup.
     this.logCallEndToBackend('rejected');
 
-    // Same reasoning as hangupCall: SDK hangup already ends the call at
-    // Telnyx's end -- a follow-up REST /reject would 422 the same way.
-    if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
+    // An unanswered INBOUND call needs Telnyx's real Call Control reject
+    // action (cause: USER_BUSY -> a proper SIP 486/603 on the original
+    // INVITE), not the WebRTC SDK's generic call.hangup(). Per Telnyx's
+    // own SIP fail-over docs, they only stop re-delivering an unanswered
+    // inbound INVITE (via their secondary route/IP) once they see that
+    // explicit SIP response -- a plain hangup()/BYE isn't recognized the
+    // same way, which was causing Telnyx to re-ring this same call here
+    // a couple more times after Decline (looked like an automatic
+    // "retry"). Answered calls (hangupCall()) and cancelling your own
+    // outbound dial are unaffected by this -- those are unambiguous
+    // BYE/CANCELs, so they still use the SDK path below.
+    const isUnansweredInbound =
+      current?.direction === 'inbound' && current.status !== 'active' && current.status !== 'held';
+
+    if (isUnansweredInbound && current?.callLogId) {
+      try {
+        await fetch(`${this.API_BASE}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callLogId: current.callLogId }),
+        });
+      } catch (e) {
+        console.warn('[Voice][Call] Reject network error:', e);
+      }
+    } else if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
       try { this.activeRTCCall.hangup(); } catch { /* ignore */ }
     } else if (current?.callLogId) {
       try {
@@ -970,6 +1025,10 @@ export class WebRtcVoiceService {
         console.warn('[Voice][Call] Reject network error:', e);
       }
     }
+
+    // Always clean up the local WebRTC leg/audio too, regardless of which
+    // path above ran -- cleanupCallMedia() already no-ops a redundant
+    // hangup() if the call object reports it's already ended.
     this.cleanupCallMedia();
     this.endCallSession();
   }
