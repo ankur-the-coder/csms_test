@@ -8,10 +8,12 @@ import { LearnerCourseService } from '../../services/learner-course.service';
 import { CourseDetail as CourseDetailModel, CourseModuleDetail } from '../../models/course.model';
 import { environment } from '../../../../../environments/environment';
 import { finalize } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { MultiFileInput } from '../../../../shared/components/inputs/multi-file-input/multi-file-input';
 
 @Component({
   selector: 'app-course-detail',
-  imports: [CommonModule, CircularProgress],
+  imports: [CommonModule, CircularProgress, FormsModule, MultiFileInput],
   templateUrl: './course-detail.html',
   styleUrl: './course-detail.css',
 })
@@ -27,6 +29,8 @@ export class CourseDetail implements OnInit {
   loading = true;
   error = '';
   isLastModuleFlag = false;
+  allPdfUrls: string[] = [];
+  firstModulePdfUrls: string[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -70,6 +74,8 @@ export class CourseDetail implements OnInit {
             if (res?.modules?.length) {
               const firstIncomplete = res.modules.find((m) => !m.is_completed);
               this.selectModule(firstIncomplete ?? res.modules[0]);
+            } else {
+              this.updatePdfUrls();
             }
           } catch {
             this.error = 'Unexpected data format from server.';
@@ -83,27 +89,42 @@ export class CourseDetail implements OnInit {
       });
   }
 
-  selectModule(module: CourseModuleDetail): void {
-    this.activeModule = module;
-    this.safeVideoUrl = module.video_url
-      ? this.sanitizer.bypassSecurityTrustResourceUrl(this.toEmbedUrl(module.video_url))
-      : null;
-    // Compute once and store so the template never relies on a getter that can return stale -1
-    if (this.course) {
-      const idx = this.course.modules.findIndex((m) => String(m.id) === String(module.id));
-      this.isLastModuleFlag = idx === this.course.modules.length - 1;
-    }
-    this.closePdfViewer();
-    this.cdr.markForCheck();
-  }
+// 2️⃣ selectModule()
+selectModule(module: CourseModuleDetail): void {
+  this.activeModule = module;
 
-  private toEmbedUrl(url: string): string {
-    const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
-    if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
-    const longMatch = url.match(/[?&]v=([^&]+)/);
-    if (longMatch) return `https://www.youtube.com/embed/${longMatch[1]}`;
-    return url;
+  const embedUrl = module.video_url ? this.toEmbedUrl(module.video_url) : null;
+  this.safeVideoUrl = embedUrl
+    ? this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl)
+    : null;
+
+  if (this.course) {
+    const idx = this.course.modules.findIndex((m) => String(m.id) === String(module.id));
+    this.isLastModuleFlag = idx === this.course.modules.length - 1;
   }
+  this.updatePdfUrls();
+  this.closePdfViewer();
+  this.cdr.markForCheck();
+}
+
+private toEmbedUrl(url: string): string | null {
+  if (!url) return null;
+
+  const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
+  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+
+  const longMatch = url.match(/[?&]v=([^&]+)/);
+  if (longMatch) return `https://www.youtube.com/embed/${longMatch[1]}`;
+
+  const alreadyEmbed = url.match(/youtube\.com\/embed\//);
+  if (alreadyEmbed) return url;
+
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+
+ 
+  return null;
+}
 
   markComplete(module: CourseModuleDetail): void {
     module.is_completed = true;
@@ -147,7 +168,7 @@ export class CourseDetail implements OnInit {
   // ── Step navigation (Back / Next / Finish) ──────────────────────────
   get activeModuleIndex(): number {
     if (!this.course || !this.activeModule) return -1;
-    // eslint-disable-next-line eqeqeq
+  
     return this.course.modules.findIndex((m) => m.id == this.activeModule!.id);
   }
 
@@ -228,9 +249,39 @@ get completedModulesCount(): number {
   if (!this.course?.modules) return 0;
   return this.course.modules.filter((m) => m.is_completed).length;
 }
+  updatePdfUrls(): void {
+    const urls: string[] = [];
+    if (this.activeModule?.materials) {
+      this.activeModule.materials.forEach(mat => {
+        if (this.isPdf(mat)) {
+          urls.push(this.getFullUrl(mat));
+        }
+      });
+    }
+    if (this.course?.materials) {
+      this.course.materials.forEach(mat => {
+        if (this.isPdf(mat)) {
+          urls.push(this.getFullUrl(mat));
+        }
+      });
+    }
+    this.allPdfUrls = urls;
+
+    // Pre-compute the first PDF URL for the video fallback area
+    const firstPdf = this.firstModulePdf;
+    this.firstModulePdfUrls = firstPdf ? [this.getFullUrl(firstPdf)] : [];
+  }
+
   closePdfViewer(): void {
     this.activePdfUrl = null;
     this.activePdfTitle = null;
     document.body.style.overflow = '';
   }
+ 
+exitCourse(): void {
+  this.router.navigate(['/courses']);
+}
+get isCourseCompleted(): boolean {
+  return this.progressPercent === 100;
+}
 }

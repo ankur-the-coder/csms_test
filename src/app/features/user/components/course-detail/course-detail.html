@@ -178,16 +178,21 @@
               
               <!-- Video Fallback: show PDF inline if available, else placeholder -->
               <ng-container *ngIf="!safeVideoUrl">
-                <!-- Inline PDF viewer when module has a PDF material -->
-                <iframe
-                  *ngIf="firstModulePdf"
-                  [src]="getPdfSafeUrl(firstModulePdf)"
-                  frameborder="0"
-                  class="w-full h-full"
-                ></iframe>
+                <!-- Custom Multi-File Input for PDF resource -->
+                <div *ngIf="firstModulePdfUrls.length > 0" class="w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-900">
+                  <app-multi-file-input
+                    [inputType]="'edit'"
+                    [isMultiple]="false"
+                    [fileLimit]="1"
+                    [allowedFileTypes]="['application/pdf']"
+                    [ngModel]="firstModulePdfUrls"
+                    [disabled]="true"
+                    class="w-full max-w-xl"
+                  ></app-multi-file-input>
+                </div>
 
                 <!-- No video & no PDF: show placeholder -->
-                <div *ngIf="!firstModulePdf"
+                <div *ngIf="firstModulePdfUrls.length === 0"
                      class="flex flex-col items-center justify-center text-slate-400 gap-3 p-6 text-center">
                   <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,9 +238,6 @@
                          bg-emerald-600 hover:bg-emerald-700 text-white active:scale-[0.98] 
                          transition-all shadow-sm shadow-emerald-600/20"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                  </svg>
                   Mark as complete
                 </button>
               </div>
@@ -244,81 +246,19 @@
           </div>
 
           <!-- Module & Course Material Attachments -->
-          <div *ngIf="(activeModule.materials && activeModule.materials.length) || (course.materials && course.materials.length)"
+          <div *ngIf="allPdfUrls.length > 0"
                class="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 max-w-5xl mx-auto w-full shadow-xs">
-            
-            <!-- Module Materials -->
-            <div *ngIf="activeModule.materials && activeModule.materials.length">
-              <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5">
-                Module Materials
-              </h3>
-              <div class="flex flex-wrap gap-2">
-                <ng-container *ngFor="let mat of activeModule.materials">
-                  <!-- View / Open button -->
-                  <button
-                    (click)="openMaterial(mat)"
-                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200
-                           bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-300
-                           text-xs font-semibold text-slate-700 hover:text-emerald-700
-                           transition-all group shadow-2xs"
-                  >
-                    <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>{{ mat.title }}</span>
-                    <span *ngIf="isPdf(mat)" class="px-1.5 py-0.5 text-[9px] font-bold text-red-600 bg-red-50 rounded border border-red-100 uppercase">PDF</span>
-                  </button>
-
-                  <!-- Download button (PDF only) -->
-                  <button
-                    *ngIf="isPdf(mat)"
-                    (click)="downloadMaterial(mat)"
-                    title="Download {{ mat.title }}"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200
-                           bg-slate-50 hover:bg-blue-50 hover:border-blue-300
-                           text-xs font-semibold text-slate-500 hover:text-blue-700
-                           transition-all shadow-2xs"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
-                    </svg>
-                    Download
-                  </button>
-                </ng-container>
-              </div>
-            </div>
-
-            <!-- Course Level Resources -->
-            <div *ngIf="course.materials && course.materials.length"
-                 [class.pt-4]="activeModule.materials?.length"
-                 [class.border-t]="activeModule.materials?.length"
-                 class="border-slate-100">
-              <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2.5">
-                General Course Resources
-              </h3>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  *ngFor="let mat of course.materials"
-                  (click)="openMaterial(mat)"
-                  class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200
-                         bg-slate-50 hover:bg-emerald-50/50 hover:border-emerald-300
-                         text-xs font-semibold text-slate-700 hover:text-emerald-700 
-                         transition-all group shadow-2xs"
-                >
-                  <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                  </svg>
-                  <span>{{ mat.title }}</span>
-                  <span *ngIf="isPdf(mat)" class="px-1.5 py-0.5 text-[9px] font-bold text-red-600 bg-red-50 rounded border border-red-100 uppercase">
-                    PDF
-                  </span>
-                </button>
-              </div>
-            </div>
-
+            <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+              Course Attachments & Resources
+            </h3>
+            <app-multi-file-input
+              [inputType]="'edit'"
+              [isMultiple]="true"
+              [fileLimit]="allPdfUrls.length"
+              [allowedFileTypes]="['application/pdf']"
+              [ngModel]="allPdfUrls"
+              [disabled]="true"
+            ></app-multi-file-input>
           </div>
 
         </div>
@@ -349,32 +289,44 @@
           Module {{ activeModuleIndex + 1 }} of {{ course.modules.length }}
         </div>
 
-        <button
-          *ngIf="!isLastModule"
-          (click)="goToNextModule()"
-          class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
-                 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
-                 shadow-sm shadow-emerald-600/20"
-        >
-          Next
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-          </svg>
-        </button>
+<!-- Finish: shown as soon as overall course percent hits 100, regardless of step position -->
+<button
+  *ngIf="isCourseCompleted"
+  (click)="finishCourse()"
+  class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
+         bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
+         shadow-sm shadow-emerald-600/20"
+>
+Finished
+</button>
 
-        <button
-          *ngIf="isLastModule"
-          (click)="finishCourse()"
-          class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
-                 bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
-                 shadow-sm shadow-emerald-600/20"
-        >
-          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-          </svg>
-          Finish Course
-        </button>
+<!-- Not 100% yet, but on last step -> Exit Course -->
+<button
+  *ngIf="!isCourseCompleted && isLastModule"
+  (click)="exitCourse()"
+  class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
+         bg-slate-600 hover:bg-slate-600 active:scale-95 transition-all
+         shadow-sm shadow-slate-600/20"
+>
+  Exit Course
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+  </svg>
+</button>
 
+<!-- Not 100% yet, and not last step -> Next -->
+<button
+  *ngIf="!isCourseCompleted && !isLastModule"
+  (click)="goToNextModule()"
+  class="inline-flex items-center gap-2 text-xs font-bold px-5 sm:px-6 py-2.5 rounded-xl text-white
+         bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
+         shadow-sm shadow-emerald-600/20"
+>
+  Next
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+  </svg>
+</button>
       </div>
     </footer>
 

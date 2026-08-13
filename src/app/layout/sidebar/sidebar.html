@@ -55,9 +55,9 @@
 
     <!-- Main Navigation Section (single list, no sub-sections) -->
     <div>
-      <!-- <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
+      <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
         Main Menu
-      </div> -->
+      </div>
       <nav class="space-y-1">
         <button
           *ngFor="let item of mainNavItems"
@@ -122,13 +122,13 @@
     </div>
 
     <!-- User Side Section -->
-    <!-- <div class="mt-4"> -->
+    <div class="mt-4">
       <!-- <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
         User Side
       </div> -->
 
       <!-- Training Accordion (only shown in expanded sidebar) -->
-      <!-- <div *ngIf="!collapsed" class="space-y-0.5"> -->
+      <div *ngIf="!collapsed" class="space-y-0.5">
 
         <!-- Training accordion header -->
         <!-- <button
@@ -183,10 +183,10 @@
           </nav>
         </div> -->
 
-      <!-- </div> -->
+      </div>
 
       <!-- Collapsed sidebar: show Training icon only -->
-      <!-- <nav *ngIf="collapsed" class="space-y-1">
+      <nav *ngIf="collapsed" class="space-y-1">
         <button
           (click)="selectNav('courses')"
           class="w-full flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-lg text-xs font-medium transition-all cursor-pointer border-l-[3px]"
@@ -203,9 +203,9 @@
           ></div>
           <span class="text-[9px] font-semibold text-center leading-tight">Training</span>
         </button>
-      </nav> -->
+      </nav>
 
-    <!-- </div> -->
+    </div>
   </div>
 
   <!-- Footer / Bottom Collapse Control (desktop only) -->

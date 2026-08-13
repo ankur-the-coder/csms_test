@@ -72,7 +72,7 @@ interface ClientStatus {
 export class Implementation implements OnInit, OnDestroy {
 
   private readonly implService = inject(ImplementationService);
-  private readonly tableEndpoint = `${this.implService.baseUrl}/fetchDataTable`; 
+  private readonly tableEndpoint = `${this.implService.baseUrl}/imp/fetchDataTable`;
    // private selectedDateFrom = signal<string | null>(null);
   // private selectedDateTo   = signal<string | null>(null);
   cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
