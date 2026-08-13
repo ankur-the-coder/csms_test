@@ -39,7 +39,7 @@ export class Sidebar {
   ];
 
   csNavItems: NavItem[] = [
-    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
     { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
