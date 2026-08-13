@@ -2,7 +2,6 @@ import { Component, signal, computed, OnInit, OnDestroy, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, catchError, of, switchMap, takeUntil } from 'rxjs';
-
 import { RequestContext, SmartTableConfig } from '../../../../../shared/components/Data-table/data-table.types';
 import { DataTable } from "../../../../../shared/components/Data-table/data-table";
 import { CustomColumnDirective } from '../../../../../shared/components/Data-table/custom-column.directive';
@@ -73,29 +72,19 @@ interface ClientStatus {
 export class Implementation implements OnInit, OnDestroy {
 
   private readonly implService = inject(ImplementationService);
- private readonly tableEndpoint = `${this.implService.baseUrl}/fetchDataTable`; 
- 
-private selectedDateFrom = signal<string | null>(null);
-private selectedDateTo   = signal<string | null>(null);
-
-  // Card stats (fetched independently from the table's own data source)
+  private readonly tableEndpoint = `${this.implService.baseUrl}/imp/fetchDataTable`;
+   // private selectedDateFrom = signal<string | null>(null);
+  // private selectedDateTo   = signal<string | null>(null);
   cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
-
-  // UI state
   statusFilter = signal<string>('all');
-
-  // Drawer
   selectedClient    = signal<Client | null>(null);
   selectedModuleTab = signal<string>('all');
   drawerOpen        = signal<boolean>(false);
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
-
-  // Card fetch trigger (Subject + switchMap + takeUntil pattern)
   private fetchCardTrigger$ = new Subject<void>();
   private destroy$          = new Subject<void>();
 
-  // ── Filter tabs (read from cardData, no recompute logic needed) ───────────
   get filterTabs() {
     const c = this.cardData();
     return [
@@ -111,9 +100,7 @@ private selectedDateTo   = signal<string | null>(null);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
   pendingClientsCount = computed(() => this.cardData().notStarted);
 
-  // ── Memoized module lookups for the open drawer (recompute only when
-  //    selectedClient / selectedModuleTab actually change) ──────────────────
-  clientModules = computed<Module[]>(() => {
+ clientModules = computed<Module[]>(() => {
     const client = this.selectedClient();
     if (!client?.modules) return [];
     return client.modules.filter(mod => this.getModuleTotalCount(client, mod) > 0);
@@ -125,13 +112,13 @@ private selectedDateTo   = signal<string | null>(null);
     return tabKey === 'all' ? modules : modules.filter(m => m.key === tabKey);
   });
 
-  // ── Static table config pieces (built once, never re-allocated) ───────────
+
   private static readonly COLUMNS = [
     { key: 'name',               label: 'Organisation',   sortable: true },
     { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
-    { key: 'support_owner',      label: 'Support Owner',  sortable: false },
-    { key: 'country',            label: 'Country',        sortable: false },
-    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hide : true},
+    { key: 'support_owner',      label: 'Support Owner',  sortable: false , hidden :true},
+    { key: 'country',            label: 'Country',        sortable: false , hidden : true},
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hidden : true},
     {
       key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
       badgeMap: {
@@ -149,7 +136,7 @@ private selectedDateTo   = signal<string | null>(null);
   ];
 
   private static readonly TOOLBAR_BUTTONS = [
-    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    // { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
     { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
     { id: 'export',  type: 'export'       as const, label: 'Export' },
     { id: 'refresh', type: 'refresh'      as const },
@@ -182,24 +169,24 @@ private selectedDateTo   = signal<string | null>(null);
         buildRequest: (ctx: RequestContext) => {
   // Jab bhi ctx se real date aaye (user ne date picker se select kiya),
   // usko state me save kar lo.
-  if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
-  if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
+  // if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
+  // if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
 
-  const today = this.getTodayDateString();
+  // const today = this.getTodayDateString();
   const body: DataTablePayload = {
     start:   ctx.page * ctx.pageSize,
     length:  ctx.pageSize,
     search:  ctx.search ?? '',
     sorting: JSON.stringify({
-      require: 0,
+      require: 1,
       col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
       dir: ctx.sortDir ?? 'desc',
     }),
     filter:   JSON.stringify({ ...ctx.filters }),
     tabSts,
     // Ab yahan ctx.dateFrom/ctx.dateTo ki jagah persisted signal use karo
-    fromDate: this.selectedDateFrom() || today,
-    toDate:   this.selectedDateTo()   || today,
+    // fromDate: this.selectedDateFrom() || today,
+    // toDate:   this.selectedDateTo()   || today,
   };
   return { method: 'POST' as const, body };
 },
@@ -221,7 +208,7 @@ private selectedDateTo   = signal<string | null>(null);
       showPagination:  true,
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
-      exportFileName:  'implementation-progress',
+      exportFileName:  'Implementation Progress',
       emptyMessage:    'No implementation records found.',
       clickable:       false,
       toolbarButtons: Implementation.TOOLBAR_BUTTONS,
@@ -237,13 +224,13 @@ private selectedDateTo   = signal<string | null>(null);
     };
   });
 
-  private getTodayDateString(): string {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+  // private getTodayDateString(): string {
+  //   const d = new Date();
+  //   const year = d.getFullYear();
+  //   const month = String(d.getMonth() + 1).padStart(2, '0');
+  //   const day = String(d.getDate()).padStart(2, '0');
+  //   return `${year}-${month}-${day}`;
+  // }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
@@ -277,11 +264,6 @@ private selectedDateTo   = signal<string | null>(null);
       });
   }
 
-  // Called on manual refresh (e.g. the data-table's refresh button) to
-  // resync the stat cards; the table refetches its own rows internally.
-  loadData() {
-    this.fetchCardTrigger$.next();
-  }
 
   private mapApiRowToClient(row: Datum): Client {
     const modules: Module[] = [];

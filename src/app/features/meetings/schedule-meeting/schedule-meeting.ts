@@ -2,8 +2,7 @@ import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { ScheduleMeetingService, Organization, OwnerOption } from './schedule-meetings.service';
+import { ScheduleMeetingService, Organization, EmployeeDetails } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
 
@@ -30,26 +29,43 @@ export class ScheduleMeeting implements OnInit {
     orgName: '',
     orgEmail: '',
 
+    // hostMode 'select' = auto-filled from the logged-in user (the normal path).
+    // hostMode 'manual' = fallback used only if we couldn't fetch the current user's details.
     hostMode: 'select' as EntryMode,
-    hostType: '' as 'lead' | 'support' | '',
     hostId: '',
     hostName: '',
     hostEmail: '',
 
-    link: '',
     description: ''
   };
 
   organizations: Organization[] = [];
-  hosts: OwnerOption[] = [];
 
-  private leadOwners: OwnerOption[] = [];
-  private supportOwners: OwnerOption[] = [];
+  /** Populated with the Teams join link once the meeting is successfully created. */
+  createdMeetingLink: string | null = null;
+
+  /** True while we're fetching the logged-in user's details to use as the host. */
+  hostDetailsLoading = true;
+
+  /** True if fetching the host's details failed — UI falls back to manual host entry. */
+  hostDetailsError = false;
 
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
   priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
 
+  // Backend validates priority via an enum rule expecting a number: 0 = Low, 1 = Medium, 2 = High.
+  private readonly priorityMap: Record<'Low' | 'Medium' | 'High', number> = {
+    Low: 0,
+    Medium: 1,
+    High: 2
+  };
+
   loadingInitialData = true;
+
+  /** True once the user has attempted to submit — turns on field-level error messages. */
+  submitted = false;
+
+  saving = false;
 
   constructor(
     private router: Router,
@@ -59,21 +75,16 @@ export class ScheduleMeeting implements OnInit {
 
   ngOnInit(): void {
     this.loadAllData();
+    this.loadHostDetails();
   }
 
   private loadAllData(): void {
     this.loadingInitialData = true;
 
-    forkJoin({
-      organizations: this.scheduleMeetingService.getOrganizations(),
-      leadOwners: this.scheduleMeetingService.getLeadOwners(),
-      supportOwners: this.scheduleMeetingService.getSupportOwners()
-    }).subscribe({
-      next: ({ organizations, leadOwners, supportOwners }) => {
+    this.scheduleMeetingService.getOrganizations().subscribe({
+      next: (organizations) => {
         this.ngZone.run(() => {
           this.organizations = organizations;
-          this.leadOwners = leadOwners;
-          this.supportOwners = supportOwners;
           this.loadingInitialData = false;
         });
       },
@@ -82,6 +93,64 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => { this.loadingInitialData = false; });
       }
     });
+  }
+
+  /**
+   * Fetches the logged-in user's email/name and uses it as the meeting host,
+   * so the meeting is created on behalf of whoever is currently logged in.
+   *
+   * The logged-in user's id is read from localStorage('empId') below.
+   */
+  loadHostDetails(): void {
+    const employeeId = this.getCurrentEmployeeId();
+
+    if (!employeeId) {
+      console.error('No employeeId available for the current session — cannot auto-fill host.');
+      this.hostDetailsLoading = false;
+      this.hostDetailsError = true;
+      this.newMeeting.hostMode = 'manual';
+      return;
+    }
+
+    this.hostDetailsLoading = true;
+    this.hostDetailsError = false;
+
+    this.scheduleMeetingService.getEmployeeDetails(employeeId).subscribe({
+      next: (details: EmployeeDetails) => {
+        this.ngZone.run(() => {
+          this.newMeeting.hostEmail = details.currentMail;
+          this.newMeeting.hostName = details.name;
+          this.newMeeting.hostId = String(details.companyId ?? employeeId);
+          this.newMeeting.hostMode = 'select';
+          this.hostDetailsLoading = false;
+          this.hostDetailsError = false;
+        });
+      },
+      error: (err) => {
+        console.error('Failed to fetch current user (host) details:', err.status, err.error ?? err.message);
+        this.ngZone.run(() => {
+          this.hostDetailsLoading = false;
+          this.hostDetailsError = true;
+          this.newMeeting.hostMode = 'manual';
+        });
+      }
+    });
+  }
+
+  /**
+   * Reads the current employee id from localStorage (set at login as 'empId').
+   * localStorage always returns a string — the backend expects a numeric
+   * employeeId (as sent from Postman), so this coerces it to a number.
+   */
+  private getCurrentEmployeeId(): number | null {
+    const raw = localStorage.getItem('empId');
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return isNaN(parsed) ? null : parsed;
+  }
+
+  retryHostFetch(): void {
+    this.loadHostDetails();
   }
 
   // ---------- SelectOption helpers ----------
@@ -109,17 +178,6 @@ export class ScheduleMeeting implements OnInit {
     return this.organizations.map(o => ({ label: o.name, value: o.orgId }));
   }
 
-  get hostTypeOptions(): SelectOption[] {
-    return [
-      { label: 'Lead Owner', value: 'lead' },
-      { label: 'Support Owner', value: 'support' }
-    ];
-  }
-
-  get hostOptions(): SelectOption[] {
-    return this.hosts.map(h => ({ label: h.name, value: h.id }));
-  }
-
   // ---------- Organization ----------
 
   setOrgMode(mode: EntryMode): void {
@@ -138,46 +196,10 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgEmail = org ? org.email : '';
   }
 
-  // ---------- Host ----------
-
-  setHostMode(mode: EntryMode): void {
-    if (this.newMeeting.hostMode === mode) return;
-    this.newMeeting.hostMode = mode;
-    this.newMeeting.hostType = '';
-    this.newMeeting.hostId = '';
-    this.newMeeting.hostName = '';
-    this.newMeeting.hostEmail = '';
-    this.hosts = [];
-  }
-
-  onHostTypeChange(type: any): void {
-    if (this.newMeeting.hostType === type) return;
-    this.newMeeting.hostType = type;
-    this.newMeeting.hostId = '';
-    this.newMeeting.hostName = '';
-    this.newMeeting.hostEmail = '';
-    this.hosts = type === 'lead' ? this.leadOwners : this.supportOwners;
-  }
-
-  onHostSelect(hostId: any): void {
-    const owner = this.hosts.find(h => h.id === hostId);
-    this.newMeeting.hostId = hostId;
-    this.newMeeting.hostName = owner ? owner.name : '';
-    this.newMeeting.hostEmail = owner ? owner.email : '';
-  }
-
   // ---------- Misc ----------
 
   trackByOrgId(_index: number, org: Organization): number {
     return org.orgId;
-  }
-
-  trackByHostId(_index: number, host: OwnerOption): string {
-    return host.id;
-  }
-
-  getDefaultAttendees(): string[] {
-    return ['Client Contact', 'Project Manager'];
   }
 
   goBack(): void {
@@ -189,13 +211,184 @@ export class ScheduleMeeting implements OnInit {
     this.goBack();
   }
 
-  saveMeeting(): void {
-    console.log('Scheduled meeting', this.newMeeting);
-    this.goBack();
+  onScheduleClick(): void {
+    if (!this.isFormValid()) {
+      this.submitted = true;
+      return;
+    }
+    this.submitted = false;
+    this.saveMeeting();
   }
 
+  saveMeeting(): void {
+
+    this.saving = true;
+
+    let start: string;
+    let end: string;
+
+    try {
+      start = this.buildStartDateTime();
+      end = this.buildEndDateTime(start);
+    } catch (err) {
+      console.error('Failed to build meeting start/end time', err);
+      this.saving = false;
+      alert('Something is wrong with the selected date/time. Please re-pick the date and time and try again.');
+      return;
+    }
+
+    // Full form state, useful for debugging
+    console.log('Full meeting form data', this.newMeeting);
+
+    const payload = {
+
+        hostEmail: this.newMeeting.hostEmail,
+
+        clientEmails: [
+
+            this.newMeeting.orgEmail
+
+        ],
+
+        title: this.newMeeting.title,
+
+        purpose: this.newMeeting.description,
+
+        start,
+
+        end,
+
+        // --- additional fields ---
+        meetingType: this.newMeeting.type,
+        duration: this.newMeeting.duration,
+
+        // Backend validator requires a number: 0 = Low, 1 = Medium, 2 = High.
+        priority: this.priorityMap[this.newMeeting.priority],
+
+        // NOTE: keys must be orgId/orgName — MeetingsService.createMeeting()
+        // reads data.orgId / data.orgName directly. Sending
+        // organizationId/organizationName here means the backend never
+        // receives them, and OrgId/OrgName silently fail validation or
+        // insert as null/empty.
+        orgId: this.newMeeting.orgId,
+        orgName: this.newMeeting.orgName,
+
+        hostId: this.newMeeting.hostId,
+        hostName: this.newMeeting.hostName,
+        empId: localStorage.getItem('empId') || ''
+
+    };
+
+    console.log("Teams Payload", payload);
+
+    this.scheduleMeetingService
+        .createTeamsMeeting(payload)
+        .subscribe({
+
+            next: (res) => {
+
+                console.log("Teams Response", res);
+
+                this.createdMeetingLink = res.meetingLink;
+                this.saving = false;
+
+                alert("Teams Meeting Created Successfully");
+
+                this.goBack();
+
+            },
+            error: (err) => {
+                console.error(err);
+                this.saving = false;
+                alert("Failed to create Teams meeting");
+            }
+        });
+}
+
+private buildStartDateTime(): string {
+
+    // The date-picker may emit a real Date, an ISO string, or a
+    // dd/mm/yyyy-style string depending on its implementation — normalize
+    // whatever we get into an actual Date before reading from it.
+    const raw = this.newMeeting.date as unknown;
+    const d = raw instanceof Date ? raw : new Date(raw as string);
+
+    if (!raw || isNaN(d.getTime())) {
+        throw new Error(`Invalid meeting date value: ${JSON.stringify(raw)}`);
+    }
+
+    if (!this.newMeeting.time || !/^\d{2}:\d{2}$/.test(this.newMeeting.time)) {
+        throw new Error(`Invalid meeting time value: ${JSON.stringify(this.newMeeting.time)}`);
+    }
+
+    const yyyy = d.getFullYear();
+
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+
+    const dd = String(d.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}T${this.newMeeting.time}:00`;
+
+}
+
+private buildEndDateTime(start: string): string {
+
+    // `start` is a plain local-time string (yyyy-mm-ddThh:mm:00, no timezone).
+    // `new Date(start)` parses that as local time, which is correct — but we
+    // must format the result back out as local-time components too. Using
+    // .toISOString() here would convert to UTC and silently shift the time
+    // by the browser's timezone offset, producing an `end` that no longer
+    // lines up with `start` (e.g. IST users would see `end` land ~5.5 hours
+    // "before" `start`, tripping the backend's end-after-start validation).
+    const end = new Date(start);
+
+    switch (this.newMeeting.duration) {
+
+        case '15 minutes':
+            end.setMinutes(end.getMinutes() + 15);
+            break;
+
+        case '30 minutes':
+            end.setMinutes(end.getMinutes() + 30);
+            break;
+
+        case '45 minutes':
+            end.setMinutes(end.getMinutes() + 45);
+            break;
+
+        case '1 hour':
+            end.setHours(end.getHours() + 1);
+            break;
+
+        case '1.5 hours':
+            end.setMinutes(end.getMinutes() + 90);
+            break;
+
+        case '2 hours':
+            end.setHours(end.getHours() + 2);
+            break;
+
+        default:
+            end.setHours(end.getHours() + 1);
+
+    }
+
+    const yyyy = end.getFullYear();
+    const mm = String(end.getMonth() + 1).padStart(2, '0');
+    const dd = String(end.getDate()).padStart(2, '0');
+    const hh = String(end.getHours()).padStart(2, '0');
+    const mi = String(end.getMinutes()).padStart(2, '0');
+    const ss = String(end.getSeconds()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
+
+}
+
   private isValidEmail(value: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    const email = value.trim();
+    // Standard RFC-5322-ish check. Deliberately provider-agnostic —
+    // gmail.com, outlook.com, hotmail.com, any company domain, all pass.
+    return /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(email);
   }
 
   isFormValid(): boolean {
@@ -205,10 +398,50 @@ export class ScheduleMeeting implements OnInit {
       ? !!m.orgId
       : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
 
+    // 'select' mode means the host was auto-filled from the logged-in user;
+    // 'manual' mode is the fallback used when that fetch failed.
     const hostOk = m.hostMode === 'select'
-      ? !!m.hostId
+      ? this.isValidEmail(m.hostEmail)
       : m.hostName.trim().length > 0 && this.isValidEmail(m.hostEmail);
 
-    return !!(m.title && m.type && m.date && m.time && orgOk && hostOk);
+    return !!(m.title.trim() && m.type && m.date && m.time && orgOk && hostOk && !this.hostDetailsLoading);
+  }
+
+  // ---------- Inline field errors (shown only after a submit attempt) ----------
+
+  get showTitleError(): boolean {
+    return this.submitted && !this.newMeeting.title.trim();
+  }
+
+  get showTypeError(): boolean {
+    return this.submitted && !this.newMeeting.type;
+  }
+
+  get showDateError(): boolean {
+    return this.submitted && !this.newMeeting.date;
+  }
+
+  get showTimeError(): boolean {
+    return this.submitted && !this.newMeeting.time;
+  }
+
+  get showOrgSelectError(): boolean {
+    return this.submitted && this.newMeeting.orgMode === 'select' && !this.newMeeting.orgId;
+  }
+
+  get showOrgNameError(): boolean {
+    return this.submitted && this.newMeeting.orgMode === 'manual' && !this.newMeeting.orgName.trim();
+  }
+
+  get showOrgEmailError(): boolean {
+    return this.submitted && this.newMeeting.orgMode === 'manual' && !this.isValidEmail(this.newMeeting.orgEmail);
+  }
+
+  get showHostNameError(): boolean {
+    return this.submitted && this.newMeeting.hostMode === 'manual' && !this.newMeeting.hostName.trim();
+  }
+
+  get showHostEmailError(): boolean {
+    return this.submitted && this.newMeeting.hostMode === 'manual' && !this.isValidEmail(this.newMeeting.hostEmail);
   }
 }

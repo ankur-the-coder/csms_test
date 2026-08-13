@@ -1,0 +1,134 @@
+@if (type === 'trend') {
+<div class="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-bold">{{ title || 'Implementation Progress & Trends' }}</h3>
+      @if (actionText) {
+        <button
+          (click)="onActionClicked()"
+          class="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors shrink-0"
+        >
+          {{ actionText }}
+        </button>
+      }
+    </div>
+
+    <!-- Chart with background gridlines, trend lines, gradient fills & dots -->
+    <div class="relative w-full h-44 my-2">
+      <svg viewBox="0 0 400 160" class="w-full h-full" preserveAspectRatio="none">
+        <defs>
+          <!-- Green Gradient Fill -->
+          <linearGradient id="greenTrendFillShared" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0.02" />
+          </linearGradient>
+          <!-- Blue/Purple Gradient Fill -->
+          <linearGradient id="blueTrendFillShared" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.2" />
+            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0" />
+          </linearGradient>
+
+        
+        </defs>
+
+        <!-- Background Horizontal Gridlines -->
+        <line x1="0" y1="25" x2="400" y2="25" stroke="#f1f5f9" stroke-width="1.5" />
+        <line x1="0" y1="60" x2="400" y2="60" stroke="#f1f5f9" stroke-width="1.5" />
+        <line x1="0" y1="95" x2="400" y2="95" stroke="#f1f5f9" stroke-width="1.5" />
+        <line x1="0" y1="130" x2="400" y2="130" stroke="#f1f5f9" stroke-width="1.5" />
+
+        <!-- Blue/Purple Trend Line & Gradient Area (In Progress) -->
+        <path d="M 0,105 L 400,60 L 400,155 L 0,155 Z" fill="url(#blueTrendFillShared)" />
+        <path d="M 0,105 L 400,60" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" />
+
+        <!-- Green Curve Trend Line & Gradient Area (Completed) -->
+        <path d="M 0,125 C 90,115 170,90 250,58 C 300,42 350,25 400,20 L 400,155 L 0,155 Z" fill="url(#greenTrendFillShared)" />
+        <path d="M 0,125 C 90,115 170,90 250,58 C 300,42 350,25 400,20" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+      
+       <!-- Amber Trend Line (Pending) -->
+<path d="M 0,150 C 70,152 150,153 220,150 C 300,146 350,140 400,133" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" />
+
+        <!-- Slate Trend Line (Not Started) -->
+        <path d="M 0,150 C 70,152 150,153 220,150 C 300,146 350,140 400,133" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" />
+
+        <!-- Green Circular Markers -->
+        <circle cx="2" cy="125" r="4.5" fill="#10b981" />
+        <circle cx="105" cy="108" r="4.5" fill="#10b981" />
+        <circle cx="190" cy="82" r="4.5" fill="#10b981" />
+        <circle cx="290" cy="48" r="4.5" fill="#10b981" />
+        <circle cx="398" cy="20" r="4.5" fill="#10b981" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Trend Legend -->
+  <div class="flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
+    @if (trendLegends.length) {
+      @for (item of trendLegends; track item.label) {
+        <span class="flex items-center gap-1.5 text-slate-600">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="item.colorClass"></span>
+          <span>{{ item.label }}: <strong class="text-slate-900">{{ item.value }} {{ item.pct ? '(' + item.pct + '%)' : '' }}</strong></span>
+        </span>
+      }
+    } @else {
+      <span class="flex items-center gap-1.5 text-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+        <span>Completed: <strong class="text-slate-900">136 (53%)</strong></span> 
+      </span>
+      <span class="flex items-center gap-1.5 text-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
+        <span>In Progress: <strong class="text-slate-900">84 (33%)</strong></span>
+      </span>
+      <span class="flex items-center gap-1.5 text-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+        <span>Pending: <strong class="text-slate-900">18 (7%)</strong></span>
+      </span>
+      <span class="flex items-center gap-1.5 text-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0"></span>
+        <span>Not Started: <strong class="text-slate-900">18 (7%)</strong></span>
+      </span>
+    }
+  </div>
+</div>
+}
+
+
+@if (type === 'donut') {
+<div class="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
+  <div>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-bold ">{{ title || 'Health Score Distribution' }}</h3>
+      @if (actionText) {
+        <span (click)="onActionClicked()" class="text-xs text-slate-400 font-medium cursor-pointer hover:text-slate-600 transition-colors">{{ actionText }}</span>
+      }
+    </div>
+
+    <!-- Conic-gradient Donut -->
+    <div class="flex items-center justify-center my-4">
+      <div
+        class="w-36 h-36 rounded-full flex items-center justify-center shadow-xs"
+        [style.background]="healthDonutGradient()"
+      >
+        <div class="w-24 h-24 rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
+          <span class="text-2xl font-extrabold text-slate-900">{{ totalCount }}</span>
+          <span class="text-[10px] font-semibold text-slate-500">{{ totalLabel }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health Legend Breakdown -->
+  <div class="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-xs">
+    @for (seg of (healthSegments.length ? healthSegments : defaultHealthSegments); track seg.label) {
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-1.5 text-slate-600 font-medium">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="seg.colorClass"></span>
+          {{ seg.label }}
+        </span>
+        <span class="font-bold text-slate-900">{{ seg.value }} ({{ seg.pct }}%)</span>
+      </div>
+    }
+  </div>
+</div>
+}

@@ -1,14 +1,16 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Sidebar } from './sidebar/sidebar';
 import { Navbar } from './navbar/navbar';
+import { GlobalCallPopupComponent } from '../shared/components/global-call-popup.component';
 
 
 
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, Sidebar, Navbar],
+  imports: [CommonModule, RouterOutlet, Sidebar, Navbar, GlobalCallPopupComponent],
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
@@ -26,10 +28,25 @@ export class Layout {
 
   mobileMenuOpen = false;
 
+  // The softphone page (features/voice/pages/softphone) already renders its
+  // own full-size call/dialer UI inline, so the global floating popup would
+  // just be a redundant/duplicate card stacked on top of it. Hide it only
+  // there; every other route still gets the global popup as normal.
+  isSoftphonePage = this.getIsSoftphonePageFromUrl(this.router.url);
+
   constructor() {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe((e: any) => {
-      this.activeNav = this.getActiveNavFromUrl(e.urlAfterRedirects || e.url);
+      const url = e.urlAfterRedirects || e.url;
+      this.activeNav = this.getActiveNavFromUrl(url);
+      this.isSoftphonePage = this.getIsSoftphonePageFromUrl(url);
     });
+  }
+
+  private getIsSoftphonePageFromUrl(url: string): boolean {
+    if (!url) return false;
+    // Matches /voice, /voice/, and /voice/softphone (the default child
+    // route '' redirects to 'softphone', so bare '/voice' also counts).
+    return /\/voice(\/(softphone)?)?(\?|$)/.test(url);
   }
 
   private getActiveNavFromUrl(url: string): string {
@@ -43,6 +60,9 @@ export class Layout {
     if (url.includes('health')) return 'health';
     if (url.includes('support')) return 'support';
     if (url.includes('settings')) return 'settings';
+    if (url.includes('my-learning')) return 'my-learning';
+    if (url.includes('courses')) return 'courses';
+ if (url.includes('voice')) return 'voice';
     return '';
   }
 

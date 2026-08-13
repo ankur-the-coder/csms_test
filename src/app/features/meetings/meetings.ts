@@ -2,7 +2,10 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, Organization } from './meetings.service'; // adjust path to your actual services folder
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse } from './meetings.service';
+import { DataTable } from '../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
+import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
 
 interface Meeting {
   id: number;
@@ -38,10 +41,13 @@ interface AgendaItem {
 
 import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
 
+import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
+import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
+
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput],
+  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -65,6 +71,13 @@ import { SingleInput, SelectOption } from '../../shared/components/inputs/single
   `]
 })
 export class MeetingsComponent implements OnInit {
+
+  // Reference to the table so we can ask it to reload after cancelling a
+  // meeting. NOTE: '.refresh()' below is a guess at the method name — check
+  // your actual DataTable component's public API and rename if different
+  // (common alternatives: reload(), fetchData(), loadData()).
+  @ViewChild(DataTable) meetingsTable?: DataTable<any>;
+
   // ============ UI State ============
   activeView = 'table';
   timeRange = 'Week';
@@ -96,14 +109,393 @@ export class MeetingsComponent implements OnInit {
   // Selected meeting for detail drawer
   selectedMeeting: Meeting | null = null;
 
-  // ============ Organizations (fetched from API) ============
+  // ============ Organizations & API Meetings ============
   organizations: Organization[] = [];
   loadingOrganizations = false;
+  apiMeetings = signal<MeetingRow[]>([]);
+  filterDateFrom: string = '';
+  filterDateTo: string = '';
+
+  // ============ Dashboard KPI Cards (from /meetings/dashboard-stats) ============
+  // A signal, not a plain property — under zoneless change detection, a signal
+  // write notifies the renderer directly regardless of where it happens (an
+  // RxJS subscribe callback, a setTimeout, etc). A plain property assignment
+  // has no such notification, so the view only ever updated when *something
+  // else* happened to trigger a check.
+  dashboardStats = signal<DashboardStats>({
+    todayMeetings: 0,
+    upcoming7Days: 0,
+    completedThisMonth: 0,
+    followUpsPending: 0,
+    thisWeekMeetings: 0,
+    overdueCount: 0,
+    completionRate: 0,
+    totalMeetings: 0
+  });
+  loadingDashboardStats = false;
+
+  // ============ Meeting Detail (Attendance) Modal ============
+  showAttendanceModal = false;
+  attendanceLoading = false;
+  attendanceError: string | null = null;
+  attendanceResult: AttendanceCheckResponse | null = null;
+  /** Title of the meeting currently shown in the modal (row data isn't kept around otherwise). */
+  attendanceMeetingTitle = '';
+
+  // ============ Meetings DataTable Config ============
+  private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
+
+  tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
+    columns: [
+      {
+        key: 'title',
+        label: 'Meeting',
+        sortable: true,
+      },
+      {
+        key: 'orgName',
+        label: 'Organisation',
+        sortable: true,
+      },
+      {
+        key: 'purpose',
+        label: 'Purpose',
+        sortable: false,
+        type: 'text',
+      },
+      {
+        key: 'startTime',
+        label: 'Date & Time',
+        sortable: true,
+      },
+      {
+        key: 'duration',
+        label: 'Duration',
+        sortable: false,
+      },
+      {
+        key: 'priority',
+        label: 'Priority',
+        sortable: true,
+        type: 'badge' as const,
+        align: 'center' as const,
+        badgeMap: {
+          '0': { label: 'Low' },
+          '1': { label: 'Medium' },
+          '2': { label: 'High' },
+        } as Record<string, BadgeMapEntry>,
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        sortable: true,
+        type: 'badge' as const,
+        align: 'center' as const,
+        badgeMap: {
+          '0': { label: 'Scheduled' },
+          '1': { label: 'Completed' },
+          '2': { label: 'Rescheduled' },
+          '3': { label: 'Pending' },
+          '4': { label: 'Cancelled' },
+          '5': { label: 'Client No-Show' },
+          '6': { label: 'Host No-Show' },
+        } as Record<string, BadgeMapEntry>,
+      },
+      {
+        key: 'attendance',
+        label: 'Meeting Detail',
+        sortable: false,
+        align: 'center' as const,
+      },
+      {
+        key: 'clientMail',
+        label: 'Client Email',
+        sortable: false,
+      },
+    ],
+
+    apiConfig: {
+      endpoint: this.meetingsEndpoint,
+      dataPath: 'data',
+      totalPath: 'meta.total',
+
+      
+
+      buildRequest: (ctx: RequestContext) => {
+  const filters: Record<string, any> = {};
+
+  // Status — only filter when the user actually picks one from the
+  // dropdown. Previously this defaulted to 0 (Scheduled), which hid
+  // every meeting the backend moves out of Scheduled (Pending,
+  // Completed, Cancelled, Host/Client No-Show).
+  if (ctx.filters?.['meetingStatus'] !== undefined) {
+    filters['status'] = Number(ctx.filters['meetingStatus']);
+  }
+
+  // Priority
+  if (ctx.filters?.['meetingPriority'] !== undefined) {
+    filters['priority'] = Number(ctx.filters['meetingPriority']);
+  }
+
+  // Organization
+  if (ctx.filters?.['organization'] !== undefined) {
+    filters['orgId'] = Number(ctx.filters['organization']);
+  }
+
+  const body = {
+    start: ctx.page * ctx.pageSize,
+    length: ctx.pageSize,
+    search: ctx.search ?? '',
+    sorting: `${ctx.sortKey ?? 'startTime'},${ctx.sortDir}`,
+    filter: JSON.stringify(filters),
+    fromDate: ctx.dateFrom ?? '',
+    toDate: ctx.dateTo ?? '',
+  };
+
+  return {
+    method: 'POST' as const,
+    body
+  };
+},
+      transformRow: (raw: any): MeetingRow => raw as MeetingRow,
+    },
+
+    rowIdKey: 'id',
+    showSearch: true,
+    showPagination: true,
+    defaultPageSize: 10,
+    pageSizeOptions: [10, 25, 50, 100],
+    exportFileName: 'meetings',
+    emptyMessage: 'No meetings found.',
+    clickable: false,
+    toolbarButtons: [
+      { id: 'datePicker', type: 'datePicker' },
+      { id: 'filter',  type: 'filter',       label: 'Filter' },
+      { id: 'export',  type: 'export',       label: 'Export' },
+      { id: 'refresh', type: 'refresh' },
+      { id: 'columns', type: 'columnPicker', label: 'Columns' },
+    ],
+    customRowActions: [
+      {
+        id: 'view',
+        icon: 'view',
+        label: 'View',
+        tooltip: 'View meeting details',
+        onClick: (row: MeetingRow) => this.openMeetingLink(row),
+      },
+      {
+        id: 'cancel',
+        icon: 'delete',  // <-- must be one of ActionIcon values
+        label: 'Cancel',
+        tooltip: 'Cancel this meeting',
+        onClick: (row: MeetingRow) => this.confirmCancelMeeting(row),
+      },
+    ],
+  }));
+
+  openMeetingLink(row: MeetingRow): void {
+    if (row.meetingLink) {
+      window.open(row.meetingLink, '_blank');
+    } else {
+      this.showToastMessage('No meeting link available for this entry.');
+    }
+  }
+
+  /**
+   * Confirms with the user, then cancels the meeting via Microsoft Graph
+   * (POST /meetings/cancel) and refreshes the table so the new "Cancelled"
+   * status shows immediately. The backend already rejects cancelling a
+   * meeting that's already Cancelled or Completed — that error message is
+   * shown as-is via the toast.
+   */
+  confirmCancelMeeting(row: MeetingRow): void {
+    const confirmed = confirm(`Cancel "${row.title}"? All attendees will be notified.`);
+    if (!confirmed) return;
+
+    this.meetingService.cancelMeeting(row.id).subscribe({
+      next: () => {
+        this.showToastMessage(`"${row.title}" was cancelled.`);
+        // See the ViewChild comment above — swap .refresh() for whatever
+        // your DataTable component's actual reload method is named.
+        this.meetingsTable?.refresh?.();
+        this.fetchDashboardStats();
+      },
+      error: (err) => {
+        this.showToastMessage(err?.error?.message || 'Failed to cancel meeting.');
+      }
+    });
+  }
+
+  /**
+   * Opens the "Meeting Detail" modal for a row and checks attendance live
+   * against Microsoft Graph. If the meeting was never created as an online
+   * Teams meeting, or hasn't happened yet, the backend returns an error
+   * message which is shown in the modal instead of attendance data.
+   */
+  openAttendanceModal(row: MeetingRow): void {
+    this.attendanceMeetingTitle = row.title || 'Meeting';
+    this.showAttendanceModal = true;
+    this.attendanceLoading = true;
+    this.attendanceError = null;
+    this.attendanceResult = null;
+
+    this.meetingService.checkAttendance(row.id).subscribe({
+      next: (res) => {
+        this.attendanceResult = res;
+        this.attendanceLoading = false;
+      },
+      error: (err) => {
+        this.attendanceError = err?.error?.message || 'Failed to check meeting attendance.';
+        this.attendanceLoading = false;
+      }
+    });
+  }
+
+  closeAttendanceModal(): void {
+    this.showAttendanceModal = false;
+    this.attendanceResult = null;
+    this.attendanceError = null;
+  }
+
+  /** "2026-08-12T05:11:40.241Z" -> "05:11 AM" for the modal's time labels. */
+  formatAttendanceTime(iso: string | null): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** 125 -> "2m 5s", 45 -> "45s" — for per-attendee duration in the modal. */
+  formatAttendanceDuration(totalSeconds: number): string {
+    if (!totalSeconds) return '0s';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+  }
+
+  /**
+   * Turns the raw attendance result into one of 4 real-world outcomes —
+   * `wasHeld` alone can't distinguish who actually showed up:
+   *   - Not Held        -> nobody joined at all
+   *   - Client No-Show   -> host joined, nobody else did
+   *   - Host No-Show     -> someone else joined, but the host never did
+   *   - Held             -> host + at least one other attendee joined
+   */
+  getAttendanceOutcome(result: AttendanceCheckResponse): { label: string; badgeClass: string; icon: string } {
+    if (!result.wasHeld || result.attendeeCount === 0) {
+      return { label: 'Not Held', badgeClass: 'text-slate-500 bg-slate-50 border-slate-200', icon: 'fa-circle-xmark' };
+    }
+
+    const hostJoined = result.attendees.some(a => a.role.toLowerCase() === 'organizer');
+    const someoneElseJoined = result.attendees.some(a => a.role.toLowerCase() !== 'organizer');
+
+    if (hostJoined && someoneElseJoined) {
+      return { label: 'Held', badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: 'fa-circle-check' };
+    }
+
+    if (hostJoined && !someoneElseJoined) {
+      return { label: 'Client No-Show', badgeClass: 'text-amber-700 bg-amber-50 border-amber-200', icon: 'fa-user-slash' };
+    }
+
+    // !hostJoined && someoneElseJoined
+    return { label: 'Host No-Show', badgeClass: 'text-rose-700 bg-rose-50 border-rose-200', icon: 'fa-user-clock' };
+  }
+
+  /** Converts '01:00:00.000000' → '01:00:00' */
+  formatDuration(raw: string): string {
+    if (!raw) return '00:00:00';
+    return raw.split('.')[0] || raw;
+  }
+
+  /** Returns coloured initials avatar background for an org name */
+  getOrgAvatarClass(name: string): string {
+    const colors = [
+      'bg-indigo-500', 'bg-purple-500', 'bg-emerald-500',
+      'bg-amber-500',  'bg-rose-500',   'bg-blue-500', 'bg-teal-500'
+    ];
+    if (!name) return colors[0];
+    return colors[name.charCodeAt(0) % colors.length];
+  }
+
+  getOrgInitials(name: string): string {
+    if (!name) return '?';
+    return name.trim().split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  getPriorityLabel(p: number): string {
+    return ['Low', 'Medium', 'High'][p] ?? 'Low';
+  }
+
+  getPriorityClass(p: number): string {
+    const map: Record<number, string> = {
+      0: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      1: 'bg-amber-50  text-amber-700  border border-amber-200',
+      2: 'bg-rose-50   text-rose-700   border border-rose-200',
+    };
+    return map[p] ?? map[0];
+  }
+
+  getStatusLabel(s: number): string {
+    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled', 'Client No-Show', 'Host No-Show'][s] ?? 'Scheduled';
+  }
+
+  getStatusClass(s: number): string {
+    const map: Record<number, string> = {
+      0: 'bg-blue-50    text-blue-700    border border-blue-200',
+      1: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      2: 'bg-purple-50  text-purple-700  border border-purple-200',
+      3: 'bg-amber-50   text-amber-700   border border-amber-200',
+      4: 'bg-rose-50    text-rose-700    border border-rose-200',
+      5: 'bg-amber-50   text-amber-700   border border-amber-200',
+      6: 'bg-rose-50    text-rose-700    border border-rose-200',
+    };
+    return map[s] ?? map[0];
+  }
 
   constructor(private router: Router, private meetingService: MeetingService) {}
 
   ngOnInit(): void {
     this.fetchOrganizations();
+    this.fetchApiMeetings();
+    this.fetchDashboardStats();
+  }
+
+  fetchApiMeetings(): void {
+    this.meetingService.fetchMeetings({
+      start: 0,
+      length: 100,
+      search: this.searchTerm || '',
+      sorting: 'startTime,desc',
+      filter: JSON.stringify({ status: 0 }),
+      fromDate: this.filterDateFrom || '',
+      toDate: this.filterDateTo || ''
+    }).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.apiMeetings.set(res.data);
+        }
+      },
+      error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
+    });
+  }
+
+  /** Pulls the dashboard KPI card numbers from GET /meetings/dashboard-stats. */
+  fetchDashboardStats(): void {
+    this.loadingDashboardStats = true;
+    this.meetingService.getDashboardStats().subscribe({
+      next: (stats) => {
+        this.dashboardStats.set(stats);
+        this.loadingDashboardStats = false;
+      },
+      error: (err) => {
+        console.error('Failed to fetch dashboard stats:', err);
+        this.loadingDashboardStats = false;
+      }
+    });
+  }
+
+  onDateApplied(event: { from: string; to: string }): void {
+    this.filterDateFrom = event.from;
+    this.filterDateTo = event.to;
+    this.fetchApiMeetings();
   }
 
   fetchOrganizations(): void {
@@ -317,12 +709,16 @@ export class MeetingsComponent implements OnInit {
   }
 
   // ============ KPI Helper Methods ============
+  // These now read from the /meetings/dashboard-stats API (this.dashboardStats)
+  // instead of computing off the local mock `meetings` array.
 
   getTodayMeetings(): number {
-    const today = new Date().toISOString().split('T')[0];
-    return this.meetings.filter(m => m.date === today && m.status !== 'Completed').length;
+    return this.dashboardStats().todayMeetings;
   }
 
+  // NOTE: the dashboard-stats API doesn't return a "yesterday" count, so this
+  // still falls back to the local mock `meetings` array. Real backend
+  // support would need a new field on GET /meetings/dashboard-stats.
   getYesterdayMeetings(): number {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -337,14 +733,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getUpcomingMeetings(): number {
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    const todayStr = today.toISOString().split('T')[0];
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= todayStr && m.date <= nextWeekStr && m.status !== 'Completed'
-    ).length;
+    return this.dashboardStats().upcoming7Days;
   }
 
   getUpcomingTrend(): number {
@@ -352,32 +741,15 @@ export class MeetingsComponent implements OnInit {
   }
 
   getThisWeekMeetings(): number {
-    const today = new Date();
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(endOfWeek.getDate() + 7 - today.getDay());
-    const todayStr = today.toISOString().split('T')[0];
-    const endStr = endOfWeek.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= todayStr && m.date <= endStr && m.status !== 'Completed'
-    ).length;
+    return this.dashboardStats().thisWeekMeetings;
   }
 
   getCompletedCount(): number {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date >= monthStartStr && m.status === 'Completed'
-    ).length;
+    return this.dashboardStats().completedThisMonth;
   }
 
   getCompletionRate(): number {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStartStr = monthStart.toISOString().split('T')[0];
-    const monthMeetings = this.meetings.filter(m => m.date >= monthStartStr);
-    const completed = monthMeetings.filter(m => m.status === 'Completed').length;
-    return monthMeetings.length === 0 ? 0 : Math.round((completed / monthMeetings.length) * 100);
+    return this.dashboardStats().completionRate;
   }
 
   getCompletionTrend(): number {
@@ -385,7 +757,7 @@ export class MeetingsComponent implements OnInit {
   }
 
   getPendingFollowUps(): number {
-    return this.meetings.filter(m => m.status === 'Pending').length;
+    return this.dashboardStats().followUpsPending;
   }
 
   getFollowUpTrend(): number {
@@ -393,14 +765,11 @@ export class MeetingsComponent implements OnInit {
   }
 
   getOverdueCount(): number {
-    const today = new Date().toISOString().split('T')[0];
-    return this.meetings.filter(m =>
-      m.date < today && m.status === 'Pending'
-    ).length;
+    return this.dashboardStats().overdueCount;
   }
 
   getTotalMeetings(): number {
-    return this.meetings.length;
+    return this.dashboardStats().totalMeetings;
   }
 
   getWeeklyGrowth(): number {
@@ -452,6 +821,54 @@ export class MeetingsComponent implements OnInit {
 
   getMeetingsByStatus(status: string): Meeting[] {
     return this.meetings.filter(m => m.status === status);
+  }
+
+  // ============ Calendar & Timeline API Helper Methods ============
+
+  getApiMeetingsForDay(dateStr: string): MeetingRow[] {
+    return this.apiMeetings().filter(m => {
+      if (!m.startTime) return false;
+      return m.startTime.split('T')[0] === dateStr;
+    });
+  }
+
+  get calendarEventsByDay(): Record<number, DayEvent[]> {
+    const map: Record<number, DayEvent[]> = {};
+    for (const m of this.apiMeetings()) {
+      if (!m.startTime) continue;
+      const d = new Date(m.startTime);
+      const dayNum = d.getDate();
+      if (!map[dayNum]) map[dayNum] = [];
+
+      const startHrs = d.getHours();
+      const startMins = d.getMinutes();
+      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      map[dayNum].push({
+        title: m.title || 'Meeting',
+        client: m.orgName || 'N/A',
+        timeLabel: `${timeStr} (${this.formatDuration(m.duration)})`,
+        startTime: timeStr,
+        startMinutes: startHrs * 60 + startMins,
+        endMinutes: startHrs * 60 + startMins + 60,
+        chipClass: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+        accentClass: 'border-indigo-500'
+      });
+    }
+    return map;
+  }
+
+  getFilteredApiMeetings(): MeetingRow[] {
+    let result = [...this.apiMeetings()];
+    if (this.searchTerm) {
+      const q = this.searchTerm.toLowerCase();
+      result = result.filter(m =>
+        (m.title && m.title.toLowerCase().includes(q)) ||
+        (m.orgName && m.orgName.toLowerCase().includes(q)) ||
+        (m.purpose && m.purpose.toLowerCase().includes(q))
+      );
+    }
+    return result;
   }
 
   // ============ Calendar Helper Methods ============
@@ -774,6 +1191,9 @@ export class MeetingsComponent implements OnInit {
 
     // Update meeting types distribution
     this.updateMeetingTypes();
+
+    // Refresh KPI cards so the new meeting is reflected in the counts.
+    this.fetchDashboardStats();
   }
 
   saveAsDraft(): void {
@@ -864,6 +1284,8 @@ export class MeetingsComponent implements OnInit {
   refreshData(): void {
     this.refreshing = true;
     this.showToastMessage('Refreshing data...');
+    this.fetchDashboardStats();
+    this.fetchApiMeetings();
     setTimeout(() => {
       this.refreshing = false;
       this.showToastMessage('Data refreshed successfully');

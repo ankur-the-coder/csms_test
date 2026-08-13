@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CardData, DataTablePayload, ImplementationCardData, ImplementationData } from '../../models/implementation.model';
+import { environment } from '../../../../../environments/environment';
 
 
 
@@ -12,16 +13,17 @@ import { CardData, DataTablePayload, ImplementationCardData, ImplementationData 
 })
 
 export class ImplementationService {
-  public readonly baseUrl = 'http://127.0.0.1:5000/imp';
+
+  public readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
   fetchDataTable(payload: DataTablePayload): Observable<ImplementationData> {
-    return this.http.post<ImplementationData>(`${this.baseUrl}/fetchDataTable`, payload);
+    return this.http.post<ImplementationData>(`${this.baseUrl}/imp/fetchDataTable`, payload);
   }
 
   fetchImpCardData(): Observable<CardData> {
-    return this.http.post<ImplementationCardData>(`${this.baseUrl}/fetchImpCardData`, {}).pipe(
+    return this.http.post<ImplementationCardData>(`${this.baseUrl}/imp/fetchImpCardData`, {}).pipe(
       map(res => res.data)
     );
   }
