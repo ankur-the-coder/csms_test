@@ -45,9 +45,13 @@
         <div class="hidden sm:flex flex-col text-left whitespace-nowrap shrink-0 leading-none">
           <span
             class="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition-colors"
-            >{{ adminName() }}
+            >
+            {{ adminName() }}
           </span>
-          <span class="text-[10px] font-semibold text-slate-400 mt-0.5">{{ designation() }}</span>
+          <span class="text-[10px] font-semibold text-slate-400 mt-0.5">
+            {{ designation() }}
+
+          </span>
         </div>
       </button>
 
@@ -59,7 +63,7 @@
           <p class="text-xs font-bold text-slate-900">{{ adminName() }}</p>
           <p class="text-[10px] font-semibold text-slate-500 mt-1">{{ designation() }}</p>
         </div>
-        <button
+        <!-- <button
           type="button"
           class="w-full px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
           (click)="showProfileMenu.set(false)"
@@ -72,7 +76,7 @@
           (click)="showProfileMenu.set(false)"
         >
           Change Password
-        </button>
+        </button> -->
         <button
           type="button"
           class="w-full px-4 py-3 text-left text-sm font-semibold text-danger hover:bg-slate-100"

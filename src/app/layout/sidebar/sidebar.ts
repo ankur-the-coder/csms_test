@@ -23,7 +23,7 @@ export class Sidebar {
    private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'dashboard';
+  @Input() activeNav = 'voice';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
@@ -34,19 +34,22 @@ export class Sidebar {
   trainingExpanded = true;
 
   mainNavItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+    // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+
   ];
 
   csNavItems: NavItem[] = [
-    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
-    { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
-    { id: 'training', label: 'Training', icon: 'training', route: '/training' },
-    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
+
+    // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    // { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
+    // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+    // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
     // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
     // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
     // { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
+
   ];
 
   learningNavItems: NavItem[] = [
