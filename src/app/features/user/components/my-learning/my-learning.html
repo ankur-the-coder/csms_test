@@ -54,56 +54,72 @@
     </div>
 
     <!-- Summary stat cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <!-- Summary stat cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
-      <!-- Total -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-1">
-        <div class="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center mb-2">
-          <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-          </svg>
-        </div>
-        <span class="text-3xl font-black text-slate-800">{{ summary.totalCourses }}</span>
-        <span class="text-xs font-medium text-slate-500">Total courses</span>
-      </div>
-
-      <!-- Enrolled -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-1">
-        <div class="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
-          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-          </svg>
-        </div>
-        <span class="text-3xl font-black text-amber-500">{{ summary.seenCount }}</span>
-        <span class="text-xs font-medium text-slate-500">Enrolled / seen</span>
-      </div>
-
-      <!-- Not started -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-1">
-        <div class="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center mb-2">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <span class="text-3xl font-black text-slate-600">{{ summary.notSeenCount }}</span>
-        <span class="text-xs font-medium text-slate-500">Not started</span>
-      </div>
-
-      <!-- Completed -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-1">
-        <div class="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center mb-2">
-          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-        </div>
-        <span class="text-3xl font-black text-emerald-600">{{ summary.completedCourses }}</span>
-        <span class="text-xs font-medium text-slate-500">Completed</span>
-      </div>
+  <!-- Total -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+    <div>
+      <p class="text-sm font-semibold text-slate-500">Total Courses</p>
+      <p class="text-2xl font-bold text-sky-600 mt-1">{{ summary.totalCourses }}</p>
+      <p class="text-xs text-sky-500 mt-1">Active Courses</p>
     </div>
+    <div class="h-10 w-10 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
+      <svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Completed -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+    <div>
+      <p class="text-sm font-semibold text-slate-500">Completed</p>
+      <p class="text-2xl font-bold text-emerald-600 mt-1">{{ summary.completedCourses }}</p>
+      <p class="text-xs text-emerald-500 mt-1">
+        {{ summary.totalCourses ? ((summary.completedCourses / summary.totalCourses) * 100 | number:'1.0-0') : 0 }}% Done
+      </p>
+    </div>
+    <div class="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+      <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- In Progress -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+    <div>
+      <p class="text-sm font-semibold text-slate-500">In Progress</p>
+      <p class="text-2xl font-bold text-amber-500 mt-1">{{ summary.inProgressCourses }}</p>
+      <p class="text-xs text-amber-500 mt-1">Ongoing</p>
+    </div>
+    <div class="h-10 w-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+      <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Not Started -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+    <div>
+      <p class="text-sm font-semibold text-slate-500">Not Started</p>
+      <p class="text-2xl font-bold text-slate-400 mt-1">{{ summary.notSeenCount }}</p>
+      <p class="text-xs text-slate-400 mt-1">Not Started</p>
+    </div>
+    <div class="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+      <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
 
     <!-- Course list -->
     <div class="space-y-3">

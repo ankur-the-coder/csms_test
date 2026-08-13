@@ -12,6 +12,12 @@ import { MyTraining } from './features/trainings/Component/my-training/my-traini
 import { TrainingMaterials } from './features/trainings/Component/training-materials/training-materials';
 
 
+import { VoiceShell } from './features/voice/voice-shell/voice-shell.component';
+import { Softphone } from './features/voice/pages/softphone/softphone';
+import { History } from './features/voice/pages/history/history';
+// import { Notes } from './features/voice/pages/notes/notes';
+import { Recordings } from './features/voice/pages/recordings/recordings';
+import { Clients } from './features/voice/pages/clients/clients';
 import { Login } from './layout/login/login';
 import { Layout } from './layout/layout';
 import { DashboardComponent } from './features/dashboard/component/dashboard/dashboard';
@@ -23,25 +29,35 @@ import { authGuard, checkGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
   // Login renders standalone — no sidebar/navbar wrapper.
-  { path: 'login', component: Login,
-    //  canActivate: [checkGuard],
-     },
+  { path: 'login', component: Login, canActivate: [checkGuard] },
 
   // Every other route is a child of Layout, so it renders inside the
   // sidebar + navbar shell (Layout owns its own nested <router-outlet>).
   {
     path: '',
     component: Layout,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'implementation', component: Implementation },
       { path: 'training', component: Training },
-      { path: 'onboarding', component: Dashboard },
-      { path: 'add-onboarding', component: AddOnboarding },
+      // { path: 'onboarding', component: Dashboard },
+      // { path: 'add-onboarding', component: AddOnboarding },
       { path: 'meetings', component: MeetingsComponent },
       { path: 'client', component: Client },
+      {
+        path: 'voice',
+        component: VoiceShell,
+        children: [
+          { path: '', redirectTo: 'softphone', pathMatch: 'full' },
+          { path: 'softphone', component: Softphone },
+          { path: 'history', component: History },
+          // { path: 'notes', component: Notes },
+          { path: 'recordings', component: Recordings },
+          { path: 'clients', component: Clients },
+        ],
+      },
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },

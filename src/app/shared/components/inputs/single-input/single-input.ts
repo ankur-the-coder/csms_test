@@ -8,9 +8,11 @@ import {
   Output,
   SimpleChanges,
   ViewChild,
+  OnInit,
   OnDestroy,
   AfterViewChecked,
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  signal
 } from '@angular/core';
 import { CommonModule, NgClass, NgStyle } from '@angular/common';
 import {
@@ -50,7 +52,7 @@ export interface SelectOption {
     },
   ],
 })
-export class SingleInput implements ControlValueAccessor {
+export class SingleInput implements ControlValueAccessor, OnInit, OnDestroy {
    @Input() label: string = '';
   @Input() options: SelectOption[] = [];
   private _disabled = false;
@@ -102,7 +104,14 @@ export class SingleInput implements ControlValueAccessor {
 
   searchTerm = '';
   dropdownPosition: 'bottom' | 'top' = 'bottom';
-  dropdownCoords: { top?: number; bottom?: number; left: number; width: number } | null = null;
+  // Signal, not a plain property: this app runs without zone.js, so a
+  // write from inside a raw document.addEventListener callback (see
+  // handleScrollCapture below) would otherwise never schedule a
+  // re-render -- Angular's template event bindings (e.g. (click)) still
+  // trigger change detection on their own without zone.js, but listeners
+  // added outside Angular's renderer don't. A signal write does, since
+  // that's the mechanism zoneless Angular relies on for reactivity.
+  dropdownCoords = signal<{ top?: number; bottom?: number; left: number; width: number } | null>(null);
   isClosing: boolean = false;
 
   constructor(private eRef: ElementRef, private cdr: ChangeDetectorRef) { }
@@ -194,9 +203,9 @@ export class SingleInput implements ControlValueAccessor {
 
     // Exact viewport coordinates so the dropdown can render with position:fixed
     // and escape any ancestor's overflow clipping (e.g. a scrollable modal body).
-    this.dropdownCoords = this.dropdownPosition === 'bottom'
+    this.dropdownCoords.set(this.dropdownPosition === 'bottom'
       ? { top: triggerRect.bottom + 6, left: triggerRect.left, width: triggerRect.width }
-      : { bottom: viewportHeight - triggerRect.top + 6, left: triggerRect.left, width: triggerRect.width };
+      : { bottom: viewportHeight - triggerRect.top + 6, left: triggerRect.left, width: triggerRect.width });
   }
 
   selectOption(option: SelectOption) {
@@ -296,6 +305,32 @@ export class SingleInput implements ControlValueAccessor {
     }
   }
 
+  // Keeps the fixed-position dropdown panel visually attached to its
+  // trigger button while the page scrolls.
+  //
+  // This is NOT @HostListener('window:scroll') -- checked layout.html: the
+  // app's root container is `overflow-hidden` and the actual scrolling
+  // element is the inner <main overflow-y-auto>, so the browser `window`
+  // itself never fires a scroll event here at all. Scroll events also
+  // don't bubble, so a plain listener on document/window in the bubble
+  // phase wouldn't catch a nested container's scroll either. Capture-phase
+  // listeners DO propagate down through all ancestors, including whichever
+  // nested element is actually scrolling -- so this is registered manually
+  // with `addEventListener(..., true)` rather than Angular's HostListener,
+  // which has no capture-phase option. This also makes the fix general for
+  // any scroll container this shared component ends up inside (a modal
+  // body, a different page layout, etc.), not just this app's current
+  // <main> structure.
+  private readonly handleScrollCapture = (e: Event) => {
+    if (this.isOpen) {
+      this.calculateDropdownPosition();
+    }
+  };
+
+  ngOnInit(): void {
+    document.addEventListener('scroll', this.handleScrollCapture, true);
+  }
+
   // Scroll to the selected option
   scrollToSelectedOption() {
     setTimeout(() => {
@@ -368,6 +403,7 @@ export class SingleInput implements ControlValueAccessor {
   // Add cleanup
   ngOnDestroy(): void {
     this.stopLoadingTimer();
+    document.removeEventListener('scroll', this.handleScrollCapture, true);
   }
 }
 

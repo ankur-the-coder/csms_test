@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
+
 
 export interface Organization {
   id: number;
@@ -29,21 +31,14 @@ export interface TrainingResponse {
   providedIn: 'root'
 })
 export class TrainingService {
-  updateModule(id: number, payload: any): Observable<any> {
-    return this.http.put<any>(`${this.API_URL}/courses/admin/modules/${id}`, payload);
-  }
-
   private http = inject(HttpClient);
-
-  private readonly API_URL = 'http://127.0.0.1:5000';
+  public readonly API_URL = environment.apiUrl;
 
   trainingTable(payload: any): Observable<TrainingResponse> {
-
     return this.http.post<TrainingResponse>(
       `${this.API_URL}/trainingTable`,
       payload
     );
-
   }
 
   getCourses(): Observable<any> {
@@ -64,18 +59,22 @@ export class TrainingService {
 
   deleteMaterial(id: number): Observable<any> {
     return this.http.delete<any>(`${this.API_URL}/courses/admin/materials/${id}`);
-  }  
+  }
 
-  createModule(courseId: number, payload: any): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/${courseId}/modules`, payload);
+  createModule(courseId: number, formData: FormData): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/courses/admin/${courseId}/modules`, formData);
+  }
+
+  updateModule(id: number, formData: FormData): Observable<any> {
+    return this.http.put<any>(`${this.API_URL}/courses/admin/modules/${id}`, formData);
   }
 
   deleteModule(id: number): Observable<any> {
     return this.http.delete<any>(`${this.API_URL}/courses/admin/modules/${id}`);
   }
 
-  
 
-  
 
-}  
+
+
+}

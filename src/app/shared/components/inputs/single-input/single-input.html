@@ -31,8 +31,8 @@
     <!-- Dropdown -->
     <div #dropdown
         class="fixed z-[3000] bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden animate-dropdown"
-        [style.top.px]="dropdownCoords?.top" [style.bottom.px]="dropdownCoords?.bottom"
-        [style.left.px]="dropdownCoords?.left" [style.width.px]="dropdownCoords?.width">
+        [style.top.px]="dropdownCoords()?.top" [style.bottom.px]="dropdownCoords()?.bottom"
+        [style.left.px]="dropdownCoords()?.left" [style.width.px]="dropdownCoords()?.width">
 
         <!-- Search Input -->
         @if (enableSearch) {

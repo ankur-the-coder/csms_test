@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TrainingService } from '../../services/Training/training';
 import { AuthService } from '../../../../core/services/auth-service';
+import { Utils } from '../../../../shared/utils/utils';
 
 interface Material {
   id: string;
@@ -89,6 +90,7 @@ export class TrainingMaterials implements OnInit {
   newModuleVideoUrl = '';
   newModuleFile: File | null = null;
   existingMaterialName = '';
+  pdfRemoved = false;
 
   // New Course Form
   newCourseTitle = '';
@@ -275,6 +277,7 @@ export class TrainingMaterials implements OnInit {
   openAddModuleModal(module?: CourseModule): void {
     this.isAddModuleModalOpen = true;
     this.newModuleFile = null;
+    this.pdfRemoved = false;
 
     if (module) {
       // Edit mode - populate form with existing values saved for that session/module
@@ -300,6 +303,12 @@ export class TrainingMaterials implements OnInit {
     }
   }
 
+  removePdf(): void {
+    this.newModuleFile = null;
+    this.existingMaterialName = '';
+    this.pdfRemoved = true;
+  }
+
   closeAddModuleModal(): void {
     this.isAddModuleModalOpen = false;
     this.isSavingModule.set(false);
@@ -309,6 +318,7 @@ export class TrainingMaterials implements OnInit {
     this.newModuleVideoUrl = '';
     this.newModuleFile = null;
     this.existingMaterialName = '';
+    this.pdfRemoved = false;
   }
 
   openAddCourseModal(): void {
@@ -336,7 +346,7 @@ export class TrainingMaterials implements OnInit {
     formData.append('file', this.selectedFile);
     formData.append('title', this.materialTitle.trim());
     formData.append('course_id', courseId.toString());
-    formData.append('uploaded_by', this.authService.getEmpId());
+    formData.append('uploaded_by', Utils.encode5t(this.authService.getEmpId()));
     if (this.targetModuleId) {
       formData.append('module_id', this.targetModuleId);
     }
@@ -352,20 +362,6 @@ export class TrainingMaterials implements OnInit {
     });
   }
 
-  // deleteMaterial(id: string): void {
-  //   if (confirm('Are you sure you want to delete this material?')) {
-  //     this.trainingService.deleteMaterial(Number(id)).subscribe({
-  //       next: (res) => {
-  //         if (res.status) {
-  //           const courseId = this.selectedCourseId();
-  //           if (courseId) this.loadCourseDetails(courseId);
-  //         }
-  //       },
-  //       error: (err) => console.error('Failed to delete material', err)
-  //     });
-  //   }
-  // }
-
   addCourse(): void {
     if (!this.newCourseTitle.trim()) return;
 
@@ -374,7 +370,7 @@ export class TrainingMaterials implements OnInit {
     const payload = {
       title: this.newCourseTitle.trim(),
       description: this.newCourseDescription.trim(),
-      category_id: 5,
+      category_id: 1,
       created_by: Number(this.authService.getEmpId()),
       status: 'published'
     };
@@ -398,6 +394,7 @@ export class TrainingMaterials implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.newModuleFile = input.files[0];
+      this.pdfRemoved = false;
     }
   }
 
@@ -410,105 +407,66 @@ export class TrainingMaterials implements OnInit {
 
     this.isSavingModule.set(true);
 
-    const payload = {
-      title: this.newModuleTitle.trim(),
-      description: this.newModuleDescription.trim(),
-      video_url: this.newModuleVideoUrl.trim() || null,
-    };
+    const empId = this.authService.getEmpId();
+    const encodedUser = Utils.encode5t(empId);
 
-    // =========================
-    // EDIT MODE
-    // =========================
+    const formData = new FormData();
+    formData.append('title', this.newModuleTitle.trim());
+    formData.append('description', this.newModuleDescription.trim());
+    formData.append('video_url', this.newModuleVideoUrl.trim());
+    formData.append('course_id', courseId.toString());
+    formData.append('updated_by', encodedUser);
+
     if (this.editingModuleId) {
-      const modId = this.editingModuleId;
-      this.trainingService
-        .updateModule(Number(modId), payload)
-        .subscribe({
-          next: (res: any) => {
-            if (res.status) {
-              if (this.newModuleFile) {
-                const formData = new FormData();
-                formData.append('file', this.newModuleFile);
-                formData.append('title', this.newModuleFile.name);
-                formData.append('course_id', courseId.toString());
-                formData.append('uploaded_by', this.authService.getEmpId());
-                formData.append('module_id', modId.toString());
+      formData.append('module_id', this.editingModuleId.toString());
 
-                this.trainingService.uploadMaterial(formData).subscribe({
-                  next: () => {
-                    this.isSavingModule.set(false);
-                    this.loadCourseDetails(courseId);
-                    this.closeAddModuleModal();
-                  },
-                  error: (uploadErr) => {
-                    this.isSavingModule.set(false);
-                    console.error('File upload failed during module edit', uploadErr);
-                    this.loadCourseDetails(courseId);
-                    this.closeAddModuleModal();
-                  }
-                });
-              } else {
-                this.isSavingModule.set(false);
-                this.loadCourseDetails(courseId);
-                this.closeAddModuleModal();
-              }
-            } else {
-              this.isSavingModule.set(false);
-            }
-          },
-          error: (err: any) => {
-            this.isSavingModule.set(false);
-            console.error('Failed to update module', err);
-          }
-        });
+      if (this.newModuleFile) {
+        formData.append('attachment', '1');
+        formData.append('file', this.newModuleFile);
+      } else if (this.pdfRemoved) {
+        formData.append('attachment', '0');
+        formData.append('file', '');
+      } else {
+        // Attachment unchanged
+        formData.append('file', '');
+      }
 
-      return;
-    }
-
-    // =========================
-    // ADD MODE
-    // =========================
-    const createPayload = {
-      ...payload,
-      sort_order: this.courseModules().length
-    };
-
-    this.trainingService.createModule(courseId, createPayload).subscribe({
-      next: (res) => {
-        if (res.status && res.data) {
-          const newModuleId = res.data.id;
-
-          if (this.newModuleFile) {
-            const formData = new FormData();
-            formData.append('file', this.newModuleFile);
-            formData.append('title', this.newModuleFile.name);
-            formData.append('course_id', courseId.toString());
-            formData.append('uploaded_by', this.authService.getEmpId());
-            formData.append('module_id', newModuleId.toString());
-
-            this.trainingService.uploadMaterial(formData).subscribe({
-              next: () => {
-                this.isSavingModule.set(false);
-                this.loadCourseDetails(courseId);
-                this.closeAddModuleModal();
-              },
-              error: (uploadErr) => {
-                this.isSavingModule.set(false);
-                console.error('File upload failed during module creation', uploadErr);
-                this.loadCourseDetails(courseId);
-                this.closeAddModuleModal();
-              }
-            });
-          } else {
-            this.isSavingModule.set(false);
+      this.trainingService.updateModule(Number(this.editingModuleId), formData).subscribe({
+        next: (res: any) => {
+          this.isSavingModule.set(false);
+          if (res.status) {
             this.loadCourseDetails(courseId);
             this.closeAddModuleModal();
           }
-        } else {
+        },
+        error: (err: any) => {
           this.isSavingModule.set(false);
+          console.error('Failed to update module', err);
+        }
+      });
+      return;
+    }
+
+    // ADD MODE
+    formData.append('sort_order', this.courseModules().length.toString());
+
+    if (this.newModuleFile) {
+      formData.append('attachment', '1');
+      formData.append('file', this.newModuleFile);
+    } else {
+      formData.append('attachment', '0');
+      formData.append('file', '');
+    }
+
+    this.trainingService.createModule(courseId, formData).subscribe({
+      next: (res: any) => {
+        this.isSavingModule.set(false);
+        if (res.status) {
+          this.loadCourseDetails(courseId);
+          this.closeAddModuleModal();
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isSavingModule.set(false);
         console.error('Failed to create module', err);
       }
