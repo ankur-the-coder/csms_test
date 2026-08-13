@@ -53,6 +53,13 @@ export class ScheduleMeeting implements OnInit {
   meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
   priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
 
+  // Backend validates priority via an enum rule expecting a number: 0 = Low, 1 = Medium, 2 = High.
+  private readonly priorityMap: Record<'Low' | 'Medium' | 'High', number> = {
+    Low: 0,
+    Medium: 1,
+    High: 2
+  };
+
   loadingInitialData = true;
 
   /** True once the user has attempted to submit — turns on field-level error messages. */
@@ -254,13 +261,21 @@ export class ScheduleMeeting implements OnInit {
         // --- additional fields ---
         meetingType: this.newMeeting.type,
         duration: this.newMeeting.duration,
-        priority: this.newMeeting.priority,
 
-        organizationId: this.newMeeting.orgId,
-        organizationName: this.newMeeting.orgName,
+        // Backend validator requires a number: 0 = Low, 1 = Medium, 2 = High.
+        priority: this.priorityMap[this.newMeeting.priority],
+
+        // NOTE: keys must be orgId/orgName — MeetingsService.createMeeting()
+        // reads data.orgId / data.orgName directly. Sending
+        // organizationId/organizationName here means the backend never
+        // receives them, and OrgId/OrgName silently fail validation or
+        // insert as null/empty.
+        orgId: this.newMeeting.orgId,
+        orgName: this.newMeeting.orgName,
 
         hostId: this.newMeeting.hostId,
-        hostName: this.newMeeting.hostName
+        hostName: this.newMeeting.hostName,
+        empId: localStorage.getItem('empId') || ''
 
     };
 

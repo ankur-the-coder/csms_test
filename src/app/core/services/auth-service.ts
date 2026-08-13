@@ -59,6 +59,10 @@ export class AuthService {
     return this.isBrowser ? (localStorage.getItem('userName') ?? '') : '';
   }
 
+  getEmpId(): string {
+    return this.isBrowser ? (localStorage.getItem('empId') ?? '') : '';
+  }
+
   getDesignation(): string {
     return this.isBrowser ? (localStorage.getItem('designation') ?? '') : '';
   }

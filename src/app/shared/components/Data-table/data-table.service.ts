@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { TableFilter } from './data-table.types';
 
@@ -18,6 +18,17 @@ interface OwnerApiRow {
 interface OwnerApiResponse {
   status: boolean;
   data: OwnerApiRow[];
+}
+
+interface OrgApiRow {
+  orgId: number;
+  organization: string;
+  [key: string]: any;
+}
+
+interface OrgApiResponse {
+  status: boolean;
+  data: OrgApiRow[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -81,6 +92,79 @@ export class DataTableService {
             })),
           } as TableFilter)),
           catchError(() => of({ key: 'supportOwner', label: 'Support Owner', searchable: true, options: [] } as TableFilter))
+        );
+
+      // --------------------------------------------------------------
+      // Meeting filters — map to the "filter" JSON keys accepted by
+      // POST /meetings/fetchMeetings (status, priority, orgId, empId).
+      // --------------------------------------------------------------
+
+      case 'meetingStatus':
+        return of({
+          key: 'meetingStatus',
+          label: 'Status',
+          options: [
+            { label: 'Scheduled',   value: '0' },
+            { label: 'Completed',   value: '1' },
+            { label: 'Rescheduled', value: '2' },
+            { label: 'Cancelled',   value: '3' },
+          ],
+        });
+
+      case 'meetingPriority':
+        return of({
+          key: 'meetingPriority',
+          label: 'Priority',
+          options: [
+            { label: 'Low',    value: '0' },
+            { label: 'Medium', value: '1' },
+            { label: 'High',   value: '2' },
+          ],
+        });
+
+      case 'organization':
+        return this.http.get<OrgApiResponse>(`${this.baseUrl}/meetings/fetchOrganizations`).pipe(
+          map((res) => ({
+            key: 'organization',
+            label: 'Organization',
+            searchable: true,
+            options: (res?.data || []).map((o) => ({
+              label: o.organization,
+              value: String(o.orgId),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'organization', label: 'Organization', searchable: true, options: [] } as TableFilter))
+        );
+
+      case 'host':
+        // Meeting hosts are drawn from the same lead/support owner pools
+        // used elsewhere — combined and deduplicated into one list so the
+        // filter maps directly to the meeting's "empId" filter key.
+        return forkJoin({
+          leadOwners: this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchLeadOwner`).pipe(
+            catchError(() => of({ status: false, data: [] } as OwnerApiResponse))
+          ),
+          supportOwners: this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchSupportOwner`).pipe(
+            catchError(() => of({ status: false, data: [] } as OwnerApiResponse))
+          ),
+        }).pipe(
+          map(({ leadOwners, supportOwners }) => {
+            const seen = new Set<string>();
+
+            const options = [...(leadOwners?.data || []), ...(supportOwners?.data || [])]
+              .map((u) => ({
+                label: u.name ?? u.Name ?? u.userName ?? '',
+                value: String(u.id ?? u.Id ?? u.userId ?? ''),
+              }))
+              .filter((opt) => {
+                if (!opt.value || seen.has(opt.value)) return false;
+                seen.add(opt.value);
+                return true;
+              });
+
+            return { key: 'host', label: 'Host', searchable: true, options } as TableFilter;
+          }),
+          catchError(() => of({ key: 'host', label: 'Host', searchable: true, options: [] } as TableFilter))
         );
 
       case 'renewalOwner':

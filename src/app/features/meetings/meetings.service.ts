@@ -47,6 +47,45 @@ export interface FetchMeetingsResponse {
   meta: { total: number; first_page: number };
 }
 
+/** Response of GET /meetings/dashboard-stats — all the KPI card numbers. */
+export interface DashboardStats {
+  todayMeetings: number;
+  upcoming7Days: number;
+  completedThisMonth: number;
+  followUpsPending: number;
+  thisWeekMeetings: number;
+  overdueCount: number;
+  completionRate: number;
+  totalMeetings: number;
+}
+
+interface DashboardStatsApiResponse {
+  status: boolean;
+  data: DashboardStats;
+}
+
+/** One attendee/host entry from a checked meeting's attendance report. */
+export interface AttendanceRecord {
+  name: string;
+  email: string | null;
+  role: string;
+  joinTime: string | null;
+  leaveTime: string | null;
+  totalDurationSeconds: number;
+}
+
+/** Response of POST /meetings/check-attendance. */
+export interface AttendanceCheckResponse {
+  status: boolean;
+  meetingId: number;
+  wasHeld: boolean;
+  meetingStart: string | null;
+  meetingEnd: string | null;
+  totalDurationMinutes: number | null;
+  attendeeCount: number;
+  attendees: AttendanceRecord[];
+}
+
 interface DataTablePayload {
   start: number;
   length: number;
@@ -105,5 +144,40 @@ export class MeetingService {
 
   fetchMeetings(payload: FetchMeetingsPayload): Observable<FetchMeetingsResponse> {
     return this.http.post<FetchMeetingsResponse>(`${this.imp}/meetings/fetchMeetings`, payload);
+  }
+
+  /**
+   * Asks the backend to check (live, against Microsoft Graph) whether a
+   * meeting actually happened — who joined, their role, how long they
+   * stayed, and the meeting's real duration. Not cached: each call re-checks
+   * against Microsoft, since attendance can only be known after the fact
+   * and may not exist yet if the meeting hasn't finished/report hasn't
+   * generated.
+   */
+  checkAttendance(meetingId: number): Observable<AttendanceCheckResponse> {
+    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId });
+  }
+
+  /**
+   * Cancels a meeting via Microsoft Graph (notifies attendees) and marks
+   * it Cancelled in MeetingTable. Backend rejects this if the meeting is
+   * already Cancelled or Completed — that error message passes through
+   * as-is for the component to show.
+   */
+  cancelMeeting(meetingId: number, comment?: string): Observable<{ status: boolean; message: string; meetingId: number }> {
+    return this.http.post<{ status: boolean; message: string; meetingId: number }>(
+      `${this.imp}/meetings/cancel`,
+      { meetingId, comment }
+    );
+  }
+
+  /**
+   * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
+   * this month / follow-ups pending). Not cached — always fetch fresh.
+   */
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.http
+      .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats`)
+      .pipe(map(res => res.data));
   }
 }

@@ -517,7 +517,6 @@
 
 .st-th--sortable:hover {
   color: var(--st-accent);
-  background: var(--st-accent-bg);
 }
 
 .st-th--sorted {
