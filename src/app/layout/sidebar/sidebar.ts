@@ -23,7 +23,7 @@ export class Sidebar {
    private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'dashboard';
+  @Input() activeNav = 'voice';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
@@ -36,6 +36,7 @@ export class Sidebar {
   mainNavItems: NavItem[] = [
     // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+
   ];
 
   csNavItems: NavItem[] = [
