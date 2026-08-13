@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ClientDataTableResponse } from '../../models/client/client.model';
-
+import { environment } from '../../../../../environments/environment';
 export interface DataTablePayload {
   start: number;
   length: number;
@@ -18,7 +18,7 @@ export interface DataTablePayload {
   providedIn: 'root',
 })
 export class ClientService {
-  public readonly baseUrl = 'http://127.0.0.1:5000';
+  public readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
