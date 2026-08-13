@@ -26,6 +26,13 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
+    if (this.isBrowser) {
+      const stored = window.localStorage.getItem('isLoggedIn') === 'true';
+      if (stored !== this.isLoggedIn()) {
+        this.isLoggedIn.set(stored);
+      }
+      return stored;
+    }
     return this.isLoggedIn();
   }
 
