@@ -285,6 +285,19 @@
         }
       </ng-template>
 
+      <!-- ── Row Actions column: three-dot trigger → floating Join/Cancel menu ── -->
+      <ng-template appCustomColumn="rowActions" let-row>
+        <button type="button" (click)="toggleActionMenu(row, $event)"
+          class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+          title="Actions">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="5" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="12" cy="19" r="1.5" />
+          </svg>
+        </button>
+      </ng-template>
+
       <!-- ── Meeting Detail column: click to check + view attendance ────── -->
       <ng-template appCustomColumn="attendance" let-row>
         <button (click)="openAttendanceModal(row)"
@@ -296,6 +309,31 @@
       </ng-template>
 
     </app-data-table>
+    }
+
+    <!-- Row Actions floating menu (Join / Cancel) — fixed-position so it isn't
+         clipped by the table's own overflow-x scroll container. -->
+    @if (actionMenuOpenRowId() !== null && actionMenuRow(); as menuRow) {
+    <div class="fixed z-50 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5"
+      [style.top.px]="actionMenuPosition()?.top" [style.left.px]="actionMenuPosition()?.left"
+      (click)="$event.stopPropagation()">
+      <button type="button" (click)="onMenuJoin(menuRow)" [disabled]="!canJoinMeeting(menuRow)"
+        class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-700 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+        <svg class="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+        Join
+      </button>
+      <button type="button" (click)="onMenuCancel(menuRow)" [disabled]="!canCancelMeeting(menuRow)"
+        class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-rose-600 hover:bg-rose-50 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+        <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        </svg>
+        Cancel Meeting
+      </button>
+    </div>
     }
 
     <!-- Meeting Detail (Attendance) Modal -->
