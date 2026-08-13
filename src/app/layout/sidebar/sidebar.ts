@@ -39,13 +39,13 @@ export class Sidebar {
   ];
 
   csNavItems: NavItem[] = [
-    // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
     { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-    // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
-    // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
-    // { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
+    { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
+    { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
+    { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
   ];
 
   learningNavItems: NavItem[] = [
