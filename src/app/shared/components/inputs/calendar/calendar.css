@@ -1,7 +1,365 @@
-/* Custom scrollbar for fixed height calendar views */
+/* ═══════════════════════════════════════════════════════
+   Calendar Component  —  Leave-Calendar style
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Root wrapper ─────────────────────────────────────── */
+.cal-root {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+  flex-wrap: wrap;
+}
+
+.cal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.cal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── Legend ────────────────────────────────────────────── */
+.cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-blue {
+  background-color: #3b82f6;
+}
+
+.dot-green {
+  background-color: #22c55e;
+}
+
+.dot-amber {
+  background-color: #f59e0b;
+}
+
+/* ── Month Nav ─────────────────────────────────────────── */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.cal-nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cal-nav-arrow:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.cal-nav-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  padding: 0 12px;
+  min-width: 110px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Clickable label variant */
+.cal-nav-label--btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color .15s;
+}
+
+.cal-nav-label--btn:hover {
+  color: #10b981;
+}
+
+/* Nav wrapper for relative positioning of date picker dropdown */
+.cal-nav-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Picker dropdown — right aligned to stay within calendar container */
+.cal-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  z-index: 9999;
+  animation: pickerFadeIn .15s ease;
+}
+
+@media (max-width: 640px) {
+  .cal-picker-dropdown {
+    right: -12px;
+    top: calc(100% + 4px);
+  }
+}
+
+@keyframes pickerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── View-mode tabs ────────────────────────────────────── */
+.cal-view-tabs {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 1px;
+}
+
+.cal-view-tab {
+  padding: 4px 12px;
+  border-radius: 7px;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.cal-view-tab:hover {
+  color: #1e293b;
+}
+
+.cal-view-tab.active {
+  background: #ffffff;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+}
+
+/* ── Day-of-week header row ────────────────────────────── */
+.cal-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.cal-dow-cell {
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Month grid ────────────────────────────────────────── */
+.cal-month-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.cal-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cal-week-row:last-child {
+  border-bottom: none;
+}
+
+/* ── Day cell ──────────────────────────────────────────── */
+.cal-day-cell {
+  min-height: 110px;
+  padding: 8px;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
+  transition: background 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+
+.cal-day-cell:last-child {
+  border-right: none;
+}
+
+.cal-day-cell.other-month {
+  background: #f8fafc;
+}
+
+/* ── Date number ───────────────────────────────────────── */
+.cal-day-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-bottom: 4px;
+  transition: background 0.15s;
+}
+
+.cal-day-num.today-badge {
+  background: #10b981;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, .25);
+}
+
+.cal-day-num.dim {
+  color: #cbd5e1;
+}
+
+/* Today's cell — subtle background highlight */
+.cal-day-cell.today-cell {
+  background: #f0fdf4;
+}
+
+/* ── Events list inside cell ───────────────────────────── */
+.cal-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+/* ── Event chip ────────────────────────────────────────── */
+.cal-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  border: 1px solid transparent;
+  max-width: 100%;
+}
+
+.cal-chip:hover {
+  opacity: 0.80;
+}
+
+/* Default chip colours — also map to chipClass values already in use */
+.chip-blue,
+.bg-indigo-50 {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border-color: #bfdbfe !important;
+}
+
+.chip-green,
+.bg-emerald-50 {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.chip-amber,
+.bg-amber-50 {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+
+.chip-rose,
+.bg-rose-50 {
+  background-color: #ffe4e6 !important;
+  color: #9f1239 !important;
+  border-color: #fecdd3 !important;
+}
+
+/* Tailwind overrides already in chipClass  */
+.bg-indigo-50.border-indigo-200.text-indigo-700 {
+  background-color: #dbeafe !important;
+  color: #3730a3 !important;
+  border-color: #c7d2fe !important;
+}
+
+/* ── More link ─────────────────────────────────────────── */
+.cal-more-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1px 4px;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.cal-more-link:hover {
+  color: #4f46e5;
+}
+
+/* ── Custom scrollbar (week / day views) ───────────────── */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -16,4 +374,30 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ── Responsive horizontal scroll (all devices) ─────────────
+   The month/week grids keep a sensible minimum column width.
+   On narrow viewports (mobile/tablet) they no longer squash
+   text into truncated "T..." chips — instead the wrapper
+   scrolls horizontally so every column stays readable. */
+.cal-scroll-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cal-dow-row,
+.cal-week-row {
+  min-width: 640px;
+}
+
+.cal-week-view-grid {
+  min-width: 900px;
+}
+
+@media (max-width: 480px) {
+  .cal-day-cell {
+    min-height: 90px;
+  }
 }
