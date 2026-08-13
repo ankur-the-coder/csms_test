@@ -1,0 +1,26 @@
+<div class="space-y-6">
+  <!-- Header Card (with nav tabs shifted to the end) -->
+  <div class="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-text-primary">Voice</h2>
+      <p class="mt-1 text-sm text-text-muted">Softphone, call history, notes, recordings &amp; voice clients</p>
+    </div>
+
+    <!-- Section Tabs -->
+    <div class="inline-flex flex-wrap items-center gap-1 size-md rounded-2xl bg-surface-100 p-1 self-start md:self-auto">
+      <a
+        *ngFor="let tab of tabs"
+        [routerLink]="tab.path"
+        routerLinkActive
+        #rla="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: false }"
+        [ngClass]="rla.isActive ? 'filter-tab filter-tab-active' : 'filter-tab filter-tab-inactive'"
+      >
+        {{ tab.label }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Nested voice route content (softphone / history / notes / recordings / clients) -->
+  <router-outlet></router-outlet>
+</div>
