@@ -13,7 +13,7 @@
    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <!-- Total Clients -->
         <div 
-          (click)="navigateToClient()"
+          
           class="bg-green-50/50 hover:bg-green-100/90 rounded-2xl p-4 border border-green-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-green-500/25 hover:border-green-500 transition-all duration-300 ease-out group"
         >
           <div class="text-2xl font-bold text-slate-900">{{ animatedTotalClients() }}</div>
@@ -52,12 +52,12 @@
     {{ animatedImplPending() }}
   </div>
 
-  <div class="flex items-center justify-between gap-2 text-text-primary">
-    <span class="text-sm  whitespace-nowrap">
+  <div class="flex items-center justify-between text-text-primary">
+    <span class="text-sm">
       Implementation Pending
     </span>
 
-    <div class="shrink-0 p-1.5 rounded-lg bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform">
+    <div class="p-1.5 rounded-lg bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform">
       <svg 
         class="w-4 h-4" 
         fill="none" 
@@ -110,23 +110,38 @@
 
       <!-- Grid section -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Client Health Score Trend (line chart) -->
         <div class="lg:col-span-5">
           <app-charts
-            type="trend"
-            title="Implementation Progress & Trends"
-          
-            
+            chartId="healthTrendChart"
+            [chartType]="'line'"
+            [chartData]="ImplementationData"
+            [chartLabels]="ImplementationLabels"
+            [backgroundColors]="['#3b82f6']"
+            [headingText]="'Implementation Progress'"
+            [hoverLabel]="'Implementation Score'"
+            [xAxisTitle]="'Month'"
+            [yAxisTitle]="'Implementation Score'"
+            [leaveChart]="true"
+             [isLoading]="isTrendLoading()"
+  [hasError]="trendHasError()"
           ></app-charts>
         </div>
 
         <!-- Health Score Distribution Donut Widget (Shared Chart Component) -->
         <div class="lg:col-span-4">
           <app-charts
-            type="donut"
-            title="Health Score Distribution"
-            [totalCount]="256"
-            totalLabel="Total Clients"
-            [healthSegments]="healthSegments"
+            chartId="healthDistributionChart"
+            [chartType]="'doughnut'"
+            [chartData]="healthDonutData"
+            [chartLabels]="healthDonutLabels"
+            [backgroundColors]="healthDonutColors"
+            [headingText]="'Health Score Distribution'"
+            [hoverLabel]="'Clients'"
+            [donutCenterText]="healthDonutCenterText"
+            [leaveChart]="true"
+             [isLoading]="isTrendLoading()"
+  [hasError]="trendHasError()"
           ></app-charts>
         </div>
 
