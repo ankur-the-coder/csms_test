@@ -58,7 +58,7 @@ export class TrainingService {
   }
 
   deleteMaterial(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.API_URL}/courses/admin/materials/${id}`);
+    return this.http.post<any>(`${this.API_URL}/courses/admin/materials/${id}/delete`, {});
   }
 
   createModule(courseId: number, formData: FormData): Observable<any> {
@@ -66,15 +66,11 @@ export class TrainingService {
   }
 
   updateModule(id: number, formData: FormData): Observable<any> {
-    return this.http.put<any>(`${this.API_URL}/courses/admin/modules/${id}`, formData);
+    return this.http.post<any>(`${this.API_URL}/courses/admin/modules/${id}/update`, formData);
   }
 
   deleteModule(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.API_URL}/courses/admin/modules/${id}`);
+    return this.http.post<any>(`${this.API_URL}/courses/admin/modules/${id}/delete`, {});
   }
 
-
-
-
-
-}
+}   
