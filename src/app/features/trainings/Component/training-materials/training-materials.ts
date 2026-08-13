@@ -370,7 +370,7 @@ export class TrainingMaterials implements OnInit {
     const payload = {
       title: this.newCourseTitle.trim(),
       description: this.newCourseDescription.trim(),
-      category_id: 5,
+      category_id: 1,
       created_by: Number(this.authService.getEmpId()),
       status: 'published'
     };

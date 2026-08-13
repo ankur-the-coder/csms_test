@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
+
 
 export interface Organization {
   id: number;
@@ -30,7 +32,7 @@ export interface TrainingResponse {
 })
 export class TrainingService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://127.0.0.1:5000';
+  public readonly API_URL = environment.apiUrl;
 
   trainingTable(payload: any): Observable<TrainingResponse> {
     return this.http.post<TrainingResponse>(
@@ -71,8 +73,8 @@ export class TrainingService {
     return this.http.delete<any>(`${this.API_URL}/courses/admin/modules/${id}`);
   }
 
-  
 
-  
 
-}  
+
+
+}
