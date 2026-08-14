@@ -1,8 +1,8 @@
-import { Component, signal, computed, ViewChild, ElementRef, OnInit } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse } from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse ,RescheduleMeetingResponse} from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -43,11 +43,12 @@ import { SingleInput, SelectOption } from '../../shared/components/inputs/single
 
 import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
+import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar],
+  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -70,7 +71,7 @@ import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/cale
     }
   `]
 })
-export class MeetingsComponent implements OnInit {
+export class MeetingsComponent implements OnInit, OnDestroy {
 
   // Reference to the table so we can ask it to reload after cancelling a
   // meeting. NOTE: '.refresh()' below is a guess at the method name — check
@@ -142,6 +143,28 @@ export class MeetingsComponent implements OnInit {
   /** Title of the meeting currently shown in the modal (row data isn't kept around otherwise). */
   attendanceMeetingTitle = '';
 
+
+  // ============ Reschedule Meeting Modal ============
+
+showRescheduleModal = false;
+rescheduleLoading = false;
+rescheduleError: string | null = null;
+
+selectedRescheduleMeeting: MeetingRow | null = null;
+
+rescheduleDate = '';
+rescheduleTime = '';
+rescheduleDuration = 60; // minutes
+
+rescheduleDurationOptions = [
+  { label: '15 minutes', value: 15 },
+  { label: '30 minutes', value: 30 },
+  { label: '45 minutes', value: 45 },
+  { label: '1 hour', value: 60 },
+  { label: '1 hour 30 minutes', value: 90 },
+  { label: '2 hours', value: 120 },
+];
+
   // ============ Meetings DataTable Config ============
   private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
 
@@ -212,6 +235,14 @@ export class MeetingsComponent implements OnInit {
         label: 'Client Email',
         sortable: false,
       },
+      {
+        key: 'rowActions',
+        label: 'actions',
+        sortable: false,
+        
+        hideable: false,
+        sticky:true,
+      },
     ],
 
     apiConfig: {
@@ -275,23 +306,93 @@ export class MeetingsComponent implements OnInit {
       { id: 'refresh', type: 'refresh' },
       { id: 'columns', type: 'columnPicker', label: 'Columns' },
     ],
-    customRowActions: [
-      {
-        id: 'view',
-        icon: 'view',
-        label: 'View',
-        tooltip: 'View meeting details',
-        onClick: (row: MeetingRow) => this.openMeetingLink(row),
-      },
-      {
-        id: 'cancel',
-        icon: 'delete',  // <-- must be one of ActionIcon values
-        label: 'Cancel',
-        tooltip: 'Cancel this meeting',
-        onClick: (row: MeetingRow) => this.confirmCancelMeeting(row),
-      },
-    ],
   }));
+
+  // ============ Row Actions Menu (three-dot, rendered via appCustomColumn="rowActions") ============
+  //
+  // Deliberately kept out of the shared DataTable component — it's rendered
+  // through the same ng-template/appCustomColumn mechanism as the other
+  // custom columns (title, orgName, attendance...), so DataTable itself
+  // never needs to know about Join/Cancel.
+
+  /** id of the row whose menu is currently open, or null if none is open. */
+  actionMenuOpenRowId = signal<number | null>(null);
+  /** The full row for the currently open menu (kept alongside the id so the template can read it without re-searching apiMeetings/rows). */
+  actionMenuRow = signal<MeetingRow | null>(null);
+  /** Fixed-position coordinates for the floating menu, computed from the trigger button's own bounding rect so it isn't clipped by the table's scroll container. */
+  actionMenuPosition = signal<{ top: number; left: number } | null>(null);
+
+  toggleActionMenu(row: MeetingRow, event: MouseEvent): void {
+    event.stopPropagation();
+    const isOpeningSameRow = this.actionMenuOpenRowId() === row.id;
+
+    if (isOpeningSameRow) {
+      this.closeActionMenu();
+      return;
+    }
+
+    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 176; // matches w-44 below
+
+    this.actionMenuOpenRowId.set(row.id);
+    this.actionMenuRow.set(row);
+    this.actionMenuPosition.set({
+      top: trigger.bottom + 6,
+      // Right-align the menu to the trigger so it doesn't run off-screen
+      // for the right-most "Meeting Detail"/"Client Email" columns.
+      left: Math.max(8, trigger.right - menuWidth),
+    });
+  }
+
+  closeActionMenu(): void {
+    this.actionMenuOpenRowId.set(null);
+    this.actionMenuRow.set(null);
+    this.actionMenuPosition.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  // The menu's top/left are captured as fixed pixel coordinates from the
+  // trigger button's rect at the moment it opens. If the window is resized
+  // (or the page/table scrolls) afterward, that button moves but the menu
+  // wouldn't — so just close it rather than let it drift away from its row.
+  @HostListener('window:resize')
+  onWindowResizeCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  /**
+   * `scroll` events don't bubble, so a plain (window:scroll) HostListener
+   * won't fire when the table's own internal `overflow-x/y` container
+   * scrolls — only a capture-phase listener on `document` catches that.
+   * Added/removed manually since @HostListener has no capture option.
+   */
+  private closeActionMenuOnScroll = () => {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  };
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.closeActionMenuOnScroll, true);
+  }
+
+  onMenuJoin(row: MeetingRow): void {
+    this.closeActionMenu();
+    this.joinMeeting(row);
+  }
+
+  onMenuCancel(row: MeetingRow): void {
+    this.closeActionMenu();
+    this.cancelMeetingFromMenu(row);
+  }
 
   openMeetingLink(row: MeetingRow): void {
     if (row.meetingLink) {
@@ -299,6 +400,319 @@ export class MeetingsComponent implements OnInit {
     } else {
       this.showToastMessage('No meeting link available for this entry.');
     }
+  }
+
+  // ============ Row Actions: Join / Cancel eligibility ============
+  //
+  // Rendered as the DataTable's own customRowActions buttons (see
+  // tableConfig above) — it already handles the disabled state and click
+  // guarding natively, so this is just the eligibility logic those
+  // actions read from.
+
+  /**
+   * Whether Join / Cancel should be enabled for a row, based on its
+   * Status and — for a still-Scheduled meeting — whether its start time
+   * has arrived yet.
+   *
+   *   Completed / Cancelled / Host No-Show / Client No-Show -> both disabled (nothing left to do)
+   *   Pending                                                -> both enabled
+   *   Scheduled / Rescheduled                                -> Cancel always enabled;
+   *                                                              Join enables once StartTime <= now
+   */
+  private getRowActionState(row: MeetingRow): { canJoin: boolean; canCancel: boolean } {
+    const COMPLETED = 1, CANCELLED = 4, CLIENT_NO_SHOW = 5, HOST_NO_SHOW = 6, PENDING = 3;
+
+    if ([COMPLETED, CANCELLED, CLIENT_NO_SHOW, HOST_NO_SHOW].includes(row.status)) {
+      return { canJoin: false, canCancel: false };
+    }
+
+    if (row.status === PENDING) {
+      return { canJoin: true, canCancel: true };
+    }
+
+    // Scheduled (0) / Rescheduled (2)
+    const hasStarted = !!row.startTime && new Date(row.startTime).getTime() <= Date.now();
+    return { canJoin: hasStarted, canCancel: true };
+  }
+
+  canJoinMeeting(row: MeetingRow): boolean {
+    return this.getRowActionState(row).canJoin;
+  }
+
+  canCancelMeeting(row: MeetingRow): boolean {
+    return this.getRowActionState(row).canCancel;
+  }
+
+  canRescheduleMeeting(row: MeetingRow): boolean {
+  const RESCHEDULE_ALLOWED_STATUSES = [
+    0, // Scheduled
+    2, // Rescheduled
+    3, // Pending
+    5, // Client No-Show
+    6, // Host No-Show
+  ];
+
+  return RESCHEDULE_ALLOWED_STATUSES.includes(row.status);
+}
+
+
+openRescheduleModal(row: MeetingRow): void {
+  if (!this.canRescheduleMeeting(row)) {
+    return;
+  }
+
+  this.closeActionMenu();
+
+  this.selectedRescheduleMeeting = row;
+  this.rescheduleError = null;
+
+  // Existing meeting date
+  if (row.startTime) {
+
+  const raw = row.startTime
+    .replace(' ', 'T')
+    .split('.')[0];
+
+  const start = new Date(raw);
+
+  this.rescheduleDate = this.formatDateForInput(start);
+  this.rescheduleTime = this.formatTimeForInput(start);
+
+} else {
+    this.rescheduleDate = '';
+    this.rescheduleTime = '';
+  }
+
+  // Existing duration
+  this.rescheduleDuration = this.parseDurationToMinutes(row.duration);
+
+  this.showRescheduleModal = true;
+}
+
+private formatDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+private formatTimeForInput(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
+private parseDurationToMinutes(duration: string | null): number {
+  if (!duration) {
+    return 60;
+  }
+
+  const parts = duration.split(':');
+
+  if (parts.length < 2) {
+    return 60;
+  }
+
+  const hours = Number(parts[0]) || 0;
+  const minutes = Number(parts[1]) || 0;
+
+  const total = (hours * 60) + minutes;
+
+  return total > 0 ? total : 60;
+}
+
+getRescheduleEndTime(): Date | null {
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return null;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+
+  return new Date(
+    start.getTime() + this.rescheduleDuration * 60 * 1000
+  );
+}
+
+formatRescheduleEndTime(): string {
+  const end = this.getRescheduleEndTime();
+
+  if (!end) {
+    return '—';
+  }
+
+  return end.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+private buildRescheduleDateTime(): {
+  start: string;
+  end: string;
+} | null {
+
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return null;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+
+  const end = new Date(
+    start.getTime() +
+    this.rescheduleDuration * 60 * 1000
+  );
+
+  const pad = (value: number) =>
+    String(value).padStart(2, '0');
+
+  const formatLocalDateTime = (date: Date): string => {
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+           `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
+  return {
+    start: formatLocalDateTime(start),
+    end: formatLocalDateTime(end)
+  };
+}
+
+isRescheduleFormValid(): boolean {
+
+  if (!this.selectedRescheduleMeeting) {
+    return false;
+  }
+
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return false;
+  }
+
+  if (!this.rescheduleDuration || this.rescheduleDuration <= 0) {
+    return false;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return false;
+  }
+
+  // Don't allow a new meeting time in the past.
+  if (start.getTime() <= Date.now()) {
+    return false;
+  }
+
+  return true;
+}
+
+submitReschedule(): void {
+
+  if (!this.selectedRescheduleMeeting) {
+    return;
+  }
+
+  if (!this.isRescheduleFormValid()) {
+    this.rescheduleError =
+      'Please select a future date, time and duration.';
+    return;
+  }
+
+  const dateTime = this.buildRescheduleDateTime();
+
+  if (!dateTime) {
+    this.rescheduleError =
+      'Invalid date or time.';
+    return;
+  }
+
+  this.rescheduleLoading = true;
+  this.rescheduleError = null;
+
+  const meeting = this.selectedRescheduleMeeting;
+
+  this.meetingService
+    .rescheduleMeeting(
+      meeting.id,
+      dateTime.start,
+      dateTime.end
+    )
+    .subscribe({
+
+      next: (response) => {
+
+        this.rescheduleLoading = false;
+
+        this.showRescheduleModal = false;
+
+        this.showToastMessage(
+          `"${meeting.title}" rescheduled successfully.`
+        );
+
+        this.selectedRescheduleMeeting = null;
+
+        // Refresh DataTable
+        this.meetingsTable?.refresh?.();
+
+        // Refresh other meeting views
+        this.fetchApiMeetings();
+
+        // Refresh dashboard numbers
+        this.fetchDashboardStats();
+      },
+
+      error: (err) => {
+
+        this.rescheduleLoading = false;
+
+        this.rescheduleError =
+          err?.error?.message ||
+          'Failed to reschedule meeting.';
+      }
+    });
+}
+
+closeRescheduleModal(): void {
+  if (this.rescheduleLoading) {
+    return;
+  }
+
+  this.showRescheduleModal = false;
+  this.selectedRescheduleMeeting = null;
+  this.rescheduleError = null;
+}
+
+getTodayDate(): string {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+  joinMeeting(row: MeetingRow): void {
+    if (!this.canJoinMeeting(row)) return;
+    this.openMeetingLink(row);
+  }
+
+  cancelMeetingFromMenu(row: MeetingRow): void {
+    if (!this.canCancelMeeting(row)) return;
+    this.confirmCancelMeeting(row);
   }
 
   /**
@@ -456,15 +870,16 @@ export class MeetingsComponent implements OnInit {
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
+    document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
   fetchApiMeetings(): void {
     this.meetingService.fetchMeetings({
       start: 0,
-      length: 100,
+      length: 500,
       search: this.searchTerm || '',
       sorting: 'startTime,desc',
-      filter: JSON.stringify({ status: 0 }),
+      filter: JSON.stringify({}),
       fromDate: this.filterDateFrom || '',
       toDate: this.filterDateTo || ''
     }).subscribe({
@@ -563,6 +978,15 @@ export class MeetingsComponent implements OnInit {
     { name: 'QBR', percentage: 12, color: 'bg-amber-500' },
     { name: 'Renewal', percentage: 20, color: 'bg-rose-500' }
   ];
+
+  meetingTypeChartData = [28, 22, 18, 12, 20];
+  meetingTypeChartLabels = ['Kickoff', 'Review', 'Training', 'QBR', 'Renewal'];
+  meetingTypeChartColors = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e'];
+  meetingTypeDonutCenter = {
+    line1: '27',
+    line2: 'total',
+    line3: ''
+  };
 
   // Chart data
   chartData = [

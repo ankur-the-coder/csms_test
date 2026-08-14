@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WebRtcVoiceService } from '../../features/voice/voice.service';
+import { WebRtcVoiceService } from '../../../features/voice/voice.service';
 
 @Component({
   selector: 'app-global-call-popup',

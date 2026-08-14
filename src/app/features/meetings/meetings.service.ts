@@ -100,6 +100,17 @@ interface DataTableApiResponse {
   meta: { total: number; first_page: number };
 }
 
+export interface RescheduleMeetingResponse {
+  status: boolean;
+  message: string;
+  meetingId: number;
+  eventId?: string;
+  meetingLink?: string;
+  start?: string;
+  end?: string;
+  duration?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -180,4 +191,20 @@ export class MeetingService {
       .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats`)
       .pipe(map(res => res.data));
   }
+
+  rescheduleMeeting(
+  meetingId: number,
+  start: string,
+  end: string
+): Observable<RescheduleMeetingResponse> {
+
+  return this.http.post<RescheduleMeetingResponse>(
+    `${this.imp}/meetings/reschedule`,
+    {
+      meetingId,
+      start,
+      end
+    }
+  );
+}
 }
