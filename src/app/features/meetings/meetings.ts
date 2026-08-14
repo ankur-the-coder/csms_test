@@ -2,7 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse } from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse ,RescheduleMeetingResponse} from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -43,11 +43,12 @@ import { SingleInput, SelectOption } from '../../shared/components/inputs/single
 
 import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
+import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar],
+  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -141,6 +142,28 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   attendanceResult: AttendanceCheckResponse | null = null;
   /** Title of the meeting currently shown in the modal (row data isn't kept around otherwise). */
   attendanceMeetingTitle = '';
+
+
+  // ============ Reschedule Meeting Modal ============
+
+showRescheduleModal = false;
+rescheduleLoading = false;
+rescheduleError: string | null = null;
+
+selectedRescheduleMeeting: MeetingRow | null = null;
+
+rescheduleDate = '';
+rescheduleTime = '';
+rescheduleDuration = 60; // minutes
+
+rescheduleDurationOptions = [
+  { label: '15 minutes', value: 15 },
+  { label: '30 minutes', value: 30 },
+  { label: '45 minutes', value: 45 },
+  { label: '1 hour', value: 60 },
+  { label: '1 hour 30 minutes', value: 90 },
+  { label: '2 hours', value: 120 },
+];
 
   // ============ Meetings DataTable Config ============
   private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
@@ -420,6 +443,268 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     return this.getRowActionState(row).canCancel;
   }
 
+  canRescheduleMeeting(row: MeetingRow): boolean {
+  const RESCHEDULE_ALLOWED_STATUSES = [
+    0, // Scheduled
+    2, // Rescheduled
+    3, // Pending
+    5, // Client No-Show
+    6, // Host No-Show
+  ];
+
+  return RESCHEDULE_ALLOWED_STATUSES.includes(row.status);
+}
+
+
+openRescheduleModal(row: MeetingRow): void {
+  if (!this.canRescheduleMeeting(row)) {
+    return;
+  }
+
+  this.closeActionMenu();
+
+  this.selectedRescheduleMeeting = row;
+  this.rescheduleError = null;
+
+  // Existing meeting date
+  if (row.startTime) {
+
+  const raw = row.startTime
+    .replace(' ', 'T')
+    .split('.')[0];
+
+  const start = new Date(raw);
+
+  this.rescheduleDate = this.formatDateForInput(start);
+  this.rescheduleTime = this.formatTimeForInput(start);
+
+} else {
+    this.rescheduleDate = '';
+    this.rescheduleTime = '';
+  }
+
+  // Existing duration
+  this.rescheduleDuration = this.parseDurationToMinutes(row.duration);
+
+  this.showRescheduleModal = true;
+}
+
+private formatDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+private formatTimeForInput(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+}
+
+private parseDurationToMinutes(duration: string | null): number {
+  if (!duration) {
+    return 60;
+  }
+
+  const parts = duration.split(':');
+
+  if (parts.length < 2) {
+    return 60;
+  }
+
+  const hours = Number(parts[0]) || 0;
+  const minutes = Number(parts[1]) || 0;
+
+  const total = (hours * 60) + minutes;
+
+  return total > 0 ? total : 60;
+}
+
+getRescheduleEndTime(): Date | null {
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return null;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+
+  return new Date(
+    start.getTime() + this.rescheduleDuration * 60 * 1000
+  );
+}
+
+formatRescheduleEndTime(): string {
+  const end = this.getRescheduleEndTime();
+
+  if (!end) {
+    return '—';
+  }
+
+  return end.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+private buildRescheduleDateTime(): {
+  start: string;
+  end: string;
+} | null {
+
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return null;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
+
+  const end = new Date(
+    start.getTime() +
+    this.rescheduleDuration * 60 * 1000
+  );
+
+  const pad = (value: number) =>
+    String(value).padStart(2, '0');
+
+  const formatLocalDateTime = (date: Date): string => {
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+           `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  };
+
+  return {
+    start: formatLocalDateTime(start),
+    end: formatLocalDateTime(end)
+  };
+}
+
+isRescheduleFormValid(): boolean {
+
+  if (!this.selectedRescheduleMeeting) {
+    return false;
+  }
+
+  if (!this.rescheduleDate || !this.rescheduleTime) {
+    return false;
+  }
+
+  if (!this.rescheduleDuration || this.rescheduleDuration <= 0) {
+    return false;
+  }
+
+  const start = new Date(
+    `${this.rescheduleDate}T${this.rescheduleTime}:00`
+  );
+
+  if (Number.isNaN(start.getTime())) {
+    return false;
+  }
+
+  // Don't allow a new meeting time in the past.
+  if (start.getTime() <= Date.now()) {
+    return false;
+  }
+
+  return true;
+}
+
+submitReschedule(): void {
+
+  if (!this.selectedRescheduleMeeting) {
+    return;
+  }
+
+  if (!this.isRescheduleFormValid()) {
+    this.rescheduleError =
+      'Please select a future date, time and duration.';
+    return;
+  }
+
+  const dateTime = this.buildRescheduleDateTime();
+
+  if (!dateTime) {
+    this.rescheduleError =
+      'Invalid date or time.';
+    return;
+  }
+
+  this.rescheduleLoading = true;
+  this.rescheduleError = null;
+
+  const meeting = this.selectedRescheduleMeeting;
+
+  this.meetingService
+    .rescheduleMeeting(
+      meeting.id,
+      dateTime.start,
+      dateTime.end
+    )
+    .subscribe({
+
+      next: (response) => {
+
+        this.rescheduleLoading = false;
+
+        this.showRescheduleModal = false;
+
+        this.showToastMessage(
+          `"${meeting.title}" rescheduled successfully.`
+        );
+
+        this.selectedRescheduleMeeting = null;
+
+        // Refresh DataTable
+        this.meetingsTable?.refresh?.();
+
+        // Refresh other meeting views
+        this.fetchApiMeetings();
+
+        // Refresh dashboard numbers
+        this.fetchDashboardStats();
+      },
+
+      error: (err) => {
+
+        this.rescheduleLoading = false;
+
+        this.rescheduleError =
+          err?.error?.message ||
+          'Failed to reschedule meeting.';
+      }
+    });
+}
+
+closeRescheduleModal(): void {
+  if (this.rescheduleLoading) {
+    return;
+  }
+
+  this.showRescheduleModal = false;
+  this.selectedRescheduleMeeting = null;
+  this.rescheduleError = null;
+}
+
+getTodayDate(): string {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
   joinMeeting(row: MeetingRow): void {
     if (!this.canJoinMeeting(row)) return;
     this.openMeetingLink(row);
@@ -591,10 +876,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   fetchApiMeetings(): void {
     this.meetingService.fetchMeetings({
       start: 0,
-      length: 100,
+      length: 500,
       search: this.searchTerm || '',
       sorting: 'startTime,desc',
-      filter: JSON.stringify({ status: 0 }),
+      filter: JSON.stringify({}),
       fromDate: this.filterDateFrom || '',
       toDate: this.filterDateTo || ''
     }).subscribe({
@@ -693,6 +978,15 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     { name: 'QBR', percentage: 12, color: 'bg-amber-500' },
     { name: 'Renewal', percentage: 20, color: 'bg-rose-500' }
   ];
+
+  meetingTypeChartData = [28, 22, 18, 12, 20];
+  meetingTypeChartLabels = ['Kickoff', 'Review', 'Training', 'QBR', 'Renewal'];
+  meetingTypeChartColors = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e'];
+  meetingTypeDonutCenter = {
+    line1: '27',
+    line2: 'total',
+    line3: ''
+  };
 
   // Chart data
   chartData = [
