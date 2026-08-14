@@ -4,7 +4,7 @@ import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Sidebar } from './sidebar/sidebar';
 import { Navbar } from './navbar/navbar';
-import { GlobalCallPopupComponent } from '../shared/components/global-call-popup.component';
+import { GlobalCallPopupComponent } from '../shared/components/pop-up/global-call-popup.component';
 
 
 

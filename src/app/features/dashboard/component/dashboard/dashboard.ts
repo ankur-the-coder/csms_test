@@ -2,13 +2,13 @@ import { Component, computed, OnInit, signal, WritableSignal, ChangeDetectorRef 
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
-import { Charts } from '../../../../shared/components/inputs/charts/charts';
+import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, Calendar, Charts],
+  imports: [CommonModule, Calendar, ChartComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -22,6 +22,8 @@ export class DashboardComponent implements OnInit {
   animatedImplPending = signal(0);
   animatedTrainingPending = signal(0);
   animatedMeeting = signal(0);
+  isTrendLoading = signal(true);
+trendHasError = signal(false);
 
   constructor(
     private router: Router,
@@ -100,7 +102,9 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/meetings']);
   }
 
+  // ---------------------------------------------------------------------
   // Health Score Distribution donut data
+  // ---------------------------------------------------------------------
   readonly healthSegments = [
     { label: 'Excellent', range: '80-100', value: 120, pct: 47, colorClass: 'bg-emerald-500', colorHex: '#10b981' },
     { label: 'Good', range: '60-79', value: 86, pct: 34, colorClass: 'bg-teal-500', colorHex: '#14b8a6' },
@@ -117,6 +121,30 @@ export class DashboardComponent implements OnInit {
     });
     return `conic-gradient(${stops.join(', ')})`;
   });
+
+  // ---------------------------------------------------------------------
+  // Data shaped specifically for <app-charts> (ChartComponent).
+  // ChartComponent's real inputs are: chartType, chartData, chartLabels,
+  // backgroundColors, headingText, hoverLabel, donutCenterText, chartId,
+  // xAxisTitle, yAxisTitle, leaveChart — NOT `type`/`title`/`totalLabel`.
+  // ---------------------------------------------------------------------
+
+  // Donut chart — reuse the same healthSegments used for the custom widget above.
+  readonly healthDonutLabels: string[] = this.healthSegments.map(seg => seg.label);
+  readonly healthDonutData: number[] = this.healthSegments.map(seg => seg.value);
+  readonly healthDonutColors: string[] = this.healthSegments.map(seg => seg.colorHex);
+  readonly healthDonutTotal: number = this.healthSegments.reduce((sum, seg) => sum + seg.value, 0);
+  readonly healthDonutCenterText = {
+    line1: String(this.healthDonutTotal),
+    line2: 'Total',
+    line3: 'Clients',
+  };
+
+  // Client Health Score Trend (line chart).
+  // TODO: replace with real data from DashboardService once a trend
+  // endpoint is available — using representative placeholder values for now.
+  readonly ImplementationLabels: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+  readonly ImplementationData: number[] = [62, 65, 68, 71, 74, 78];
 
   // Daily Tasks & Operations
   readonly dailyOps = [
