@@ -2,9 +2,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { CardData, ImplementationCardData, ImplementationData } from '../../../implementations/models/implementation.model';
+
 import { environment } from '../../../../../environments/environment';
-import { OnboardingCardData, OnboardingDataTableResponse } from '../../models/dashboard.model';
+import { CardData, OnboardingCardData, OnboardingDataTableResponse } from '../../models/dashboard.model';
 
 export interface DataTablePayload {
   start: number;
@@ -50,7 +50,7 @@ export class DashboardService {
   }
   fetchOnboardCardData(): Observable<CardData> {
     return this.http
-      .post<OnboardingCardData>(`${this.baseUrl}/imp/fetchImpCardData`, {})
+      .post<OnboardingCardData>(`${this.baseUrl}/onBoardingCountForDashboard`, {})
       .pipe(map((res) => res.data));
   }
 

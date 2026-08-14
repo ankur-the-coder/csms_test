@@ -24,7 +24,7 @@ export interface ClientRow {
   contactperson: string;
   phone: string;
   // planStart: string;
-  // planEnd: string;
+  country: string;
   // userLimit: number;
   modules: string;
   leadOwner: string;
@@ -47,11 +47,11 @@ export class Dashboard {
   private readonly tableEndpoint = `${this.baseUrl}/onboardingDashboardTable`;
   statusFilter = signal<string>('all');
   // Card computed
-  cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
-  totalClients = computed(() => this.cardData().totalAccounts);
+  cardData = signal<CardData>({ totalCount: 0, completed: 0, inProgress: 0, pendingCount: 0 });
+  totalClients = computed(() => this.cardData().totalCount);
   completedClientsCount = computed(() => this.cardData().completed);
   inProgressClientsCount = computed(() => this.cardData().inProgress);
-  pendingClientsCount = computed(() => this.cardData().notStarted);
+  pendingClientsCount = computed(() => this.cardData().pendingCount);
 
   private destroy$ = new Subject<void>();
   private fetchCardTrigger$ = new Subject<void>();
@@ -100,6 +100,7 @@ export class Dashboard {
       name: raw.organization,
       contactperson: raw.contactPerson,
       phone: raw.phone,
+      country: raw.country,
       // planStart: String(raw.planStart),
       // planEnd: String(raw.planEnd),
       // userLimit: raw.userLimit,
@@ -182,7 +183,7 @@ export class Dashboard {
         { key: 'name', label: 'Organization', sortable: true, hideable: true },
         { key: 'contactperson', label: 'contactPerson', sortable: true, hideable: true },
         { key: 'phone', label: 'phone', sortable: true, hideable: true },
-        // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
+        { key: 'country', label: 'Country', sortable: true, hideable: true },
         // { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         // { key: 'userLimit', label: 'User Limit', sortable: true },
         // {
@@ -219,7 +220,7 @@ export class Dashboard {
             name: 'Organization',
             contactPerson: 'contactPerson',
             phone: 'phone',
-
+            country: 'country',
             // planStart: 'planStart',
             // planEnd: 'planEnd',
             // userLimit: 'userLimit',
