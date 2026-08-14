@@ -118,7 +118,7 @@ export class Implementation implements OnInit, OnDestroy {
     { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
     { key: 'support_owner',      label: 'Support Owner',  sortable: false , hidden :true},
     { key: 'country',            label: 'Country',        sortable: false , hidden : true},
-    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hidden : true},
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
     {
       key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
       badgeMap: {
