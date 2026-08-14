@@ -11,7 +11,7 @@ export interface Datum {
     contactPerson:      string;
     phone:      string;
     createdDate:        Date;
-    // userLimit:      number;
+    country:      string;
     module:         string;
     leadOwner:      string;
     supportOwner:   string;
@@ -20,10 +20,10 @@ export interface Datum {
 }
 
 export interface CardData {
-  totalAccounts: number;
+  totalCount: number;
   completed: number;
   inProgress: number;
-  notStarted: number;
+  pendingCount: number;
 }
 export interface OnboardingCardData {
   status: boolean;
