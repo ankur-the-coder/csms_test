@@ -522,4 +522,13 @@ export class Implementation implements OnInit, OnDestroy {
     };
     this.selectedClient.set(updated);
   }
+
+  // ── Module tooltip (native title) ──
+  getModulesTooltip(row: any): string {
+    return this.getClientModules(row)
+      .filter((mod: any) => this.getModuleTotalCount(row, mod) > 0)
+      .map((mod: any) => `${mod.label}: ${this.getModuleApprovedCount(row, mod)}/${this.getModuleTotalCount(row, mod)}`)
+      .join('\n');
+  }
 }
+
