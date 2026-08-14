@@ -41,7 +41,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'voice', pathMatch: 'full' },
       // { path: 'dashboard', component: DashboardComponent },
       // { path: 'implementation', component: Implementation },
-      // { path: 'training', component: Training },
+      // { path: 'training', component: TrainingMaterials },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },
       // { path: 'meetings', component: MeetingsComponent },
