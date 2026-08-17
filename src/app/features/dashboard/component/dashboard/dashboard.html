@@ -9,14 +9,26 @@
         Overview of all client activities, implementation health, and support operations.
       </p>
     </div>
+    <div class="w-full md:w-64 lg:w-48 ">
+      <app-custom-date-selector (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
+
+
+      <!-- @if (showDateError) {
+      <p class="mt-1 text-[11px] text-red-500">
+        Please choose a meeting date.
+      </p>
+    } -->
+    </div>
+
+
+
   </div>
   <!-- Top Summary Metrics Grid (5 Cards) -->
   <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
 
     <!-- Total Clients -->
-    <div
-(click)="navigateToClient()"
-            class="bg-green-50/50 hover:bg-green-100/90 rounded-2xl p-4 border border-green-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-green-500/25 hover:border-green-500 transition-all duration-300 ease-out group">
+    <div (click)="navigateToClient()"
+      class="bg-green-50/50 hover:bg-green-100/90 rounded-2xl p-4 border border-green-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-green-500/25 hover:border-green-500 transition-all duration-300 ease-out group">
       <div class="text-2xl font-bold text-slate-900">{{ animatedLiveClients() }}</div>
       <div class="flex items-center justify-between text-text-primary">
         <span class="text-sm ">Live Clients</span>
@@ -65,9 +77,9 @@
     <!-- Training Pending -->
     <div (click)="navigateToMeetings()"
       class="bg-purple-50/50 hover:bg-purple-100/90 rounded-2xl p-4 border border-purple-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-purple-500/25 hover:border-purple-500 transition-all duration-300 ease-out group">
-      <div class="text-2xl font-bold text-slate-900">{{animatedMeeting()  }}</div>
+      <div class="text-2xl font-bold text-slate-900">{{animatedMeeting() }}</div>
       <div class="flex items-center justify-between text-text-primary">
-         <span class="text-sm">Meetings Scheduled </span>
+        <span class="text-sm">Meetings Scheduled </span>
         <div class="p-1.5 rounded-lg bg-purple-100 text-purple-600 group-hover:scale-110 transition-transform">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
@@ -79,7 +91,7 @@
     <!-- Meeting -->
     <div
       class="bg-rose-50/50 hover:bg-rose-100/90 rounded-2xl p-4 border border-rose-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-rose-500/25 hover:border-rose-500 transition-all duration-300 ease-out group">
-      <div class="text-2xl font-bold text-slate-900">{{  animatedMeeting() }}</div>
+      <div class="text-2xl font-bold text-slate-900">{{ connect() }}</div>
       <div class="flex items-center justify-between text-text-primary">
         <span class="text-sm"> Connect </span>
         <div class="p-1.5 rounded-lg bg-rose-100 text-rose-600 group-hover:scale-110 transition-transform">

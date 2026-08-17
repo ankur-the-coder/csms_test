@@ -8,11 +8,24 @@ import { DashboardCardCount } from '../models/dashboardModel';
   providedIn: 'root',
 })
 export class DashboardService {
-  private readonly apiUrl = `${environment.apiUrl}/fetchDashboardCards`;
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
-  getDashboardCards(): Observable<DashboardCardCount> {
-    return this.http.get<DashboardCardCount>(this.apiUrl);
+  getDashboardCards(from: string, to: string): Observable<DashboardCardCount> {
+    let data = {
+      fromDate: from,
+      toDate: to,
+    };
+
+    return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
+  }
+ fetchDashBoardChart(from: string, to: string): Observable<DashboardCardCount> {
+    let data = {
+      fromDate: from,
+      toDate: to,
+    };
+
+    return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashBoardChart`, data);
   }
 }

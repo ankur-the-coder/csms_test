@@ -5,10 +5,11 @@ import { Calendar, DayEvent } from '../../../../shared/components/inputs/calenda
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
+import { CustomDateSelector } from "../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, Calendar, ChartComponent],
+  imports: [CommonModule, Calendar, ChartComponent, CustomDateSelector],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -22,39 +23,42 @@ export class DashboardComponent implements OnInit {
   animatedImplPending = signal(0);
   animatedTrainingPending = signal(0);
   animatedMeeting = signal(0);
+  connect = signal(0);
   isTrendLoading = signal(true);
-trendHasError = signal(false);
+  trendHasError = signal(false);
 
   constructor(
     private router: Router,
     private dashboardService: DashboardService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
-    this.fetchDashboardCards();
+
+
+    // this.onDateApplied();
   }
 
-  fetchDashboardCards(): void {
-    this.dashboardService.getDashboardCards().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.cardData.set(res.data);
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
+  // fetchDashboardCards(): void {
+  //   this.dashboardService.getDashboardCards().subscribe({
+  //     next: (res) => {
+  //       if (res && res.data) {
+  //         this.cardData.set(res.data);
+  //         this.cdr.markForCheck();
+  //         this.cdr.detectChanges();
 
-          this.animateCount(this.animatedTotalClients, res.data.totalClients);
-          this.animateCount(this.animatedLiveClients, res.data.liveClients);
-          this.animateCount(this.animatedImplPending, res.data.implPending);
-          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
-          this.animateCount(this.animatedMeeting, res.data.meeting);
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching dashboard cards:', err);
-      }
-    });
-  }
+  //         this.animateCount(this.animatedTotalClients, res.data.totalClients);
+  //         this.animateCount(this.animatedLiveClients, res.data.liveClients);
+  //         this.animateCount(this.animatedImplPending, res.data.implPending);
+  //         this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+  //         this.animateCount(this.animatedMeeting, res.data.meeting);
+  //       }
+  //     },
+  //     error: (err) => {
+  //       console.error('Error fetching dashboard cards:', err);
+  //     }
+  //   });
+  // }
 
   /** Tweens a signal from its current value up (or down) to `target` over `duration`ms. */
   private animateCount(target$: WritableSignal<number>, target: number, duration = 900): void {
@@ -210,5 +214,59 @@ trendHasError = signal(false);
     const h12 = ((hour + 11) % 12) + 1;
     const ampm = hour < 12 ? 'AM' : 'PM';
     return `${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+  }
+
+  // ── Date filter ────────────────────────────────────────────────────────────
+  onDateApplied(from: string, to: string): void {
+    console.log(from, to);
+
+
+
+    this.dashboardService.getDashboardCards(from, to).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.cardData.set(res.data);
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+
+          this.animateCount(this.animatedTotalClients, res.data.totalClients);
+          this.animateCount(this.animatedLiveClients, res.data.liveClients);
+          this.animateCount(this.animatedImplPending, res.data.implPending);
+          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+          this.animateCount(this.animatedMeeting, res.data.meeting);
+          this.animateCount(this.connect, res.data.connect);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching dashboard cards:', err);
+      }
+    });
+    this.dashboardService.fetchDashBoardChart(from, to).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+
+//  const total = ratings.reduce(
+//         (sum, item) => sum + item.value,
+//         0
+//       );
+          console.log(res);
+
+          // this.cardData.set(res.data);
+          // this.cdr.markForCheck();
+          // this.cdr.detectChanges();
+
+          // this.animateCount(this.animatedTotalClients, res.data.totalClients);
+          // this.animateCount(this.animatedLiveClients, res.data.liveClients);
+          // this.animateCount(this.animatedImplPending, res.data.implPending);
+          // this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+          // this.animateCount(this.animatedMeeting, res.data.meeting);
+          // this.animateCount(this.connect, res.data.connect);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching dashboard cards:', err);
+      }
+    });
+
   }
 }
