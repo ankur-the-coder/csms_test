@@ -782,50 +782,36 @@
 
       <!-- DATE -->
       <div class="mb-4">
-
-        <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-          New Date
-        </label>
-
-        <input type="date" [(ngModel)]="rescheduleDate" [min]="getTodayDate()" [disabled]="rescheduleLoading"
-          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-
+        <app-date-picker
+          label="New Date"
+          [(ngModel)]="rescheduleDate"
+          [minDate]="minDateToday"
+          [disabled]="rescheduleLoading"
+          placeHolder="Select new date">
+        </app-date-picker>
       </div>
 
 
       <!-- TIME -->
       <div class="mb-4">
-
-        <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-          New Time
-        </label>
-
-        <input type="time" [(ngModel)]="rescheduleTime" [disabled]="rescheduleLoading"
-          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-
+        <app-time-picker
+          label="New Time"
+          [(ngModel)]="rescheduleTimeMinutes"
+          [disabled]="rescheduleLoading"
+          placeHolder="Select new time">
+        </app-time-picker>
       </div>
 
 
       <!-- DURATION -->
       <div class="mb-4">
-
-        <label class="block text-xs font-semibold text-slate-600 mb-1.5">
-          Duration
-        </label>
-
-        <select [(ngModel)]="rescheduleDuration" [disabled]="rescheduleLoading"
-          class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
-
-          @for (option of rescheduleDurationOptions; track option.value) {
-
-          <option [ngValue]="option.value">
-            {{ option.label }}
-          </option>
-
-          }
-
-        </select>
-
+        <app-single-input
+          label="Duration"
+          [(ngModel)]="rescheduleDuration"
+          [options]="rescheduleDurationSelectOptions"
+          [disabled]="rescheduleLoading"
+          placeHolder="Select duration">
+        </app-single-input>
       </div>
 
 

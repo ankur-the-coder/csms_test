@@ -40,6 +40,9 @@ interface AgendaItem {
 }
 
 import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
+import { DatePicker } from '../../shared/components/inputs/date-picker/date-picker';
+import { DatePicker as DatePickerService } from '../../shared/service/date-picker/date-picker';
+import { TimePickerComponent } from '../../shared/components/inputs/time-picker/time-picker';
 
 import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
@@ -48,7 +51,7 @@ import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -153,10 +156,20 @@ rescheduleError: string | null = null;
 selectedRescheduleMeeting: MeetingRow | null = null;
 
 rescheduleDate = '';
+minDateToday: Date = new Date();
 rescheduleTime = '';
 rescheduleDuration = 60; // minutes
 
 rescheduleDurationOptions = [
+  { label: '15 minutes', value: 15 },
+  { label: '30 minutes', value: 30 },
+  { label: '45 minutes', value: 45 },
+  { label: '1 hour', value: 60 },
+  { label: '1 hour 30 minutes', value: 90 },
+  { label: '2 hours', value: 120 },
+];
+
+rescheduleDurationSelectOptions: SelectOption[] = [
   { label: '15 minutes', value: 15 },
   { label: '30 minutes', value: 30 },
   { label: '45 minutes', value: 45 },
@@ -465,6 +478,7 @@ openRescheduleModal(row: MeetingRow): void {
 
   this.selectedRescheduleMeeting = row;
   this.rescheduleError = null;
+  this.minDateToday = new Date();
 
   // Existing meeting date
   if (row.startTime) {
@@ -488,6 +502,26 @@ openRescheduleModal(row: MeetingRow): void {
 
   this.showRescheduleModal = true;
 }
+
+  get rescheduleTimeMinutes(): number {
+    if (!this.rescheduleTime) return 0;
+    if (typeof this.rescheduleTime === 'number') return this.rescheduleTime;
+    const parts = String(this.rescheduleTime).split(':');
+    if (parts.length >= 2) {
+      return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+    }
+    return 0;
+  }
+
+  set rescheduleTimeMinutes(val: number) {
+    if (val === null || val === undefined) {
+      this.rescheduleTime = '';
+      return;
+    }
+    const hours = String(Math.floor(val / 60)).padStart(2, '0');
+    const mins = String(val % 60).padStart(2, '0');
+    this.rescheduleTime = `${hours}:${mins}`;
+  }
 
 private formatDateForInput(date: Date): string {
   const year = date.getFullYear();
@@ -522,21 +556,41 @@ private parseDurationToMinutes(duration: string | null): number {
   return total > 0 ? total : 60;
 }
 
-getRescheduleEndTime(): Date | null {
+private parseRescheduleStart(): Date | null {
   if (!this.rescheduleDate || !this.rescheduleTime) {
     return null;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
+  let formattedDate = this.rescheduleDate;
+
+  // Handle formatted date from DatePicker ("05 February, 2026")
+  if (formattedDate.includes(',')) {
+    formattedDate = DatePickerService.reverseFormatDate(formattedDate);
+  }
+
+  if (!formattedDate) {
+    return null;
+  }
+
+  const timeStr = String(this.rescheduleTime).includes(':') ? this.rescheduleTime : '00:00';
+  const start = new Date(`${formattedDate}T${timeStr}:00`);
 
   if (Number.isNaN(start.getTime())) {
     return null;
   }
 
+  return start;
+}
+
+getRescheduleEndTime(): Date | null {
+  const start = this.parseRescheduleStart();
+
+  if (!start) {
+    return null;
+  }
+
   return new Date(
-    start.getTime() + this.rescheduleDuration * 60 * 1000
+    start.getTime() + (Number(this.rescheduleDuration) || 60) * 60 * 1000
   );
 }
 
@@ -558,21 +612,15 @@ private buildRescheduleDateTime(): {
   end: string;
 } | null {
 
-  if (!this.rescheduleDate || !this.rescheduleTime) {
+  const start = this.parseRescheduleStart();
+
+  if (!start) {
     return null;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
-
-  if (Number.isNaN(start.getTime())) {
-    return null;
-  }
-
+  const durationMins = Number(this.rescheduleDuration) || 60;
   const end = new Date(
-    start.getTime() +
-    this.rescheduleDuration * 60 * 1000
+    start.getTime() + durationMins * 60 * 1000
   );
 
   const pad = (value: number) =>
@@ -595,19 +643,17 @@ isRescheduleFormValid(): boolean {
     return false;
   }
 
-  if (!this.rescheduleDate || !this.rescheduleTime) {
+  if (!this.rescheduleDate || this.rescheduleTime === null || this.rescheduleTime === undefined || this.rescheduleTime === '') {
     return false;
   }
 
-  if (!this.rescheduleDuration || this.rescheduleDuration <= 0) {
+  if (!this.rescheduleDuration || Number(this.rescheduleDuration) <= 0) {
     return false;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
+  const start = this.parseRescheduleStart();
 
-  if (Number.isNaN(start.getTime())) {
+  if (!start) {
     return false;
   }
 
