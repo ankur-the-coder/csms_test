@@ -30,7 +30,7 @@
         <img src="onlyLogo.png" alt="logo" class="h-9 pb-2" />
       </div>
       <div *ngIf="!collapsed" class="flex flex-col min-w-0">
-        <span class="font-extrabold text-black  text-md ">UBI<span class="font-extrabold text-emerald-600">Client</span></span>
+        <span class="font-extrabold text-black  text-md ">UBI<span class="font-extrabold text-emerald-600">CSMS</span></span>
       </div>
     </div>
 
@@ -123,43 +123,43 @@
 
     <!-- User Side Section -->
     <div class="mt-4">
-      <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
+      <!-- <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
         User Side
-      </div>
+      </div> -->
 
       <!-- Training Accordion (only shown in expanded sidebar) -->
       <div *ngIf="!collapsed" class="space-y-0.5">
 
         <!-- Training accordion header -->
-        <button
+        <!-- <button
           (click)="toggleTraining()"
           class="w-full flex items-center px-3 py-2.5 gap-3 rounded-lg text-xs font-medium transition-all cursor-pointer border-l-[3px]"
           [ngClass]="{
             'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': trainingExpanded && (activeNav === 'courses' || activeNav === 'my-learning'),
             'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': !(trainingExpanded && (activeNav === 'courses' || activeNav === 'my-learning'))
           }"
-        >
+        > -->
           <!-- Training icon -->
-          <div
+          <!-- <div
             class="w-5 h-5 flex items-center justify-center shrink-0"
             [ngClass]="(activeNav === 'courses' || activeNav === 'my-learning') ? 'text-emerald-600' : 'text-text-secondary'"
             [innerHTML]="getSvgIcon('training')"
-          ></div>
+          ></div> -->
 
-          <span class="flex-1 text-left">Training</span>
+          <!-- <span class="flex-1 text-left">Training</span> -->
 
           <!-- Chevron arrow -->
-           <svg
+          <!-- <svg
             class="w-3.5 h-3.5 transition-transform duration-200 shrink-0"
             [ngClass]="trainingExpanded ? 'rotate-180' : 'rotate-0'"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
           >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-          </svg>
-         </button>
+          </svg> -->
+        <!-- </button> -->
 
         <!-- Sub-items (animate open/close) -->
-        <div
+        <!-- <div
           class="overflow-hidden transition-all duration-200"
           [ngClass]="trainingExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'"
         >
@@ -181,7 +181,7 @@
               <span class="flex-1 text-left">{{ item.label }}</span>
             </button>
           </nav>
-        </div>
+        </div> -->
 
       </div>
 
