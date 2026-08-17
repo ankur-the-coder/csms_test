@@ -1,11 +1,22 @@
 <div class="space-y-6 pb-6">
   <!-- Header Card -->
-  <div class="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="card flex flex-col md:flex-row md:items-center justify-between gap-3 !p-4">
+  <div class="flex items-center gap-2.5">
+    <button (click)="goBack()"
+      class="inline-flex items-center justify-center rounded-lg bg-white p-1.5 text-text-secondary transition-colors hover:bg-surface-100 hover:text-text-primary shrink-0"
+      title="Back">
+      <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+    </button>
     <div>
-      <h2 class="text-xl font-bold text-text-primary">Training </h2>
-      <p class="mt-1 text-sm text-text-muted">Manage training content, training sessions, and study materials.</p>
+      <h2 class="text-lg font-bold text-text-primary leading-tight">Training</h2>
+      <p class="mt-0.5 text-xs text-text-muted">Manage training content, training sessions, and study materials.</p>
     </div>
   </div>
+
+
+</div>
 
   <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" />
 
