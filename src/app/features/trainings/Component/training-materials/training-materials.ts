@@ -5,6 +5,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TrainingService } from '../../services/Training/training';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
+import { Location } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 
 interface Material {
   id: string;
@@ -32,6 +34,13 @@ interface Course {
   title: string;
   slug: string;
   description: string;
+   category_id?: number;
+}
+
+interface CourseCategory {
+  id: number;
+  name: string;
+  slug?: string;
 }
 
 @Component({
@@ -45,12 +54,20 @@ export class TrainingMaterials implements OnInit {
   private readonly trainingService = inject(TrainingService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly authService = inject(AuthService);
+  private readonly location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
 
   // Dynamic lists from backend
   courses = signal<Course[]>([]);
+  categories = signal<CourseCategory[]>([]);
+
   selectedCourseId = signal<number | null>(null);
   courseModules = signal<CourseModule[]>([]);
   courseMaterials = signal<Material[]>([]); // Course level materials
+
+  // Category context (from query params)
+categoryId = signal<number | null>(null);
+selectedCategory = signal<{ id: number; name: string; slug: string; course_count: number } | null>(null);
 
   // API Request States
   loading = signal<boolean>(false);
@@ -98,47 +115,79 @@ export class TrainingMaterials implements OnInit {
 
   isDragOver = false;
 
-  ngOnInit(): void {
-    this.loadCourses();
-  }
+ngOnInit(): void {
+  this.route.queryParamMap.subscribe(params => {
+    const catId = params.get('categoryId');
 
-  loadCourses(): void {
-    this.loading.set(true);
-    this.error.set(null);
+    if (catId) {
+      this.categoryId.set(Number(catId));
+      this.loadCategoryDetails(Number(catId));
+    } else {
+      this.categoryId.set(null);
+      this.loadCourses();
+    }
+  });
+}
 
-    this.trainingService.getCourses().subscribe({
-      next: (res) => {
-        this.loading.set(false);
+loadCategoryDetails(id: number): void {
+  this.loading.set(true);
+  this.error.set(null);
 
-        if (res.status && res.data?.length > 0) {
+  this.trainingService.getCategoryById(id).subscribe({
+    next: (res: any) => {
+      if (res.status && res.data) {
+        this.selectedCategory.set(res.data);
+      }
+      // Category details mil gayi, ab usi category ke courses load karo
+      this.loadCourses();
+    },
 
-          const sorted = [...res.data].sort(
-            (a: Course, b: Course) => a.id - b.id
-          );
+    error: (err: any) => {
+      this.loading.set(false);
+      this.error.set('Unable to load category details.');
+      console.error('Failed to load category', err);
+    }
+  });
+}
 
-          this.courses.set(sorted);
+loadCourses(): void {
+  this.loading.set(true);
+  this.error.set(null);
 
-          // Always select the first course
-          this.selectCourse(sorted[0].id);
+  const catId = this.categoryId() ?? undefined;
 
-        } else {
-          this.courses.set([]);
-          this.selectedCourseId.set(null);
-          this.courseModules.set([]);
-          this.courseMaterials.set([]);
-        }
-      },
+  this.trainingService.getCourses(catId).subscribe({
+    next: (res) => {
+      this.loading.set(false);
 
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(
-          'Unable to load courses. The backend service or API may be temporarily unavailable.'
+      if (res.status && res.data?.length > 0) {
+
+        const sorted = [...res.data].sort(
+          (a: Course, b: Course) => a.id - b.id
         );
 
-        console.error('Failed to load courses', err);
+        this.courses.set(sorted);
+
+        // Always select the first course
+        this.selectCourse(sorted[0].id);
+
+      } else {
+        this.courses.set([]);
+        this.selectedCourseId.set(null);
+        this.courseModules.set([]);
+        this.courseMaterials.set([]);
       }
-    });
-  }
+    },
+
+    error: (err) => {
+      this.loading.set(false);
+      this.error.set(
+        'Unable to load courses. The backend service or API may be temporarily unavailable.'
+      );
+      console.error('Failed to load courses', err);
+    }
+  });
+}
 
   selectCourse(courseId: number): void {
     this.selectedCourseId.set(courseId);
@@ -367,13 +416,13 @@ export class TrainingMaterials implements OnInit {
 
     this.isSavingCourse.set(true);
 
-    const payload = {
-      title: this.newCourseTitle.trim(),
-      description: this.newCourseDescription.trim(),
-      category_id: 1,
-      created_by: Number(this.authService.getEmpId()),
-      status: 'published'
-    };
+const payload = {
+  title: this.newCourseTitle.trim(),
+  description: this.newCourseDescription.trim(),
+  category_id: this.categoryId() ?? 1,
+  created_by: Number(this.authService.getEmpId()),
+  status: 'published'
+};
 
     this.trainingService.createCourse(payload).subscribe({
       next: (res) => {
@@ -547,4 +596,10 @@ export class TrainingMaterials implements OnInit {
     this.materialTitle = '';
     this.isDragOver = false;
   }
+
+  goBack(): void {
+  this.location.back();
+}
+
+
 }

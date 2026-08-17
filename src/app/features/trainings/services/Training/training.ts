@@ -27,12 +27,21 @@ export interface TrainingResponse {
   };
 }
 
+export interface CourseCategory {
+  id: number;
+  name: string;
+  slug?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class TrainingService {
   private http = inject(HttpClient);
   public readonly API_URL = environment.apiUrl;
+
+
+  // Training APIs
 
   trainingTable(payload: any): Observable<TrainingResponse> {
     return this.http.post<TrainingResponse>(
@@ -41,9 +50,16 @@ export class TrainingService {
     );
   }
 
-  getCourses(): Observable<any> {
-    return this.http.get<any>(`${this.API_URL}/courses/admin/list`);
-  }
+
+  // Course APIs
+
+getCourses(categoryId?: number): Observable<any> {
+  const url = categoryId
+    ? `${this.API_URL}/courses/admin/list?category_id=${categoryId}`
+    : `${this.API_URL}/courses/admin/list`;
+
+  return this.http.get<any>(url);
+}
 
   createCourse(payload: any): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/courses/admin/create`, payload);
@@ -53,24 +69,78 @@ export class TrainingService {
     return this.http.get<any>(`${this.API_URL}/courses/learner/${courseId}?user_id=${userId}`);
   }
 
-  uploadMaterial(formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/materials/upload`, formData);
+
+  // Category APIs
+
+  getCategories(): Observable<any> {
+    return this.http.get<any>(
+      `${this.API_URL}/courses/admin/categories`
+    );
   }
 
-  deleteMaterial(id: number): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/materials/${id}/delete`, {});
+  getCategoryById(id: number): Observable<any> {
+  return this.http.get<any>(
+    `${this.API_URL}/courses/admin/categories/${id}`
+  );
+}
+
+  createCategory(
+    payload: {
+      name: string;
+      slug?: string;
+    }
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/categories/create`,
+      payload
+    );
   }
 
-  createModule(courseId: number, formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/${courseId}/modules`, formData);
+
+  // Module APIs
+
+  createModule(
+    courseId: number,
+    formData: FormData
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/${courseId}/modules`,
+      formData
+    );
   }
 
-  updateModule(id: number, formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/modules/${id}/update`, formData);
+  updateModule(
+    id: number,
+    formData: FormData
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/modules/${id}/update`,
+      formData
+    );
   }
 
   deleteModule(id: number): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/courses/admin/modules/${id}/delete`, {});
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/modules/${id}/delete`,
+      {}
+    );
+  }
+
+
+  // Material APIs
+
+  uploadMaterial(formData: FormData): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/materials/upload`,
+      formData
+    );
+  }
+
+  deleteMaterial(id: number): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/materials/${id}/delete`,
+      {}
+    );
   }
 
 }   
