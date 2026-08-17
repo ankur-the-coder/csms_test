@@ -169,7 +169,7 @@
 
           <div class="min-w-0">
             <p class="font-semibold text-slate-800 truncate leading-tight">{{ row.title || '—' }}</p>
-            <p class="text-xs text-slate-400 truncate mt-0.5">{{ row.purpose || 'No purpose set' }}</p>
+            <p class="text-xs text-slate-400 truncate mt-0.5">{{ row.meetingType || 'No meetingType set' }}</p>
           </div>
         </div>
       </ng-template>
@@ -782,22 +782,15 @@
 
       <!-- DATE -->
       <div class="mb-4">
-        <app-date-picker
-          label="New Date"
-          [(ngModel)]="rescheduleDate"
-          [minDate]="minDateToday"
-          [disabled]="rescheduleLoading"
-          placeHolder="Select new date">
+        <app-date-picker label="New Date" [(ngModel)]="rescheduleDate" [minDate]="minDateToday"
+          [disabled]="rescheduleLoading" placeHolder="Select new date">
         </app-date-picker>
       </div>
 
 
       <!-- TIME -->
       <div class="mb-4">
-        <app-time-picker
-          label="New Time"
-          [(ngModel)]="rescheduleTimeMinutes"
-          [disabled]="rescheduleLoading"
+        <app-time-picker label="New Time" [(ngModel)]="rescheduleTimeMinutes" [disabled]="rescheduleLoading"
           placeHolder="Select new time">
         </app-time-picker>
       </div>
@@ -805,12 +798,8 @@
 
       <!-- DURATION -->
       <div class="mb-4">
-        <app-single-input
-          label="Duration"
-          [(ngModel)]="rescheduleDuration"
-          [options]="rescheduleDurationSelectOptions"
-          [disabled]="rescheduleLoading"
-          placeHolder="Select duration">
+        <app-single-input label="Duration" [(ngModel)]="rescheduleDuration" [options]="rescheduleDurationSelectOptions"
+          [disabled]="rescheduleLoading" placeHolder="Select duration">
         </app-single-input>
       </div>
 

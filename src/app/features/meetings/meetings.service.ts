@@ -17,6 +17,7 @@ export interface MeetingRow {
   priority: number;
   purpose: string;
   title: string;
+  meetingType: string;
   startTime: string | null;
   endTime: string | null;
   duration: string;
