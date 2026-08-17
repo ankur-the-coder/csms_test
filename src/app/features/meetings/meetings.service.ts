@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface Organization {
   orgId: number;
@@ -115,8 +116,11 @@ export interface RescheduleMeetingResponse {
   providedIn: 'root'
 })
 export class MeetingService {
-  // Exact API you gave me for organization data
-  private readonly imp = 'http://127.0.0.1:5000';
+  // API base URL now comes from environment config instead of being
+  // hardcoded, so it works outside your local machine (staging, prod,
+  // a teammate's machine, etc). Set `apiUrl` in
+  // src/environments/environment.ts (dev) and environment.prod.ts (prod).
+  private readonly imp = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -133,7 +137,7 @@ export class MeetingService {
       filter: ''
     };
 
-    return this.http.post<DataTableApiResponse>(`http://127.0.0.1:5000/meetings/fetchOrganizations`, payload).pipe(
+    return this.http.post<DataTableApiResponse>(`${this.imp}/meetings/fetchOrganizations`, payload).pipe(
       map(res => (res.data || []).map(row => ({
         orgId: row.orgId,
         name: row.organization
@@ -181,6 +185,26 @@ export class MeetingService {
       { meetingId, comment }
     );
   }
+
+
+  getUpcomingMeetings(): Observable<MeetingRow[]> {
+  return this.http
+    .post<FetchMeetingsResponse>(
+      `${this.imp}/meetings/fetchMeetings`,
+      {
+        start: 0,
+        length: 50,
+        search: '',
+        sorting: 'startTime,asc',
+        filter: '',
+        fromDate: '',
+        toDate: ''
+      }
+    )
+    .pipe(
+      map(res => res.data || [])
+    );
+}
 
   /**
    * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
