@@ -122,12 +122,12 @@
         [headingText]="'Usages Score Distribution'" [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText"
         [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
     </div>
-    <!-- Health Score Distribution Donut Widget (Shared Chart Component) -->
+    <!-- Feedback Score Distribution Donut Widget -->
     <div class="lg:col-span-4">
-      <app-charts chartId="FeedbackChart" [chartType]="'doughnut'" [chartData]="healthDonutData"
-        [chartLabels]="healthDonutLabels" [backgroundColors]="healthDonutColors"
-        [headingText]="'Feedback Score Distribution'" [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText"
-        [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
+      <app-charts chartId="FeedbackChart" [chartType]="'line'" [chartData]="feedbackDonutData()"
+        [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()"
+        [headingText]="'Feedback Score Distribution'" [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()"
+        [leaveChart]="true" [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->
     <div

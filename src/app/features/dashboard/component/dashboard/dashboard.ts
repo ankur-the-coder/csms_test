@@ -27,6 +27,18 @@ export class DashboardComponent implements OnInit {
   isTrendLoading = signal(true);
   trendHasError = signal(false);
 
+  // Feedback chart — populated dynamically from API
+  feedbackDonutLabels = signal<string[]>([]);
+  feedbackDonutData = signal<number[]>([]);
+  feedbackDonutColors = signal<string[]>([]);
+  // Center text: show total number only (primary line). Secondary
+  // lines are left empty so the chart renders a single-line total.
+  feedbackDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+    line1: '0', line2: 'Total', line3: 'Clients'
+  });
+  isFeedbackLoading = signal(true);
+  feedbackHasError = signal(false);
+
   constructor(
     private router: Router,
     private dashboardService: DashboardService,
@@ -241,32 +253,57 @@ export class DashboardComponent implements OnInit {
         console.error('Error fetching dashboard cards:', err);
       }
     });
+    this.isFeedbackLoading.set(true);
+    this.feedbackHasError.set(false);
     this.dashboardService.fetchDashBoardFeedbackChart(from, to).subscribe({
       next: (res) => {
-        if (res && res.data) {
+        this.isFeedbackLoading.set(false);
+        if (res && res.data && res.data.length) {
+          const labels = res.data.map(item => item.label);
+          const values = res.data.map(item => item.value);
+          const total = values.reduce((sum, v) => sum + v, 0);
+          const colors = this.generateColors(res.data.length);
 
-//  const total = ratings.reduce(
-//         (sum, item) => sum + item.value,
-//         0
-//       );
-          console.log(res);
+          this.feedbackDonutLabels.set(labels);
+          this.feedbackDonutData.set(values);
+          this.feedbackDonutColors.set(colors);
 
-          // this.cardData.set(res.data);
+          // Always show the numeric total on the first line. Prefer any
+          // `res.total.line1` if present; otherwise fall back to the
+          // computed `total`. Keep other lines empty so only the total
+          // number appears in the donut center.
+          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          this.feedbackDonutCenterText.set({
+            line1: String(primaryTotal),
+            line2: 'Total',
+            line3: 'Clients',
+          });
           // this.cdr.markForCheck();
-          // this.cdr.detectChanges();
-
-          // this.animateCount(this.animatedTotalClients, res.data.totalClients);
-          // this.animateCount(this.animatedLiveClients, res.data.liveClients);
-          // this.animateCount(this.animatedImplPending, res.data.implPending);
-          // this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
-          // this.animateCount(this.animatedMeeting, res.data.meeting);
-          // this.animateCount(this.connect, res.data.connect);
         }
       },
       error: (err) => {
-        console.error('Error fetching dashboard cards:', err);
+        console.error('Error fetching feedback chart:', err);
+        this.isFeedbackLoading.set(false);
+        this.feedbackHasError.set(true);
       }
     });
 
+  }
+
+  /** Returns a palette of hex colors for `count` slices. */
+  private generateColors(count: number): string[] {
+    const palette = [
+      '#10b981', // emerald
+      '#3b82f6', // blue
+      '#f59e0b', // amber
+      '#f43f5e', // rose
+      '#8b5cf6', // violet
+      '#06b6d4', // cyan
+      '#ec4899', // pink
+      '#14b8a6', // teal
+      '#f97316', // orange
+      '#6366f1', // indigo
+    ];
+    return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
   }
 }
