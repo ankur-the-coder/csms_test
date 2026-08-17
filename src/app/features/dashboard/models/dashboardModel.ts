@@ -13,10 +13,10 @@ export interface DashboardCardCount {
   msg: string;
 }
 export interface DashboardChartdata {
-  data: ChartData;
+  data: ChartData[];
   status: boolean;
   msg: string;
-  total: ChartTotal
+  total?: ChartTotal;
 }
 
 

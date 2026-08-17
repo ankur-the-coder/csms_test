@@ -241,7 +241,7 @@ export class DashboardComponent implements OnInit {
         console.error('Error fetching dashboard cards:', err);
       }
     });
-    this.dashboardService.fetchDashBoardChart(from, to).subscribe({
+    this.dashboardService.fetchDashBoardFeedbackChart(from, to).subscribe({
       next: (res) => {
         if (res && res.data) {
 
