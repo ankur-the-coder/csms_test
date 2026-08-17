@@ -13,6 +13,18 @@ export class FilterByStatusPipe implements PipeTransform {
   }
 }
 
+export interface CategorySummary {
+  name: string;
+  totalCourses: number;
+  completedCount: number;
+  inProgressCount: number;
+  notStartedCount: number;
+  progressPercent: number;
+  colorBg: string;
+  textColor: string;
+  iconBg: string;
+}
+
 @Component({
   selector: 'app-course-catalog',
   imports: [CommonModule, CircularProgress, FilterByStatusPipe],
@@ -21,6 +33,8 @@ export class FilterByStatusPipe implements PipeTransform {
 })
 export class CourseCatalog implements OnInit {
   courses: CatalogCourse[] = [];
+  categories: CategorySummary[] = [];
+  selectedCategory: string | null = null;
   totalCourses = 0;
   loading = true;
   error = '';
@@ -55,6 +69,7 @@ export class CourseCatalog implements OnInit {
               ...c,
               code: 'CRS-' + String(c.id).padStart(3, '0'),
             }));
+            this.buildCategorySummaries();
           } catch {
             this.error = 'Unexpected data format from server.';
           }
@@ -65,6 +80,69 @@ export class CourseCatalog implements OnInit {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  buildCategorySummaries(): void {
+    const map = new Map<string, CatalogCourse[]>();
+    for (const course of this.courses) {
+      const catName = course.category_name?.trim() || 'General';
+      if (!map.has(catName)) {
+        map.set(catName, []);
+      }
+      map.get(catName)!.push(course);
+    }
+
+    const categoriesList: CategorySummary[] = [];
+    const colorPairs = [
+      { colorBg: 'from-emerald-500 to-teal-600', textColor: 'text-emerald-700', iconBg: 'bg-emerald-100 text-emerald-600' },
+      { colorBg: 'from-blue-500 to-indigo-600', textColor: 'text-indigo-700', iconBg: 'bg-indigo-100 text-indigo-600' },
+      { colorBg: 'from-purple-500 to-violet-600', textColor: 'text-purple-700', iconBg: 'bg-purple-100 text-purple-600' },
+      { colorBg: 'from-amber-500 to-orange-600', textColor: 'text-amber-700', iconBg: 'bg-amber-100 text-amber-600' },
+      { colorBg: 'from-rose-500 to-pink-600', textColor: 'text-pink-700', iconBg: 'bg-pink-100 text-pink-600' },
+      { colorBg: 'from-cyan-500 to-blue-600', textColor: 'text-cyan-700', iconBg: 'bg-cyan-100 text-cyan-600' },
+    ];
+
+    let idx = 0;
+    map.forEach((cList, catName) => {
+      const colorScheme = colorPairs[idx % colorPairs.length];
+      const totalCourses = cList.length;
+      const completedCount = cList.filter((c) => c.enrollment_status === 'completed').length;
+      const inProgressCount = cList.filter((c) => c.enrollment_status === 'in_progress').length;
+      const notStartedCount = cList.filter((c) => c.enrollment_status === 'not_started').length;
+      const avgProgress = Math.round(
+        cList.reduce((sum, c) => sum + (c.progress_percent || 0), 0) / (totalCourses || 1)
+      );
+
+      categoriesList.push({
+        name: catName,
+        totalCourses,
+        completedCount,
+        inProgressCount,
+        notStartedCount,
+        progressPercent: avgProgress,
+        ...colorScheme,
+      });
+      idx++;
+    });
+
+    this.categories = categoriesList;
+  }
+
+  selectCategory(categoryName: string | null): void {
+    this.selectedCategory = categoryName;
+  }
+
+  getFilteredCourses(): CatalogCourse[] {
+    if (!this.selectedCategory) {
+      return this.courses;
+    }
+    return this.courses.filter(
+      (c) => (c.category_name?.trim() || 'General') === this.selectedCategory
+    );
+  }
+
+  getSelectedCategorySummary(): CategorySummary | undefined {
+    return this.categories.find(c => c.name === this.selectedCategory);
   }
 
   statusLabel(status: string): string {
@@ -83,3 +161,4 @@ export class CourseCatalog implements OnInit {
     this.router.navigate(['/courses', course.id]);
   }
 }
+
