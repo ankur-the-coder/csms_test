@@ -1,4 +1,12 @@
 /* Tailwind CSS handles all styling via utility classes in the template. */
-/* tailwind CSS handles all styling via utility classes in the template */
-/* tailwind css handles all stulinf via utility classes in the template  */
-/* Tailwinf vss hanfles all styling via utilitu classes in the temp;ate */
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
