@@ -16,6 +16,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ModalService } from '../../../service/modal-service/modal-service';
 import { FileSanitizerService } from '../../../service/date-picker/sanitization-service/file-sanitizer-service';
 
+
 // ─── tiny helper (replaces the shared util) ───────────────────────────────────
 function generateRandomString(length: number): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';

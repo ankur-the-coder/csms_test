@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { CircularProgress } from '../circular-progress/circular-progress';
 import { MyLearningCourse, MyLearningSummary } from '../../models/course.model';
 import { Router } from '@angular/router';
@@ -9,54 +8,15 @@ import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-my-learning',
-  imports: [CommonModule, FormsModule, CircularProgress],
+  imports: [CommonModule, CircularProgress],
   templateUrl: './my-learning.html',
   styleUrl: './my-learning.css',
 })
 export class MyLearning implements OnInit {
   summary: MyLearningSummary | null = null;
   courses: MyLearningCourse[] = [];
-  selectedCategory: string | null = null;
   loading = true;
   error = '';
-
-  get categories(): string[] {
-    const set = new Set<string>();
-    this.courses.forEach(c => {
-      if (c.category_name?.trim()) set.add(c.category_name.trim());
-    });
-    return Array.from(set).sort();
-  }
-
-  getFilteredCourses(): MyLearningCourse[] {
-    if (!this.selectedCategory) return this.courses;
-    return this.courses.filter(
-      c => (c.category_name?.trim() || '') === this.selectedCategory
-    );
-  }
-
-  // ── Dynamic stat counts (react to selected category) ──────
-  get filteredTotal(): number {
-    return this.getFilteredCourses().length;
-  }
-
-  get filteredCompleted(): number {
-    return this.getFilteredCourses().filter(c => c.enrollment_status === 'completed').length;
-  }
-
-  get filteredInProgress(): number {
-    return this.getFilteredCourses().filter(c => c.enrollment_status === 'in_progress').length;
-  }
-
-  get filteredNotStarted(): number {
-    return this.getFilteredCourses().filter(c => c.enrollment_status === 'not_started').length;
-  }
-
-  get filteredCompletionPercent(): number {
-    if (!this.filteredTotal) return 0;
-    return Math.round((this.filteredCompleted / this.filteredTotal) * 100);
-  }
-
 
   constructor(
     private learnerCourseService: LearnerCourseService,
