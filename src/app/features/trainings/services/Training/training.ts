@@ -65,6 +65,14 @@ getCourses(categoryId?: number): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/courses/admin/create`, payload);
   }
 
+  updateCourse(id: number | string, payload: any): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/courses/admin/${id}/update`, payload);
+  }
+
+  deleteCourse(id: number | string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/courses/admin/${id}/delete`, {});
+  }
+
   getCourseDetails(courseId: number, userId: number): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/courses/learner/${courseId}?user_id=${userId}`);
   }
@@ -79,10 +87,10 @@ getCourses(categoryId?: number): Observable<any> {
   }
 
   getCategoryById(id: number): Observable<any> {
-  return this.http.get<any>(
-    `${this.API_URL}/courses/admin/categories/${id}`
-  );
-}
+    return this.http.get<any>(
+      `${this.API_URL}/courses/admin/categories/${id}`
+    );
+  }
 
   createCategory(
     payload: {
@@ -93,6 +101,26 @@ getCourses(categoryId?: number): Observable<any> {
     return this.http.post<any>(
       `${this.API_URL}/courses/admin/categories/create`,
       payload
+    );
+  }
+
+  updateCategory(
+    id: number | string,
+    payload: {
+      name: string;
+      slug?: string;
+    }
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/categories/${id}/update`,
+      payload
+    );
+  }
+
+  deleteCategory(id: number | string): Observable<any> {
+    return this.http.post<any>(
+      `${this.API_URL}/courses/admin/categories/${id}/delete`,
+      {}
     );
   }
 
