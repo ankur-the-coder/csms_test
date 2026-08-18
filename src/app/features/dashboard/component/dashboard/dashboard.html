@@ -109,25 +109,29 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Client Health Score Trend (line chart) -->
     <div class="lg:col-span-4">
-      <app-charts chartId="healthTrendChart" [chartType]="'line'" [chartData]="ImplementationData"
+      <!-- <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="ImplementationData"
         [chartLabels]="ImplementationLabels" [backgroundColors]="['#3b82f6']" [headingText]="'Connected'"
         [hoverLabel]="'Connected'" [xAxisTitle]="'Month'" [yAxisTitle]="'Implementation Score'"
-        [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
+        [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts> -->
+      <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
+        [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
+        [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
+        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()"></app-charts>
     </div>
 
     <!-- Health Score Distribution Donut Widget (Shared Chart Component) -->
     <div class="lg:col-span-4">
       <app-charts chartId="usagesChart" [chartType]="'doughnut'" [chartData]="healthDonutData"
-        [chartLabels]="healthDonutLabels" [backgroundColors]="healthDonutColors"
-        [headingText]="'Usages'" [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText"
-        [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
+        [chartLabels]="healthDonutLabels" [backgroundColors]="healthDonutColors" [headingText]="'Usages'"
+        [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText" [leaveChart]="true"
+        [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
     </div>
     <!-- Feedback Score Distribution Donut Widget -->
     <div class="lg:col-span-4">
       <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
-        [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()"
-        [headingText]="'Feedback'" [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()"
-        [leaveChart]="true" [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
+        [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
+        [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true"
+        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->
     <div

@@ -34,10 +34,32 @@ export class DashboardComponent implements OnInit {
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   feedbackDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0', line2: 'Total', line3: 'Clients'
+    line1: '0', line2: 'Total', line3: 'Feedback'
   });
   isFeedbackLoading = signal(true);
   feedbackHasError = signal(false);
+
+
+
+
+
+  // Connected chart — populated dynamically from API
+  connectedDonutLabels = signal<string[]>([]);
+  connectedDonutData = signal<number[]>([]);
+  connectedDonutColors = signal<string[]>([]);
+  // Center text: show total number only (primary line). Secondary
+  // lines are left empty so the chart renders a single-line total.
+  connectedDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+    line1: '0', line2: 'Total', line3: 'Connect'
+  });
+  isConnectedLoading = signal(true);
+  connectedHasError = signal(false);
+
+
+
+
+
+
 
   constructor(
     private router: Router,
@@ -276,7 +298,7 @@ export class DashboardComponent implements OnInit {
           this.feedbackDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
-            line3: 'Clients',
+            line3: 'Feedback',
           });
           // this.cdr.markForCheck();
         }
@@ -287,7 +309,9 @@ export class DashboardComponent implements OnInit {
         this.feedbackHasError.set(true);
       }
     });
-this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
+    this.isConnectedLoading.set(true);
+    this.connectedHasError.set(false);
+    this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
       next: (res) => {
         this.isFeedbackLoading.set(false);
         if (res && res.data && res.data.length) {
@@ -296,62 +320,62 @@ this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
           const total = values.reduce((sum, v) => sum + v, 0);
           const colors = this.generateColors(res.data.length);
 
-          this.feedbackDonutLabels.set(labels);
-          this.feedbackDonutData.set(values);
-          this.feedbackDonutColors.set(colors);
+          this.connectedDonutLabels.set(labels);
+          this.connectedDonutData.set(values);
+          this.connectedDonutColors.set(colors);
 
           // Always show the numeric total on the first line. Prefer any
           // `res.total.line1` if present; otherwise fall back to the
           // computed `total`. Keep other lines empty so only the total
           // number appears in the donut center.
           const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
-          this.feedbackDonutCenterText.set({
+          this.connectedDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
-            line3: 'Clients',
+            line3: 'Connect',
           });
           // this.cdr.markForCheck();
         }
       },
       error: (err) => {
         console.error('Error fetching feedback chart:', err);
-        this.isFeedbackLoading.set(false);
-        this.feedbackHasError.set(true);
+        this.isConnectedLoading.set(false);
+        this.connectedHasError.set(true);
       }
     });
-    this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
-      next: (res) => {
-        console.log(res, 'res')
-        this.isFeedbackLoading.set(false);
-        // if (res && res.data && res.data.length) {
-        //   const labels = res.data.map(item => item.label);
-        //   const values = res.data.map(item => item.value);
-        //   const total = values.reduce((sum, v) => sum + v, 0);
-        //   const colors = this.generateColors(res.data.length);
+    // this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
+    //   next: (res) => {
+    //     console.log(res, 'res')
+    //     this.isFeedbackLoading.set(false);
+    //     // if (res && res.data && res.data.length) {
+    //     //   const labels = res.data.map(item => item.label);
+    //     //   const values = res.data.map(item => item.value);
+    //     //   const total = values.reduce((sum, v) => sum + v, 0);
+    //     //   const colors = this.generateColors(res.data.length);
 
-        //   this.feedbackDonutLabels.set(labels);
-        //   this.feedbackDonutData.set(values);
-        //   this.feedbackDonutColors.set(colors);
+    //     //   this.feedbackDonutLabels.set(labels);
+    //     //   this.feedbackDonutData.set(values);
+    //     //   this.feedbackDonutColors.set(colors);
 
-        //   // Always show the numeric total on the first line. Prefer any
-        //   // `res.total.line1` if present; otherwise fall back to the
-        //   // computed `total`. Keep other lines empty so only the total
-        //   // number appears in the donut center.
-        //   const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
-        //   this.feedbackDonutCenterText.set({
-        //     line1: String(primaryTotal),
-        //     line2: 'Total',
-        //     line3: 'Clients',
-        //   });
-        //   // this.cdr.markForCheck();
-        // }
-      },
-      error: (err) => {
-        console.error('Error fetching feedback chart:', err);
-        this.isFeedbackLoading.set(false);
-        this.feedbackHasError.set(true);
-      }
-    });
+    //     //   // Always show the numeric total on the first line. Prefer any
+    //     //   // `res.total.line1` if present; otherwise fall back to the
+    //     //   // computed `total`. Keep other lines empty so only the total
+    //     //   // number appears in the donut center.
+    //     //   const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+    //     //   this.feedbackDonutCenterText.set({
+    //     //     line1: String(primaryTotal),
+    //     //     line2: 'Total',
+    //     //     line3: 'Clients',
+    //     //   });
+    //     //   // this.cdr.markForCheck();
+    //     // }
+    //   },
+    //   error: (err) => {
+    //     console.error('Error fetching feedback chart:', err);
+    //     this.isFeedbackLoading.set(false);
+    //     this.feedbackHasError.set(true);
+    //   }
+    // });
 
   }
 
