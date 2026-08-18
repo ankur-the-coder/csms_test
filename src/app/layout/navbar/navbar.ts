@@ -36,7 +36,7 @@ export class Navbar {
 
   private plateFormId = inject(PLATFORM_ID);
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   ngOnInit() {
     if (isPlatformBrowser(this.plateFormId)) {
@@ -54,6 +54,16 @@ export class Navbar {
 
   private checkRoute(url: string) {
     this.isImplementationRoute = url.includes('implementation');
+  }
+  getFirstLetter(): string {
+    const name = this.adminName().trim();
+// console.log(name)
+
+    if (!name) {
+      return '';
+    }
+
+    return name.charAt(0).toUpperCase();
   }
   logOut(): void {
     this.authService.logout();

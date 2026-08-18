@@ -5,10 +5,11 @@ import { Calendar, DayEvent } from '../../../../shared/components/inputs/calenda
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
+import { CustomDateSelector } from "../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, Calendar, ChartComponent],
+  imports: [CommonModule, Calendar, ChartComponent, CustomDateSelector],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -22,39 +23,76 @@ export class DashboardComponent implements OnInit {
   animatedImplPending = signal(0);
   animatedTrainingPending = signal(0);
   animatedMeeting = signal(0);
+  connect = signal(0);
   isTrendLoading = signal(true);
-trendHasError = signal(false);
+  trendHasError = signal(false);
+
+  // Feedback chart — populated dynamically from API
+  feedbackDonutLabels = signal<string[]>([]);
+  feedbackDonutData = signal<number[]>([]);
+  feedbackDonutColors = signal<string[]>([]);
+  // Center text: show total number only (primary line). Secondary
+  // lines are left empty so the chart renders a single-line total.
+  feedbackDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+    line1: '0', line2: 'Total', line3: 'Feedback'
+  });
+  isFeedbackLoading = signal(true);
+  feedbackHasError = signal(false);
+
+
+
+
+
+  // Connected chart — populated dynamically from API
+  connectedDonutLabels = signal<string[]>([]);
+  connectedDonutData = signal<number[]>([]);
+  connectedDonutColors = signal<string[]>([]);
+  // Center text: show total number only (primary line). Secondary
+  // lines are left empty so the chart renders a single-line total.
+  connectedDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+    line1: '0', line2: 'Total', line3: 'Connect'
+  });
+  isConnectedLoading = signal(true);
+  connectedHasError = signal(false);
+
+
+
+
+
+
 
   constructor(
     private router: Router,
     private dashboardService: DashboardService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
-    this.fetchDashboardCards();
+
+
+    // this.onDateApplied();
   }
 
-  fetchDashboardCards(): void {
-    this.dashboardService.getDashboardCards().subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.cardData.set(res.data);
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
+  // fetchDashboardCards(): void {
+  //   this.dashboardService.getDashboardCards().subscribe({
+  //     next: (res) => {
+  //       if (res && res.data) {
+  //         this.cardData.set(res.data);
+  //         this.cdr.markForCheck();
+  //         this.cdr.detectChanges();
 
-          this.animateCount(this.animatedTotalClients, res.data.totalClients);
-          this.animateCount(this.animatedLiveClients, res.data.liveClients);
-          this.animateCount(this.animatedImplPending, res.data.implPending);
-          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
-          this.animateCount(this.animatedMeeting, res.data.meeting);
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching dashboard cards:', err);
-      }
-    });
-  }
+  //         this.animateCount(this.animatedTotalClients, res.data.totalClients);
+  //         this.animateCount(this.animatedLiveClients, res.data.liveClients);
+  //         this.animateCount(this.animatedImplPending, res.data.implPending);
+  //         this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+  //         this.animateCount(this.animatedMeeting, res.data.meeting);
+  //       }
+  //     },
+  //     error: (err) => {
+  //       console.error('Error fetching dashboard cards:', err);
+  //     }
+  //   });
+  // }
 
   /** Tweens a signal from its current value up (or down) to `target` over `duration`ms. */
   private animateCount(target$: WritableSignal<number>, target: number, duration = 900): void {
@@ -210,5 +248,151 @@ trendHasError = signal(false);
     const h12 = ((hour + 11) % 12) + 1;
     const ampm = hour < 12 ? 'AM' : 'PM';
     return `${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+  }
+
+  // ── Date filter ────────────────────────────────────────────────────────────
+  onDateApplied(from: string, to: string): void {
+    console.log(from, to);
+
+
+
+    this.dashboardService.getDashboardCards(from, to).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          this.cardData.set(res.data);
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+
+          this.animateCount(this.animatedTotalClients, res.data.totalClients);
+          this.animateCount(this.animatedLiveClients, res.data.liveClients);
+          this.animateCount(this.animatedImplPending, res.data.implPending);
+          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
+          this.animateCount(this.animatedMeeting, res.data.meeting);
+          this.animateCount(this.connect, res.data.connect);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching dashboard cards:', err);
+      }
+    });
+    this.isFeedbackLoading.set(true);
+    this.feedbackHasError.set(false);
+    this.dashboardService.fetchDashBoardFeedbackChart(from, to).subscribe({
+      next: (res) => {
+        this.isFeedbackLoading.set(false);
+        if (res && res.data && res.data.length) {
+          const labels = res.data.map(item => item.label);
+          const values = res.data.map(item => item.value);
+          const total = values.reduce((sum, v) => sum + v, 0);
+          const colors = this.generateColors(res.data.length);
+
+          this.feedbackDonutLabels.set(labels);
+          this.feedbackDonutData.set(values);
+          this.feedbackDonutColors.set(colors);
+
+          // Always show the numeric total on the first line. Prefer any
+          // `res.total.line1` if present; otherwise fall back to the
+          // computed `total`. Keep other lines empty so only the total
+          // number appears in the donut center.
+          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          this.feedbackDonutCenterText.set({
+            line1: String(primaryTotal),
+            line2: 'Total',
+            line3: 'Feedback',
+          });
+          // this.cdr.markForCheck();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching feedback chart:', err);
+        this.isFeedbackLoading.set(false);
+        this.feedbackHasError.set(true);
+      }
+    });
+    this.isConnectedLoading.set(true);
+    this.connectedHasError.set(false);
+    this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
+      next: (res) => {
+        this.isFeedbackLoading.set(false);
+        if (res && res.data && res.data.length) {
+          const labels = res.data.map(item => item.label);
+          const values = res.data.map(item => item.value);
+          const total = values.reduce((sum, v) => sum + v, 0);
+          const colors = this.generateColors(res.data.length);
+
+          this.connectedDonutLabels.set(labels);
+          this.connectedDonutData.set(values);
+          this.connectedDonutColors.set(colors);
+
+          // Always show the numeric total on the first line. Prefer any
+          // `res.total.line1` if present; otherwise fall back to the
+          // computed `total`. Keep other lines empty so only the total
+          // number appears in the donut center.
+          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          this.connectedDonutCenterText.set({
+            line1: String(primaryTotal),
+            line2: 'Total',
+            line3: 'Connect',
+          });
+          // this.cdr.markForCheck();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching feedback chart:', err);
+        this.isConnectedLoading.set(false);
+        this.connectedHasError.set(true);
+      }
+    });
+    // this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
+    //   next: (res) => {
+    //     console.log(res, 'res')
+    //     this.isFeedbackLoading.set(false);
+    //     // if (res && res.data && res.data.length) {
+    //     //   const labels = res.data.map(item => item.label);
+    //     //   const values = res.data.map(item => item.value);
+    //     //   const total = values.reduce((sum, v) => sum + v, 0);
+    //     //   const colors = this.generateColors(res.data.length);
+
+    //     //   this.feedbackDonutLabels.set(labels);
+    //     //   this.feedbackDonutData.set(values);
+    //     //   this.feedbackDonutColors.set(colors);
+
+    //     //   // Always show the numeric total on the first line. Prefer any
+    //     //   // `res.total.line1` if present; otherwise fall back to the
+    //     //   // computed `total`. Keep other lines empty so only the total
+    //     //   // number appears in the donut center.
+    //     //   const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+    //     //   this.feedbackDonutCenterText.set({
+    //     //     line1: String(primaryTotal),
+    //     //     line2: 'Total',
+    //     //     line3: 'Clients',
+    //     //   });
+    //     //   // this.cdr.markForCheck();
+    //     // }
+    //   },
+    //   error: (err) => {
+    //     console.error('Error fetching feedback chart:', err);
+    //     this.isFeedbackLoading.set(false);
+    //     this.feedbackHasError.set(true);
+    //   }
+    // });
+
+  }
+
+  /** Returns a palette of hex colors for `count` slices. */
+  private generateColors(count: number): string[] {
+    const palette = [
+      '#10b981', // emerald
+      '#3b82f6', // blue
+      '#f59e0b', // amber
+      '#f43f5e', // rose
+      '#8b5cf6', // violet
+      '#06b6d4', // cyan
+      '#ec4899', // pink
+      '#14b8a6', // teal
+      '#f97316', // orange
+      '#6366f1', // indigo
+    ];
+    return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
   }
 }
