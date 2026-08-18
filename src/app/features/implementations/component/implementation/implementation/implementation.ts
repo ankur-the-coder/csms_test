@@ -7,6 +7,7 @@ import { DataTable } from "../../../../../shared/components/Data-table/data-tabl
 import { CustomColumnDirective } from '../../../../../shared/components/Data-table/custom-column.directive';
 import { ImplementationService } from '../../../services/implementation/implementation';
 import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
+import { CustomDateSelector } from "../../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
 
 
 export interface Feature {
@@ -64,7 +65,7 @@ interface ClientStatus {
 
 @Component({
   selector: 'app-implementation',
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector],
   templateUrl: './implementation.html',
   styleUrl: './implementation.css',
   standalone: true,
@@ -522,13 +523,9 @@ export class Implementation implements OnInit, OnDestroy {
     };
     this.selectedClient.set(updated);
   }
-
-  // ── Module tooltip (native title) ──
-  getModulesTooltip(row: any): string {
-    return this.getClientModules(row)
-      .filter((mod: any) => this.getModuleTotalCount(row, mod) > 0)
-      .map((mod: any) => `${mod.label}: ${this.getModuleApprovedCount(row, mod)}/${this.getModuleTotalCount(row, mod)}`)
-      .join('\n');
+ onDateApplied(from: string, to: string): void {
+    // this.dateFrom.set(from);
+    // this.dateTo.set(to);
+    // this.page.set(0);
   }
 }
-

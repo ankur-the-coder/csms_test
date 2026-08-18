@@ -88,7 +88,7 @@
                 getTotalFilesCount() }} {{ getTotalFilesCount() === 1 ? ('document') : ('documents')
                 }}</span>
             <span
-                class="text-[10px] min-[380px]:text-[11px] sm:text-[13px] text-inherit opacity-70 mt-1 truncate">{{'uploaded'}}</span>
+                class="text-[10px] min-[380px]:text-[11px] sm:text-[13px] text-inherit opacity-70 mt-1 truncate">{{'Uploaded'}}</span>
         </div>
     </div>
 
@@ -144,7 +144,7 @@
     } @else {
         <div class="flex flex-col items-center justify-center gap-3 w-full h-full">
         <div class="w-8 h-8 rounded-full border-2 border-surface-200 border-t-brand-600 animate-spin"></div>
-        <span class="text-brand-600 font-bold text-[14px]">{{'processingfile'}}...</span>
+        <span class="text-brand-600 font-bold text-[14px]">{{'Processing file'}}...</span>
     </div>
     }
 
@@ -173,7 +173,7 @@
         <div class="bg-card-bg rounded-2xl w-full max-w-[440px] max-h-[80vh] flex flex-col shadow-2xl border border-card-border overflow-hidden"
             (click)="$event.stopPropagation()">
             <div class="flex items-center justify-between p-5 border-b border-card-border">
-                <h3 class="text-[1rem] font-extrabold text-text-secondary">{{"attacheddocuments"}} ({{
+                <h3 class="text-[1rem] font-extrabold text-text-secondary">{{"Attached Documents"}} ({{
                     getTotalFilesCount()
                     }})</h3>
                 <button
@@ -192,7 +192,7 @@
                     <div
                         class="flex items-center justify-between bg-surface-50 border border-card-border rounded-2xl p-[10px_12px] transition-all">
                         <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                            (click)="openViewer($index, 'new'); closeFileList()">
+                            (click)="openViewer($index, 'new')">
                             <div class="w-9 h-9 rounded-full overflow-hidden bg-surface-200 flex-shrink-0 flex items-center justify-center"
                                 [class.mfi-pdf-thumb]="file.type === 'application/pdf'">
                                 @if (file.type === 'application/pdf') {
@@ -231,6 +231,7 @@
                                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                             </button>
+                            @if (showDeleteButton) {
                             <button
                                 class="w-[30px] h-[30px] flex items-center justify-center text-text-muted cursor-pointer bg-transparent border-none transition-all hover:text-red-500 hover:bg-red-500/10 hover:rounded-lg"
                                 (click)="removeFile($index); $event.stopPropagation()" [disabled]="disabled">
@@ -240,6 +241,7 @@
                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
+                            }
                         </div>
                     </div>
                     }
@@ -247,7 +249,7 @@
                     <div
                         class="flex items-center justify-between bg-surface-50 border border-card-border rounded-2xl p-[10px_12px] transition-all">
                         <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                            (click)="openViewer($index, 'preloaded'); closeFileList()">
+                            (click)="openViewer($index, 'preloaded')">
                             <div class="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-brand-600 text-white"
                                 [class.mfi-pdf-thumb]="url.toLowerCase().endsWith('.pdf')">
                                 @if (isImageUrl(url)) {
@@ -276,7 +278,7 @@
                             <div class="flex flex-col min-w-0">
                                 <div class="text-[0.875rem] font-bold text-text-secondary truncate">{{ getFileName(url)
                                     }}</div>
-                                <div class="text-[0.75rem] text-text-muted">{{"clouddocument"}}</div>
+                                <div class="text-[0.75rem] text-text-muted">{{"Cloud Document"}}</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-1">
@@ -289,6 +291,7 @@
                                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                 </svg>
                             </button>
+                            @if (showDeleteButton) {
                             <button
                                 class="w-[30px] h-[30px] flex items-center justify-center text-text-muted cursor-pointer bg-transparent border-none transition-all hover:text-red-500 hover:bg-red-500/10 hover:rounded-lg"
                                 (click)="removePreloadedFile($index); $event.stopPropagation()" [disabled]="disabled">
@@ -298,6 +301,7 @@
                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
+                            }
                         </div>
                     </div>
                     }
@@ -310,7 +314,7 @@
     <!-- VIEWER MODAL -->
     @if(isViewerOpen) {
     <div [id]="id + '-viewer-overlay'"
-        class="fixed inset-0 z-overlay bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+        class="fixed inset-0 z-viewer-overlay bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
         (click)="closeViewer()">
         <div class="bg-card-bg rounded-[1.5rem] w-[95%] max-w-[50rem] h-[85vh] flex flex-col shadow-2xl border border-card-border overflow-hidden"
             (click)="$event.stopPropagation()">
@@ -350,14 +354,14 @@
                     </button>
                 </div>
             </div>
-            <div class="flex-1 flex items-center justify-center overflow-hidden relative bg-surface-50">
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden relative bg-surface-50">
 
                 @if(currentViewerItem.type === 'image') {
                 <div class="w-full h-full flex items-center justify-center relative overflow-hidden">
                     @if(isViewerLoading) {
                     <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-surface-50">
                         <div class="mfi-spinner"></div>
-                        <p class="text-text-secondary">{{"loadingpreview"}}...</p>
+                        <p class="text-text-secondary">{{"Loading Preview"}}...</p>
                     </div>
                     }
                     @if(imagePreviewUrl) {
@@ -367,10 +371,15 @@
                     }
                 </div>
                 }
-                @else if(currentViewerItem.type === 'pdf') {
-                <div class="w-full h-full overflow-y-auto" [style.visibility]="isViewerLoading ? 'hidden' : 'visible'">
-                    <div id="viewer-pdf-canvas" class="w-full min-h-[300px]"></div>
+               @else if(currentViewerItem.type === 'pdf') {
+                @if(isViewerLoading) {
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-surface-50">
+                    <div class="mfi-spinner"></div>
+                    <p class="text-text-secondary">{{"Loading PDF"}}...</p>
                 </div>
+                }
+                <!-- absolute fills the relative parent, scrollable container with centered PDF pages -->
+                <div id="viewer-pdf-canvas" class="absolute inset-0 overflow-y-auto  flex flex-col items-center justify-start"></div>
                 }
                 @else if(currentViewerItem.type === 'text') {
                 <div class="w-full h-full bg-surface-50 flex flex-col items-center justify-center p-6 text-center">
@@ -384,11 +393,11 @@
                         </svg>
                     </div>
                     <p class="text-[0.875rem] text-text-secondary font-medium max-w-md">
-                        {{"thisdocumentcannotbevieweddirectlyinthebrowserpleasedownloadittoviewitscontents"}}
+                        {{"This document cannot be viewed directly in the browser, please download it to view its contents"}}
                     </p>
                 </div>
                 } @else {
-                <div class="text-text-muted">{{"previewunavailable"}}</div>
+                <div class="text-text-muted">{{"Preview Unavailable"}}</div>
                 }
             </div>
 
@@ -401,13 +410,13 @@
                             viewBox="0 0 24 24">
                             <path d="M15 19l-7-7 7-7" />
                         </svg>
-                        <span class="hidden sm:inline">{{"prev"}}</span>
+                        <span class="hidden sm:inline">{{"Prev"}}</span>
                     </button>
                     <button
                         class="flex items-center gap-1.5 p-[0.5rem] sm:p-[0.5rem_1rem] rounded-2xl border border-card-border bg-card-bg text-text-secondary text-[0.8125rem] font-bold cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         [disabled]="viewerIndex === viewerItems.length - 1 || viewerItems.length <= 1"
                         (click)="nextViewer()">
-                        <span class="hidden sm:inline">{{"next"}}</span>
+                        <span class="hidden sm:inline">{{"Next"}}</span>
                         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
                             viewBox="0 0 24 24">
                             <path d="M9 5l7 7-7 7" />
@@ -423,7 +432,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                        <span class="hidden sm:inline">{{"fullview"}}</span>
+                        <span class="hidden sm:inline">{{"Full View"}}</span>
                     </button>
                     <button
                         class="flex items-center gap-1.5 p-[0.625rem] sm:p-[0.625rem_1.25rem] rounded-2xl border-none bg-brand-600 text-white text-[0.875rem] font-bold cursor-pointer transition-all hover:bg-brand-700 hover:-translate-y-0.5 shadow-lg"
@@ -433,8 +442,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <span class="hidden sm:inline">{{"download"}}</span>
+                        <span class="hidden sm:inline">{{"Download"}}</span>
                     </button>
+                    @if (showDeleteButton) {
                     <button
                         class="flex items-center gap-1.5 p-[0.625rem] sm:p-[0.625rem_1.25rem] rounded-2xl border border-red-500/20 bg-red-500/10 dark:bg-red-500/20 hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white text-[0.875rem] font-bold cursor-pointer transition-all hover:-translate-y-0.5 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                         (click)="deleteCurrentViewerItem()" [disabled]="disabled">
@@ -443,8 +453,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        <span class="hidden sm:inline">{{"delete"}}</span>
+                        <span class="hidden sm:inline">{{"Delete"}}</span>
                     </button>
+                }
                 </div>
             </div>
         </div>

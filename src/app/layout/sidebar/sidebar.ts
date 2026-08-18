@@ -35,13 +35,16 @@ export class Sidebar {
 
   mainNavItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+    { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
 
   ];
 
   csNavItems: NavItem[] = [
 
     // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
+    { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' }, 
     // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
