@@ -24,7 +24,7 @@
 
   </div>
   <!-- Top Summary Metrics Grid (5 Cards) -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+  <div class=" grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
     <!-- Total Clients -->
     <div (click)="navigateToClient()"
@@ -108,11 +108,7 @@
   <!-- Grid section -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Client Health Score Trend (line chart) -->
-    <div class="lg:col-span-4">
-      <!-- <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="ImplementationData"
-        [chartLabels]="ImplementationLabels" [backgroundColors]="['#3b82f6']" [headingText]="'Connected'"
-        [hoverLabel]="'Connected'" [xAxisTitle]="'Month'" [yAxisTitle]="'Implementation Score'"
-        [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts> -->
+    <div class="lg:col-span-4 md:col-span-6">
       <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
         [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
         [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
@@ -120,20 +116,23 @@
     </div>
 
     <!-- Health Score Distribution Donut Widget (Shared Chart Component) -->
-    <div class="lg:col-span-4">
-      <app-charts chartId="usagesChart" [chartType]="'doughnut'" [chartData]="healthDonutData"
-        [chartLabels]="healthDonutLabels" [backgroundColors]="healthDonutColors" [headingText]="'Usages'"
-        [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText" [leaveChart]="true"
-        [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
+    <div class="lg:col-span-4 md:col-span-6 ">
+      <app-charts chartId="UsagesChart" [chartType]="'line'" [chartData]="usagesDonutData()"
+        [chartLabels]="usagesDonutLabels()" [backgroundColors]="usagesDonutColors()" [headingText]="'Usages'"
+        [hoverLabel]="'Usages'" [donutCenterText]="usagesDonutCenterText()" [leaveChart]="true"
+        [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts>
     </div>
     <!-- Feedback Score Distribution Donut Widget -->
-    <div class="lg:col-span-4">
+    <div class="lg:col-span-4 md:col-span-6 ">
       <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
         [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true"
         [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->
+
+  </div>
+
     <div
       class="lg:col-span-12 bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
       <div>
@@ -158,8 +157,6 @@
         </div>
       </div>
     </div>
-
-  </div>
 
   <!-- Shared Custom Calendar Component -->
   <app-calendar [eventsByDay]="eventsByDay"></app-calendar>
