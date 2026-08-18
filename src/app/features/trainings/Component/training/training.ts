@@ -4,6 +4,7 @@ import {
   Component,
   OnInit,
   signal,
+  computed,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -14,6 +15,7 @@ export interface CategoryRecord {
   id: string;
   name: string;
   slug: string;
+  course_count: number;
 }
 
 @Component({
@@ -39,11 +41,30 @@ export class Training implements OnInit {
 
   readonly categories = signal<CategoryRecord[]>([]);
 
+  readonly isLoadingCategories = signal(false);
+
   readonly isCategoryModalOpen = signal(false);
+  readonly editingCategoryId = signal<string | null>(null);
 
   readonly categoryName = signal('');
 
+  readonly categoryError = signal<string | null>(null);
+
   readonly isSaving = signal(false);
+
+  // Delete Confirmation Modal State
+  readonly isDeleteConfirmOpen = signal(false);
+  readonly isDeleting = signal(false);
+  readonly deleteConfirmMessage = signal('');
+  readonly deleteTargetCategory = signal<CategoryRecord | null>(null);
+
+  readonly previewSlug = computed(() =>
+    this.categoryName()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+  );
 
   // =========================
   // API Calls
@@ -51,9 +72,13 @@ export class Training implements OnInit {
 
   loadCategories(): void {
 
+    this.isLoadingCategories.set(true);
+
     this.trainingService.getCategories().subscribe({
 
       next: (res: any) => {
+
+        this.isLoadingCategories.set(false);
 
         if (res.status) {
 
@@ -62,6 +87,7 @@ export class Training implements OnInit {
               id: item.id.toString(),
               name: item.name,
               slug: item.slug,
+              course_count: item.course_count ?? 0,
             }))
           );
 
@@ -70,6 +96,7 @@ export class Training implements OnInit {
       },
 
       error: (err: any) => {
+        this.isLoadingCategories.set(false);
         console.error('Failed to load categories:', err);
       }
 
@@ -77,7 +104,7 @@ export class Training implements OnInit {
 
   }
 
-  createCategory(): void {
+  saveCategory(): void {
 
     const name = this.categoryName().trim();
 
@@ -86,38 +113,77 @@ export class Training implements OnInit {
     }
 
     this.isSaving.set(true);
+    this.categoryError.set(null);
 
-    const slug = name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+    const payload = { name, slug: this.previewSlug() };
+    const editId = this.editingCategoryId();
 
-    const payload = { name, slug };
+    const request$ = editId
+      ? this.trainingService.updateCategory(editId, payload)
+      : this.trainingService.createCategory(payload);
 
-    this.trainingService.createCategory(payload).subscribe({
+    request$.subscribe({
 
       next: (res: any) => {
 
         this.isSaving.set(false);
 
-        // backend uses `msg` (not `message`) for this endpoint
         if (res.status) {
           this.closeCategoryModal();
           this.loadCategories();
         } else {
-          console.error('Create category failed:', res.msg);
+          this.categoryError.set(res.msg || 'Something went wrong. Please try again.');
         }
 
       },
 
       error: (err: any) => {
         this.isSaving.set(false);
-        console.error('Failed to create category:', err);
+        this.categoryError.set('Failed to save category. Please try again.');
+        console.error('Failed to save category:', err);
       }
 
     });
 
+  }
+
+  deleteCategory(category: CategoryRecord, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.deleteTargetCategory.set(category);
+    this.deleteConfirmMessage.set(`Are you sure you want to delete category "${category.name}"?`);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  cancelDelete(): void {
+    this.isDeleteConfirmOpen.set(false);
+    this.isDeleting.set(false);
+    this.deleteTargetCategory.set(null);
+  }
+
+  confirmDelete(): void {
+    const category = this.deleteTargetCategory();
+    if (!category) return;
+
+    this.isDeleting.set(true);
+    this.trainingService.deleteCategory(category.id).subscribe({
+      next: (res: any) => {
+        this.isDeleting.set(false);
+        if (res.status) {
+          this.cancelDelete();
+          this.loadCategories();
+        } else {
+          console.error('Failed to delete category:', res.msg);
+          this.cancelDelete();
+        }
+      },
+      error: (err: any) => {
+        this.isDeleting.set(false);
+        console.error('Failed to delete category:', err);
+        this.cancelDelete();
+      }
+    });
   }
 
   // =========================
@@ -125,13 +191,27 @@ export class Training implements OnInit {
   // =========================
 
   openCategoryModal(): void {
+    this.editingCategoryId.set(null);
     this.categoryName.set('');
+    this.categoryError.set(null);
+    this.isCategoryModalOpen.set(true);
+  }
+
+  openEditCategoryModal(category: CategoryRecord, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.editingCategoryId.set(category.id);
+    this.categoryName.set(category.name);
+    this.categoryError.set(null);
     this.isCategoryModalOpen.set(true);
   }
 
   closeCategoryModal(): void {
     this.isCategoryModalOpen.set(false);
+    this.editingCategoryId.set(null);
     this.categoryName.set('');
+    this.categoryError.set(null);
   }
 
   // =========================
