@@ -9,7 +9,7 @@
         Overview of all client activities, implementation health, and support operations.
       </p>
     </div>
-    <div class="w-full md:w-64 lg:w-48 ">
+    <div class="w-full md:w-64 lg:w-64 ">
       <app-custom-date-selector (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
 
 
@@ -24,7 +24,7 @@
 
   </div>
   <!-- Top Summary Metrics Grid (5 Cards) -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
 
     <!-- Total Clients -->
     <div (click)="navigateToClient()"
@@ -89,7 +89,7 @@
     </div>
 
     <!-- Meeting -->
-    <div
+    <!-- <div
       class="bg-rose-50/50 hover:bg-rose-100/90 rounded-2xl p-4 border border-rose-400/90 shadow-xs flex flex-col justify-between cursor-pointer transform hover:-translate-y-1.5 hover:scale-[1.03] hover:shadow-xl hover:shadow-rose-500/25 hover:border-rose-500 transition-all duration-300 ease-out group">
       <div class="text-2xl font-bold text-slate-900">{{ connect() }}</div>
       <div class="flex items-center justify-between text-text-primary">
@@ -101,7 +101,7 @@
           </svg>
         </div>
       </div>
-    </div>
+    </div> -->
 
   </div>
 
@@ -110,8 +110,8 @@
     <!-- Client Health Score Trend (line chart) -->
     <div class="lg:col-span-4">
       <app-charts chartId="healthTrendChart" [chartType]="'line'" [chartData]="ImplementationData"
-        [chartLabels]="ImplementationLabels" [backgroundColors]="['#3b82f6']" [headingText]="'Implementation Progress'"
-        [hoverLabel]="'Implementation Score'" [xAxisTitle]="'Month'" [yAxisTitle]="'Implementation Score'"
+        [chartLabels]="ImplementationLabels" [backgroundColors]="['#3b82f6']" [headingText]="'Connected'"
+        [hoverLabel]="'Connected'" [xAxisTitle]="'Month'" [yAxisTitle]="'Implementation Score'"
         [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
     </div>
 
@@ -119,14 +119,14 @@
     <div class="lg:col-span-4">
       <app-charts chartId="usagesChart" [chartType]="'doughnut'" [chartData]="healthDonutData"
         [chartLabels]="healthDonutLabels" [backgroundColors]="healthDonutColors"
-        [headingText]="'Usages Score Distribution'" [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText"
+        [headingText]="'Usages'" [hoverLabel]="'Clients'" [donutCenterText]="healthDonutCenterText"
         [leaveChart]="true" [isLoading]="isTrendLoading()" [hasError]="trendHasError()"></app-charts>
     </div>
     <!-- Feedback Score Distribution Donut Widget -->
     <div class="lg:col-span-4">
-      <app-charts chartId="FeedbackChart" [chartType]="'line'" [chartData]="feedbackDonutData()"
+      <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()"
-        [headingText]="'Feedback Score Distribution'" [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()"
+        [headingText]="'Feedback'" [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()"
         [leaveChart]="true" [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->

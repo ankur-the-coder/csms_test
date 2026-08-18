@@ -28,6 +28,14 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
+fetchDashBoardConnectChart(from: string, to: string): Observable<DashboardChartdata> {
+    let data = {
+      fromDate: from,
+      toDate: to,
+    };
+
+    return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
+  }
   fetchDashBoardUsageChart(from: string, to: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
@@ -36,7 +44,7 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
- dashboardImplementProgressChart(from: string, to: string): Observable<DashboardChartdata> {
+  dashboardImplementProgressChart(from: string, to: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to,

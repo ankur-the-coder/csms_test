@@ -287,6 +287,39 @@ export class DashboardComponent implements OnInit {
         this.feedbackHasError.set(true);
       }
     });
+    this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
+      next: (res) => {
+        console.log(res, 'res')
+        this.isFeedbackLoading.set(false);
+        // if (res && res.data && res.data.length) {
+        //   const labels = res.data.map(item => item.label);
+        //   const values = res.data.map(item => item.value);
+        //   const total = values.reduce((sum, v) => sum + v, 0);
+        //   const colors = this.generateColors(res.data.length);
+
+        //   this.feedbackDonutLabels.set(labels);
+        //   this.feedbackDonutData.set(values);
+        //   this.feedbackDonutColors.set(colors);
+
+        //   // Always show the numeric total on the first line. Prefer any
+        //   // `res.total.line1` if present; otherwise fall back to the
+        //   // computed `total`. Keep other lines empty so only the total
+        //   // number appears in the donut center.
+        //   const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+        //   this.feedbackDonutCenterText.set({
+        //     line1: String(primaryTotal),
+        //     line2: 'Total',
+        //     line3: 'Clients',
+        //   });
+        //   // this.cdr.markForCheck();
+        // }
+      },
+      error: (err) => {
+        console.error('Error fetching feedback chart:', err);
+        this.isFeedbackLoading.set(false);
+        this.feedbackHasError.set(true);
+      }
+    });
 
   }
 
