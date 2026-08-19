@@ -16,6 +16,7 @@ export interface Datum {
     supportOwner:   SupportOwner;
     implementation: Implementation;
     stage:          Stage;
+    progress:        number;
 }
 
 export enum Implementation {
