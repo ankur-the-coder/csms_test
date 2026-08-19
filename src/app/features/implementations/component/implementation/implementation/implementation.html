@@ -82,6 +82,8 @@
 <div class="card p-0">
     <app-data-table
       [config]="tableConfig()"
+      [initialDateFrom]="initialDateFrom()"
+      [initialDateTo]="initialDateTo()"
       [filterNames]="['leadOwner', 'supportOwner','rating', 'country']">
 
      <ng-template appCustomColumn="overallProgress" let-row>
