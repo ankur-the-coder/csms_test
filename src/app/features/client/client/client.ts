@@ -8,6 +8,7 @@ import {
 } from '../../../shared/components/Data-table/data-table.types';
 import { ClientService } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
+import { ActivatedRoute } from '@angular/router';
 
 export interface ClientRow {
   orgId: number;
@@ -31,8 +32,16 @@ export interface ClientRow {
 export class Client {
   // 'ClientApi' — same alias se inject karna hoga
   private clientApi = inject(ClientService);
+  private route = inject(ActivatedRoute);
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   statusFilter = signal<string>('all');
+
+  // Populated from ?from=...&to=... query params when navigated in from
+  // the dashboard (e.g. clicking "Live Clients"). Empty by default, in
+  // which case DataTable falls back to its own default ('today').
+  initialDateFrom = signal('');
+  initialDateTo = signal('');
+
 
   private getTodayDateString(): string {
     const d = new Date();
@@ -43,6 +52,14 @@ export class Client {
   }
 
   ngOnInit() {
+        this.route.queryParamMap.subscribe(params => {
+      const from = params.get('from');
+      const to = params.get('to');
+      if (from && to) {
+        this.initialDateFrom.set(from);
+        this.initialDateTo.set(to);
+      }
+    });
     this.loadData();
   }
 
@@ -183,6 +200,8 @@ export class Client {
             search: ctx.search ?? '',
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
+            fromDate,
+            toDate,
           };
 
           return { method: 'POST' as const, body };
@@ -207,6 +226,7 @@ export class Client {
       // // bulkActionButtonIcon: 'users',
 
       toolbarButtons: [
+        { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
         { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },

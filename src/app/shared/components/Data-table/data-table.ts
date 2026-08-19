@@ -138,6 +138,37 @@ export class DataTable<T extends object> implements AfterContentInit {
   dateFrom = signal('');
   dateTo = signal('');
 
+  // Feeds app-custom-date-selector's [initialDates] input. Wrapped in computed()
+// so it only produces a NEW object reference when the underlying primitives
+// actually change — an inline object literal in the template would create a
+// new reference every change-detection cycle and spam CustomDateSelector's
+// ngOnChanges.
+initialDatesForPicker = computed(() => ({
+  from: this.initialDateFrom(),
+  to: this.initialDateTo(),
+}));
+
+
+
+// Seeds dateFrom/dateTo from the initialDateFrom/initialDateTo inputs
+// whenever they're set (e.g. navigated in from the dashboard with a
+// date range already applied). Runs as an effect (not just once in
+// ngAfterContentInit) so it also reacts if the same routed component
+// instance is reused with new query params.
+
+private applyInitialDatesEffect = effect(() => {
+  const from = this.initialDateFrom();
+  const to = this.initialDateTo();
+  if (from && to) {
+    untracked(() => {
+      this.dateFrom.set(from);
+      this.dateTo.set(to);
+      this.page.set(0);
+    });
+  }
+});
+
+
   // ── Filter options ─────────────────────────────────────────────────────────
   loadedFilters = signal<TableFilter[]>([]);
 
