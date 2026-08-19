@@ -12,7 +12,78 @@
   </div>
 
   <!-- Right: Actions, Notifications & Profile -->
-  <div class="flex items-center gap-3 shrink-0">
+  <div class="flex items-center gap-4 md:gap-6 shrink-0">
+
+    <!-- Meeting Bar Widget -->
+    @if (showUpcomingMeeting() && upcomingMeeting()) {
+    <div
+      class="hidden lg:flex items-center justify-between gap-3 min-w-[320px] max-w-[420px] w-full rounded-xl border border-indigo-100 bg-indigo-50/40 px-3.5 py-1.5 shadow-2xs hover:bg-indigo-50/70 hover:border-indigo-200/80 transition-all">
+
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <!-- Video Icon Badge -->
+        <div
+          class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+
+          <!-- Pulse dot for LIVE status -->
+          @if ((meetingCountdown() ?? 0) <= 0) { <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+            </span>
+            }
+        </div>
+
+        <!-- Meeting Info -->
+        <div class="min-w-0 flex-1 leading-tight">
+          <div class="flex items-center gap-1.5">
+            <span class="truncate text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">
+              {{ upcomingMeeting()?.orgName }}
+            </span>
+            @if ((meetingCountdown() ?? 0) <= 0) { <span
+              class="inline-flex items-center rounded-md bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800">
+              LIVE
+              </span>
+              }
+          </div>
+          <div class="truncate text-xs font-bold text-slate-800 mt-0.5">
+            {{ upcomingMeeting()?.title }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Countdown display (When upcoming) -->
+      @if ((meetingCountdown() ?? 0) > 0) {
+      <div
+        class="flex items-center gap-1.5 bg-white/80 border border-indigo-100/80 rounded-lg px-2.5 py-1 shrink-0 shadow-2xs">
+        <span class="text-[10px] font-medium text-slate-400 uppercase tracking-tight">Starts in</span>
+        <span class="font-mono text-xs font-bold text-amber-600 tabular-nums">
+          {{ formatMeetingCountdown() }}
+        </span>
+      </div>
+      }
+
+      <!-- Join Button (When Live) -->
+      @if ((meetingCountdown() ?? 0) <= 0) { <button type="button" (click)="joinUpcomingMeeting()"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 active:bg-emerald-700 transition-colors focus:outline-hidden">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <span>Join Now</span>
+        </button>
+        }
+
+    </div>
+    }
+
+    <!-- Vertical Separator to visually isolate profile from meeting widget -->
+    @if (showUpcomingMeeting() && upcomingMeeting()) {
+    <div class="hidden lg:block h-6 w-px bg-slate-200 shrink-0"></div>
+    }
+
     <!-- User Profile Card -->
     <div class="relative shrink-0" appClickOutside (clickOutside)="showProfileMenu.set(false)">
       <button type="button"
@@ -22,7 +93,7 @@
         <div class="relative shrink-0">
           <div
             class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs">
-             {{ getFirstLetter() }}
+            {{ getFirstLetter() }}
           </div>
           <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
         </div>
@@ -32,7 +103,6 @@
           </span>
           <span class="text-[10px] font-semibold text-slate-400 mt-0.5">
             {{ designation() }}
-
           </span>
         </div>
       </button>
@@ -41,7 +111,7 @@
         class="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg ring-1 ring-slate-900/5">
         <div class="px-4 py-3 border-b border-slate-200">
           <p class="text-xs font-bold text-slate-900">{{ adminName() }}</p>
-          <p class="text-[10px] font-semibold text-slate-500 mt-1">{{ designation() }}</p>
+          <p class="text-[10px] font-semibold text-slate-500 mt-0.5">{{ designation() }}</p>
         </div>
         <!-- <button
           type="button"
@@ -63,5 +133,6 @@
         </button>
       </div>
     </div>
+
   </div>
 </header>

@@ -2,7 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse ,RescheduleMeetingResponse} from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse, RescheduleMeetingResponse, RecentActivity } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -40,6 +40,9 @@ interface AgendaItem {
 }
 
 import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
+import { DatePicker } from '../../shared/components/inputs/date-picker/date-picker';
+import { DatePicker as DatePickerService } from '../../shared/service/date-picker/date-picker';
+import { TimePickerComponent } from '../../shared/components/inputs/time-picker/time-picker';
 
 import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
@@ -48,7 +51,7 @@ import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -135,6 +138,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   });
   loadingDashboardStats = false;
 
+  // ============ Recent Activity (from /meetings/recent-activity) ============
+  recentActivities = signal<RecentActivity[]>([]);
+  loadingRecentActivity = false;
+
   // ============ Meeting Detail (Attendance) Modal ============
   showAttendanceModal = false;
   attendanceLoading = false;
@@ -153,10 +160,20 @@ rescheduleError: string | null = null;
 selectedRescheduleMeeting: MeetingRow | null = null;
 
 rescheduleDate = '';
+minDateToday: Date = new Date();
 rescheduleTime = '';
 rescheduleDuration = 60; // minutes
 
 rescheduleDurationOptions = [
+  { label: '15 minutes', value: 15 },
+  { label: '30 minutes', value: 30 },
+  { label: '45 minutes', value: 45 },
+  { label: '1 hour', value: 60 },
+  { label: '1 hour 30 minutes', value: 90 },
+  { label: '2 hours', value: 120 },
+];
+
+rescheduleDurationSelectOptions: SelectOption[] = [
   { label: '15 minutes', value: 15 },
   { label: '30 minutes', value: 30 },
   { label: '45 minutes', value: 45 },
@@ -465,6 +482,7 @@ openRescheduleModal(row: MeetingRow): void {
 
   this.selectedRescheduleMeeting = row;
   this.rescheduleError = null;
+  this.minDateToday = new Date();
 
   // Existing meeting date
   if (row.startTime) {
@@ -488,6 +506,26 @@ openRescheduleModal(row: MeetingRow): void {
 
   this.showRescheduleModal = true;
 }
+
+  get rescheduleTimeMinutes(): number {
+    if (!this.rescheduleTime) return 0;
+    if (typeof this.rescheduleTime === 'number') return this.rescheduleTime;
+    const parts = String(this.rescheduleTime).split(':');
+    if (parts.length >= 2) {
+      return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+    }
+    return 0;
+  }
+
+  set rescheduleTimeMinutes(val: number) {
+    if (val === null || val === undefined) {
+      this.rescheduleTime = '';
+      return;
+    }
+    const hours = String(Math.floor(val / 60)).padStart(2, '0');
+    const mins = String(val % 60).padStart(2, '0');
+    this.rescheduleTime = `${hours}:${mins}`;
+  }
 
 private formatDateForInput(date: Date): string {
   const year = date.getFullYear();
@@ -522,21 +560,41 @@ private parseDurationToMinutes(duration: string | null): number {
   return total > 0 ? total : 60;
 }
 
-getRescheduleEndTime(): Date | null {
+private parseRescheduleStart(): Date | null {
   if (!this.rescheduleDate || !this.rescheduleTime) {
     return null;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
+  let formattedDate = this.rescheduleDate;
+
+  // Handle formatted date from DatePicker ("05 February, 2026")
+  if (formattedDate.includes(',')) {
+    formattedDate = DatePickerService.reverseFormatDate(formattedDate);
+  }
+
+  if (!formattedDate) {
+    return null;
+  }
+
+  const timeStr = String(this.rescheduleTime).includes(':') ? this.rescheduleTime : '00:00';
+  const start = new Date(`${formattedDate}T${timeStr}:00`);
 
   if (Number.isNaN(start.getTime())) {
     return null;
   }
 
+  return start;
+}
+
+getRescheduleEndTime(): Date | null {
+  const start = this.parseRescheduleStart();
+
+  if (!start) {
+    return null;
+  }
+
   return new Date(
-    start.getTime() + this.rescheduleDuration * 60 * 1000
+    start.getTime() + (Number(this.rescheduleDuration) || 60) * 60 * 1000
   );
 }
 
@@ -558,21 +616,15 @@ private buildRescheduleDateTime(): {
   end: string;
 } | null {
 
-  if (!this.rescheduleDate || !this.rescheduleTime) {
+  const start = this.parseRescheduleStart();
+
+  if (!start) {
     return null;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
-
-  if (Number.isNaN(start.getTime())) {
-    return null;
-  }
-
+  const durationMins = Number(this.rescheduleDuration) || 60;
   const end = new Date(
-    start.getTime() +
-    this.rescheduleDuration * 60 * 1000
+    start.getTime() + durationMins * 60 * 1000
   );
 
   const pad = (value: number) =>
@@ -595,19 +647,17 @@ isRescheduleFormValid(): boolean {
     return false;
   }
 
-  if (!this.rescheduleDate || !this.rescheduleTime) {
+  if (!this.rescheduleDate || this.rescheduleTime === null || this.rescheduleTime === undefined || this.rescheduleTime === '') {
     return false;
   }
 
-  if (!this.rescheduleDuration || this.rescheduleDuration <= 0) {
+  if (!this.rescheduleDuration || Number(this.rescheduleDuration) <= 0) {
     return false;
   }
 
-  const start = new Date(
-    `${this.rescheduleDate}T${this.rescheduleTime}:00`
-  );
+  const start = this.parseRescheduleStart();
 
-  if (Number.isNaN(start.getTime())) {
+  if (!start) {
     return false;
   }
 
@@ -672,6 +722,9 @@ submitReschedule(): void {
 
         // Refresh dashboard numbers
         this.fetchDashboardStats();
+
+        // Refresh recent activity feed
+        this.fetchRecentActivity();
       },
 
       error: (err) => {
@@ -732,7 +785,9 @@ getTodayDate(): string {
         // See the ViewChild comment above — swap .refresh() for whatever
         // your DataTable component's actual reload method is named.
         this.meetingsTable?.refresh?.();
+        this.fetchApiMeetings();
         this.fetchDashboardStats();
+        this.fetchRecentActivity();
       },
       error: (err) => {
         this.showToastMessage(err?.error?.message || 'Failed to cancel meeting.');
@@ -870,6 +925,7 @@ getTodayDate(): string {
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
+    this.fetchRecentActivity();
     document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
@@ -886,9 +942,70 @@ getTodayDate(): string {
       next: (res) => {
         if (res && res.data) {
           this.apiMeetings.set(res.data);
+          if (res.data.length > 0 && res.data[0].startTime) {
+            const firstDate = new Date(res.data[0].startTime);
+            if (!isNaN(firstDate.getTime())) {
+              this.calendarMonth.set(firstDate.getMonth());
+              this.calendarYear.set(firstDate.getFullYear());
+            }
+          }
+          this.updateMeetingTypesChartFromApi(res.data, res.meta?.total || res.data.length);
         }
       },
       error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
+    });
+  }
+
+  updateMeetingTypesChartFromApi(rows: MeetingRow[], totalCount: number): void {
+    if (!rows || rows.length === 0) {
+      this.meetingTypeChartData = [];
+      this.meetingTypeChartLabels = [];
+      this.meetingTypeChartColors = [];
+      this.meetingTypeDonutCenter = {
+        line1: totalCount.toString(),
+        line2: 'total',
+        line3: ''
+      };
+      this.meetingTypes = [];
+      return;
+    }
+
+    const counts: Record<string, number> = {};
+    for (const r of rows) {
+      const type = (r.meetingType && r.meetingType.trim()) ? r.meetingType.trim() : 'Kickoff';
+      counts[type] = (counts[type] || 0) + 1;
+    }
+
+    const labels = Object.keys(counts);
+    const data = labels.map(l => counts[l]);
+
+    const colorPalette = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6', '#06b6d4', '#ec4899', '#84cc16'];
+    const colorMap: Record<string, string> = {
+      'Kickoff': '#6366f1',
+      'Review': '#8b5cf6',
+      'Training': '#10b981',
+      'QBR': '#f59e0b',
+      'Renewal': '#f43f5e',
+      'Go Live': '#3b82f6'
+    };
+    const colors = labels.map((l, i) => colorMap[l] || colorPalette[i % colorPalette.length]);
+
+    this.meetingTypeChartLabels = labels;
+    this.meetingTypeChartData = data;
+    this.meetingTypeChartColors = colors;
+    this.meetingTypeDonutCenter = {
+      line1: totalCount.toString(),
+      line2: 'total',
+      line3: ''
+    };
+
+    this.meetingTypes = labels.map(l => {
+      const pct = totalCount > 0 ? Math.round((counts[l] / totalCount) * 100) : 0;
+      return {
+        name: l,
+        percentage: pct,
+        color: this.getMeetingTypeColor(l)
+      };
     });
   }
 
@@ -905,6 +1022,76 @@ getTodayDate(): string {
         this.loadingDashboardStats = false;
       }
     });
+  }
+
+  /** Pulls the "Recent Activity" feed from GET /meetings/recent-activity. */
+  fetchRecentActivity(): void {
+  this.loadingRecentActivity = true;
+
+  this.meetingService.getRecentActivity().subscribe({
+    next: (activity) => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recent = (activity || []).filter(item => {
+        const activityDate = new Date(item.time);
+        return !isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
+      });
+
+      this.recentActivities.set(recent);
+      this.loadingRecentActivity = false;
+    },
+    error: (err) => {
+      console.error('Failed to fetch recent activity:', err);
+      this.loadingRecentActivity = false;
+    }
+  });
+}
+
+  /**
+   * Maps an activity's `action` string to icon/colour classes for display —
+   * the API doesn't send these directly (unlike the old mock `activities` list).
+   */
+  /**
+   * Maps an activity's `action` or `title` string to icon/colour classes for display —
+   * provides clean, visually distinct FontAwesome icons inside circular badges.
+   */
+  getActivityIconMeta(action: string, title?: string): { icon: string; iconBg: string; iconText: string } {
+    const a = (action || title || '').toLowerCase();
+    if (a.includes('cancel')) {
+      return { icon: 'fa-ban', iconBg: 'bg-rose-50 border border-rose-200', iconText: 'text-rose-600' };
+    }
+    if (a.includes('reschedul')) {
+      return { icon: 'fa-history', iconBg: 'bg-amber-50 border border-amber-200', iconText: 'text-amber-600' };
+    }
+    if (a.includes('complet')) {
+      return { icon: 'fa-check-circle', iconBg: 'bg-emerald-50 border border-emerald-200', iconText: 'text-emerald-600' };
+    }
+    if (a.includes('no-show') || a.includes('no_show')) {
+      return { icon: 'fa-user-slash', iconBg: 'bg-purple-50 border border-purple-200', iconText: 'text-purple-600' };
+    }
+    if (a.includes('creat') || a.includes('schedul')) {
+      return { icon: 'fa-calendar-check', iconBg: 'bg-indigo-50 border border-indigo-200', iconText: 'text-indigo-600' };
+    }
+    return { icon: 'fa-calendar-day', iconBg: 'bg-indigo-50 border border-indigo-200', iconText: 'text-indigo-600' };
+  }
+
+  getTimelineIconMeta(meeting: MeetingRow): { icon: string; bgClass: string; textClass: string } {
+    const s = meeting?.status;
+    if (s === 1) { // Completed
+      return { icon: 'fa-check-circle', bgClass: 'bg-emerald-50 border-emerald-200', textClass: 'text-emerald-600' };
+    }
+    if (s === 2) { // Rescheduled
+      return { icon: 'fa-history', bgClass: 'bg-amber-50 border-amber-200', textClass: 'text-amber-600' };
+    }
+    if (s === 4) { // Cancelled
+      return { icon: 'fa-ban', bgClass: 'bg-rose-50 border-rose-200', textClass: 'text-rose-600' };
+    }
+    if (s === 3 || s === 5 || s === 6) { // Pending or No-Show
+      return { icon: 'fa-clock', bgClass: 'bg-purple-50 border-purple-200', textClass: 'text-purple-600' };
+    }
+    // Default Scheduled (0)
+    return { icon: 'fa-calendar-check', bgClass: 'bg-indigo-50 border-indigo-200', textClass: 'text-indigo-600' };
   }
 
   onDateApplied(event: { from: string; to: string }): void {
@@ -971,19 +1158,13 @@ getTodayDate(): string {
     { id: 7, title: 'Renewal Discussion notes uploaded for DataCore Inc.', time: 'May 16, 2025 · 04:20 PM', user: 'Anita Patil', icon: 'fa-file-upload', iconBg: 'bg-amber-100', iconText: 'text-amber-600' }
   ];
 
-  meetingTypes = [
-    { name: 'Kickoff', percentage: 28, color: 'bg-indigo-500' },
-    { name: 'Review', percentage: 22, color: 'bg-purple-500' },
-    { name: 'Training', percentage: 18, color: 'bg-emerald-500' },
-    { name: 'QBR', percentage: 12, color: 'bg-amber-500' },
-    { name: 'Renewal', percentage: 20, color: 'bg-rose-500' }
-  ];
+  meetingTypes: { name: string; percentage: number; color: string }[] = [];
 
-  meetingTypeChartData = [28, 22, 18, 12, 20];
-  meetingTypeChartLabels = ['Kickoff', 'Review', 'Training', 'QBR', 'Renewal'];
-  meetingTypeChartColors = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e'];
+  meetingTypeChartData: number[] = [];
+  meetingTypeChartLabels: string[] = [];
+  meetingTypeChartColors: string[] = [];
   meetingTypeDonutCenter = {
-    line1: '27',
+    line1: '0',
     line2: 'total',
     line3: ''
   };
@@ -1256,19 +1437,39 @@ getTodayDate(): string {
     });
   }
 
-  get calendarEventsByDay(): Record<number, DayEvent[]> {
-    const map: Record<number, DayEvent[]> = {};
+  calendarMonth = signal<number>(new Date().getMonth());
+  calendarYear = signal<number>(new Date().getFullYear());
+
+  onCalendarDateSelect(date: Date): void {
+    if (date) {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        this.calendarMonth.set(d.getMonth());
+        this.calendarYear.set(d.getFullYear());
+      }
+    }
+  }
+
+  get calendarEventsByDay(): Record<string | number, DayEvent[]> {
+    const map: Record<string | number, DayEvent[]> = {};
+    const targetMonth = this.calendarMonth();
+    const targetYear = this.calendarYear();
+
     for (const m of this.apiMeetings()) {
       if (!m.startTime) continue;
       const d = new Date(m.startTime);
-      const dayNum = d.getDate();
-      if (!map[dayNum]) map[dayNum] = [];
+      if (isNaN(d.getTime())) continue;
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
 
       const startHrs = d.getHours();
       const startMins = d.getMinutes();
       const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      map[dayNum].push({
+      const eventItem: DayEvent = {
         title: m.title || 'Meeting',
         client: m.orgName || 'N/A',
         timeLabel: `${timeStr} (${this.formatDuration(m.duration)})`,
@@ -1277,7 +1478,16 @@ getTodayDate(): string {
         endMinutes: startHrs * 60 + startMins + 60,
         chipClass: 'bg-indigo-50 border-indigo-200 text-indigo-700',
         accentClass: 'border-indigo-500'
-      });
+      };
+
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(eventItem);
+
+      if (d.getMonth() === targetMonth && d.getFullYear() === targetYear) {
+        const dayNum = d.getDate();
+        if (!map[dayNum]) map[dayNum] = [];
+        map[dayNum].push(eventItem);
+      }
     }
     return map;
   }
@@ -1710,6 +1920,7 @@ getTodayDate(): string {
     this.showToastMessage('Refreshing data...');
     this.fetchDashboardStats();
     this.fetchApiMeetings();
+    this.fetchRecentActivity();
     setTimeout(() => {
       this.refreshing = false;
       this.showToastMessage('Data refreshed successfully');

@@ -1,0 +1,14 @@
+.time-picker-input {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.time-picker-input:hover {
+    border-color: var(--color-brand-500) !important;
+}
+
+.time-picker-input:focus {
+    outline: none !important;
+    border-color: var(--color-brand-500) !important;
+    box-shadow: none !important;
+}

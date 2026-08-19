@@ -5,13 +5,15 @@ import { Router } from '@angular/router';
 import { ScheduleMeetingService, Organization, EmployeeDetails } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
+import { DatePicker as DatePickerService } from '../../../shared/service/date-picker/date-picker';
+import { TimePickerComponent } from '../../../shared/components/inputs/time-picker/time-picker';
 
 type EntryMode = 'select' | 'manual';
 
 @Component({
   selector: 'app-schedule-meeting',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent],
   templateUrl: './schedule-meeting.html',
   styleUrls: ['./schedule-meeting.css']
 })
@@ -38,6 +40,27 @@ export class ScheduleMeeting implements OnInit {
 
     description: ''
   };
+
+  minDateToday: Date = new Date();
+
+  get meetingTimeMinutes(): number {
+    if (!this.newMeeting.time) return 0;
+    const parts = String(this.newMeeting.time).split(':');
+    if (parts.length >= 2) {
+      return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+    }
+    return 0;
+  }
+
+  set meetingTimeMinutes(val: number) {
+    if (val === null || val === undefined) {
+      this.newMeeting.time = '';
+      return;
+    }
+    const hours = String(Math.floor(val / 60)).padStart(2, '0');
+    const mins = String(val % 60).padStart(2, '0');
+    this.newMeeting.time = `${hours}:${mins}`;
+  }
 
   organizations: Organization[] = [];
 
@@ -307,11 +330,17 @@ export class ScheduleMeeting implements OnInit {
 
 private buildStartDateTime(): string {
 
-    // The date-picker may emit a real Date, an ISO string, or a
-    // dd/mm/yyyy-style string depending on its implementation — normalize
-    // whatever we get into an actual Date before reading from it.
     const raw = this.newMeeting.date as unknown;
-    const d = raw instanceof Date ? raw : new Date(raw as string);
+    let d: Date;
+
+    if (raw instanceof Date) {
+      d = raw;
+    } else if (typeof raw === 'string' && raw.includes(',')) {
+      const rev = DatePickerService.reverseFormatDate(raw);
+      d = new Date(rev);
+    } else {
+      d = new Date(raw as string);
+    }
 
     if (!raw || isNaN(d.getTime())) {
         throw new Error(`Invalid meeting date value: ${JSON.stringify(raw)}`);

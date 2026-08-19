@@ -107,7 +107,10 @@ export class DataTableService {
             { label: 'Scheduled',   value: '0' },
             { label: 'Completed',   value: '1' },
             { label: 'Rescheduled', value: '2' },
-            { label: 'Cancelled',   value: '3' },
+            { label: 'Pending',   value: '3' },
+            { label: 'Cancelled',   value: '4' },
+            { label: 'Client No-Show',   value: '5' },
+            { label: 'Host No-Show',   value: '6' },
           ],
         });
 
