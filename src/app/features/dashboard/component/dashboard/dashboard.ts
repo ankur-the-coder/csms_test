@@ -72,7 +72,10 @@ export class DashboardComponent implements OnInit {
   isUsagesLoading = signal(true);
   usagesHasError = signal(false);
 
-
+  // Tracks whatever date range the user last applied on the dashboard's
+  // own date picker, so a card click can carry it forward as query params.
+  appliedFrom = signal('');
+  appliedTo = signal('');
 
   constructor(
     private router: Router,
@@ -138,11 +141,13 @@ export class DashboardComponent implements OnInit {
   }
 
   navigateToClient() {
-    this.router.navigate(['/client']);
+    // this.router.navigate(['/client']);
+    this.router.navigate(['/client'], { queryParams: this.dateQueryParams() });
   }
 
   navigateToImplementation() {
-    this.router.navigate(['/implementation']);
+    // this.router.navigate(['/implementation']);
+    this.router.navigate(['/implementation'], { queryParams: this.dateQueryParams() });
   }
 
   navigateToTraining() {
@@ -265,6 +270,8 @@ export class DashboardComponent implements OnInit {
 
   // ── Date filter ────────────────────────────────────────────────────────────
   onDateApplied(from: string, to: string): void {
+    this.appliedFrom.set(from);
+    this.appliedTo.set(to);
     console.log(from, to);
 
 
@@ -394,6 +401,14 @@ export class DashboardComponent implements OnInit {
     });
 
   }
+
+
+  private dateQueryParams() {
+    return this.appliedFrom() && this.appliedTo()
+      ? { from: this.appliedFrom(), to: this.appliedTo() }
+      : {};
+  }
+
 
   /** Returns a palette of hex colors for `count` slices. */
   private generateColors(count: number): string[] {
