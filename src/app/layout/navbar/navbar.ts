@@ -99,7 +99,16 @@ export class Navbar implements OnInit, OnDestroy {
   private checkRoute(url: string) {
     this.isImplementationRoute = url.includes('implementation'); 
   }
+  getFirstLetter(): string {
+    const name = this.adminName().trim();
+// console.log(name)
 
+    if (!name) {
+      return '';
+    }
+
+    return name.charAt(0).toUpperCase();
+  }
   logOut(): void {
     this.authService.logout();
     this.router.navigate(['/login']);

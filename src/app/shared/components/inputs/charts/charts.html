@@ -1,13 +1,9 @@
 <div class="relative b py-4 h-full rounded-lg
             w-full
             bg-white text-basic  shadow-sm flex flex-col "
-            [ngClass]="leaveChart ? 'px-8' : 'px-3'">
+            [ngClass]="leaveChart ? 'px-4' : 'px-3'">
 
-            @if(leaveChart){<h3 class="ps-1 pe-3 w-full text-left font-semibold py-1">
-              <span [innerHTML]="headingText "></span>
-              <hr class="border border-border  mb-3 mt-1">
-            </h3>
-         }
+         
           
     <div class=" flex  w-full ">
      
@@ -18,46 +14,70 @@
         
       >
         <!-- Chart Type Dropdown (Left Side) -->
-        <button
-          type="button"
-          (clickOutside)="onClickOutside()"
-          (click)="toggleDropdown()"
-          class="max-w-18 h-8 border px-0.5   border-gray-300  
-          bg-component text-basic 
-           rounded-lg  flex items-center justify-between "
-        >
-          <div  
-          class="flex items-center  px-0.5   
-         ">
-            @if(selectedChart){<div
-            class="w-5/6  text-basic "
-              [innerHTML]="getSanitizedIcon(selectedChart.value)"
-              
-            ></div>}
-          </div>
-          <svg  
-            class="w-4 h-2  text-basic
-          "
-            [class.transform]="isDropdownOpen"
-            [class.rotate-180]="isDropdownOpen"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 16"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            ></path>
-          </svg>
-        </button>
-
-        <!-- Export Dropdown (Right Side) -->
-        <div class="relative">
+        <div class="relative" (clickOutside)="onClickOutside()">
           <button
             type="button"
-            (clickOutside)="onExportClickOutside()"
+            (click)="toggleDropdown()"
+            class="max-w-18 h-8 border px-0.5   border-gray-300  
+            bg-component text-basic 
+             rounded-lg  flex items-center justify-between "
+          >
+            <div  
+            class="flex items-center  px-0.5   
+           ">
+              @if(selectedChart){<div
+              class="w-5/6  text-basic "
+                [innerHTML]="getSanitizedIcon(selectedChart.value)"
+                
+              ></div>}
+            </div>
+            <svg  
+              class="w-4 h-2  text-basic
+            "
+              [class.transform]="isDropdownOpen"
+              [class.rotate-180]="isDropdownOpen"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 16"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              ></path>
+            </svg>
+          </button>
+
+          @if(isDropdownOpen){
+            <div class="absolute top-12 left-0 z-10 mt-1 rounded-md">
+              <div class="flex flex-col pb-3 pt-2 bg-white rounded-lg dark:bg-white/10 text-basic border border-white/40 dark:border-white/10 shadow-lg">
+                @for (type of getFilteredChartTypes(); track type.value) {
+                  <button
+                    (click)="selectChart(type)"
+                    class="py-1.5 px-3 flex items-center gap-2 hover:bg-white/40 dark:hover:bg-white/10 hover:text-black focus:outline-none group transition-colors"
+                    [class.bg-white/50]="selectedChart?.value === type.value"
+                    [class.text-black]="selectedChart?.value === type.value"
+                  >
+                    <div 
+                      [innerHTML]="getSanitizedIcon(type.value)"
+                      class="w-6 h-5 text-basic group-hover:text-black" 
+                      [class.text-black]="selectedChart?.value === type.value"
+                    ></div>
+                    <span class="min-w-fit text-sm">
+                      {{ type.label }}
+                    </span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Export Dropdown (Right Side) -->
+        <div class="relative" (clickOutside)="onExportClickOutside()">
+          <button
+            type="button"
             (click)="toggleExportDropdown()"
             class="max-w-18 h-8 border px-0.5 border-gray-300  
             bg-component text-basic 
@@ -89,7 +109,7 @@
 
           @if(isExportDropdownOpen){
             <div class="absolute top-12 right-0 z-10 mt-1 rounded-md">
-              <div class="flex flex-col pb-3 pt-2 bg-white/30 backdrop-blur-md backdrop-saturate-150 rounded-lg dark:bg-white/10 text-basic border border-white/40 dark:border-white/10 shadow-lg min-w-48">
+              <div class="flex flex-col pb-3 pt-2 bg-white rounded-lg dark:bg-white/10 text-basic border border-white/40 dark:border-white/10 shadow-lg min-w-48">
                 
                 <button
                   (click)="viewFullScreen()"
@@ -195,35 +215,6 @@
             </div>
           }
         </div>
-        
-       
-  
-        @if(isDropdownOpen){
-          <div
-          class="absolute top-12 left-0 z-10 mt-1 rounded-md"
-        >
-     
-        <div class="flex flex-col pb-3 pt-2 bg-white/30 backdrop-blur-md backdrop-saturate-150 rounded-lg dark:bg-white/10 text-basic border border-white/40 dark:border-white/10 shadow-lg">
-          @for (type of getFilteredChartTypes(); track type.value) {
-            <button
-              (click)="selectChart(type)"
-              class="py-1.5 px-3 flex items-center gap-2 hover:bg-white/40 dark:hover:bg-white/10 hover:text-black focus:outline-none group transition-colors"
-              [class.bg-white/50]="selectedChart?.value === type.value"
-              [class.text-black]="selectedChart?.value === type.value"
-            >
-              <div 
-                [innerHTML]="getSanitizedIcon(type.value)"
-                class="w-6 h-5 text-basic group-hover:text-black" 
-                [class.text-black]="selectedChart?.value === type.value"
-              ></div>
-              <span class="min-w-fit text-sm">
-                {{ type.label }}
-              </span>
-            </button>
-          }
-        </div>
-        
-        </div>}
       </div>
     </div>
     <!-- @if(leaveChart) {<h3 class="w-full text-center mt-4 font-semibold">
@@ -269,3 +260,8 @@
       <span [innerHTML]="headingText"></span>
     </h3>} -->
   </div>
+     @if(leaveChart){<h3 class="ps-1 pe-3 w-full text-center font-semibold py-1">
+              <span [innerHTML]="headingText "></span>
+              
+            </h3>
+         }

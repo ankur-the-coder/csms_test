@@ -11,7 +11,11 @@ import {
   Output,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ModalService } from '../../../service/modal-service/modal-service';
+import { FileSanitizerService } from '../../../service/date-picker/sanitization-service/file-sanitizer-service';
+
 
 // ─── tiny helper (replaces the shared util) ───────────────────────────────────
 function generateRandomString(length: number): string {
@@ -24,7 +28,7 @@ function generateRandomString(length: number): string {
 @Component({
   selector: 'app-multi-file-input',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './multi-file-input.html',
   styleUrl: './multi-file-input.css',
   providers: [
@@ -42,15 +46,11 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
   @Input() fileLimit = 3;
   @Input() inputType: 'normal' | 'edit' = 'normal';
   @Input() text: 'small' | 'full' = 'full';
-
-  @Input() required = false; // Optional required flag
-
-
-  // ── Config ──────────────────────────────────────────────────────────────────
+  @Input() required = false;
+  @Input() showDeleteButton = true;
   @Input() size = 2; // Maximum file size in MB
   @Output() fileChange = new EventEmitter<any>();
-  // Add this property to State section
-  imagePreviewUrl: string | null = null;
+
   get maxFileSize(): number {
     return this.size * 1024 * 1024;
   }
@@ -68,7 +68,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
 
   get allowedExtensionsLabel(): string {
     if (!this.allowedFileTypes || this.allowedFileTypes.length === 0) return 'all';
-
+    
     const extensions = this.allowedFileTypes.map(mime => {
       if (mime === 'image/png') return 'PNG';
       if (mime === 'image/jpeg') return 'JPEG';
@@ -78,7 +78,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
       if (mime === 'text/csv') return 'CSV';
       if (mime === 'application/vnd.ms-excel') return 'CSV (Excel)';
       if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'Excel (.xlsx)';
-
+      
       const parts = mime.split('/');
       return parts.length > 1 ? parts[1].toUpperCase() : mime;
     });
@@ -87,23 +87,31 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     if (uniqueExts.length === 0) return 'all';
     if (uniqueExts.length === 1) return uniqueExts[0];
     if (uniqueExts.length === 2) return `${uniqueExts[0]} and ${uniqueExts[1]}`;
-
+    
     const last = uniqueExts.pop();
     return `${uniqueExts.join(', ')} and ${last}`;
   }
 
   // ── State ───────────────────────────────────────────────────────────────────
+  @Input() set preloadedFiles(val: string[] | string | null | undefined) {
+    this.setPreloadedUrls(val);
+  }
+  get preloadedFiles(): string[] {
+    return this._preloadedFiles;
+  }
+  private _preloadedFiles: string[] = [];
+
   files: File[] = [];
-  preloadedFiles: string[] = [];
   removedPreloadedFiles: string[] = [];
   isMobileView = false;
   validFileSts = { valid: true, msg: '' };
   limitMsg = '';
   isFileListOpen = false;
-  fileThumbs: string[] = []; // Array to store thumbnails for uploaded files
+  fileThumbs: string[] = [];
   isDragging = false;
   isUploading = false;
-  private errorTimer: any = null; // for auto-hiding error
+  imagePreviewUrl: string | null = null;
+  private errorTimer: any = null;
 
   // ── Viewer state ─────────────────────────────────────────────────────────────
   isViewerOpen = false;
@@ -118,7 +126,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     content?: string;
   }[] = [];
 
-  // ── Form control ─────────────────────────────────────────────────────────────
+  // ── Form control (ControlValueAccessor) ──────────────────────────────────────
   onChange = (
     _files: File[] | { files: File[]; removedPreloadedFiles: string[] }
   ) => { };
@@ -129,6 +137,8 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
   readonly id = 'select' + generateRandomString(5);
 
   constructor(
+    public modalService: ModalService,
+    private fileSanitizerService: FileSanitizerService,
     private sanitizer: DomSanitizer,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef
@@ -138,30 +148,105 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     this.isMobileView = window.innerWidth <= 768;
     if (this.inputType === 'normal') {
       this.files = [];
-      this.preloadedFiles = [];
+      this._preloadedFiles = [];
     }
   }
 
   ngOnDestroy(): void {
     if (this.errorTimer) clearTimeout(this.errorTimer);
     if (this.limitMsgTimer) clearTimeout(this.limitMsgTimer);
-
-    // Clean up any dynamically appended overlay elements
+    
     const mgmt = document.getElementById(this.id + '-mgmt-overlay');
     if (mgmt) mgmt.remove();
     const viewer = document.getElementById(this.id + '-viewer-overlay');
     if (viewer) viewer.remove();
   }
 
+  writeValue(value: any): void {
+    if (!value) {
+      if (this.inputType === 'normal') {
+        this.files = [];
+        this._preloadedFiles = [];
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      const urls: string[] = [];
+      const files: File[] = [];
+      for (const item of value) {
+        if (typeof item === 'string') {
+          urls.push(item);
+        } else if (item instanceof File) {
+          files.push(item);
+        } else if (item && typeof item === 'object' && (item.url || item.file_url || item.file_path)) {
+          urls.push(item.url || item.file_url || item.file_path);
+        }
+      }
+      if (urls.length > 0) {
+        this._preloadedFiles = urls;
+      }
+      if (files.length > 0) {
+        this.files = files;
+      }
+    } else if (typeof value === 'string') {
+      this._preloadedFiles = [value];
+    } else if (value && typeof value === 'object') {
+      if (Array.isArray(value.preloadedFiles)) {
+        this._preloadedFiles = value.preloadedFiles;
+      }
+      if (Array.isArray(value.files)) {
+        this.files = value.files;
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState?(isDisabled: boolean): void {
+    this.disabled = isDisabled;
+    this.cdr.markForCheck();
+  }
+
+  private setPreloadedUrls(val: any): void {
+    if (!val) {
+      this._preloadedFiles = [];
+    } else if (Array.isArray(val)) {
+      this._preloadedFiles = val.filter(u => typeof u === 'string');
+    } else if (typeof val === 'string') {
+      this._preloadedFiles = [val];
+    }
+    this.cdr.markForCheck();
+  }
+
+  getFileName(url: string): string {
+    if (!url) return 'Document';
+    try {
+      const cleanUrl = url.split('?')[0];
+      const parts = cleanUrl.split('/');
+      const filename = parts[parts.length - 1];
+      return filename ? decodeURIComponent(filename) : 'Document';
+    } catch {
+      return 'Document';
+    }
+  }
+
   // ── Modal controllers ────────────────────────────────────────────────────────
   openFileList(): void {
     this.isFileListOpen = true;
+    this.cdr.detectChanges();
     setTimeout(() => {
       const overlay = document.getElementById(this.id + '-mgmt-overlay');
       if (overlay) {
         document.body.appendChild(overlay);
       }
-    }, 10);
+    }, 0);
   }
 
   closeFileList(): void {
@@ -170,9 +255,12 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
       overlay.remove();
     }
     this.isFileListOpen = false;
+    this.cdr.detectChanges();
   }
 
   openViewer(index: number, source: 'new' | 'preloaded'): void {
+    this.closeFileList();
+
     this.viewerItems = [
       ...this.files.map((f) => ({
         file: f,
@@ -188,21 +276,20 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
 
     this.viewerIndex = source === 'new' ? index : this.files.length + index;
     this.isViewerOpen = true;
-    this.isViewerLoading = true;   // ← set loader BEFORE modal opens
+    this.isViewerLoading = true;
     this.imagePreviewUrl = null;
-    this.cdr.detectChanges();      // ← force render the modal into DOM now
+    this.cdr.detectChanges();
 
     setTimeout(() => {
       const overlay = document.getElementById(this.id + '-viewer-overlay');
       if (overlay) {
         document.body.appendChild(overlay);
       }
-      this.loadViewerItem();       // ← now DOM exists, safe to load
+      this.loadViewerItem();
     }, 0);
   }
 
   closeViewer(): void {
-    // Revoke blob URL to free memory
     if (this.imagePreviewUrl && this.imagePreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(this.imagePreviewUrl);
     }
@@ -213,6 +300,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     this.isViewerOpen = false;
     this.safeViewerUrl = null;
     this.viewerItems = [];
+    this.modalService.closeModal('mfi-viewer');
   }
 
   prevViewer(): void {
@@ -236,7 +324,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     window.open(rawUrl, '_blank');
   }
 
-  downloadFile(item?: { file?: File; url?: string; name: string }): void {
+   downloadFile(item?: { file?: File; url?: string; name: string }): void {
     const target = item || this.viewerItems[this.viewerIndex];
     if (!target) return;
 
@@ -259,6 +347,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
   get currentViewerItem() {
     return this.viewerItems[this.viewerIndex];
   }
+
   onViewerImageLoad(): void {
     this.ngZone.run(() => {
       setTimeout(() => {
@@ -349,7 +438,6 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
 
-    // Blocked executable/dangerous file extensions (always rejected)
     const BLOCKED_EXTENSIONS = [
       '.exe', '.bat', '.msi', '.dll', '.sh', '.cmd',
       '.vbs', '.ps1', '.scr', '.com', '.jar', '.pif', '.reg',
@@ -379,7 +467,6 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
             continue;
           }
         }
-        // Magic bytes check — rename se bypass nahi hoga
         const contentValid = await this.isValidFileContent(file);
         if (!contentValid) {
           invalidFiles.push(
@@ -410,18 +497,36 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     }
 
     if (validFiles.length > 0) {
-      setTimeout(() => {
-        this.files.push(...validFiles);
-        validFiles.forEach((f: File, idx: number) => {
-          const actualIndex = (this.files.length - validFiles.length) + idx;
-          this.generateThumb(f, actualIndex);
+      try {
+        const sanitized =
+          await this.fileSanitizerService.sanitizeFiles(validFiles);
+        
+        setTimeout(() => {
+          this.files.push(...sanitized);
+          sanitized.forEach((f, idx) => {
+            const actualIndex = (this.files.length - sanitized.length) + idx;
+            this.generateThumb(f, actualIndex);
+          });
+          this.clearError();
+          this.notifyChange();
+          this.isUploading = false;
+          this.markAsTouched();
+          this.cdr.detectChanges();
         });
-        this.clearError();
-        this.notifyChange();
-        this.isUploading = false;
-        this.markAsTouched();
-        this.cdr.detectChanges();
-      });
+      } catch {
+        setTimeout(() => {
+          this.files.push(...validFiles);
+          validFiles.forEach((f, idx) => {
+            const actualIndex = (this.files.length - validFiles.length) + idx;
+            this.generateThumb(f, actualIndex);
+          });
+          this.clearError();
+          this.notifyChange();
+          this.isUploading = false;
+          this.markAsTouched();
+          this.cdr.detectChanges();
+        });
+      }
     } else {
       setTimeout(() => {
         if (invalidFiles.length > 0) {
@@ -439,55 +544,35 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     const bytes = new Uint8Array(buffer);
     const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // EXE/DLL — block always
     if (hex.startsWith('4d5a')) return false;
 
     const allowed = this.allowedFileTypes || [];
     const noRestriction = !this.allowedFileTypes || this.allowedFileTypes.length === 0;
 
-    // ZIP files (this includes .xlsx and .docx since they are zipped XMLs)
-    // We check for '504b' because ZIPs can be 504b0304, 504b0506, etc.
     if (hex.startsWith('504b')) {
-      // Allow if Excel is permitted or no restriction is applied
       const isExcelAllowed = allowed.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') || allowed.includes('.xlsx');
       if (noRestriction || isExcelAllowed) {
         if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.name.toLowerCase().endsWith('.xlsx')) {
           return true;
         }
       }
-      // Otherwise block (it's a plain .zip or unauthorized archive)
       return false;
     }
 
-    // Older Excel .xls
     if (hex.startsWith('d0cf')) {
       return noRestriction || allowed.includes('application/vnd.ms-excel') || allowed.includes('.xls');
     }
 
-    // If no allowedFileTypes restriction — pass through
     if (noRestriction) return true;
-
-    // PNG
     if (hex.startsWith('89504e47')) return allowed.includes('image/png');
-
-    // JPEG
     if (hex.startsWith('ffd8ff')) return allowed.includes('image/jpeg');
-
-    // PDF
     if (hex.startsWith('25504446')) return allowed.includes('application/pdf');
-
-    // WEBP
     if (hex.startsWith('52494646') && hex.substring(16, 24) === '57454250')
       return allowed.includes('image/webp');
-
-    // AVIF
     if (hex.substring(8, 16) === '66747970') return allowed.includes('image/avif');
-
-    // CSV / plain text — no magic bytes, allow if type matches
     if (file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv'))
       return allowed.includes('text/csv') || allowed.includes('application/vnd.ms-excel');
 
-    // Unknown magic bytes — block
     return false;
   }
 
@@ -542,17 +627,6 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     return `${(sizeInBytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
   }
 
-  getFileName(url: string): string {
-    try {
-      if (!url || typeof url !== 'string') throw new Error('Invalid URL');
-      const last = url.lastIndexOf('/');
-      if (last === -1) throw new Error('No filename in URL');
-      return url.substring(last + 1);
-    } catch {
-      return 'file';
-    }
-  }
-
   getFilePath(url: string): string {
     try {
       if (!url || typeof url !== 'string') throw new Error('Invalid URL');
@@ -564,41 +638,10 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     }
   }
 
-  // ── CVA ──────────────────────────────────────────────────────────────────────
-  registerOnChange(fn: any): void {
-    this.onChange = fn;
-  }
-
-  registerOnTouched(fn: any): void {
-    this.onTouched = fn;
-  }
-
-  setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
-  }
-
   markAsTouched(): void {
     if (!this.touched) {
       this.onTouched();
       this.touched = true;
-    }
-  }
-
-  writeValue(files: File[] | string[]): void {
-    if (this.inputType === 'normal') {
-      this.files = [];
-      this.preloadedFiles = [];
-    } else if (files && files.length && Array.isArray(files)) {
-      if (typeof files[0] === 'string') {
-        this.preloadedFiles = [...(files as string[])];
-        this.files = [];
-      } else {
-        this.files = files as File[];
-        this.preloadedFiles = [];
-      }
-    } else {
-      this.files = [];
-      this.preloadedFiles = [];
     }
   }
 
@@ -627,7 +670,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     this.isViewerLoading = true;
     this.safeViewerUrl = null;
     this.imagePreviewUrl = null;
-    this.cdr.detectChanges();  // show spinner immediately
+    this.cdr.detectChanges();
 
     const item = this.viewerItems[this.viewerIndex];
     if (!item) {
@@ -635,6 +678,8 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
       this.cdr.detectChanges();
       return;
     }
+
+    this.modalService.openModal('mfi-viewer');
 
     if (item.type === 'text') {
       this.isViewerLoading = false;
@@ -644,32 +689,16 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
 
     if (item.type === 'pdf') {
       try {
-        if (item.file) {
-          await this.renderPdfFromFile(item.file, 'viewer-pdf-canvas');
-          return;
-        }
-        if (item.url) {
-          await this.loadPdfJs();
-          const pdfjsLib = (window as any).pdfjsLib;
-          if (!pdfjsLib) throw new Error('pdfjsLib not loaded');
-          const pdf = await pdfjsLib.getDocument({ url: item.url, withCredentials: false }).promise;
-          const container = document.getElementById('viewer-pdf-canvas') as HTMLElement;
-          if (!container) throw new Error('PDF viewer container not found');
-          container.innerHTML = '';
-          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const vp = page.getViewport({ scale: 1.5 });
-            const canvas = document.createElement('canvas');
-            canvas.width = vp.width;
-            canvas.height = vp.height;
-            canvas.style.cssText = 'width:100%;display:block;margin-bottom:8px';
-            container.appendChild(canvas);
-            await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
-          }
-          return;
-        }
+        await this.renderPdfItem(item, 'viewer-pdf-canvas');
       } catch (e) {
-        console.error('PDF render failed', e);
+        console.warn('PDF.js canvas render failed, falling back to iframe embed:', e);
+        const container = document.getElementById('viewer-pdf-canvas');
+        if (container) {
+          const rawUrl = item.file ? URL.createObjectURL(item.file) : this.normalizePdfUrl(item.url!);
+          container.innerHTML = `
+            <iframe src="${rawUrl}" class="w-full h-full border-0 rounded-xl bg-white shadow-md"></iframe>
+          `;
+        }
       } finally {
         this.ngZone.run(() => {
           setTimeout(() => {
@@ -683,16 +712,14 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     }
 
     if (item.type === 'image') {
-      // Generate the URL and let Angular bind it — (load) event will hide spinner
       const rawUrl = item.file ? URL.createObjectURL(item.file) : item.url!;
       this.ngZone.run(() => {
         this.imagePreviewUrl = rawUrl;
-        this.cdr.detectChanges();  // ← bind src NOW so <img> starts loading
+        this.cdr.detectChanges();
       });
-      return;  // spinner hidden by onViewerImageLoad()
+      return;
     }
 
-    // unknown
     const rawUrl = item.file ? URL.createObjectURL(item.file) : item.url!;
     this.ngZone.run(() => {
       this.safeViewerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
@@ -700,6 +727,15 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
   }
+
+  private normalizePdfUrl(url: string): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:') || url.startsWith('data:')) {
+      return url;
+    }
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+
   // ── PDF.js loader ────────────────────────────────────────────────────────────
   private pdfJsReady: Promise<void> | null = null;
 
@@ -724,39 +760,56 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
     return this.pdfJsReady;
   }
 
-  private async renderPdfFromFile(
-    file: File,
+  private async renderPdfItem(
+    item: { file?: File; url?: string },
     containerId: string
   ): Promise<void> {
     await this.loadPdfJs();
     const pdfjsLib = (window as any).pdfjsLib;
-    if (!pdfjsLib) return;
-    try {
-      const ab = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-      const container = document.getElementById(containerId) as HTMLElement;
-      if (!container) return;
-      container.innerHTML = '';
-      for (let p = 1; p <= pdf.numPages; p++) {
-        const page = await pdf.getPage(p);
-        const vp = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        canvas.width = vp.width;
-        canvas.height = vp.height;
-        canvas.style.cssText = 'width:100%;display:block;margin-bottom:8px';
-        container.appendChild(canvas);
-        await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
+    if (!pdfjsLib) throw new Error('PDF.js library failed to load');
+
+    let arrayBuffer: ArrayBuffer;
+    if (item.file) {
+      arrayBuffer = await item.file.arrayBuffer();
+    } else if (item.url) {
+      const targetUrl = this.normalizePdfUrl(item.url);
+      let response = await fetch(targetUrl).catch(() => null);
+      if (!response || !response.ok) {
+        // Retry with relative or raw URL
+        response = await fetch(item.url).catch(() => null);
       }
-    } catch (e) {
-      console.error('PDF render failed', e);
-    } finally {
-      this.ngZone.run(() => {
-        setTimeout(() => {
-          this.isViewerLoading = false;
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-        });
-      });
+      if (!response || !response.ok) {
+        throw new Error(`Failed to fetch PDF from ${item.url}`);
+      }
+      arrayBuffer = await response.arrayBuffer();
+    } else {
+      throw new Error('No file or URL provided for PDF rendering');
+    }
+
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const container = document.getElementById(containerId) as HTMLElement;
+    if (!container) throw new Error(`Container #${containerId} not found in DOM`);
+
+    container.innerHTML = '';
+    const rawWidth = container.clientWidth || container.parentElement?.clientWidth || 750;
+    const containerWidth = Math.max(300, Math.min(rawWidth - 32, 820));
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const baseVp = page.getViewport({ scale: 1 });
+      const fitScale = containerWidth / baseVp.width;
+      const vp = page.getViewport({ scale: fitScale * 1.5 });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width;
+      canvas.height = vp.height;
+      canvas.style.cssText = `width:100%; max-width:${containerWidth}px; height:auto; display:block; margin:0 auto 16px auto; border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,0.15); background-color:#ffffff;`;
+      container.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      }
     }
   }
 
@@ -868,6 +921,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
   }
 
   private resolveFileType(mime: string): 'image' | 'pdf' | 'text' | 'unknown' {
+    if (!mime) return 'unknown';
     if (mime.startsWith('image/')) return 'image';
     if (mime === 'application/pdf') return 'pdf';
     if (mime.startsWith('text/') || mime === 'application/csv' || mime.includes('excel') || mime.includes('spreadsheetml')) return 'text';
@@ -875,6 +929,7 @@ export class MultiFileInput implements ControlValueAccessor, OnInit, OnDestroy {
   }
 
   private resolveUrlType(url: string): 'image' | 'pdf' | 'text' | 'unknown' {
+    if (!url) return 'unknown';
     if (/\.(jpg|jpeg|png|gif|webp|bmp|avif)(\?|$)/i.test(url)) return 'image';
     if (/\.pdf(\?|$)/i.test(url)) return 'pdf';
     if (/\.(csv|txt|xls|xlsx)(\?|$)/i.test(url)) return 'text';
