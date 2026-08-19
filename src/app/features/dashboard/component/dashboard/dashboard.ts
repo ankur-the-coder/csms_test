@@ -61,6 +61,10 @@ export class DashboardComponent implements OnInit {
 
 
   // Usages chart — populated dynamically from API
+  usagesChartLabels = signal<string[]>([]);
+  usagesGroupedData = signal<number[][]>([]);
+  usagesGroupLabels = signal<string[]>(['Actively Usages', 'Low Usages', 'Non Usages']);
+  usagesGroupColors = signal<string[]>(['#10B981', '#F59E0B', '#EF4444']);
   usagesDonutLabels = signal<string[]>([]);
   usagesDonutData = signal<number[]>([]);
   usagesDonutColors = signal<string[]>([]);
@@ -84,9 +88,12 @@ export class DashboardComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-
-
-    // this.onDateApplied();
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    this.onDateApplied(todayStr, todayStr);
   }
 
   // fetchDashboardCards(): void {
@@ -310,30 +317,37 @@ export class DashboardComponent implements OnInit {
           this.feedbackDonutData.set(values);
           this.feedbackDonutColors.set(colors);
 
-          // Always show the numeric total on the first line. Prefer any
-          // `res.total.line1` if present; otherwise fall back to the
-          // computed `total`. Keep other lines empty so only the total
-          // number appears in the donut center.
           const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.feedbackDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
             line3: 'Feedback',
           });
-          // this.cdr.markForCheck();
+        } else {
+          this.feedbackDonutLabels.set([]);
+          this.feedbackDonutData.set([]);
+          this.feedbackDonutColors.set([]);
+          this.feedbackDonutCenterText.set({
+            line1: '0',
+            line2: 'Total',
+            line3: 'Feedback',
+          });
         }
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error fetching feedback chart:', err);
         this.isFeedbackLoading.set(false);
         this.feedbackHasError.set(true);
+        this.cdr.markForCheck();
       }
     });
+
     this.isConnectedLoading.set(true);
     this.connectedHasError.set(false);
     this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
       next: (res) => {
-        this.isFeedbackLoading.set(false);
+        this.isConnectedLoading.set(false);
         if (res && res.data && res.data.length) {
           const labels = res.data.map(item => item.label);
           const values = res.data.map(item => item.value);
@@ -344,59 +358,88 @@ export class DashboardComponent implements OnInit {
           this.connectedDonutData.set(values);
           this.connectedDonutColors.set(colors);
 
-          // Always show the numeric total on the first line. Prefer any
-          // `res.total.line1` if present; otherwise fall back to the
-          // computed `total`. Keep other lines empty so only the total
-          // number appears in the donut center.
           const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.connectedDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
             line3: 'Connect',
           });
-          // this.cdr.markForCheck();
+        } else {
+          this.connectedDonutLabels.set([]);
+          this.connectedDonutData.set([]);
+          this.connectedDonutColors.set([]);
+          this.connectedDonutCenterText.set({
+            line1: '0',
+            line2: 'Total',
+            line3: 'Connect',
+          });
         }
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Error fetching feedback chart:', err);
+        console.error('Error fetching connect chart:', err);
         this.isConnectedLoading.set(false);
         this.connectedHasError.set(true);
+        this.cdr.markForCheck();
       }
     });
-
 
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
     this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
-      next: (res) => {
-        this.isFeedbackLoading.set(false);
-        if (res && res.data && res.data.length) {
-          const labels = res.data.map(item => item.label);
-          const values = res.data.map(item => item.value);
-          const total = values.reduce((sum, v) => sum + v, 0);
+      next: (res: any) => {
+        this.isUsagesLoading.set(false);
+        if (res && res.modules) {
+          const modulesObj = res.modules;
+          const moduleKeys = Object.keys(modulesObj);
+          const labels = moduleKeys.map(key => key.charAt(0).toUpperCase() + key.slice(1));
+          const groupedData = moduleKeys.map(key => {
+            const mod = modulesObj[key];
+            return [
+              mod.activelyUsages || 0,
+              mod.lowuUsages || 0,
+              mod.nonUsages || 0
+            ];
+          });
+
+          this.usagesChartLabels.set(labels);
+          this.usagesGroupedData.set(groupedData);
+          this.usagesGroupLabels.set(['Actively Usages', 'Low Usages', 'Non Usages']);
+        } else if (res && res.data && res.data.length) {
+          const labels = res.data.map((item: any) => item.label);
+          const values = res.data.map((item: any) => item.value);
+          const total = values.reduce((sum: number, v: number) => sum + v, 0);
           const colors = this.generateColors(res.data.length);
 
           this.usagesDonutLabels.set(labels);
           this.usagesDonutData.set(values);
           this.usagesDonutColors.set(colors);
 
-          // Always show the numeric total on the first line. Prefer any
-          // `res.total.line1` if present; otherwise fall back to the
-          // computed `total`. Keep other lines empty so only the total
-          // number appears in the donut center.
           const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.usagesDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
             line3: 'Usages',
           });
-          // this.cdr.markForCheck();
+        } else {
+          this.usagesChartLabels.set([]);
+          this.usagesGroupedData.set([]);
+          this.usagesDonutLabels.set([]);
+          this.usagesDonutData.set([]);
+          this.usagesDonutColors.set([]);
+          this.usagesDonutCenterText.set({
+            line1: '0',
+            line2: 'Total',
+            line3: 'Usages',
+          });
         }
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Error fetching feedback chart:', err);
+        console.error('Error fetching usages chart:', err);
         this.isUsagesLoading.set(false);
         this.usagesHasError.set(true);
+        this.cdr.markForCheck();
       }
     });
 
@@ -427,3 +470,4 @@ export class DashboardComponent implements OnInit {
     return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
   }
 }
+
