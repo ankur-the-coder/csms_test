@@ -1,5 +1,6 @@
 /* ===== Tailwind v4 ===== */
 @import 'tailwindcss';
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
 /* ==========================================================================
    THEME REGISTRATION (Tailwind v4 — @theme inline)
