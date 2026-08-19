@@ -117,6 +117,10 @@
 
     <!-- Usages Grouped Bar Widget -->
     <div class="lg:col-span-4 md:col-span-6 ">
+      <!-- <app-charts chartId="UsagesChart" [chartType]="'bar'" [chartData]="usagesDonutData()"
+        [chartLabels]="usagesDonutLabels()" [backgroundColors]="usagesDonutColors()" [headingText]="'Usages'"
+        [hoverLabel]="'Usages'" [donutCenterText]="usagesDonutCenterText()" [leaveChart]="true"
+        [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts> -->
       <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
         [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
         [headingText]="'Usages'" [yAxisTitle]="''" [leaveChart]="true"

@@ -1,6 +1,6 @@
 import { computed, EventEmitter, inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, AfterViewInit, Input, OnDestroy, NgZone, Output, SimpleChanges, Pipe, PipeTransform } from '@angular/core';
+import { Component, AfterViewInit, Input, OnDestroy, OnInit, NgZone, Output, SimpleChanges, Pipe, PipeTransform, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   Chart,
@@ -20,6 +20,7 @@ import {
 } from 'chart.js';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subject } from 'rxjs';
+import { ClickOutsideDirective } from '../../../directives/click-outside.directive';
 
 
 
@@ -33,13 +34,13 @@ interface ChartTypeOption {
 export type CustomChartType = 'bar' | 'line' | 'area' | 'doughnut' | 'radar' | 'polarArea' | 'pie';
  @Component({
   selector: 'app-charts',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClickOutsideDirective],
   templateUrl: './charts.html',
   styleUrl: './charts.css',
 })
 
 
-export class ChartComponent {
+export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ---------------------------------------------------------------------
   // SSR / Platform guard.
@@ -50,6 +51,10 @@ export class ChartComponent {
   // ---------------------------------------------------------------------
   private platformId = inject(PLATFORM_ID);
   private isBrowser: boolean = isPlatformBrowser(this.platformId);
+
+  @ViewChild('chartContainer') chartContainerRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('chartCanvas') chartCanvasRef?: ElementRef<HTMLCanvasElement>;
+  private resizeObserver: ResizeObserver | null = null;
 
  @Input() chartData: number[] = [];
   @Input() chartLabels: string[] = [];
@@ -86,23 +91,19 @@ export class ChartComponent {
  private isFullscreenMode: boolean = false;
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Guard: `updateChart()` touches `document` and Chart.js — never run on the server.
+    // Guard: `createChart()` touches `document` and Chart.js — never run on the server.
     if (!this.isBrowser) {
       return;
     }
 
-    // console.log(this.headingText)
-    if (changes['yAxisTitle']) {
-      // console.log('yAxisTitle has changed:', this.yAxisTitle);
-      this.updateChart(); // Update chart when the title changes
-    }
     if (
       changes['chartData'] ||
       changes['chartLabels'] ||
       changes['chartType'] ||
       changes['backgroundColors'] ||
       changes['hoverLabel'] ||
-      changes['xAxisTitle']
+      changes['xAxisTitle'] ||
+      changes['yAxisTitle']
     ) {
       this.filterTopData(); 
       this.updateChart();
@@ -164,80 +165,7 @@ private filterTopData(): void {
     if (!this.isBrowser) {
       return;
     }
-
-    if (this.chartType === 'groupedBar' && this.groupedData.length > 0) {
-      this.createGroupedBarChart();
-      return;
-    }
-    if (this.myChart) {
-      const colors = this.backgroundColors.slice(0, this.chartData.length);
-      const isArea = this.isAreaChart();
-      const isRadar = this.isRadarChart();
-      
-      // Get current color settings
-      const labelColor = this.isDarkMode ? 'white' : 'black';
-      
-      // Update the chart data and labels
-      this.myChart.data.labels = this.chartLabels;
-      this.myChart.data.datasets[0].data = this.chartData;
-      
-      // Apply the same color logic as createChart()
-      if (isArea) {
-        // For area charts, use the first color from backgroundColors array
-        const firstColor = colors[0] || '#4BC0C0'; // fallback to teal
-        
-        // Set background color with transparency
-        if (firstColor.startsWith('rgba')) {
-          this.myChart.data.datasets[0].backgroundColor = firstColor;
-        } else if (firstColor.startsWith('rgb')) {
-          this.myChart.data.datasets[0].backgroundColor = firstColor.replace('rgb', 'rgba').replace(')', ', 0.2)');
-        } else {
-          // Assume it's hex, convert to rgba
-          const hex = firstColor.replace('#', '');
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          this.myChart.data.datasets[0].backgroundColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
-        }
-        
-        // Set border color (full opacity)
-        if (firstColor.startsWith('rgba')) {
-          this.myChart.data.datasets[0].borderColor = firstColor.replace(/[\d\.]+\)$/g, '1)');
-        } else if (firstColor.startsWith('rgb')) {
-          this.myChart.data.datasets[0].borderColor = firstColor;
-        } else {
-          // Assume it's hex, convert to rgb
-          const hex = firstColor.replace('#', '');
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          this.myChart.data.datasets[0].borderColor = `rgb(${r}, ${g}, ${b})`;
-        }
-      } else if (isRadar) {
-        this.myChart.data.datasets[0].backgroundColor = 'rgba(75, 192, 192, 0.2)';
-        this.myChart.data.datasets[0].borderColor = 'rgb(75, 192, 192)';
-      } else {
-        // For other chart types, use the colors array as before
-        this.myChart.data.datasets[0].backgroundColor = colors;
-      }
-      
-      // Update y-axis title if it exists
-      if (this.myChart.options.scales && this.myChart.options.scales['y']) {
-        (this.myChart.options.scales['y'] as any).title = {
-          display: !!this.yAxisTitle,
-          text: this.yAxisTitle,
-          color: labelColor,
-          font: {
-            size: 10,
-            weight: 'bold',
-          },
-        };
-      }
-  
-      this.myChart.update(); 
-    } else {
-      this.createChart(); 
-    }
+    this.createChart();
   }
 
 
@@ -248,14 +176,14 @@ private filterTopData(): void {
   chartTypes: ChartTypeOption[] = [
     {
       value: 'bar',
-      label: 'barchart',
+      label: 'Bar Chart',
       icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
   <path d="M18 20V10H22V20H18ZM12 20V4H16V20H12ZM6 20V14H10V20H6Z"/>
 </svg>`,
     },
     {
       value: 'line',
-      label: 'linechart',
+      label: 'Line Chart',
       icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
   <polyline points="2 19 6 13 10 15 14 9 18 11 22 5" fill="none" stroke="currentColor" stroke-width="2" />
   <path d="M2 19h20" fill="none" stroke="currentColor" stroke-width="2" />
@@ -264,7 +192,7 @@ private filterTopData(): void {
     },
     {
       value: 'area',
-      label: 'areachart',
+      label: 'Area Chart',
       icon: `<svg  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"  width="20" height="20">
 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4C4.55228 4 5 4.44772 5 5V11.5858L7.29289 9.29289C7.59725 8.98853 8.06222 8.91308 8.44721 9.10557L11.6576 10.7108L15.1679 5.4453C15.4477 5.02568 15.9961 4.88003 16.4472 5.10557L20.4472 7.10557C20.786 7.27496 21 7.62123 21 8V19C21 19.5523 20.5523 20 20 20H4C3.44772 20 3 19.5523 3 19V14.0002C3 14.0001 3 13.9999 3 13.9998V5C3 4.44772 3.44772 4 4 4ZM5 14.4142V18H19V8.61803L16.3424 7.28922L12.8321 12.5547C12.5523 12.9743 12.0039 13.12 11.5528 12.8944L8.19745 11.2168L5 14.4142Z" fill="currentColor"/>
 </svg>
@@ -272,7 +200,7 @@ private filterTopData(): void {
     },
     {
       value: 'pie',
-      label: 'piechart',
+      label: 'Pie Chart',
       icon: `<svg  viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"  width="20" height="20" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
     
     <title>pie-chart</title>
@@ -293,7 +221,7 @@ private filterTopData(): void {
     },
     {
       value: 'doughnut',
-      label: 'doughnut',
+      label: 'Doughnut Chart',
       icon: `<svg  viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"  width="20" height="20">
 <path d="M0 7.49996C0 3.52583 3.09098 0.27365 7 0.0163574V4.0354C5.30385 4.27801 4 5.73672 4 7.49996C4 9.43295 5.567 11 7.5 11C8.28618 11 9.01181 10.7407 9.5961 10.3031L12.438 13.1451C11.1188 14.3 9.39113 15 7.5 15C3.35786 15 0 11.6421 0 7.49996Z" fill="#000000"/>
 <path d="M13.1451 12.438C14.3001 11.1187 15 9.39107 15 7.49996C15 6.46644 14.7909 5.48175 14.4128 4.58586L10.7552 6.21147C10.9132 6.61024 11 7.04496 11 7.49996C11 8.28611 10.7408 9.01174 10.3032 9.59602L13.1451 12.438Z" fill="#000000"/>
@@ -303,7 +231,7 @@ private filterTopData(): void {
     },
     {
       value: 'radar',
-      label: 'radarchart',
+      label: 'Radar Chart',
       icon: `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
 	 width="20px" height="20px" viewBox="0 0 96.946 96.946"
 	 xml:space="preserve">
@@ -343,7 +271,7 @@ private filterTopData(): void {
     },
     {
       value: 'polarArea',
-      label: 'polarchart',
+      label: 'Polar Chart',
       icon: `<svg version="1.0" xmlns="http://www.w3.org/2000/svg"  width="20" height="20"
             viewBox="0 0 512.000000 512.000000"
             preserveAspectRatio="xMidYMid meet">
@@ -374,7 +302,7 @@ private filterTopData(): void {
     },
     {
       value: 'groupedBar',
-      label: 'barchart',
+      label: 'Grouped Bar Chart',
       icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
         <path d="M6 20V10H10V20H6ZM12 20V4H16V20H12ZM18 20V14H22V20H18Z"/>
       </svg>`
@@ -421,7 +349,7 @@ private filterTopData(): void {
     this.onChangeDate.next(event)
   }
   ngOnInit() {
-    // Guard: setupThemeObserver()/createChart() touch `document` and canvas.
+    // Guard: setupThemeObserver() touches `document`.
     if (!this.isBrowser) {
       return;
     }
@@ -429,7 +357,6 @@ private filterTopData(): void {
     this.setupThemeObserver();
     // Initialize theme immediately
     this.isDarkMode = document.documentElement.classList.contains('dark');
-    this.createChart(); // Ensure chart is created with the current theme
   }
 
   private setupThemeObserver(): void {
@@ -516,8 +443,6 @@ private filterTopData(): void {
     }
   }
 
-  // ngOnDestroy is implemented near the bottom of the class (kept as-is).
-
   setSelectedChartType() {
     // Find the default chart based on the provided chartType
     this.selectedChart = this.chartTypes.find((type) => type.value === this.chartType) || this.chartTypes[0];
@@ -546,7 +471,24 @@ private filterTopData(): void {
     if (!this.isBrowser) {
       return;
     }
-    this.createChart();
+    setTimeout(() => {
+      this.createChart();
+    }, 0);
+
+    if (typeof ResizeObserver !== 'undefined' && this.chartContainerRef?.nativeElement) {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+            if (this.myChart) {
+              this.myChart.resize();
+            } else {
+              this.createChart();
+            }
+          }
+        }
+      });
+      this.resizeObserver.observe(this.chartContainerRef.nativeElement);
+    }
 
     window.addEventListener('resize', this.handleWindowResize);
   }
@@ -640,12 +582,16 @@ private filterTopData(): void {
       }
     };
   
+    const hasData = this.chartLabels && this.chartLabels.length > 0;
+    const labels = hasData ? this.chartLabels : [' ', ' ', ' ', ' ', ' '];
+    const dataValues = hasData ? this.chartData : (isLine || isArea ? [0, 0, 0, 0, 0] : [0, 0, 0, 0, 0]);
+
     const data: ChartData = {
-      labels: this.chartLabels,
+      labels: labels,
       datasets: [
         {
           label: this.hoverLabel,
-          data: this.chartData,
+          data: dataValues,
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           borderWidth: isArea || this.chartType === 'line' ? 2 : 1,
@@ -663,11 +609,34 @@ private filterTopData(): void {
     };
   
     const config: ChartConfiguration = {
-    type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
+      type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
       data,
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 850,
+          easing: 'easeOutQuart',
+        },
+        animations: {
+          y: {
+            duration: 850,
+            easing: 'easeOutQuart',
+            from: (ctx: any) => {
+              if (ctx.type === 'data') {
+                if (ctx.mode === 'default' && !ctx.dropped) {
+                  ctx.dropped = true;
+                  return 0;
+                }
+              }
+              return 0;
+            },
+          },
+          x: {
+            duration: 850,
+            easing: 'easeOutQuart',
+          },
+        },
         plugins: {
           legend: {
             display: !['bar', 'line']
@@ -684,7 +653,7 @@ private filterTopData(): void {
             },
           },
           tooltip: {
-            enabled: true,
+            enabled: hasData,
           },
         },
         scales: {
@@ -708,6 +677,8 @@ private filterTopData(): void {
               },
               y: {
                 beginAtZero: true,
+                suggestedMin: 0,
+                suggestedMax: 1,
                 title: {
                   display: !!this.yAxisTitle,
                   text: this.yAxisTitle,
@@ -736,13 +707,25 @@ private filterTopData(): void {
             tension: isArea ? 0.4 : 0,
           },
         },
-        ...(this.chartType === 'doughnut'
+        ...(this.chartType === 'doughnut' || this.chartType === 'pie'
           ? {
-            cutout: '65%',
+            cutout: this.chartType === 'doughnut' ? '65%' : 0,
+            animation: {
+              animateRotate: true,
+              animateScale: true,
+              duration: 850,
+              easing: 'easeOutQuart',
+            } as any,
           }
           : {}),
         ...(this.chartType === 'polarArea'
           ? {
+            animation: {
+              animateRotate: true,
+              animateScale: true,
+              duration: 850,
+              easing: 'easeOutQuart',
+            } as any,
             scales: {
               r: {
                 beginAtZero: true,
@@ -756,10 +739,15 @@ private filterTopData(): void {
   
     if (this.myChart) {
       this.myChart.destroy();
+      this.myChart = null;
     }
   
-    const canvas = document.getElementById(this.chartId) as HTMLCanvasElement;
+    const canvas = this.chartCanvasRef?.nativeElement || (document.getElementById(this.chartId) as HTMLCanvasElement);
     if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
       this.myChart = new Chart(canvas, config);
     }
   }
@@ -2202,6 +2190,10 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     window.removeEventListener('resize', this.handleWindowResize);
     if (this.currentFullscreenChart) {
       this.currentFullscreenChart.cleanup();
@@ -2353,6 +2345,10 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 750,
+          easing: 'easeOutQuart',
+        },
         plugins: {
           legend: {
             display: true,
@@ -2412,10 +2408,15 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   
     if (this.myChart) {
       this.myChart.destroy();
+      this.myChart = null;
     }
   
-    const canvas = document.getElementById(this.chartId) as HTMLCanvasElement;
+    const canvas = this.chartCanvasRef?.nativeElement || (document.getElementById(this.chartId) as HTMLCanvasElement);
     if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
       this.myChart = new Chart(canvas, config);
     }
   }
