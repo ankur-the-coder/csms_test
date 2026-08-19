@@ -117,7 +117,7 @@
 
     <!-- Health Score Distribution Donut Widget (Shared Chart Component) -->
     <div class="lg:col-span-4 md:col-span-6 ">
-      <app-charts chartId="UsagesChart" [chartType]="'line'" [chartData]="usagesDonutData()"
+      <app-charts chartId="UsagesChart" [chartType]="'bar'" [chartData]="usagesDonutData()"
         [chartLabels]="usagesDonutLabels()" [backgroundColors]="usagesDonutColors()" [headingText]="'Usages'"
         [hoverLabel]="'Usages'" [donutCenterText]="usagesDonutCenterText()" [leaveChart]="true"
         [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts>
