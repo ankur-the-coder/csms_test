@@ -61,6 +61,10 @@ export class DashboardComponent implements OnInit {
 
 
   // Usages chart — populated dynamically from API
+  usagesChartLabels = signal<string[]>([]);
+  usagesGroupedData = signal<number[][]>([]);
+  usagesGroupLabels = signal<string[]>(['Actively Usages', 'Low Usages', 'Non Usages']);
+  usagesGroupColors = signal<string[]>(['#10B981', '#F59E0B', '#EF4444']);
   usagesDonutLabels = signal<string[]>([]);
   usagesDonutData = signal<number[]>([]);
   usagesDonutColors = signal<string[]>([]);
@@ -383,12 +387,28 @@ export class DashboardComponent implements OnInit {
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
     this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.isUsagesLoading.set(false);
-        if (res && res.data && res.data.length) {
-          const labels = res.data.map(item => item.label);
-          const values = res.data.map(item => item.value);
-          const total = values.reduce((sum, v) => sum + v, 0);
+        if (res && res.modules) {
+          const modulesObj = res.modules;
+          const moduleKeys = Object.keys(modulesObj);
+          const labels = moduleKeys.map(key => key.charAt(0).toUpperCase() + key.slice(1));
+          const groupedData = moduleKeys.map(key => {
+            const mod = modulesObj[key];
+            return [
+              mod.activelyUsages || 0,
+              mod.lowuUsages || 0,
+              mod.nonUsages || 0
+            ];
+          });
+
+          this.usagesChartLabels.set(labels);
+          this.usagesGroupedData.set(groupedData);
+          this.usagesGroupLabels.set(['Actively Usages', 'Low Usages', 'Non Usages']);
+        } else if (res && res.data && res.data.length) {
+          const labels = res.data.map((item: any) => item.label);
+          const values = res.data.map((item: any) => item.value);
+          const total = values.reduce((sum: number, v: number) => sum + v, 0);
           const colors = this.generateColors(res.data.length);
 
           this.usagesDonutLabels.set(labels);
@@ -402,6 +422,8 @@ export class DashboardComponent implements OnInit {
             line3: 'Usages',
           });
         } else {
+          this.usagesChartLabels.set([]);
+          this.usagesGroupedData.set([]);
           this.usagesDonutLabels.set([]);
           this.usagesDonutData.set([]);
           this.usagesDonutColors.set([]);
