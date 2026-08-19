@@ -433,3 +433,4 @@ export class DashboardComponent implements OnInit {
     return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
   }
 }
+
