@@ -2,7 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse ,RescheduleMeetingResponse} from './meetings.service';
+import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse, RescheduleMeetingResponse, RecentActivity } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
@@ -137,6 +137,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     totalMeetings: 0
   });
   loadingDashboardStats = false;
+
+  // ============ Recent Activity (from /meetings/recent-activity) ============
+  recentActivities = signal<RecentActivity[]>([]);
+  loadingRecentActivity = false;
 
   // ============ Meeting Detail (Attendance) Modal ============
   showAttendanceModal = false;
@@ -718,6 +722,9 @@ submitReschedule(): void {
 
         // Refresh dashboard numbers
         this.fetchDashboardStats();
+
+        // Refresh recent activity feed
+        this.fetchRecentActivity();
       },
 
       error: (err) => {
@@ -779,6 +786,7 @@ getTodayDate(): string {
         // your DataTable component's actual reload method is named.
         this.meetingsTable?.refresh?.();
         this.fetchDashboardStats();
+        this.fetchRecentActivity();
       },
       error: (err) => {
         this.showToastMessage(err?.error?.message || 'Failed to cancel meeting.');
@@ -916,6 +924,7 @@ getTodayDate(): string {
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
+    this.fetchRecentActivity();
     document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
@@ -951,6 +960,54 @@ getTodayDate(): string {
         this.loadingDashboardStats = false;
       }
     });
+  }
+
+  /** Pulls the "Recent Activity" feed from GET /meetings/recent-activity. */
+  fetchRecentActivity(): void {
+  this.loadingRecentActivity = true;
+
+  this.meetingService.getRecentActivity().subscribe({
+    next: (activity) => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recent = (activity || []).filter(item => {
+        const activityDate = new Date(item.time);
+        return !isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
+      });
+
+      this.recentActivities.set(recent);
+      this.loadingRecentActivity = false;
+    },
+    error: (err) => {
+      console.error('Failed to fetch recent activity:', err);
+      this.loadingRecentActivity = false;
+    }
+  });
+}
+
+  /**
+   * Maps an activity's `action` string to icon/colour classes for display —
+   * the API doesn't send these directly (unlike the old mock `activities` list).
+   */
+  getActivityIconMeta(action: string): { icon: string; iconBg: string; iconText: string } {
+    const a = (action || '').toLowerCase();
+    if (a.includes('cancel')) {
+      return { icon: 'fa-ban', iconBg: 'bg-rose-100', iconText: 'text-rose-600' };
+    }
+    if (a.includes('reschedul')) {
+      return { icon: 'fa-undo-alt', iconBg: 'bg-amber-100', iconText: 'text-amber-600' };
+    }
+    if (a.includes('complet')) {
+      return { icon: 'fa-check', iconBg: 'bg-emerald-100', iconText: 'text-emerald-600' };
+    }
+    if (a.includes('no-show') || a.includes('no_show')) {
+      return { icon: 'fa-user-slash', iconBg: 'bg-rose-100', iconText: 'text-rose-600' };
+    }
+    if (a.includes('creat') || a.includes('schedul')) {
+      return { icon: 'fa-calendar-plus', iconBg: 'bg-indigo-100', iconText: 'text-indigo-600' };
+    }
+    return { icon: 'fa-bell', iconBg: 'bg-slate-100', iconText: 'text-slate-600' };
   }
 
   onDateApplied(event: { from: string; to: string }): void {
@@ -1756,6 +1813,7 @@ getTodayDate(): string {
     this.showToastMessage('Refreshing data...');
     this.fetchDashboardStats();
     this.fetchApiMeetings();
+    this.fetchRecentActivity();
     setTimeout(() => {
       this.refreshing = false;
       this.showToastMessage('Data refreshed successfully');

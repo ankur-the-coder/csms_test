@@ -17,7 +17,7 @@
         <i class="fas fa-share-alt"></i> Share
       </button> -->
       <button (click)="openScheduleModal()"
-        class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center gap-2 shadow-md transition transform hover:scale-105">
+        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-sm">
         <i class="fas fa-plus-circle"></i> Schedule Meeting
       </button>
     </div>
@@ -91,7 +91,8 @@
         <div class="flex items-center gap-2">
           <i class="fas fa-bolt text-indigo-600"></i>
           <h2 class="font-semibold text-slate-900">Recent Activity</h2>
-          <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{{ activities.length }}</span>
+          <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{{ recentActivities().length
+            }}</span>
         </div>
         <button (click)="viewAllActivities()"
           class="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 transition">
@@ -99,15 +100,27 @@
         </button>
       </div>
       <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-        <div *ngFor="let activity of activities" class="p-4 hover:bg-slate-50 transition flex items-start gap-4 group">
+        @if (loadingRecentActivity) {
+        <div class="p-8 text-center text-slate-400">
+          <i class="fas fa-circle-notch fa-spin text-xl mb-2 block"></i>
+          Loading recent activity...
+        </div>
+        } @else if (recentActivities().length === 0) {
+        <div class="p-8 text-center text-slate-400">
+          <i class="fas fa-inbox text-2xl mb-2 block"></i>
+          No recent activity yet.
+        </div>
+        } @else {
+        <div *ngFor="let activity of recentActivities()"
+          class="p-4 hover:bg-slate-50 transition flex items-start gap-4 group">
           <div
-            class="w-10 h-10 rounded-full {{ activity.iconBg }} flex items-center justify-center {{ activity.iconText }} flex-shrink-0">
-            <i class="fas {{ activity.icon }}"></i>
+            class="w-10 h-10 rounded-full {{ getActivityIconMeta(activity.action).iconBg }} flex items-center justify-center {{ getActivityIconMeta(activity.action).iconText }} flex-shrink-0">
+            <i class="fas {{ getActivityIconMeta(activity.action).icon }}"></i>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-slate-900">{{ activity.title }}</p>
             <div class="flex items-center gap-3 mt-0.5">
-              <span class="text-xs text-slate-500">{{ activity.time }}</span>
+              <span class="text-xs text-slate-500">{{ activity.time | date:'MMM d, y · hh:mm a' }}</span>
               <span class="text-xs text-slate-400">·</span>
               <span class="text-xs text-slate-500">{{ activity.user }}</span>
             </div>
@@ -116,6 +129,7 @@
             <i class="fas fa-ellipsis-v"></i>
           </button>
         </div>
+        }
       </div>
     </div>
 

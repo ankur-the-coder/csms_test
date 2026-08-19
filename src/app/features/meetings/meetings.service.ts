@@ -66,6 +66,21 @@ interface DashboardStatsApiResponse {
   data: DashboardStats;
 }
 
+/** One entry from GET /meetings/recent-activity — powers the dashboard's "Recent Activity" panel. */
+export interface RecentActivity {
+  id: number;
+  meetingId: number;
+  action: string;
+  title: string;
+  time: string;
+  user: string;
+}
+
+interface RecentActivityApiResponse {
+  status: boolean;
+  data: RecentActivity[];
+}
+
 /** One attendee/host entry from a checked meeting's attendance report. */
 export interface AttendanceRecord {
   name: string;
@@ -215,6 +230,16 @@ export class MeetingService {
     return this.http
       .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats`)
       .pipe(map(res => res.data));
+  }
+
+  /**
+   * Recent activity feed for the dashboard's "Recent Activity" panel.
+   * Not cached — always fetch fresh.
+   */
+  getRecentActivity(): Observable<RecentActivity[]> {
+    return this.http
+      .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity`)
+      .pipe(map(res => res.data || []));
   }
 
   rescheduleMeeting(
