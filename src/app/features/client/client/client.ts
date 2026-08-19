@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
+import { CustomColumnDirective } from '../../../shared/components/Data-table/custom-column.directive';
 import {
   BulkAction,
   RequestContext,
@@ -19,29 +20,24 @@ export interface ClientRow {
   modules: string;
   leadOwner: string;
   supportOwner: string;
-  implementation: string;
+  progress: number;
   stage: string;
 }
 
 @Component({
   selector: 'app-client',
-  imports: [DataTable],
+  imports: [DataTable, CustomColumnDirective],
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
 export class Client {
-  // 'ClientApi' — same alias se inject karna hoga
   private clientApi = inject(ClientService);
   private route = inject(ActivatedRoute);
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   statusFilter = signal<string>('all');
 
-  // Populated from ?from=...&to=... query params when navigated in from
-  // the dashboard (e.g. clicking "Live Clients"). Empty by default, in
-  // which case DataTable falls back to its own default ('today').
   initialDateFrom = signal('');
   initialDateTo = signal('');
-
 
   private getTodayDateString(): string {
     const d = new Date();
@@ -52,7 +48,7 @@ export class Client {
   }
 
   ngOnInit() {
-        this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe(params => {
       const from = params.get('from');
       const to = params.get('to');
       if (from && to) {
@@ -77,33 +73,26 @@ export class Client {
       modules: raw.module,
       leadOwner: raw.leadOwner,
       supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
-      implementation: raw.implementation,
+      progress: raw.progress,
       stage: raw.stage,
     };
   }
 
   // ── Bulk action handlers ────────────────────────────────────────────────
-  // Keep the actual logic in normal methods; the getter below just wires
-  // each action's id/label/icon to one of these.
   private markImplementation(rows: ClientRow[], status: 'Pending' | 'Completed'): void {
     const ids = rows.map(r => r.orgId);
-    // TODO: call clientApi.updateImplementationStatus(ids, status) then this.loadData()
     console.log(`Mark ${status}:`, ids);
   }
 
   private exportSelected(rows: ClientRow[]): void {
-    // TODO: call clientApi.exportClients(rows.map(r => r.orgId))
     console.log('Export selected:', rows.map(r => r.orgId));
   }
 
   private deleteSelected(rows: ClientRow[]): void {
     const ids = rows.map(r => r.orgId);
-    // TODO: confirm + call clientApi.deleteClients(ids) then this.loadData()
     console.log('Delete:', ids);
   }
 
-  // Getter (not a plain field) so it re-evaluates with fresh closures each
-  // time Angular reads it — matches the pattern used elsewhere in this app.
   get bulkActions(): BulkAction<ClientRow>[] {
     return [
       {
@@ -111,8 +100,8 @@ export class Client {
         label: 'Mark Completed',
         icon: 'check',
         color: '#10b981',
-        // hide this action entirely if every selected row is already Completed
-        hidden: (rows) => rows.every(r => r.implementation === 'Completed'),
+        // now based on progress percentage instead of a status string
+        hidden: (rows) => rows.every(r => r.progress === 100),
         onClick: (rows) => this.markImplementation(rows, 'Completed'),
       },
       {
@@ -120,7 +109,7 @@ export class Client {
         label: 'Mark Pending',
         icon: 'circle-dot',
         color: '#f59e0b',
-        hidden: (rows) => rows.every(r => r.implementation === 'Pending'),
+        hidden: (rows) => rows.every(r => r.progress === 0),
         onClick: (rows) => this.markImplementation(rows, 'Pending'),
       },
       {
@@ -135,7 +124,6 @@ export class Client {
         label: 'Delete',
         icon: 'delete',
         color: '#ef4444',
-        // example: disable delete when a row that shouldn't be removable is selected
         disabled: (rows) => rows.some(r => r.stage === 'PREMIUM'),
         onClick: (rows) => this.deleteSelected(rows),
       },
@@ -148,26 +136,13 @@ export class Client {
     return {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
-        { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
+        // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
-        // {
-        //   key: 'stage',
-        //   label: 'Stage',
-        //   sortable: false,
-        //   type: 'badge',
-        //   badgeMap: { PREMIUM: { label: 'PREMIUM' } },
-        // },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
-        {
-          key: 'implementation',
-          label: 'Implementation',
-          sortable: false,
-          type: 'badge',
-          badgeMap: { Pending: { label: 'Pending' }, Completed: { label: 'Completed' } },
-        },
+        { key: 'progress', label: 'Implementation', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
@@ -193,7 +168,6 @@ export class Client {
           };
           const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'client';
 
-          // POST body with all required fields
           const body = {
             start: ctx.page * ctx.pageSize,
             length: ctx.pageSize,
@@ -219,14 +193,8 @@ export class Client {
       emptyMessage: 'No client records found.',
       clickable: true,
 
-      // ── Bulk actions — this is all you need ────────────────────────────
-      // selectable: true,
-      // // bulkActions: this.bulkActions,
-      // // bulkActionButtonLabel: 'Actions',
-      // // bulkActionButtonIcon: 'users',
-
       toolbarButtons: [
-        { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+        { id: 'date', type: 'datePicker' as const, label: 'Date' },
         { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
