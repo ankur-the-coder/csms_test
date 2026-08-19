@@ -45,7 +45,7 @@ export class Sidebar {
     { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
     { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-    { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' }, 
+    // { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' }, 
     // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
     { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },

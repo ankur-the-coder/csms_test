@@ -528,4 +528,10 @@ export class Implementation implements OnInit, OnDestroy {
     // this.dateTo.set(to);
     // this.page.set(0);
   }
+  getModulesTooltip(row: any): string {
+    return this.getClientModules(row)
+      .filter((mod: any) => this.getModuleTotalCount(row, mod) > 0)
+      .map((mod: any) => `${mod.label}: ${this.getModuleApprovedCount(row, mod)}/${this.getModuleTotalCount(row, mod)}`)
+      .join('\n');
+  }
 }
