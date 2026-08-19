@@ -24,6 +24,7 @@ import { Subject } from 'rxjs';
 
 
 
+
 interface ChartTypeOption {
   value: string;
   label: string;
@@ -524,6 +525,9 @@ private filterTopData(): void {
 
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;
+    if (this.isDropdownOpen) {
+      this.isExportDropdownOpen = false;
+    }
   }
 
   onClickOutside() {
@@ -543,7 +547,15 @@ private filterTopData(): void {
       return;
     }
     this.createChart();
+
+    window.addEventListener('resize', this.handleWindowResize);
   }
+
+  private handleWindowResize = (): void => {
+    if (this.myChart) {
+      this.myChart.resize();
+    }
+  };
 
   private isAreaChart(): boolean {
     return (
@@ -800,6 +812,9 @@ private filterTopData(): void {
 
   toggleExportDropdown() {
     this.isExportDropdownOpen = !this.isExportDropdownOpen;
+    if (this.isExportDropdownOpen) {
+      this.isDropdownOpen = false;
+    }
   }
 
   onExportClickOutside() {
@@ -2187,6 +2202,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
+    window.removeEventListener('resize', this.handleWindowResize);
     if (this.currentFullscreenChart) {
       this.currentFullscreenChart.cleanup();
       if (this.currentFullscreenChart.chart) {

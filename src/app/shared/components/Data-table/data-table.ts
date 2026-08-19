@@ -468,6 +468,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       ].join('|');
 
       if (fetchKey === this._lastFetchKey) return;
+      this._lastFetchKey = fetchKey;
 
       this.loadState.set('loading');
       this.errorMessage.set('');
@@ -507,7 +508,6 @@ export class DataTable<T extends object> implements AfterContentInit {
       const sub = request$.subscribe({
         next: (res) => {
           if (stale) return;
-          this._lastFetchKey = fetchKey;
           const rawData = getByPath(res, dp) as any[] ?? [];
           const mapped = transformRow ? rawData.map(transformRow) : rawData as T[];
           const data = mapped.filter((r): r is T => r !== null && r !== undefined);
@@ -521,6 +521,7 @@ export class DataTable<T extends object> implements AfterContentInit {
         },
         error: (err) => {
           if (stale) return;
+          this._lastFetchKey = '';
           this.loadState.set('error');
           this.errorMessage.set(err?.message ?? 'Failed to load data');
           this.initialLoadDone.set(true);
@@ -553,7 +554,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   ngAfterContentInit(): void {
     const cfg = this.config();
     untracked(() => {
-      this.pageSize.set(cfg.defaultPageSize ?? cfg.pageSizeOptions?.[0] ?? 10);
+      const targetSize = cfg.defaultPageSize ?? cfg.pageSizeOptions?.[0] ?? 10;
+      if (this.pageSize() !== targetSize) {
+        this.pageSize.set(targetSize);
+      }
       const vis: Record<string, boolean> = {};
       cfg.columns.forEach(c => {
         // Non-hideable columns must always start visible, regardless of `hidden`.
