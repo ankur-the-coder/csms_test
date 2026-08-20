@@ -243,12 +243,19 @@ export class Implementation implements OnInit, OnDestroy {
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
-            this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe(params => {
       const from = params.get('from');
-      const to = params.get('to');
+      const to   = params.get('to');
+      const tab  = params.get('tab');
+
       if (from && to) {
         this.initialDateFrom.set(from);
         this.initialDateTo.set(to);
+      }
+
+      // Auto-select the tab when navigated from dashboard (e.g. "Pending Implementations" card)
+      if (tab) {
+        this.statusFilter.set(tab);
       }
     });
     this.setupCardFetchStream();

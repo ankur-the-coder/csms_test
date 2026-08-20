@@ -154,7 +154,7 @@ export class DashboardComponent implements OnInit {
 
   navigateToImplementation() {
     // this.router.navigate(['/implementation']);
-    this.router.navigate(['/implementation'], { queryParams: this.dateQueryParams() });
+    this.router.navigate(['/implementation'], { queryParams: { ...this.dateQueryParams(), tab: 'in_progress' } });
   }
 
   navigateToTraining() {
