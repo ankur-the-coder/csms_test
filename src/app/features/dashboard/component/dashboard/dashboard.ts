@@ -50,7 +50,7 @@ export class DashboardComponent implements OnInit {
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   connectedDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0', line2: 'Total', line3: 'Connect'
+    line1: '0', line2: 'Total', line3: 'Connected'
   });
   isConnectedLoading = signal(true);
   connectedHasError = signal(false);
@@ -362,7 +362,7 @@ export class DashboardComponent implements OnInit {
           this.connectedDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
-            line3: 'Connect',
+            line3: 'Connected',
           });
         } else {
           this.connectedDonutLabels.set([]);
@@ -371,7 +371,7 @@ export class DashboardComponent implements OnInit {
           this.connectedDonutCenterText.set({
             line1: '0',
             line2: 'Total',
-            line3: 'Connect',
+            line3: 'Connected',
           });
         }
         this.cdr.markForCheck();

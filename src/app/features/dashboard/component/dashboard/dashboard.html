@@ -112,7 +112,7 @@
       <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
         [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
         [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()"></app-charts>
+        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()"  [yAxisTitle]="'Connected Count'"></app-charts>
     </div>
 
     <!-- Usages Grouped Bar Widget -->
@@ -123,7 +123,7 @@
         [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts> -->
       <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
         [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
-        [headingText]="'Usages'" [yAxisTitle]="''" [leaveChart]="true"
+        [headingText]="'Usages'" [yAxisTitle]="'Usages Count'" [leaveChart]="true"
         [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts>
     </div>
     <!-- Feedback Score Distribution Donut Widget -->
@@ -131,7 +131,7 @@
       <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
         [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"></app-charts>
+        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"  [yAxisTitle]="'Feedback Count'"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->
 
