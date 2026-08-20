@@ -161,16 +161,278 @@ private filterTopData(): void {
   
 
   private updateChart(): void {
-    // Guard: touches `document` + Chart.js instance methods.
-    if (!this.isBrowser) {
-      return;
-    }
-    this.createChart();
+  if (!this.isBrowser) {
+    return;
   }
 
+  // Grouped bar uses its own builder.
+  if (this.chartType === 'groupedBar' && this.groupedData.length > 0) {
+    this.rebuildGroupedBarWithAnimation();
+    return;
+  }
 
+  const hasData = Array.isArray(this.chartData) && this.chartData.length > 0;
+  const targetData = hasData ? [...this.chartData] : [0, 0, 0, 0, 0];
+  const targetLabels = this.chartLabels?.length
+    ? [...this.chartLabels]
+    : [' ', ' ', ' ', ' ', ' '];
 
+  // First render: create an empty chart and then animate to the real values.
+  if (!this.myChart) {
+    this.createChart(true);
+    return;
+  }
 
+  const expectedType = this.isAreaChart()
+    ? 'line'
+    : (this.chartType === 'groupedBar' ? 'bar' : this.chartType);
+  const existingType = String((this.myChart.config as any).type);
+
+  // Changing Bar -> Pie, Pie -> Doughnut, etc. requires a new controller.
+  // Always start the new chart from zero so the entrance animation is visible.
+  if (existingType !== expectedType) {
+    this.myChart.destroy();
+    this.myChart = null;
+
+    requestAnimationFrame(() => {
+      if (this.isBrowser && !this.myChart) {
+        this.createChart(true);
+      }
+    });
+    return;
+  }
+
+  // Same chart type (for example, date/filter changed).
+  // Do NOT simply assign the new values and call update once: depending on
+  // Angular's change-detection timing the browser can paint the final state
+  // immediately. First animate to zero, then animate zero -> new values.
+  this.myChart.data.labels = targetLabels;
+
+  if (this.myChart.data.datasets?.[0]) {
+    this.myChart.data.datasets[0].data = targetData.map(() => 0) as any;
+    this.myChart.data.datasets[0].label = this.hoverLabel;
+  }
+
+  this.myChart.update();
+
+  requestAnimationFrame(() => {
+    if (!this.myChart) {
+      return;
+    }
+
+    this.myChart.data.labels = targetLabels;
+    if (this.myChart.data.datasets?.[0]) {
+      this.myChart.data.datasets[0].data = targetData as any;
+      this.myChart.data.datasets[0].label = this.hoverLabel;
+    }
+
+    this.myChart.update();
+  });
+}
+
+/**
+ * Creates a normal Chart.js chart with a guaranteed entrance animation.
+ * When animateFromZero=true the chart is initially rendered with zero values,
+ * then the real values are supplied on the next animation frame.
+ */
+private createChart(animateFromZero: boolean = false): void {
+  if (!this.isBrowser) {
+    return;
+  }
+
+  if (this.chartType === 'groupedBar' && this.groupedData.length > 0) {
+    this.createGroupedBarChart();
+    return;
+  }
+
+  // The existing createChart implementation is below. This flag is consumed
+  // just before Chart() is created so the initial render can start from zero.
+  this.createChartInternal(animateFromZero);
+}
+
+private createChartInternal(animateFromZero: boolean = false): void {
+  const colors = this.backgroundColors.slice(0, this.chartData.length);
+  const isArea = this.isAreaChart();
+  const isLine = this.isLineChart();
+  const isRadar = this.isRadarChart();
+
+  const isDarkMode = document.documentElement.classList.contains('dark');
+  const labelColor = isDarkMode ? 'white' : 'black';
+
+  const getBackgroundColor = () => {
+    if (isArea) {
+      const firstColor = colors[0] || '#4BC0C0';
+      if (firstColor.startsWith('rgba')) return firstColor;
+      if (firstColor.startsWith('rgb')) return firstColor.replace('rgb', 'rgba').replace(')', ', 0.2)');
+      const hex = firstColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      return `rgba(${r}, ${g}, ${b}, 0.2)`;
+    }
+    if (isRadar) return 'rgba(75, 192, 192, 0.2)';
+    return colors;
+  };
+
+  const getBorderColor = () => {
+    if (isArea) {
+      const firstColor = colors[0] || '#4BC0C0';
+      if (firstColor.startsWith('rgba')) return firstColor.replace(/[\d\.]+\)$/g, '1)');
+      if (firstColor.startsWith('rgb')) return firstColor;
+      const hex = firstColor.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+    if (isLine || isRadar) return 'rgb(75, 192, 192)';
+    return 'rgba(75, 192, 192, 0.0)';
+  };
+
+  const hasData = this.chartLabels && this.chartLabels.length > 0;
+  const labels = hasData ? [...this.chartLabels] : [' ', ' ', ' ', ' ', ' '];
+  const realData = hasData ? [...this.chartData] : [0, 0, 0, 0, 0];
+  const initialData = animateFromZero ? realData.map(() => 0) : realData;
+
+  const data: ChartData = {
+    labels,
+    datasets: [{
+      label: this.hoverLabel,
+      data: initialData,
+      backgroundColor: getBackgroundColor(),
+      borderColor: getBorderColor(),
+      borderWidth: isArea || this.chartType === 'line' ? 2 : 1,
+      fill: isArea || isRadar ? 'origin' : false,
+      tension: isArea ? 0.4 : 0,
+      borderRadius: this.chartType === 'bar' ? { topLeft: 10, topRight: 10 } : undefined,
+    }],
+  };
+
+  const baseAnimation = {
+    duration: 900,
+    easing: 'easeOutQuart' as const,
+  };
+
+  const config: ChartConfiguration = {
+    type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: baseAnimation,
+      transitions: {
+        active: {
+          animation: baseAnimation,
+        },
+      },
+      plugins: {
+        legend: {
+          display: !['bar', 'line'].concat(isArea ? ['area'] : []).includes(this.chartType),
+          position: 'bottom',
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'circle',
+            boxWidth: 6,
+            boxHeight: 6,
+            color: labelColor,
+            padding: 10,
+          },
+        },
+        tooltip: { enabled: hasData },
+      },
+      scales: (this.chartType === 'bar' || isArea || this.chartType === 'line') ? {
+        x: {
+          title: {
+            display: !!this.xAxisTitle,
+            text: this.xAxisTitle,
+            font: { size: 10, weight: 'bold' },
+          },
+          ticks: { color: labelColor },
+          grid: { color: isDarkMode ? '#333' : '#ddd' },
+        },
+        y: {
+          beginAtZero: true,
+          suggestedMin: 0,
+          suggestedMax: 1,
+          title: {
+            display: !!this.yAxisTitle,
+            text: this.yAxisTitle,
+            color: labelColor,
+            font: { size: 10, weight: 'bold' },
+          },
+          ticks: { color: labelColor },
+          grid: { color: isDarkMode ? '#333' : '#ddd' },
+        },
+      } : undefined,
+      elements: {
+        point: { radius: 5 },
+        line: { tension: isArea ? 0.4 : 0 },
+      },
+      ...(this.chartType === 'doughnut' || this.chartType === 'pie' ? {
+        cutout: this.chartType === 'doughnut' ? '65%' : 0,
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1000,
+          easing: 'easeOutQuart',
+        } as any,
+      } : {}),
+      ...(this.chartType === 'polarArea' ? {
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1000,
+          easing: 'easeOutQuart',
+        } as any,
+        scales: { r: { beginAtZero: true } },
+      } : {}),
+    },
+    plugins: this.chartType === 'doughnut' ? [this.donutTextPlugin()] : [],
+  };
+
+  if (this.myChart) {
+    this.myChart.destroy();
+    this.myChart = null;
+  }
+
+  const canvas = this.chartCanvasRef?.nativeElement ||
+    (document.getElementById(this.chartId) as HTMLCanvasElement);
+
+  if (!canvas) {
+    return;
+  }
+
+  this.myChart = new Chart(canvas, config);
+
+  // This is the critical part: the first frame contains zero values, and the
+  // second frame receives the real values. This makes the animation visible
+  // even when the chart is created after a date/type change.
+  if (animateFromZero && hasData) {
+    requestAnimationFrame(() => {
+      if (!this.myChart) return;
+
+      this.myChart.data.labels = [...this.chartLabels];
+      if (this.myChart.data.datasets?.[0]) {
+        this.myChart.data.datasets[0].data = [...this.chartData] as any;
+      }
+      this.myChart.update();
+    });
+  }
+}
+
+private rebuildGroupedBarWithAnimation(): void {
+  if (!this.isBrowser) return;
+
+  if (this.myChart) {
+    this.myChart.destroy();
+    this.myChart = null;
+  }
+
+  requestAnimationFrame(() => {
+    if (!this.isBrowser) return;
+    this.createGroupedBarChart();
+  });
+}
 
 
   chartTypes: ChartTypeOption[] = [
@@ -459,12 +721,51 @@ private filterTopData(): void {
     this.isDropdownOpen = false;
   }
 
-  selectChart(chart: ChartTypeOption) {
+  selectChart(chart: ChartTypeOption): void {
+    if (!this.isBrowser) return;
+
     this.selectedChart = chart;
-    this.chartType = chart.value as ChartType;
     this.isDropdownOpen = false;
-    this.createChart();
+
+    const nextChartType = chart.value as CustomChartType | ChartType;
+    if (this.chartType === nextChartType) return;
+
+    this.chartType = nextChartType;
+
+    // Do the rebuild here instead of relying on ngOnChanges. This guarantees
+    // the dropdown action itself starts the animation.
+    if (this.myChart) {
+      this.myChart.destroy();
+      this.myChart = null;
+    }
+
+    requestAnimationFrame(() => {
+      if (this.isBrowser && !this.myChart) {
+        this.createChart(true);
+      }
+    });
   }
+
+  onChartTypeChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const nextChartType = target.value as CustomChartType | ChartType;
+
+    if (this.chartType === nextChartType) return;
+
+    this.chartType = nextChartType;
+
+    if (this.myChart) {
+      this.myChart.destroy();
+      this.myChart = null;
+    }
+
+    requestAnimationFrame(() => {
+      if (this.isBrowser && !this.myChart) {
+        this.createChart(true);
+      }
+    });
+  }
+
 
   ngAfterViewInit(): void {
     // Guard: createChart() needs a real <canvas> in the DOM.
@@ -480,7 +781,7 @@ private filterTopData(): void {
         for (const entry of entries) {
           if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
             if (this.myChart) {
-              this.myChart.resize();
+              // this.myChart.resize();
             } else {
               this.createChart();
             }
@@ -514,252 +815,6 @@ private filterTopData(): void {
     return this.chartTypes.find((type) => type.value === 'radar')?.value === this.chartType;
   }
 
-
-  createChart(): void {
-    // Guard: instantiates Chart.js against a <canvas> and reads `document`.
-    if (!this.isBrowser) {
-      return;
-    }
-
-    if (this.chartType === 'groupedBar' && this.groupedData.length > 0) {
-      this.createGroupedBarChart();
-      return;
-    }
-    const colors = this.backgroundColors.slice(0, this.chartData.length);
-    const isArea = this.isAreaChart();
-    const isLine = this.isLineChart();
-    const isRadar = this.isRadarChart()
-  
-    // Check if dark mode is enabled by checking the 'dark' class on the document
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    const labelColor = isDarkMode ? 'white' : 'black';
-  
-    // For area charts, use the first color from backgroundColors array
-    const getBackgroundColor = () => {
-      if (isArea) {
-        // Convert the first color to rgba with transparency
-        const firstColor = colors[0] || '#4BC0C0'; // fallback to teal
-        // If it's already rgba, use it; otherwise convert hex to rgba
-        if (firstColor.startsWith('rgba')) {
-          return firstColor;
-        } else if (firstColor.startsWith('rgb')) {
-          return firstColor.replace('rgb', 'rgba').replace(')', ', 0.2)');
-        } else {
-          // Assume it's hex, convert to rgba
-          const hex = firstColor.replace('#', '');
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          return `rgba(${r}, ${g}, ${b}, 0.2)`;
-        }
-      } else if (isRadar) {
-        return 'rgba(75, 192, 192, 0.2)';
-      } else {
-        return colors;
-      }
-    };
-  
-    const getBorderColor = () => {
-      if (isArea) {
-        // Use the first color from backgroundColors array for border (full opacity)
-        const firstColor = colors[0] || '#4BC0C0'; // fallback to teal
-        if (firstColor.startsWith('rgba')) {
-          return firstColor.replace(/[\d\.]+\)$/g, '1)'); // Change alpha to 1
-        } else if (firstColor.startsWith('rgb')) {
-          return firstColor;
-        } else {
-          // Assume it's hex, convert to rgb
-          const hex = firstColor.replace('#', '');
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-          return `rgb(${r}, ${g}, ${b})`;
-        }
-      } else if (isLine || isRadar) {
-        return 'rgb(75, 192, 192)';
-      } else {
-        return 'rgba(75, 192, 192, 0.0)';
-      }
-    };
-  
-    const hasData = this.chartLabels && this.chartLabels.length > 0;
-    const labels = hasData ? this.chartLabels : [' ', ' ', ' ', ' ', ' '];
-    const dataValues = hasData ? this.chartData : (isLine || isArea ? [0, 0, 0, 0, 0] : [0, 0, 0, 0, 0]);
-
-    const data: ChartData = {
-      labels: labels,
-      datasets: [
-        {
-          label: this.hoverLabel,
-          data: dataValues,
-          backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
-          borderWidth: isArea || this.chartType === 'line' ? 2 : 1,
-          fill: isArea || isRadar ? 'origin' : false,
-          tension: isArea ? 0.4 : 0,
-          borderRadius:
-            this.chartType === 'bar'
-              ? {
-                topLeft: 10,
-                topRight: 10,
-              }
-              : undefined,
-        },
-      ],
-    };
-  
-    const config: ChartConfiguration = {
-      type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
-      data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-          duration: 850,
-          easing: 'easeOutQuart',
-        },
-        animations: {
-          y: {
-            duration: 850,
-            easing: 'easeOutQuart',
-            from: (ctx: any) => {
-              if (ctx.type === 'data') {
-                if (ctx.mode === 'default' && !ctx.dropped) {
-                  ctx.dropped = true;
-                  return 0;
-                }
-              }
-              return 0;
-            },
-          },
-          x: {
-            duration: 850,
-            easing: 'easeOutQuart',
-          },
-        },
-        plugins: {
-          legend: {
-            display: !['bar', 'line']
-              .concat(isArea ? ['area'] : [])
-              .includes(this.chartType),
-            position: 'bottom',
-            labels: {
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 6,
-              boxHeight: 6,
-              color: labelColor,
-              padding: 10,
-            },
-          },
-          tooltip: {
-            enabled: hasData,
-          },
-        },
-        scales: {
-          ...(this.chartType === 'bar' || isArea || this.chartType === 'line'
-            ? {
-              x: {
-                title: {
-                  display: !!this.xAxisTitle,
-                  text: this.xAxisTitle,
-                  font: {
-                    size: 10,
-                    weight: 'bold',
-                  },
-                },
-                ticks: {
-                  color: labelColor, // Set x-axis ticks color
-                },
-                grid: {
-                  color: isDarkMode ? '#333' : '#ddd', // Set x-axis grid color
-                },
-              },
-              y: {
-                beginAtZero: true,
-                suggestedMin: 0,
-                suggestedMax: 1,
-                title: {
-                  display: !!this.yAxisTitle,
-                  text: this.yAxisTitle,
-                  color: labelColor, // This is crucial for the y-axis title
-                  font: {
-                    size: 10,
-                    weight: 'bold',
-                  },
-                },
-                ticks: {
-                  color: labelColor,
-                },
-                grid: {
-                  color: isDarkMode ? '#333' : '#ddd',
-                },
-              },
-            }
-            : {}),
-        },
-  
-        elements: {
-          point: {
-            radius: 5, // Adjust the radius here
-          },
-          line: {
-            tension: isArea ? 0.4 : 0,
-          },
-        },
-        ...(this.chartType === 'doughnut' || this.chartType === 'pie'
-          ? {
-            cutout: this.chartType === 'doughnut' ? '65%' : 0,
-            animation: {
-              animateRotate: true,
-              animateScale: true,
-              duration: 850,
-              easing: 'easeOutQuart',
-            } as any,
-          }
-          : {}),
-        ...(this.chartType === 'polarArea'
-          ? {
-            animation: {
-              animateRotate: true,
-              animateScale: true,
-              duration: 850,
-              easing: 'easeOutQuart',
-            } as any,
-            scales: {
-              r: {
-                beginAtZero: true,
-              },
-            },
-          }
-          : {}),
-      },
-      plugins: this.chartType === 'doughnut' ? [this.donutTextPlugin()] : [],
-    };
-  
-    if (this.myChart) {
-      this.myChart.destroy();
-      this.myChart = null;
-    }
-  
-    const canvas = this.chartCanvasRef?.nativeElement || (document.getElementById(this.chartId) as HTMLCanvasElement);
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      this.myChart = new Chart(canvas, config);
-    }
-  }
-
-
-
-
-  onChartTypeChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.chartType = target.value as ChartType;
-    this.createChart();
-  }
 
   donutTextPlugin() {
     return {
@@ -2346,7 +2401,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 750,
+          duration: 850,
           easing: 'easeOutQuart',
         },
         plugins: {
