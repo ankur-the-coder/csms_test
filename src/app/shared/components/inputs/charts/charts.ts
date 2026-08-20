@@ -89,10 +89,20 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   public fullChartData: number[] = [];
  private fullChartLabels: string[] = [];
  private isFullscreenMode: boolean = false;
+ // True after ngAfterViewInit has run — the canvas ViewChild is only
+ // available from that point. ngOnChanges must not touch Chart.js before then.
+ private viewInitialized: boolean = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     // Guard: `createChart()` touches `document` and Chart.js — never run on the server.
     if (!this.isBrowser) {
+      return;
+    }
+
+    // The canvas ViewChild is only available after ngAfterViewInit.
+    // Ignore all input changes that arrive before that — ngAfterViewInit
+    // will create the chart with the latest input values once ready.
+    if (!this.viewInitialized) {
       return;
     }
 
@@ -103,7 +113,8 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
       changes['backgroundColors'] ||
       changes['hoverLabel'] ||
       changes['xAxisTitle'] ||
-      changes['yAxisTitle']
+      changes['yAxisTitle'] ||
+      changes['groupedData']
     ) {
       this.filterTopData(); 
       this.updateChart();
@@ -206,6 +217,13 @@ private filterTopData(): void {
   // Do NOT simply assign the new values and call update once: depending on
   // Angular's change-detection timing the browser can paint the final state
   // immediately. First animate to zero, then animate zero -> new values.
+
+  // Re-enable tooltip in case the chart was created before API data arrived
+  // (tooltip could have been left disabled from an earlier empty-data render).
+  if (this.myChart.options.plugins?.tooltip) {
+    (this.myChart.options.plugins.tooltip as any).enabled = true;
+  }
+
   this.myChart.data.labels = targetLabels;
 
   if (this.myChart.data.datasets?.[0]) {
@@ -338,7 +356,12 @@ private createChartInternal(animateFromZero: boolean = false): void {
             padding: 10,
           },
         },
-        tooltip: { enabled: hasData },
+        // Always keep tooltip enabled. When there is no data there are no
+        // data points to hover over, so the tooltip is harmlessly silent.
+        // Disabling it here would permanently break hover after the chart
+        // is later updated with real API data (Chart.js does not re-read
+        // this config from the update path).
+        tooltip: { enabled: true },
       },
       scales: (this.chartType === 'bar' || isArea || this.chartType === 'line') ? {
         x: {
@@ -772,8 +795,15 @@ private rebuildGroupedBarWithAnimation(): void {
     if (!this.isBrowser) {
       return;
     }
+    // Mark view as initialized so that subsequent ngOnChanges calls are
+    // allowed to create/update the chart. Then create the chart immediately
+    // with whatever input values are available at this moment (they may
+    // already contain API data if the response was fast, or placeholder
+    // values if the API is still pending — the chart will animate in
+    // either way).
+    this.viewInitialized = true;
     setTimeout(() => {
-      this.createChart();
+      this.createChart(true);
     }, 0);
 
     if (typeof ResizeObserver !== 'undefined' && this.chartContainerRef?.nativeElement) {
