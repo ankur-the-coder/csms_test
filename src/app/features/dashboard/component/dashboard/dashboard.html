@@ -112,7 +112,8 @@
       <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
         [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
         [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()"  [yAxisTitle]="'Connected Count'"></app-charts>
+        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()"
+        [yAxisTitle]="'Connected Count'"></app-charts>
     </div>
 
     <!-- Usages Grouped Bar Widget -->
@@ -123,44 +124,44 @@
         [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts> -->
       <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
         [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
-        [headingText]="'Usages'" [yAxisTitle]="'Usages Count'" [leaveChart]="true"
-        [isLoading]="isUsagesLoading()" [hasError]="usagesHasError()"></app-charts>
+        [headingText]="'Usages'" [yAxisTitle]="'Usages Count'" [leaveChart]="true" [isLoading]="isUsagesLoading()"
+        [hasError]="usagesHasError()"></app-charts>
     </div>
     <!-- Feedback Score Distribution Donut Widget -->
     <div class="lg:col-span-4 md:col-span-6 ">
       <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
         [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()"  [yAxisTitle]="'Feedback Count'"></app-charts>
+        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()" [yAxisTitle]="'Feedback Count'"></app-charts>
     </div>
     <!-- Daily Tasks & Operations -->
 
   </div>
 
-    <div
-      class="lg:col-span-12 bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between mb-5">
-          <h3 class="text-base font-bold ">Daily Tasks & Operations</h3>
-          <span class="text-xs text-slate-400 font-medium">54 Total Tasks</span>
-        </div>
+  <div
+    class="lg:col-span-12 bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+    <div>
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-base font-bold ">Daily Tasks & Operations</h3>
+        <span class="text-xs text-slate-400 font-medium">54 Total Tasks</span>
+      </div>
 
-        <div class="space-y-3.5">
-          @for (op of dailyOps; track op.label) {
-          <div>
-            <div class="flex items-center justify-between text-xs font-bold mb-1">
-              <span class="text-slate-700">{{ op.label }}</span>
-              <span [ngClass]="op.danger ? 'text-rose-600' : 'text-slate-900'">{{ op.value }}</span>
-            </div>
-            <div class="w-full h-2 rounded-full bg-slate-100/90 overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-500" [style.width.%]="op.pct"
-                [ngClass]="op.barClass"></div>
-            </div>
+      <div class="space-y-3.5">
+        @for (op of dailyOps; track op.label) {
+        <div>
+          <div class="flex items-center justify-between text-xs font-bold mb-1">
+            <span class="text-slate-700">{{ op.label }}</span>
+            <span [ngClass]="op.danger ? 'text-rose-600' : 'text-slate-900'">{{ op.value }}</span>
           </div>
-          }
+          <div class="w-full h-2 rounded-full bg-slate-100/90 overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" [style.width.%]="op.pct"
+              [ngClass]="op.barClass"></div>
+          </div>
         </div>
+        }
       </div>
     </div>
+  </div>
 
   <!-- Shared Custom Calendar Component -->
   <app-calendar [eventsByDay]="eventsByDay"></app-calendar>
