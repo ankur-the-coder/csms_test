@@ -10,6 +10,7 @@ import {
 import { ClientService } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
 import { ActivatedRoute } from '@angular/router';
+import { NgClass } from '@angular/common';
 
 export interface ClientRow {
   orgId: number;
@@ -22,12 +23,13 @@ export interface ClientRow {
   supportOwner: string;
   progress: number;
   trainingStatus: number;
+  trainingProgress: number;
   stage: string;
 }
 
 @Component({
   selector: 'app-client',
-  imports: [DataTable, CustomColumnDirective],
+  imports: [DataTable, CustomColumnDirective, NgClass],
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
@@ -77,6 +79,7 @@ export class Client {
       progress: raw.progress,
       stage: raw.stage,
       trainingStatus: raw.trainingStatus,
+      trainingProgress: raw.trainingProgress,
     };
   }
 

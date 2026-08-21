@@ -18,6 +18,7 @@ export interface Datum {
     stage:          Stage;
     progress:        number;
     trainingStatus: number;
+    trainingProgress: number;
 }
 
 export enum Implementation {
