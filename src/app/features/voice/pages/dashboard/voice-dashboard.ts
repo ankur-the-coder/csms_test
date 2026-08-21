@@ -47,12 +47,6 @@ interface VoiceDashboardData {
 
     /* ── Root wrapper ─────────────────────────── */
     :host .va-root {
-      min-height: 100vh;
-      background: var(--body-bg);
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
     }
 
     /* ── Charts card: match the minimal card design ── */
@@ -112,10 +106,12 @@ export class VoiceAnalyticsDashboard implements OnInit {
 
   onFromDateChange(date: Date): void {
     this.fromDate.set(date);
+    this.loadDashboardData();
   }
 
   onToDateChange(date: Date): void {
     this.toDate.set(date);
+    this.loadDashboardData();
   }
 
   /** Whether the selected range is exactly today -- used only for the "Today" quick-reset button's active state. */
@@ -184,9 +180,10 @@ export class VoiceAnalyticsDashboard implements OnInit {
     }
   }
 
-  /** Max hourly call count (defaults to 5 if all volume is lower) */
+  /** Max hourly call count (defaults to 5 if all volume is lower) -- computed over the VISIBLE
+   *  window, not the full 24h array, so the y-axis scales to what's actually on screen when zoomed. */
   get maxHourlyCount(): number {
-    const hourly = this.stats()?.hourlyVolume || [];
+    const hourly = this.visibleHourlyVolume;
     const max = Math.max(...hourly.map(h => h.count), 0);
     return max > 5 ? max : 5;
   }
@@ -230,14 +227,17 @@ export class VoiceAnalyticsDashboard implements OnInit {
     return hourly.slice(start, end + 1);
   }
 
+  /** Subtitle shown under the chart heading -- calls out the zoom explicitly so a narrow window
+   *  reads as an intentional state, not a bug. */
+  get chartSubtitle(): string {
+    return this.isZoomedView
+      ? 'Zoomed to the active hours — low volume in this range'
+      : 'Number of calls received per hour of the day';
+  }
+
   getVolumeHeight(count: number): number {
     if (count === 0) return 0;
     return Math.round((count / this.maxHourlyCount) * 100);
-  }
-
-  /** Checks if an hourly item represents the peak call volume */
-  isPeakBar(item: { hour: string; count: number }): boolean {
-    return !!(this.peakHour && item.count > 0 && item.hour === this.peakHour.hour && item.count === this.peakHour.count);
   }
 
   /** True once dashboard-stats has resolved and the selected range genuinely has zero logged calls — drives the chart's empty state. */
@@ -261,7 +261,7 @@ export class VoiceAnalyticsDashboard implements OnInit {
     return total / hourly.length;
   }
 
-  /** Ticks for the Y-axis (from max down to 0) */
+  /** Ticks for the Y-axis (from max down to 0) -- driven by the same visible-window max as the bars. */
   get yAxisTicks(): number[] {
     const max = this.maxHourlyCount;
     if (max <= 6) {
