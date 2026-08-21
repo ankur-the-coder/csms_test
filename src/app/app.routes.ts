@@ -20,6 +20,9 @@ import { CourseCatalog } from './features/user/components/course-catalog/course-
 import { CourseDetail } from './features/user/components/course-detail/course-detail';
 import { MyLearning } from './features/user/components/my-learning/my-learning';
 import { authGuard, checkGuard } from './core/guards/auth-guard';
+import { Feedback } from './features/dashboard/component/feedback/feedback';
+import { Connected } from './features/dashboard/component/connected/connected';
+import { Usages } from './features/dashboard/component/usages/usages';
 
 
 export const routes: Routes = [
@@ -45,6 +48,10 @@ export const routes: Routes = [
 
       { path: 'meetings', component: MeetingsComponent },
       { path: 'client', component: Client },
+
+      { path: 'feedback', component: Feedback },
+      { path: 'connected', component: Connected },
+      { path: 'usages', component: Usages },
       {
         path: 'voice',
         component: VoiceShell,
