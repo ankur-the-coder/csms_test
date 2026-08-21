@@ -21,6 +21,7 @@ export interface ClientRow {
   leadOwner: string;
   supportOwner: string;
   progress: number;
+  trainingStatus: number;
   stage: string;
 }
 
@@ -75,6 +76,7 @@ export class Client {
       supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
       progress: raw.progress,
       stage: raw.stage,
+      trainingStatus: raw.trainingStatus,
     };
   }
 
@@ -143,6 +145,7 @@ export class Client {
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         { key: 'progress', label: 'Implementation', sortable: false },
+        { key: 'trainingStatus', label: 'Training', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
