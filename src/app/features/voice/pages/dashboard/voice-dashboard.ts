@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../../environments/environment';
 import { WebRtcVoiceService } from '../../voice.service';
-import { Charts, HealthSegment } from '../../../../shared/components/inputs/charts/charts';
+import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DatePicker } from '../../../../shared/components/inputs/date-picker/date-picker';
 import { CustomButton } from '../../../../shared/components/inputs/custom-button/custom-button';
 
@@ -37,7 +37,7 @@ interface VoiceDashboardData {
 @Component({
   selector: 'app-voice-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, Charts, DatePicker, CustomButton],
+  imports: [CommonModule, FormsModule, DatePicker, CustomButton, ChartComponent],
   templateUrl: './voice-dashboard.html',
   styles: [`
     :host {
@@ -366,22 +366,26 @@ export class VoiceAnalyticsDashboard implements OnInit {
   };
 
   /** Disposition breakdown reshaped for <app-charts type="donut">. */
-  get dispositionSegments(): HealthSegment[] {
-    const disposition = this.stats()?.disposition;
-    if (!disposition || disposition.length === 0) {
-      return [
-        { label: 'Answered', value: 0, pct: 0, colorHex: this.dispositionColorHex['Answered'], colorClass: this.dispositionColorClass['Answered'] },
-        { label: 'Missed', value: 0, pct: 0, colorHex: this.dispositionColorHex['Missed'], colorClass: this.dispositionColorClass['Missed'] },
-        { label: 'Busy', value: 0, pct: 0, colorHex: this.dispositionColorHex['Busy'], colorClass: this.dispositionColorClass['Busy'] },
-        { label: 'Failed', value: 0, pct: 0, colorHex: this.dispositionColorHex['Failed'], colorClass: this.dispositionColorClass['Failed'] },
-      ];
-    }
-    return disposition.map(item => ({
-      label: item.label,
-      value: item.count,
-      pct: this.getDispositionPercent(item.count),
-      colorHex: this.dispositionColorHex[item.label] ?? item.color,
-      colorClass: this.dispositionColorClass[item.label] || 'bg-neutral',
-    }));
+  /** Labels for the donut chart segments (e.g. Answered, Missed, Busy, Failed). */
+  get dispositionLabels(): string[] {
+    return (this.stats()?.disposition || []).map(d => d.label);
+  }
+
+  /** Values for the donut chart segments. */
+  get dispositionData(): number[] {
+    return (this.stats()?.disposition || []).map(d => d.count);
+  }
+
+  /** Hex colors for the donut chart segments — matched to app semantic tokens. */
+  get dispositionColors(): string[] {
+    return (this.stats()?.disposition || []).map(d =>
+      this.dispositionColorHex[d.label] ?? d.color
+    );
+  }
+
+  /** Center text shown inside the doughnut hole. */
+  get donutCenter(): { line1: string; line2: string; line3: string } {
+    const total = this.stats()?.kpis?.totalCallsToday || 0;
+    return { line1: String(total), line2: 'Total', line3: 'Calls' };
   }
 }
