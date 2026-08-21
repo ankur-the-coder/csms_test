@@ -69,7 +69,7 @@ export interface TableFilter {
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
-export type ActionIcon = 'view' | 'edit' | 'delete' | 'download' | 'more';
+export type ActionIcon = 'view' | 'edit' | 'delete' | 'download' | 'more' | 'call';
 
 export interface RowAction<T> {
   id: string;
