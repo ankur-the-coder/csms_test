@@ -19,6 +19,10 @@ export interface Datum {
     progress:        number;
     trainingStatus: number;
     trainingProgress: number;
+    contactPerson: string;
+    email: string;
+    phoneNumber: string;
+    country: string;
 }
 
 export enum Implementation {
