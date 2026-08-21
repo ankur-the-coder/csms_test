@@ -31,28 +31,43 @@
         </div>
       </ng-template>
 
-      <ng-template appCustomColumn="trainingStatus" let-value="value">
-  @if (value === 1) {
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-      Completed
-    </span>
-  } @else if (value === 2) {
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-      In Progress
-    </span>
-  } @else if (value === 3) {
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
-      <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-      Not Started
-    </span>
-  } @else {
-    <span class="text-[11px] text-slate-400">—</span>
-  }
-</ng-template>
-
-
+      <ng-template appCustomColumn="trainingStatus" let-value="value" let-row="row">
+        <div class="flex flex-col gap-1.5 min-w-35">
+          <div class="flex items-center gap-2">
+            <span
+              class="text-[13px] font-bold tabular-nums"
+              [ngClass]="{
+                'text-emerald-600': value === 1,
+                'text-amber-600': value === 2,
+                'text-slate-500': value === 3,
+              }"
+            >
+              {{ row.trainingProgress }}%
+            </span>
+            <span
+              class="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              [ngClass]="{
+                'bg-emerald-100 text-emerald-700': value === 1,
+                'bg-amber-100 text-amber-700': value === 2,
+                'bg-slate-100 text-slate-600': value === 3,
+              }"
+            >
+              {{ value === 1 ? 'Completed' : value === 2 ? 'In Progress' : 'Not Started' }}
+            </span>
+          </div>
+          <div class="h-2 rounded-full bg-slate-200 overflow-hidden w-full">
+            <div
+              class="h-full rounded-full transition-all duration-300"
+              [ngClass]="{
+                'bg-emerald-500': value === 1,
+                'bg-amber-500': value === 2,
+                'bg-slate-400': value === 3,
+              }"
+              [style.width.%]="row.trainingProgress"
+            ></div>
+          </div>
+        </div>
+      </ng-template>
     </app-data-table>
   </div>
 </div>
