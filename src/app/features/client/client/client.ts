@@ -22,9 +22,13 @@ export interface ClientRow {
   leadOwner: string;
   supportOwner: string;
   progress: number;
+  stage: string;
   trainingStatus: number;
   trainingProgress: number;
-  stage: string;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  country: string;
 }
 
 @Component({
@@ -80,6 +84,10 @@ export class Client {
       stage: raw.stage,
       trainingStatus: raw.trainingStatus,
       trainingProgress: raw.trainingProgress,
+      contactPerson: raw.contactPerson,
+      email: raw.email,
+      phoneNumber: raw.phoneNumber,
+      country: raw.country,
     };
   }
 
@@ -141,6 +149,10 @@ export class Client {
     return {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
+        { key: 'contactPerson', label: 'Contact Name', sortable: false },
+        { key: 'email', label: 'Email', sortable: false },
+        { key: 'phoneNumber', label: 'Phone', sortable: false },
+        { key: 'country', label: 'Country', sortable: false },
         // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
