@@ -13,6 +13,7 @@ export interface AdminClientRow {
   name: string;
   phoneNumber: string;
   altPhoneNumber: string;
+  orgStatus: string;
 }
 
 interface AdminClientRaw {
@@ -20,6 +21,7 @@ interface AdminClientRaw {
   name: string;
   phoneNumber: string | null;
   altPhoneNumber: string | null;
+  orgStatus: string | null;
 }
 
 @Component({
@@ -51,6 +53,7 @@ export class Clients {
       name: raw.name,
       phoneNumber: raw.phoneNumber,
       altPhoneNumber: raw.altPhoneNumber || '—',
+      orgStatus: raw.orgStatus || '—',
     };
   }
 
@@ -59,6 +62,7 @@ export class Clients {
       { key: 'name', label: 'Client', sortable: true, hideable: true },
       { key: 'phoneNumber', label: 'Phone Number', sortable: false },
       { key: 'altPhoneNumber', label: 'Alt Phone', sortable: false },
+      { key: 'orgStatus', label: 'Status', sortable: true },
     ] as SmartColumn<AdminClientRow>[],
 
     apiConfig: {
@@ -67,12 +71,13 @@ export class Clients {
       totalPath: 'totalRecords',
 
       buildRequest: (ctx: RequestContext) => {
-        // Only 'orgId'/'name' are honoured server-side (see
+        // Only 'orgId'/'name'/'orgStatus' are honoured server-side (see
         // fetchAdminClientsDataTable) -- default sort is o.Id DESC to
         // avoid a filesort on the unindexed Name column at 100k+ rows.
         const sortColMap: Record<string, string> = {
           name: 'name',
           orgId: 'orgId',
+          orgStatus: 'orgStatus',
         };
         const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgId';
 
@@ -81,7 +86,8 @@ export class Clients {
           length: ctx.pageSize,
           search: ctx.search ?? '',
           sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'desc' }),
-          filter: '',
+          // NOTE: backend reads `statusFilter`, not `filter` -- key renamed to match.
+          statusFilter: ctx.filters['leadStage'] ?? '',
         };
 
         return { method: 'POST' as const, body };
@@ -99,16 +105,32 @@ export class Clients {
     emptyMessage: 'No admin clients found.',
     clickable: true,
 
+    filters: [
+      {
+        key: 'leadStage',
+        label: 'Lead Stage',
+        type: 'select',
+        options: [
+          { label: 'Trial',           value: 'trial' },
+          { label: 'Trial Expired',   value: 'trial_expired' },
+          { label: 'Trial Extended',  value: 'trial_extended' },
+          { label: 'Premium',         value: 'premium' },
+          { label: 'Premium Expired', value: 'premium_expired' },
+        ],
+      },
+    ],
+
     customRowActions: [
       {
         id: 'call',
         label: 'Call',
-        icon: 'view',
+        icon: 'call',
         onClick: (row) => this.callClient(row),
       },
     ],
 
     toolbarButtons: [
+      { id: 'filter', type: 'filter', label: 'Filter' },
       { id: 'refresh', type: 'refresh' },
     ],
   }));
