@@ -20,6 +20,7 @@ import { CourseCatalog } from './features/user/components/course-catalog/course-
 import { CourseDetail } from './features/user/components/course-detail/course-detail';
 import { MyLearning } from './features/user/components/my-learning/my-learning';
 import { authGuard, checkGuard } from './core/guards/auth-guard';
+import { VoiceAnalyticsDashboard } from './features/voice/pages/dashboard/voice-dashboard';
 import { Feedback } from './features/dashboard/component/feedback/feedback';
 import { Connected } from './features/dashboard/component/connected/connected';
 import { Usages } from './features/dashboard/component/usages/usages';
@@ -56,7 +57,8 @@ export const routes: Routes = [
         path: 'voice',
         component: VoiceShell,
         children: [
-          { path: '', redirectTo: 'softphone', pathMatch: 'full' },
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          { path: 'dashboard', component: VoiceAnalyticsDashboard },
           { path: 'softphone', component: Softphone },
           { path: 'history', component: History },
           // { path: 'notes', component: Notes },

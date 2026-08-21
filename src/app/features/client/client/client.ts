@@ -10,6 +10,7 @@ import {
 import { ClientService } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
 import { ActivatedRoute } from '@angular/router';
+import { NgClass } from '@angular/common';
 
 export interface ClientRow {
   orgId: number;
@@ -22,11 +23,17 @@ export interface ClientRow {
   supportOwner: string;
   progress: number;
   stage: string;
+  trainingStatus: number;
+  trainingProgress: number;
+  contactPerson: string;
+  email: string;
+  phoneNumber: string;
+  country: string;
 }
 
 @Component({
   selector: 'app-client',
-  imports: [DataTable, CustomColumnDirective],
+  imports: [DataTable, CustomColumnDirective, NgClass],
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
@@ -75,6 +82,12 @@ export class Client {
       supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
       progress: raw.progress,
       stage: raw.stage,
+      trainingStatus: raw.trainingStatus,
+      trainingProgress: raw.trainingProgress,
+      contactPerson: raw.contactPerson,
+      email: raw.email,
+      phoneNumber: raw.phoneNumber,
+      country: raw.country,
     };
   }
 
@@ -136,6 +149,10 @@ export class Client {
     return {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
+        { key: 'contactPerson', label: 'Contact Name', sortable: false },
+        { key: 'email', label: 'Email', sortable: false },
+        { key: 'phoneNumber', label: 'Phone', sortable: false },
+        { key: 'country', label: 'Country', sortable: false },
         // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
@@ -143,6 +160,7 @@ export class Client {
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         { key: 'progress', label: 'Implementation', sortable: false },
+        { key: 'trainingStatus', label: 'Training', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {

@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild, TemplateRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { DataTable } from '../../../../shared/components/Data-table/data-table';
 import { RequestContext, SmartTableConfig } from '../../../../shared/components/Data-table/data-table.types';
 import { WebRtcVoiceService } from '../../voice.service';
@@ -23,43 +24,81 @@ export interface CallHistoryRow {
   imports: [CommonModule, DataTable],
   templateUrl: './history.html',
 })
-export class History {
+export class History implements OnInit {
+  private readonly router = inject(Router);
   private readonly voiceService = inject(WebRtcVoiceService);
+
+  // static: true works here because ng-template elements are never actually
+  // rendered/conditional in the DOM -- this resolves in time for ngOnInit,
+  // which is why historyTableConfig (below) is built there instead of as a
+  // field initializer: field initializers run in the constructor, before
+  // ViewChild resolution, so these templates would still be undefined then.
+  @ViewChild('directionCell', { static: true }) directionCellTemplate!: TemplateRef<any>;
+  @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
+  @ViewChild('dateCell', { static: true }) dateCellTemplate!: TemplateRef<any>;
+  @ViewChild('durationCell', { static: true }) durationCellTemplate!: TemplateRef<any>;
 
   // Same backend the softphone itself talks to (WebRtcVoiceService.API_BASE is
   // private to the service) -- kept as its own constant here, matching the
   // pattern ClientService uses for its own baseUrl.
   private readonly voiceApiBase = `${environment.apiUrl}/api/voice`;
 
-  readonly historyTableConfig: SmartTableConfig<CallHistoryRow> = {
+  historyTableConfig!: SmartTableConfig<CallHistoryRow>;
+
+  callNumber(row: CallHistoryRow): void {
+    if (!row.toNumber) return;
+    this.router.navigate(['/voice/softphone'], {
+      queryParams: {
+        number: row.toNumber,
+        name: row.clientName && row.clientName !== '—' ? row.clientName : '',
+      },
+    });
+  }
+
+  getCallStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      initiated: 'Initiated',
+      ringing: 'Ringing',
+      answered: 'Answered',
+      completed: 'Completed',
+      busy: 'Busy',
+      no_answer: 'No Answer',
+      rejected: 'Rejected',
+      failed: 'Failed',
+    };
+    return labels[status] ?? status;
+  }
+
+  /** Status text color -- theme's subtle text tokens (success/warning/danger-text),
+   *  not the saturated badge-pill colors used before. */
+  getStatusTextClass(status: string): string {
+    if (status === 'completed' || status === 'answered') return 'text-success-text';
+    if (status === 'initiated' || status === 'ringing') return 'text-warning-text';
+    return 'text-danger-text'; // busy, no_answer, failed
+  }
+
+  /** Matching solid dot color for the status text above. */
+  getStatusDotClass(status: string): string {
+    if (status === 'completed' || status === 'answered') return 'bg-success';
+    if (status === 'initiated' || status === 'ringing') return 'bg-warning';
+    return 'bg-danger'; // busy, no_answer, failed
+  }
+
+  ngOnInit(): void {
+    // Refresh the missed-calls badge count when the agent actually opens
+    // Call History -- cheap, and keeps it in sync with whatever the
+    // backend currently has even if the nav badge's own refresh triggers
+    // (call end events) missed something (e.g. a tab that reconnected).
+    this.voiceService.fetchMissedCallsCount();
+
+    this.historyTableConfig = {
     columns: [
       { key: 'clientName', label: 'Name' },
-      {
-        key: 'direction',
-        label: 'Direction',
-        type: 'badge',
-        badgeMap: {
-          inbound: { label: 'Inbound', color: 'info' },
-          outbound: { label: 'Outbound', color: 'pink' },
-        },
-      },
       { key: 'toNumber', label: 'Customer Number' },
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'badge',
-        badgeMap: {
-          initiated: { label: 'Initiated', color: 'warn' },
-          ringing: { label: 'Ringing', color: 'warn' },
-          answered: { label: 'Answered', color: 'good' },
-          completed: { label: 'Completed', color: 'good' },
-          busy: { label: 'Busy', color: 'danger' },
-          no_answer: { label: 'No Answer', color: 'danger' },
-          failed: { label: 'Failed', color: 'danger' },
-        },
-      },
-      { key: 'duration', label: 'Duration' },
-      { key: 'createdAt', label: 'Date', type: 'date' },
+      { key: 'direction', label: 'Direction', type: 'template', cellTemplate: this.directionCellTemplate },
+      { key: 'status', label: 'Status', type: 'template', cellTemplate: this.statusCellTemplate },
+      { key: 'duration', label: 'Duration', type: 'template', cellTemplate: this.durationCellTemplate },
+      { key: 'createdAt', label: 'Date', type: 'template', cellTemplate: this.dateCellTemplate },
     ],
 
     rowIdKey: 'id',
@@ -70,6 +109,15 @@ export class History {
     exportFileName: 'call-history',
     emptyMessage: 'No call history yet.',
     clickable: false,
+
+    customRowActions: [
+      {
+        id: 'call',
+        label: 'Call',
+        icon: 'call',
+        onClick: (row) => this.callNumber(row),
+      },
+    ],
 
     filters: [
       {
@@ -83,6 +131,7 @@ export class History {
           { label: 'Completed', value: 'completed' },
           { label: 'Busy', value: 'busy' },
           { label: 'No Answer', value: 'no_answer' },
+          { label: 'Rejected', value: 'rejected' },
           { label: 'Failed', value: 'failed' },
         ],
       },
@@ -91,8 +140,8 @@ export class History {
         label: 'Direction',
         type: 'select',
         options: [
-          { label: 'Inbound', value: 'inbound' },
-          { label: 'Outbound', value: 'outbound' },
+          { label: 'Incoming', value: 'inbound' },
+          { label: 'Outgoing', value: 'outbound' },
         ],
       },
     ],
@@ -133,5 +182,6 @@ export class History {
         };
       },
     },
-  };
+    };
+  }
 }
