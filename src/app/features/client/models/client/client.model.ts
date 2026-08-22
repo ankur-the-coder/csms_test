@@ -16,6 +16,13 @@ export interface Datum {
     supportOwner:   SupportOwner;
     implementation: Implementation;
     stage:          Stage;
+    progress:        number;
+    trainingStatus: number;
+    trainingProgress: number;
+    contactPerson: string;
+    email: string;
+    phoneNumber: string;
+    country: string;
 }
 
 export enum Implementation {

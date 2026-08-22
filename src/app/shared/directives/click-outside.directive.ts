@@ -1,23 +1,34 @@
-import { Directive, ElementRef, EventEmitter, Output } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, HostListener, Output, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
+/**
+ * Emits `clickOutside` whenever a click happens outside the host element
+ * (and outside any of its descendants). Usage:
+ *
+ *   <div (clickOutside)="close()"> ... trigger + panel ... </div>
+ *
+ * Angular matches the `[clickOutside]` selector against elements that have
+ * an event binding named `clickOutside`, so no extra attribute is needed.
+ */
 @Directive({
-  selector: '[appClickOutside]',
+  selector: '[clickOutside]',
   standalone: true,
-  host: {
-    '(document:click)': 'onDocumentClick($event)',
-  },
 })
 export class ClickOutsideDirective {
-  @Output() clickOutside = new EventEmitter<void>();
+  @Output() clickOutside = new EventEmitter<Event>();
 
-  constructor(private elementRef: ElementRef<HTMLElement>) {}
+  private elementRef = inject(ElementRef<HTMLElement>);
+  private platformId = inject(PLATFORM_ID);
 
-  onDocumentClick(event: MouseEvent) {
-    const target = event.target as Node | null;
-    if (!target || this.elementRef.nativeElement.contains(target)) {
-      return;
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const target = event.target as HTMLElement | null;
+    const host = this.elementRef.nativeElement;
+
+    if (target && host && !host.contains(target)) {
+      this.clickOutside.emit(event);
     }
-
-    this.clickOutside.emit();
   }
 }

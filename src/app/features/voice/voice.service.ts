@@ -1,4 +1,4 @@
-import { Injectable, signal, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, signal, effect, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { TelnyxRTC } from '@telnyx/webrtc';
 import { environment } from '../../../environments/environment';
@@ -15,7 +15,6 @@ export type ConnectionState =
   | 'connecting'
   | 'connected'
   | 'error'
-  // legacy aliases used by the existing template
   | 'Disconnected'
   | 'Connecting'
   | 'Connected'
@@ -53,6 +52,13 @@ export interface AdminClient {
   altPhoneNumber: string | null;
 }
 
+/** Lightweight shape for the dialer's "recent calls" quick-access strip. */
+export interface RecentCall {
+  number: string;
+  name: string;
+  date: string;
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -72,6 +78,15 @@ export class WebRtcVoiceService {
   readonly syncingNumbers = signal<boolean>(false);
   readonly adminClients = signal<AdminClient[]>([]);
   readonly loadingAdminClients = signal<boolean>(false);
+  readonly missedCalls = signal<Array<{ id: string; number: string; name?: string; timestamp: Date; reason: string }>>([]);
+
+  readonly missedCallsCount = signal<number>(0);
+  /** Last number this session dialed out to, for the dialer's Redial button. Session-only (not persisted). */
+  readonly lastDialedNumber = signal<{ number: string; name?: string } | null>(null);
+  /** Last 5 outbound calls, fetched from call history for the dialer's quick-access strip. */
+  readonly recentOutboundCalls = signal<RecentCall[]>([]);
+
+  readonly callAnnouncement = signal<string>('');
 
   // ── Private State ───────────────────────────────────────────────────────
   private telnyxClient: TelnyxRTC | null = null;
@@ -88,27 +103,211 @@ export class WebRtcVoiceService {
   // arriving after the call has already been terminated). Once a callLogId
   // is in this set, all "call is alive" SSE events for it are ignored.
   private terminatedCallLogIds = new Set<number>();
-  // Set true the instant the agent clicks Answer on an inbound call, until
-  // the bridged WebRTC leg is auto-accepted (or the call ends). The
-  // backend's answer() now only picks up the PSTN side and then transfers
-  // it to this browser's SIP session (see VoiceService.answerCall) -- that
-  // transfer surfaces here as a completely new native inbound ring, which
-  // this flag tells handleTelnyxNotification to auto-accept immediately
-  // rather than showing the agent a second "incoming call" prompt for a
-  // call they already answered.
+
   private awaitingBridgeAnswer = false;
   private ringTimeoutTimer: any = null;
   private readonly RING_TIMEOUT_MS = 60000; // tune this — 15-25s is typical
   private readonly platformId = inject(PLATFORM_ID);
   private get isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
+  private notifyClearTimer: any = null;
+  // Dynamic tab title flashing and Browser Desktop Notification support
+  private titleFlashInterval: any = null;
+  private originalDocumentTitle: string = '';
+  private activeDesktopNotification: Notification | null = null;
+  private ringAudioCtx: AudioContext | null = null;
+  private ringLoopTimer: any = null;
+  private previousCallStatus: ActiveCallInfo['status'] | null = null;
+  private previousCallDuration = 0;
 
   constructor() {
     if (this.isBrowser) {
       this.checkMicrophonePermissionStatus();
       this.fetchVoiceNumbers();
-      // No eager full-list load anymore -- fetchAdminClients() is search-
-      // driven now (this org table has 100k+ rows). Softphone/Clients
-      // pages call it themselves as the user types.
+      this.requestNotificationPermission();
+      this.fetchMissedCallsCount();
+      effect(() => {
+        this.announceCallStatusChange(this.activeCall());
+      });
+    }
+  }
+
+  /** See callAnnouncement doc comment above -- this is the one place call-state announcements are decided. */
+  private announceCallStatusChange(call: ActiveCallInfo | null): void {
+    if (!call) {
+      this.stopTitleFlashing();
+      this.stopRingtone();
+      if (this.previousCallStatus && this.previousCallStatus !== 'ended') {
+        const durationPart = this.previousCallDuration > 0
+          ? `, duration ${this.formatDuration(this.previousCallDuration)}`
+          : '';
+        this.callAnnouncement.set(`Call ended${durationPart}`);
+      }
+      this.previousCallStatus = null;
+      this.previousCallDuration = 0;
+      return;
+    }
+
+    if (call.status !== this.previousCallStatus) {
+      switch (call.status) {
+        case 'dialing':
+          this.callAnnouncement.set(`Calling ${call.customerName || call.customerNumber}`);
+          break;
+        case 'ringing':
+          this.callAnnouncement.set(
+            call.direction === 'inbound'
+              ? `Incoming call from ${call.customerName || call.customerNumber}`
+              : 'Ringing'
+          );
+          if (call.direction === 'inbound') {
+            this.showInboundDesktopNotification(call.customerName || '', call.customerNumber);
+            this.startRingtone();
+          }
+          break;
+        case 'active':
+          this.stopTitleFlashing();
+          this.stopRingtone();
+          this.callAnnouncement.set('Call answered');
+          break;
+        case 'held':
+          this.callAnnouncement.set('Call on hold');
+          break;
+      }
+      this.previousCallStatus = call.status;
+    }
+    this.previousCallDuration = call.durationSeconds;
+  }
+
+  /** Prompts the browser for desktop notification permission if not already granted/denied. */
+  public async requestNotificationPermission(): Promise<void> {
+    if (!this.isBrowser || !('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch (e) {
+        console.warn('[Voice][Notification] Permission request error:', e);
+      }
+    }
+  }
+
+  /** Triggers a browser desktop notification when an incoming call arrives while tab is not focused or visible. */
+  private showInboundDesktopNotification(callerName: string, callerNumber: string): void {
+    if (!this.isBrowser) return;
+
+    // Start title flashing for all unfocused/background tabs
+    this.startTitleFlashing(`📞 INCOMING CALL: ${callerName || callerNumber}`);
+
+    // If browser supports Notifications and permission is granted
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        if (this.activeDesktopNotification) {
+          this.activeDesktopNotification.close();
+        }
+
+        const title = `📞 Incoming Call from ${callerName || callerNumber}`;
+        const options: any = {
+          body: `Call from ${callerNumber}. Click to open softphone.`,
+          icon: '/favicon.ico',
+          tag: 'inbound-voice-call',
+          requireInteraction: true,
+          renotify: true,
+        };
+
+        const notification = new Notification(title, options);
+        this.activeDesktopNotification = notification;
+
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (err) {
+        console.warn('[Voice][Notification] Failed to show desktop notification:', err);
+      }
+    }
+  }
+
+
+  private startRingtone(): void {
+    if (!this.isBrowser || this.ringAudioCtx) return;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      this.ringAudioCtx = new AudioCtx();
+      if (this.ringAudioCtx.state === 'suspended') {
+        this.ringAudioCtx.resume().catch(() => {
+          console.warn('[Voice][Ringtone] AudioContext resume was blocked -- ringtone may be silent until the next click/keypress on the page.');
+        });
+      }
+
+      const playBurst = () => {
+        const ctx = this.ringAudioCtx;
+        if (!ctx) return;
+
+        const gain = ctx.createGain();
+        gain.gain.value = 0.15; // audible but not jarring
+        gain.connect(ctx.destination);
+
+        const osc1 = ctx.createOscillator();
+        osc1.frequency.value = 440;
+        osc1.connect(gain);
+
+        const osc2 = ctx.createOscillator();
+        osc2.frequency.value = 480;
+        osc2.connect(gain);
+
+        const now = ctx.currentTime;
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 2); // 2s "on" burst
+        osc2.stop(now + 2);
+      };
+
+      playBurst();
+      // Repeats every 6s (2s ring + 4s silence) to match the cadence above.
+      this.ringLoopTimer = setInterval(playBurst, 6000);
+    } catch (e) {
+      console.warn('[Voice][Ringtone] Could not start ringtone (Web Audio unavailable):', e);
+    }
+  }
+
+  private stopRingtone(): void {
+    if (this.ringLoopTimer) {
+      clearInterval(this.ringLoopTimer);
+      this.ringLoopTimer = null;
+    }
+    if (this.ringAudioCtx) {
+      try { this.ringAudioCtx.close(); } catch { /* ignore */ }
+      this.ringAudioCtx = null;
+    }
+  }
+
+  /** Flashes browser document title dynamically (e.g. 📞 INCOMING CALL...) */
+  private startTitleFlashing(flashText: string): void {
+    if (!this.isBrowser) return;
+    if (!this.originalDocumentTitle) {
+      this.originalDocumentTitle = document.title || 'Client Management System';
+    }
+    this.stopTitleFlashing();
+
+    let step = 0;
+    this.titleFlashInterval = setInterval(() => {
+      document.title = step % 2 === 0 ? flashText : `🔔 ${this.originalDocumentTitle}`;
+      step++;
+    }, 1000);
+  }
+
+  /** Stops flashing document title and restores original tab title */
+  private stopTitleFlashing(): void {
+    if (!this.isBrowser) return;
+    if (this.titleFlashInterval) {
+      clearInterval(this.titleFlashInterval);
+      this.titleFlashInterval = null;
+    }
+    if (this.originalDocumentTitle) {
+      document.title = this.originalDocumentTitle;
+    }
+    if (this.activeDesktopNotification) {
+      this.activeDesktopNotification.close();
+      this.activeDesktopNotification = null;
     }
   }
 
@@ -145,10 +344,10 @@ export class WebRtcVoiceService {
       const data = await res.json();
       if (!res.ok || !data.status) throw new Error(data.message || 'Sync failed');
 
-      this.lastNotification.set({
-        message: `Synced ${data.total} number(s) from Telnyx (${data.created} new, ${data.updated} updated)`,
-        type: 'success',
-      });
+      this.notify(
+        `Synced ${data.total} number(s) from Telnyx (${data.created} new, ${data.updated} updated)`,
+        'success'
+      );
       await this.fetchVoiceNumbers();
     } catch (err: any) {
       this.errorMessage.set(`Number sync failed: ${err.message}`);
@@ -161,19 +360,30 @@ export class WebRtcVoiceService {
     this.selectedNumberId.set(id);
   }
 
-  /**
-   * Loads admin-tier clients (Organization + Userprofile.AdminSts=1) for
-   * the dialer's client picker. Search-driven and capped server-side
-   * (default 25, max 100) -- this table is huge, so callers should pass
-   * a `search` term once the user has typed a couple characters rather
-   * than relying on the unfiltered default list.
-   */
-  async fetchAdminClients(search: string = '', limit: number = 25): Promise<void> {
+
+  async fetchAdminClients(
+    search: string = '',
+    length: number = 25,
+    start: number = 0,
+    statusFilter: string | string[] = [],
+    sorting?: { col: string; dir: 'asc' | 'desc' }
+  ): Promise<void> {
     this.loadingAdminClients.set(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      params.set('limit', String(limit));
+      params.set('length', String(length));
+      params.set('start', String(start));
+
+      if (statusFilter && statusFilter.length > 0) {
+        const filterValue = Array.isArray(statusFilter) ? statusFilter.join(',') : statusFilter;
+        params.set('statusFilter', filterValue);
+      }
+
+      if (sorting) {
+        params.set('sorting', JSON.stringify({ require: 1, col: sorting.col, dir: sorting.dir }));
+      }
+
       const res = await fetch(`${this.API_BASE}/admin-clients?${params.toString()}`);
       const json = await res.json();
       this.adminClients.set(json.data || []);
@@ -184,10 +394,62 @@ export class WebRtcVoiceService {
     }
   }
 
+  async fetchRecentCalls(limit: number = 5): Promise<void> {
+    try {
+      const rowFetchLimit = Math.max(limit * 10, 50);
+      const params = new URLSearchParams();
+      params.set('page', '1');
+      params.set('limit', String(rowFetchLimit));
+      params.set('direction', 'outbound');
+      const res = await fetch(`${this.API_BASE}/history?${params.toString()}`);
+      const json = await res.json();
+      const rows: any[] = json.data || [];
+
+      const seenNumbers = new Set<string>();
+      const unique: RecentCall[] = [];
+      for (const r of rows) {
+        const number = r.to_number || '';
+        if (!number || seenNumbers.has(number)) continue;
+        seenNumbers.add(number);
+        unique.push({
+          number,
+          name: r.client_name || '',
+          date: r.created_at || '',
+        });
+        if (unique.length >= limit) break;
+      }
+
+      this.recentOutboundCalls.set(unique);
+    } catch (err: any) {
+      console.warn('[Voice][RecentCalls] Failed to fetch recent calls:', err.message);
+    }
+  }
+
   /** The E.164 number currently selected in the DID dropdown, used as callerNumber for outbound calls. */
   get selectedCallerNumber(): string | null {
     const n = this.voiceNumbers().find(v => v.id === this.selectedNumberId());
     return n?.phone_number || null;
+  }
+
+  async fetchMissedCallsCount(): Promise<void> {
+    try {
+      const res = await fetch(`${this.API_BASE}/missed-calls-count`);
+      const json = await res.json();
+      if (json.status && json.data) {
+        this.missedCallsCount.set(Number(json.data.count) || 0);
+      }
+    } catch (err: any) {
+      console.warn('[Voice][MissedCalls] Failed to fetch missed calls count:', err.message);
+    }
+  }
+
+
+  notify(message: string, type: 'info' | 'success' | 'warn' | 'error' = 'info'): void {
+    this.lastNotification.set({ message, type });
+    if (this.notifyClearTimer) clearTimeout(this.notifyClearTimer);
+    this.notifyClearTimer = setTimeout(() => {
+      this.lastNotification.set(null);
+    }, 3000);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -204,24 +466,7 @@ export class WebRtcVoiceService {
     this.wireRemoteAudioActiveDetection();
   }
 
-  /**
-   * Ground-truth 'call is actually connected' detection, independent of
-   * the Telnyx SDK's call.state notification strings.
-   *
-   * newCall()/answer() are passed `remoteElement: this.remoteAudioEl`,
-   * which lets the SDK auto-attach and play the remote stream on that
-   * element *internally* -- decoupled from whatever callUpdate state
-   * string handleTelnyxNotification happens to recognize. That's how
-   * audio was confirmed working (both sides talking) while `status` never
-   * flipped to 'active' and Hold stayed disabled: the SDK's own auto-wire
-   * doesn't route through our state-string matching at all.
-   *
-   * The browser's native 'playing' event on the <audio> element is the one
-   * signal that can't lie -- it only fires once audio is genuinely
-   * decoding and playing. Wired once per element (idempotent via a flag on
-   * the element itself, since setRemoteAudioElement could theoretically be
-   * called more than once with the same element).
-   */
+
   private wireRemoteAudioActiveDetection(): void {
     if (!this.remoteAudioEl || (this.remoteAudioEl as any).__activeDetectionWired) return;
     (this.remoteAudioEl as any).__activeDetectionWired = true;
@@ -292,21 +537,7 @@ export class WebRtcVoiceService {
   // REGISTRATION / WEBRTC SESSION
   // ─────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Main entry point. Called from VoiceComponent.ngOnInit().
-   * Steps:
-   *  1. Attempt to acquire the microphone (non-blocking — see below)
-   *  2. Fetch JWT token from backend (credentials generated against SIP Connection)
-   *  3. Initialize TelnyxRTC client with the JWT
-   *  4. Connect — 'telnyx.ready' fires when actually registered
-   *  5. Start SSE for call state signaling
-   *
-   * NOTE: registration no longer requires a working microphone. An agent
-   * with no/broken mic can still register (get SIP presence, receive
-   * incoming-call notifications) — the mic is only required to actually
-   * transmit audio, which is checked separately in makeOutboundCall() and
-   * answerCall().
-   */
+
   async registerSoftphone(): Promise<void> {
     if (!this.isBrowser) return;
     if (
@@ -322,15 +553,6 @@ export class WebRtcVoiceService {
 
     this.connectionState.set('Connecting');
     this.errorMessage.set(null);
-
-    // Step 1: Microphone — attempted but no longer blocking. Registration
-    // (SIP presence / ability to receive call notifications) and the mic
-    // (ability to actually transmit audio) are independent concerns: an
-    // agent with a broken/missing mic can still register, see the dialer,
-    // and receive incoming-call notifications. They'll just be stopped by
-    // the mic check in makeOutboundCall()/answerCall() when they try to
-    // actually get on a call. requestMicrophonePermission() still sets
-    // micPermission + errorMessage on failure so the UI banner shows.
     this.connectionState.set('initializing');
     const micOk = await this.requestMicrophonePermission();
     if (!micOk) {
@@ -441,35 +663,43 @@ export class WebRtcVoiceService {
         if (!call) return;
         const state: string = call.state;
 
+        // Extract provider call ID from Telnyx Call object
+        const providerCallId = call.call_control_id || call.id || call.telnyxIDs?.callId;
+        if (providerCallId && this.activeCall()?.callLogId && !this.activeCall()?.providerCallId) {
+          const cur = this.activeCall();
+          if (cur) this.activeCall.set({ ...cur, providerCallId });
+          this.attachProviderCallIdToBackend(providerCallId);
+        }
         if (state === 'ringing') {
-          this.activeRTCCall = call; // ← ADD THIS
-          console.log('[Voice][Debug] activeRTCCall set. direction=', call.options?.direction, 'call.id=', call.id);
-
           const fromNumber = call.options?.remoteCallerNumber || 'Unknown';
           const direction = call.options?.direction || 'inbound';
+          const cur = this.activeCall();
+          const isBusy = !!cur && cur.status !== 'ended';
 
-          // This is the bridged leg Telnyx dials as part of VoiceService
-          // .answerCall()'s transfer() call -- the agent already clicked
-          // Answer (that's what triggered the transfer in the first place),
-          // so auto-accept immediately instead of showing a second ring.
-          if (direction === 'inbound' && this.awaitingBridgeAnswer) {
+          if (cur && cur.direction === 'outbound') {
+            // Explicitly handle outbound calls when PSTN reports 180 Ringing / 183 Session Progress
+            console.log('[Voice][Call] Outbound call is now ringing target phone');
+            this.activeCall.set({ ...cur, status: 'ringing' });
+          } else if (this.awaitingBridgeAnswer) {
+            this.activeRTCCall = call;
             this.awaitingBridgeAnswer = false;
             console.log('[Voice][Call] Bridged WebRTC leg is ringing -- auto-accepting (agent already answered via REST).');
             this.autoAcceptBridgedCall(call);
-          } else if (direction === 'inbound' && (!this.activeCall() || this.activeCall()?.status === 'ended')) {
+          } else if (direction === 'inbound' && !isBusy) {
+            // Genuinely idle -- this is a new inbound call.
+            this.activeRTCCall = call;
             this.activeCall.set({
               providerCallId: call.id,
               customerNumber: fromNumber,
-              customerName: call.options?.remoteCallerName || fromNumber,
+              customerName: call.options?.remoteCallerName || undefined,
               direction: 'inbound',
               status: 'ringing',
               isMuted: false,
               isHeld: false,
               durationSeconds: 0,
             });
-          } else {
-            const cur = this.activeCall();
-            if (cur) this.activeCall.set({ ...cur, status: 'ringing' });
+          } else if (direction === 'inbound' && isBusy) {
+            console.warn('[Voice][Call] Second inbound call rang while already busy -- ignoring at the WebRTC layer (SSE path handles the missed-call UI).');
           }
         }
 
@@ -516,7 +746,7 @@ export class WebRtcVoiceService {
         if (!call) return;
         console.log('[Voice][Call] Inbound call notification received');
         const fromNumber = call.options?.remoteCallerNumber || call.options?.destinationNumber || 'Unknown';
-        const fromName = call.options?.remoteCallerName || fromNumber;
+        const fromName = call.options?.remoteCallerName || undefined;
 
         if (this.awaitingBridgeAnswer) {
           this.awaitingBridgeAnswer = false;
@@ -582,14 +812,7 @@ export class WebRtcVoiceService {
     }
   }
 
-  /**
-   * DEBUG ONLY — diagnostic helper to trace the one-way-audio bug.
-   * Locates the underlying RTCPeerConnection on a TelnyxRTC call object
-   * and logs its outbound audio sender(s). If no audio sender exists (or
-   * its track is null/ended), the local mic was never attached to the
-   * peer connection — that's the root cause of "they can't hear me".
-   * Safe to remove once the bug is confirmed/fixed.
-   */
+
   private diagnosePeerConnectionAudio(label: string): void {
     setTimeout(() => {
       const call: any = this.activeRTCCall;
@@ -683,7 +906,7 @@ export class WebRtcVoiceService {
 
         this.cleanupCallMedia();
         this.endCallSession();
-        this.lastNotification.set({ message: 'No answer — call ended after timeout', type: 'warn' });
+        this.notify('No answer — call ended after timeout', 'warn');
       }
     }, this.RING_TIMEOUT_MS);
   }
@@ -719,7 +942,7 @@ export class WebRtcVoiceService {
     this.errorMessage.set(null);
     this.activeCall.set({
       customerNumber: phoneNumber,
-      customerName: customerName || 'Customer',
+      customerName: customerName || undefined,
       direction: 'outbound',
       status: 'dialing',
       isMuted: false,
@@ -728,6 +951,7 @@ export class WebRtcVoiceService {
     });
 
     console.log('[Voice][Call] Call requested to:', phoneNumber);
+    this.lastDialedNumber.set({ number: phoneNumber, name: customerName });
 
     // Use the DID selected in the dropdown; fall back to the hardcoded
     // number only if nothing has synced/loaded yet, so a fresh page load
@@ -737,14 +961,8 @@ export class WebRtcVoiceService {
       console.warn('[Voice][Call] No DID selected from voice_numbers -- falling back to hardcoded number. Sync/select a number first.');
     }
 
-    // Log this call to call_logs immediately -- the browser dials Telnyx
-    // directly via the SDK below, which never touches the backend, so
-    // without this the row only ever gets created by the call.initiated
-    // webhook (which depends on Telnyx being able to reach this backend
-    // AND that webhook being configured on the right connection). This
-    // makes Call History work regardless of whether that webhook arrives.
-    this.logOutboundCallToBackend(phoneNumber, callerNumber);
 
+    await this.logOutboundCallToBackend(phoneNumber, callerNumber);
     try {
       // Fix 1 & 2: Re-acquire fresh mic stream specifically for this call
       console.log('[Voice][Audio] Acquiring fresh mic stream for outbound call');
@@ -774,10 +992,7 @@ export class WebRtcVoiceService {
       console.log('[Voice][Media] Local audio track added, outbound call initiated');
       this.startRingTimeout();
 
-      // Best-effort: if the SDK call object exposes an id that lines up
-      // with Telnyx's call_control_id, link it onto the call_logs row so a
-      // later webhook (call.answered/call.hangup) can find and update it.
-      // Harmless no-op server-side if it doesn't match anything.
+
       const sdkCallId = (this.activeRTCCall as any)?.id || (this.activeRTCCall as any)?.telnyxIDs?.callId;
       if (sdkCallId) {
         this.attachProviderCallIdToBackend(sdkCallId);
@@ -790,15 +1005,7 @@ export class WebRtcVoiceService {
     } catch (err: any) {
       this.errorMessage.set(`Outbound Call Error: ${err.message}`);
       console.error('[Voice][Call] Call failed:', err.message);
-      // Must clear activeRTCCall (not just activeCall) -- every other
-      // call-ending path in this file does this via cleanupCallMedia().
-      // Skipping it here left a dead outbound call's SDK object sitting
-      // in activeRTCCall, which the NEXT inbound call's answerCall() would
-      // then try to .answer() first (see answerCall() above), sending an
-      // "answer" for a call_control_id Telnyx still has on record as
-      // outbound -- surfacing as a 422 "Can not issue an answer command
-      // on an outbound call" when the agent tries to pick up a totally
-      // unrelated, genuinely inbound call.
+
       this.cleanupCallMedia();
       this.endCallSession();
     }
@@ -831,30 +1038,21 @@ export class WebRtcVoiceService {
   /** POST /api/voice/attach-provider-call-id -- best-effort, see makeOutboundCall. */
   private async attachProviderCallIdToBackend(providerCallId: string): Promise<void> {
     const cur = this.activeCall();
-    if (!cur?.callLogId) {
-      // callLogId may not have come back from logOutboundCallToBackend yet --
-      // that's fine, the webhook path (if it arrives) still finds the row by
-      // provider_call_id once call.initiated processes it independently.
-      return;
-    }
+    if (!cur?.callLogId || !providerCallId) return;
+
     try {
       await fetch(`${this.API_BASE}/attach-provider-call-id`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callLogId: cur.callLogId, providerCallId }),
       });
+      console.log('[Voice][History] Attached providerCallId:', providerCallId, 'to callLogId:', cur.callLogId);
     } catch (err: any) {
       console.warn('[Voice][History] Network error attaching provider call id:', err.message);
     }
   }
 
-  /**
-   * POST /api/voice/log-call-end -- called the moment the WebRTC SDK
-   * reports the call ended (hangup/destroy/purge), so Call History shows
-   * a final status/duration even if the call.hangup webhook never
-   * reaches this backend. Must run BEFORE endCallSession() clears
-   * activeCall(), since that's where callLogId/durationSeconds live.
-   */
+
   private async logCallEndToBackend(explicitStatus?: 'completed' | 'rejected' | 'no_answer' | 'failed' | 'busy'): Promise<void> {
     const cur = this.activeCall();
     if (!cur?.callLogId) return; // nothing to update -- row was never linked (e.g. log-outbound request hadn't resolved yet)
@@ -887,16 +1085,42 @@ export class WebRtcVoiceService {
    */
   receiveIncomingCall(callLogId: number, fromNumber: string, customerName?: string): void {
     const existing = this.activeCall();
-    if (existing && (existing.status === 'active' || existing.status === 'dialing' || existing.status === 'held')) {
-      console.warn('[Concurrent Call Protection] Already on an active call. Ignoring incoming call from', fromNumber);
-      this.lastNotification.set({ message: `Incoming call from ${fromNumber} ignored — already on an active call.`, type: 'warn' });
+    if (existing && existing.direction === 'inbound' && existing.status === 'ringing' && !existing.callLogId) {
+      this.activeCall.set({ ...existing, callLogId });
+      return;
+    }
+
+    if (existing && (existing.status === 'active' || existing.status === 'dialing' || existing.status === 'held' || existing.status === 'ringing' || this.awaitingBridgeAnswer)) {
+      console.warn('[Concurrent Call Protection] Already on active call. Logging missed call for', fromNumber);
+      const entry = {
+        id: `missed-${Date.now()}-${callLogId}`,
+        number: fromNumber,
+        name: customerName || 'Incoming Call',
+        timestamp: new Date(),
+        reason: 'Agent busy on active call',
+      };
+      this.missedCalls.update(list => [entry, ...list.slice(0, 19)]);
+      this.notify(`⚠️ Missed Call from ${customerName || fromNumber} (Line Busy)`, 'warn');
+      if (this.isBrowser && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(`⚠️ Missed Call from ${customerName || fromNumber}`, {
+            body: `Caller received busy signal while you were on another call.`,
+            icon: '/favicon.ico',
+            tag: 'missed-voice-call',
+          });
+        } catch (e) { /* ignore */ }
+      }
+
+      if (callLogId) {
+        this.rejectBusyInboundCallOnBackend(callLogId);
+      }
       return;
     }
 
     this.activeCall.set({
       callLogId,
       customerNumber: fromNumber,
-      customerName: customerName || 'Incoming Call',
+      customerName: customerName || undefined,
       direction: 'inbound',
       status: 'ringing',
       isMuted: false,
@@ -905,14 +1129,27 @@ export class WebRtcVoiceService {
     });
   }
 
-  /**
-   * Auto-accepts the bridged WebRTC leg Telnyx dials as part of
-   * VoiceService.answerCall()'s transfer() call -- the agent already
-   * clicked Answer in the UI (that's what triggered the transfer), so
-   * this just needs to pick up the resulting native SIP ring without any
-   * further user interaction. Same mic-acquisition/answer sequence as
-   * the manual path in answerCall() above.
-   */
+
+  private async rejectBusyInboundCallOnBackend(callLogId: number): Promise<void> {
+    try {
+      const res = await fetch(`${this.API_BASE}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callLogId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.status) {
+        console.warn('[Voice][Call] Busy-call reject was not applied (call may have already ended):', data.message);
+        return;
+      }
+      this.terminatedCallLogIds.add(callLogId);
+      console.log('[Voice][Call] Declined busy-agent inbound call on backend, callLogId:', callLogId);
+      this.fetchMissedCallsCount();
+    } catch (err: any) {
+      console.warn('[Voice][Call] Network error declining busy-agent inbound call:', err.message);
+    }
+  }
+
   private async autoAcceptBridgedCall(call: any): Promise<void> {
     this.activeRTCCall = call;
     try {
@@ -938,18 +1175,27 @@ export class WebRtcVoiceService {
   async answerCall(): Promise<void> {
     const current = this.activeCall();
     if (!current) return;
-    // Registration no longer guarantees a working mic (see registerSoftphone).
-    // An agent can be registered and see an inbound call ring in with no
-    // mic connected -- catch that here with a clear message rather than
-    // letting it fail deeper inside the SDK/bridge answer path below.
+
     if (this.micPermission() === 'Blocked' || this.micPermission() === 'Denied') {
       this.errorMessage.set('Microphone is unavailable. Connect a microphone (or grant permission) before answering a call.');
       return;
     }
-    const rtcCallMatchesCurrent =
+    // Clean up activeRTCCall if it's dead/ended
+    if (this.activeRTCCall && ['hangup', 'destroy', 'purge', 'ended'].includes(this.activeRTCCall.state)) {
+      this.activeRTCCall = null;
+    }
+
+    const isRtcCallValid =
       this.activeRTCCall &&
       typeof this.activeRTCCall.answer === 'function' &&
-      (this.activeRTCCall.id === current.providerCallId || !current.providerCallId);
+      !['hangup', 'destroy', 'purge', 'ended'].includes(this.activeRTCCall.state);
+
+    const rtcCallMatchesCurrent =
+      isRtcCallValid &&
+      (this.activeRTCCall.id === current.providerCallId || (
+        !current.providerCallId &&
+        (this.activeRTCCall.options?.direction === 'inbound' || this.activeRTCCall.direction === 'inbound' || !this.activeRTCCall.options?.direction)
+      ));
 
     // If TelnyxRTC already has the inbound call, answer via SDK (WebRTC media is immediate)
     if (rtcCallMatchesCurrent) {
@@ -985,13 +1231,7 @@ export class WebRtcVoiceService {
     if (!current.callLogId) return;
     try {
       this.errorMessage.set(null);
-      // Set BEFORE the request resolves -- the backend's answer() now
-      // picks up the PSTN leg and immediately transfers it to this
-      // browser's SIP session (see VoiceService.answerCall), which can
-      // surface as a native inbound ring here before this fetch even
-      // returns. Without setting this first, that race would show the
-      // agent a duplicate "incoming call" prompt for a call they just
-      // clicked Answer on.
+
       this.awaitingBridgeAnswer = true;
       const res = await fetch(`${this.API_BASE}/answer`, {
         method: 'POST',
@@ -1015,18 +1255,6 @@ export class WebRtcVoiceService {
     // Same timing reasoning as hangupCall() above -- log before clearing.
     // 'rejected' since this is an explicit user decline, not a plain hangup.
     this.logCallEndToBackend('rejected');
-
-    // An unanswered INBOUND call needs Telnyx's real Call Control reject
-    // action (cause: USER_BUSY -> a proper SIP 486/603 on the original
-    // INVITE), not the WebRTC SDK's generic call.hangup(). Per Telnyx's
-    // own SIP fail-over docs, they only stop re-delivering an unanswered
-    // inbound INVITE (via their secondary route/IP) once they see that
-    // explicit SIP response -- a plain hangup()/BYE isn't recognized the
-    // same way, which was causing Telnyx to re-ring this same call here
-    // a couple more times after Decline (looked like an automatic
-    // "retry"). Answered calls (hangupCall()) and cancelling your own
-    // outbound dial are unaffected by this -- those are unambiguous
-    // BYE/CANCELs, so they still use the SDK path below.
     const isUnansweredInbound =
       current?.direction === 'inbound' && current.status !== 'active' && current.status !== 'held';
 
@@ -1054,9 +1282,7 @@ export class WebRtcVoiceService {
       }
     }
 
-    // Always clean up the local WebRTC leg/audio too, regardless of which
-    // path above ran -- cleanupCallMedia() already no-ops a redundant
-    // hangup() if the call object reports it's already ended.
+
     this.cleanupCallMedia();
     this.endCallSession();
   }
@@ -1102,16 +1328,6 @@ export class WebRtcVoiceService {
       return;
     }
 
-    // hold()/unhold() are async -- they send a signaling message to Telnyx
-    // and wait for the server to confirm. The previous code called these
-    // without awaiting them (`activeRTCCall.hold?.()`), so it flipped the UI
-    // to 'held' immediately regardless of whether Telnyx actually confirmed
-    // it -- and if the request failed, that rejection happened *after* this
-    // function had already returned, so the surrounding try/catch (which
-    // only catches synchronous throws) never saw it. The call kept flowing
-    // normally (mic still live, other party still hearing you) while the UI
-    // silently lied about being on hold. Awaiting it here means we only
-    // update the UI once Telnyx has genuinely confirmed the hold/unhold.
     try {
       if (isHolding) {
         await this.activeRTCCall.unhold();
@@ -1131,21 +1347,7 @@ export class WebRtcVoiceService {
 
   async hangupCall(): Promise<void> {
     const current = this.activeCall();
-
-    // Log the end BEFORE clearing activeCall() below -- endCallSession()
-    // nulls it out synchronously, but the SDK's own 'hangup' notification
-    // (which also calls logCallEndToBackend) arrives asynchronously after
-    // that, so by then there'd be nothing left to read. Calling it here
-    // first is what actually gets this call marked complete when the
-    // local user is the one who hung up.
     this.logCallEndToBackend();
-
-    // SDK hangup already terminates the call at Telnyx's end -- the WebRTC
-    // leg *is* the Call Control leg, same session. A follow-up REST /hangup
-    // 422s ("Call has already ended") since Telnyx already closed it, and
-    // call_logs still updates to 'completed' independently via the
-    // call.hangup webhook regardless of which side ended it. Only fall back
-    // to REST when there's no SDK call object to act on.
     if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
       try {
         this.activeRTCCall.hangup();
@@ -1268,11 +1470,6 @@ export class WebRtcVoiceService {
     if (!payload || typeof payload !== 'object') return;
     const { type, callLogId, phoneNumber, customerName, recordingUrl, message } = payload;
 
-    // Reject "call is alive" SSE events for call IDs we have already
-    // terminated locally. This prevents a delayed call.answered webhook
-    // (arriving after call.hangup due to Telnyx delivery reordering) from
-    // resurrecting a phantom activeCall on the UI and causing a loop where
-    // the agent can never end the call and the customer keeps getting redialed.
     const ALIVE_EVENTS = new Set(['incoming_call', 'call_ringing', 'call_answered', 'call_hold', 'call_resume']);
     if (ALIVE_EVENTS.has(type) && callLogId && this.terminatedCallLogIds.has(callLogId)) {
       console.warn(`[SSE] Ignoring stale "${type}" event for already-terminated callLogId:`, callLogId);
@@ -1282,8 +1479,8 @@ export class WebRtcVoiceService {
     switch (type) {
       case 'incoming_call':
         console.log('[SSE UI State] Incoming call from:', phoneNumber);
-        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName || 'Incoming PSTN Call');
-        this.lastNotification.set({ message: `Incoming Call from ${phoneNumber || 'Unknown'}`, type: 'info' });
+        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName);
+        this.notify(`Incoming Call from ${phoneNumber || 'Unknown'}`, 'info');
         break;
 
       case 'call_ringing': {
@@ -1296,16 +1493,10 @@ export class WebRtcVoiceService {
       case 'call_answered': {
         const cur = this.activeCall();
         if (cur) {
-          // Only update the existing active call — do NOT create a new activeCall
-          // from SSE alone. If there is no current call when call_answered arrives
-          // it means the call was already ended (WebRTC SDK fired hangup/destroy
-          // first, or the agent already clicked End). Creating a new activeCall
-          // here was the source of the "ghost active call" / repeated-redial bug:
-          // the SSE event arrived after endCallSession() nulled everything out,
-          // leaving the UI stuck showing an active call with no backing RTC session.
+
           this.activeCall.set({ ...cur, status: 'active', callLogId });
           this.startTimer();
-          this.lastNotification.set({ message: 'Call connected', type: 'success' });
+          this.notify('Call connected', 'success');
           console.log('[Voice][Call] Call state changed → active (via SSE)');
         } else {
           console.warn('[SSE] call_answered received but no activeCall exists — ignoring (likely a stale/reordered webhook).');
@@ -1316,14 +1507,14 @@ export class WebRtcVoiceService {
       case 'call_hold': {
         const cur = this.activeCall();
         if (cur) this.activeCall.set({ ...cur, status: 'held', isHeld: true, callLogId });
-        this.lastNotification.set({ message: 'Call placed on hold', type: 'info' });
+        this.notify('Call placed on hold', 'info');
         break;
       }
 
       case 'call_resume': {
         const cur = this.activeCall();
         if (cur) this.activeCall.set({ ...cur, status: 'active', isHeld: false, callLogId });
-        this.lastNotification.set({ message: 'Call resumed', type: 'info' });
+        this.notify('Call resumed', 'info');
         break;
       }
 
@@ -1332,14 +1523,15 @@ export class WebRtcVoiceService {
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
-        this.lastNotification.set({ message: 'Call completed', type: 'info' });
+        this.notify('Call completed', 'info');
         break;
 
       case 'call_rejected':
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
-        this.lastNotification.set({ message: 'Call rejected', type: 'warn' });
+        this.notify('Call rejected', 'warn');
+        this.fetchMissedCallsCount();
         break;
 
       case 'call_no_answer':
@@ -1349,7 +1541,8 @@ export class WebRtcVoiceService {
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
-        this.lastNotification.set({ message: 'No answer', type: 'warn' });
+        this.notify('No answer', 'warn');
+        this.fetchMissedCallsCount();
         break;
 
       case 'call_failed':
@@ -1357,11 +1550,11 @@ export class WebRtcVoiceService {
         this.cleanupCallMedia();
         this.endCallSession();
         this.errorMessage.set(message || 'Call failed or network error.');
-        this.lastNotification.set({ message: message || 'Call failed', type: 'error' });
+        this.notify(message || 'Call failed', 'error');
         break;
 
       case 'recording_ready':
-        this.lastNotification.set({ message: `Recording available for call ${callLogId || ''}`, type: 'success' });
+        this.notify(`Recording available for call ${callLogId || ''}`, 'success');
         break;
 
       default:

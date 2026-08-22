@@ -38,7 +38,7 @@ export interface CalendarDay {
   styleUrl: './calendar.css',
 })
 export class Calendar {
-  @Input() eventsByDay: Record<number, DayEvent[]> = {};
+  @Input() eventsByDay: Record<string | number, DayEvent[]> = {};
   @Output() eventClick = new EventEmitter<DayEvent>();
   @Output() dateSelect = new EventEmitter<Date>();
   @Output() viewModeChange = new EventEmitter<'day' | 'week' | 'month'>();
@@ -59,6 +59,14 @@ export class Calendar {
 
   private getEventsForDate(date: Date, isCurrentMonth = true): DayEvent[] {
     if (!isCurrentMonth) return [];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateKey = `${year}-${month}-${day}`;
+
+    if (this.eventsByDay[dateKey]) {
+      return this.eventsByDay[dateKey];
+    }
     return this.eventsByDay[date.getDate()] ?? [];
   }
 
@@ -205,6 +213,7 @@ export class Calendar {
     if (this.viewMode() === 'month') this.anchorDate.set(new Date(d.getFullYear(), d.getMonth() - 1, 1));
     else if (this.viewMode() === 'week') this.anchorDate.set(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 7));
     else this.anchorDate.set(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+    this.dateSelect.emit(this.anchorDate());
   }
 
   goNext() {
@@ -212,6 +221,7 @@ export class Calendar {
     if (this.viewMode() === 'month') this.anchorDate.set(new Date(d.getFullYear(), d.getMonth() + 1, 1));
     else if (this.viewMode() === 'week') this.anchorDate.set(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7));
     else this.anchorDate.set(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+    this.dateSelect.emit(this.anchorDate());
   }
 
   // Schedule Drawer

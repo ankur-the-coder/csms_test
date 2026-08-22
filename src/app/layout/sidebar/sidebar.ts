@@ -33,18 +33,23 @@ export class Sidebar {
   // Controls whether the "Training" accordion is open or closed
   trainingExpanded = true;
 
-  mainNavItems: NavItem[] = [
-    // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+  // mainNavItems: NavItem[] = [
 
-  ];
+
+  // ];
 
   csNavItems: NavItem[] = [
-
-    // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+    // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
     // { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
     // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
     // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
+
+    // { id: 'connected', label: 'Connected', icon: 'connected',  route: '/connected' },
+    // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+    // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
+
     { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
     // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
     // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
@@ -72,7 +77,7 @@ export class Sidebar {
     this.navChange.emit(id);
     this.closeMobile.emit();
 
-    const allItems = [...this.mainNavItems, ...this.csNavItems, ...this.learningNavItems];
+    const allItems = [ ...this.csNavItems, ...this.learningNavItems];
     const targetItem = allItems.find(item => item.id === id);
     if (targetItem?.route) {
       this.router.navigate([targetItem.route]);

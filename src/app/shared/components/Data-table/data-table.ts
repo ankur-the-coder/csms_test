@@ -138,6 +138,37 @@ export class DataTable<T extends object> implements AfterContentInit {
   dateFrom = signal('');
   dateTo = signal('');
 
+  // Feeds app-custom-date-selector's [initialDates] input. Wrapped in computed()
+// so it only produces a NEW object reference when the underlying primitives
+// actually change — an inline object literal in the template would create a
+// new reference every change-detection cycle and spam CustomDateSelector's
+// ngOnChanges.
+initialDatesForPicker = computed(() => ({
+  from: this.initialDateFrom(),
+  to: this.initialDateTo(),
+}));
+
+
+
+// Seeds dateFrom/dateTo from the initialDateFrom/initialDateTo inputs
+// whenever they're set (e.g. navigated in from the dashboard with a
+// date range already applied). Runs as an effect (not just once in
+// ngAfterContentInit) so it also reacts if the same routed component
+// instance is reused with new query params.
+
+private applyInitialDatesEffect = effect(() => {
+  const from = this.initialDateFrom();
+  const to = this.initialDateTo();
+  if (from && to) {
+    untracked(() => {
+      this.dateFrom.set(from);
+      this.dateTo.set(to);
+      this.page.set(0);
+    });
+  }
+});
+
+
   // ── Filter options ─────────────────────────────────────────────────────────
   loadedFilters = signal<TableFilter[]>([]);
 
@@ -468,6 +499,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       ].join('|');
 
       if (fetchKey === this._lastFetchKey) return;
+      this._lastFetchKey = fetchKey;
 
       this.loadState.set('loading');
       this.errorMessage.set('');
@@ -507,7 +539,6 @@ export class DataTable<T extends object> implements AfterContentInit {
       const sub = request$.subscribe({
         next: (res) => {
           if (stale) return;
-          this._lastFetchKey = fetchKey;
           const rawData = getByPath(res, dp) as any[] ?? [];
           const mapped = transformRow ? rawData.map(transformRow) : rawData as T[];
           const data = mapped.filter((r): r is T => r !== null && r !== undefined);
@@ -521,6 +552,7 @@ export class DataTable<T extends object> implements AfterContentInit {
         },
         error: (err) => {
           if (stale) return;
+          this._lastFetchKey = '';
           this.loadState.set('error');
           this.errorMessage.set(err?.message ?? 'Failed to load data');
           this.initialLoadDone.set(true);
@@ -553,7 +585,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   ngAfterContentInit(): void {
     const cfg = this.config();
     untracked(() => {
-      this.pageSize.set(cfg.defaultPageSize ?? cfg.pageSizeOptions?.[0] ?? 10);
+      const targetSize = cfg.defaultPageSize ?? cfg.pageSizeOptions?.[0] ?? 10;
+      if (this.pageSize() !== targetSize) {
+        this.pageSize.set(targetSize);
+      }
       const vis: Record<string, boolean> = {};
       cfg.columns.forEach(c => {
         // Non-hideable columns must always start visible, regardless of `hidden`.

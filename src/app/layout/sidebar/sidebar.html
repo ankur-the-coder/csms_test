@@ -1,133 +1,77 @@
-<!-- Mobile/tablet backdrop — only shown when the drawer is open, hidden on desktop -->
-<div
-  *ngIf="mobileOpen"
-  class="lg:hidden fixed inset-0 bg-slate-900/50 z-40"
-  (click)="closeMobile.emit()"
-></div>
+<div *ngIf="mobileOpen" class="lg:hidden fixed inset-0 bg-slate-900/50 z-40" (click)="closeMobile.emit()"></div>
 
-<aside
-  class="h-screen bg-white text-slate-600 flex flex-col transition-all
-  duration-300 select-none shrink-0 fixed inset-y-0 left-0 z-50 lg:relative lg:z-auto lg:translate-x-0"
-  [ngClass]="{
-    'w-64': !collapsed,
+<aside class="h-screen bg-white text-slate-600 flex flex-col transition-all
+  duration-300 select-none shrink-0 fixed inset-y-0 left-0 z-50 lg:relative lg:z-auto lg:translate-x-0" [ngClass]="{
+
     'w-20': collapsed,
     'translate-x-0': mobileOpen,
     '-translate-x-full': !mobileOpen
-  }"
->
-  <!-- Brand Logo Header -->
-  <div
-    class="px-3 pt-4 pb-2 bg-white transition-all flex items-center justify-between gap-2"
-  >
-    <div
-      class="flex items-center gap-2.5 overflow-hidden cursor-pointer rounded-xl border border-slate-100 bg-slate-50/80 shadow-xs transition-all flex-1 min-w-0"
-      [ngClass]="{'px-3 py-2.5': !collapsed, 'p-2 justify-center': collapsed}"
-      (click)="selectNav('dashboard')"
-      [title]="collapsed ? 'UBITECH CSMS Platform' : ''"
-    >
-      <div class="h-9 w-9 rounded-lg flex items-center justify-center
+  }">
+
+  <div class="px-3  pb-2 bg-white transition-all flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 overflow-hidden  flex-1 min-w-0"
+      [ngClass]="{'px-3 py-2.5': !collapsed, 'p-2 justify-center': collapsed}" (click)="selectNav('dashboard')"
+      [title]="collapsed ? 'UBITECH CSMS Platform' : ''">
+      <div class="h-15 w-15 rounded-lg flex items-center justify-center
        font-extrabold text-lg shrink-0">
-        <img src="onlyLogo.png" alt="logo" class="h-9 pb-2" />
+        <img src="onlyLogo.png" alt="logo" />
       </div>
-      <div *ngIf="!collapsed" class="flex flex-col min-w-0">
-        <span class="font-extrabold text-black  text-md ">UBI<span class="font-extrabold text-emerald-600">CSMS</span></span>
+      <div *ngIf="!collapsed" class="flex flex-col ">
+        <span class="font-extrabold   text-x ">Ubi<span class="font-bold text-emerald-600">Client</span></span>
       </div>
     </div>
 
-    <!-- Mobile-only close button (drawer mode) -->
-    <button
-      type="button"
-      (click)="closeMobile.emit()"
+
+    <button type="button" (click)="closeMobile.emit()"
       class="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors shrink-0"
-      aria-label="Close menu"
-    >
+      aria-label="Close menu">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
       </svg>
     </button>
   </div>
 
-  <!-- Navigation Links -->
-  <div
-    class="flex-1 py-4 px-2"
-    [ngClass]="{'overflow-y-auto': !collapsed, 'overflow-hidden': collapsed}"
-  >
 
-    <!-- Main Navigation Section (single list, no sub-sections) -->
+  <div class="flex-1 py-4 px-2" [ngClass]="{'overflow-y-auto': !collapsed, 'overflow-hidden': collapsed}">
+
     <div>
       <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
         Main Menu
       </div>
       <nav class="space-y-1">
-        <button
-          *ngFor="let item of mainNavItems"
-          (click)="selectNav(item.id)"
-          class="w-full flex rounded-lg text-xs font-medium transition-all group relative cursor-pointer border-l-[3px]"
-          [ngClass]="{
+
+
+        <button *ngFor="let item of csNavItems" (click)="selectNav(item.id)"
+         [disabled]="item.id != 'voice'"
+          class="w-full flex rounded-lg text-xs font-medium transition-all group relative cursor-pointer" [ngClass]="{
             'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': activeNav === item.id,
             'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': activeNav !== item.id,
             'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
             'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
-          }"
-        >
-          <div
-            class="w-5 h-5 flex items-center justify-center shrink-0"
+          }">
+          <div class="w-5 h-5 flex items-center justify-center shrink-0"
             [ngClass]="activeNav === item.id ? 'text-emerald-600' : 'text-text-secondary'"
-            [innerHTML]="getSvgIcon(item.icon)"
-          ></div>
+            [innerHTML]="getSvgIcon(item.icon)"></div>
 
-          <span
-            class="truncate text-left"
-            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'"
-          >{{ item.label }}</span>
+          <span class="truncate text-left"
+            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'">{{
+            item.label }}</span>
 
-          <span
-            *ngIf="item.badge && !collapsed"
-            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200"
-          >
-            {{ item.badge }}
-          </span>
-        </button>
-
-        <button
-          *ngFor="let item of csNavItems"
-          (click)="selectNav(item.id)"
-          class="w-full flex rounded-lg text-xs font-medium transition-all group relative cursor-pointer border-l-[3px]"
-          [ngClass]="{
-            'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': activeNav === item.id,
-            'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': activeNav !== item.id,
-            'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
-            'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
-          }"
-        >
-          <div
-            class="w-5 h-5 flex items-center justify-center shrink-0"
-            [ngClass]="activeNav === item.id ? 'text-emerald-600' : 'text-text-secondary'"
-            [innerHTML]="getSvgIcon(item.icon)"
-          ></div>
-
-          <span
-            class="truncate text-left"
-            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'"
-          >{{ item.label }}</span>
-
-          <span
-            *ngIf="item.badge && !collapsed"
-            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
-          >
+          <span *ngIf="item.badge && !collapsed"
+            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
             {{ item.badge }}
           </span>
         </button>
       </nav>
     </div>
 
-    <!-- User Side Section -->
+
     <div class="mt-4">
       <!-- <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
         User Side
       </div> -->
 
-      <!-- Training Accordion (only shown in expanded sidebar) -->
+
       <div *ngIf="!collapsed" class="space-y-0.5">
 
         <!-- Training accordion header -->
@@ -139,17 +83,17 @@
             'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': !(trainingExpanded && (activeNav === 'courses' || activeNav === 'my-learning'))
           }"
         > -->
-          <!-- Training icon -->
-          <!-- <div
+        <!-- Training icon -->
+        <!-- <div
             class="w-5 h-5 flex items-center justify-center shrink-0"
             [ngClass]="(activeNav === 'courses' || activeNav === 'my-learning') ? 'text-emerald-600' : 'text-text-secondary'"
             [innerHTML]="getSvgIcon('training')"
           ></div> -->
 
-          <!-- <span class="flex-1 text-left">Training</span> -->
+        <!-- <span class="flex-1 text-left">Training</span> -->
 
-          <!-- Chevron arrow -->
-          <!-- <svg
+        <!-- Chevron arrow -->
+        <!-- <svg
             class="w-3.5 h-3.5 transition-transform duration-200 shrink-0"
             [ngClass]="trainingExpanded ? 'rotate-180' : 'rotate-0'"
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -185,7 +129,7 @@
 
       </div>
 
-      <!-- Collapsed sidebar: show Training icon only -->
+
       <!-- <nav *ngIf="collapsed" class="space-y-1">
         <button
           (click)="selectNav('courses')"
@@ -208,24 +152,15 @@
     </div>
   </div>
 
-  <!-- Footer / Bottom Collapse Control (desktop only) -->
-  <div class="p-3 bg-white hidden lg:flex justify-end">
-    <button
-      (click)="toggleCollapse()"
+
+  <div class="p-3 bg-white hidden lg:flex justify-start">
+    <button (click)="toggleCollapse()"
       class="h-9 w-9 flex items-center justify-center rounded-full bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all duration-200 cursor-pointer"
-      [title]="collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-4 w-4 text-slate-600 transition-transform duration-300"
-        [ngClass]="{'rotate-180': collapsed}"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
+      [title]="collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-600 transition-transform duration-300"
+        [ngClass]="{'rotate-180': collapsed}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
       </svg>
     </button>
   </div>
 </aside>
-

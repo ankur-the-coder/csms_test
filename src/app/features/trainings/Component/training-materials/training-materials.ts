@@ -5,6 +5,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TrainingService } from '../../services/Training/training';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
+import { Location } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 
 interface Material {
   id: string;
@@ -32,6 +34,13 @@ interface Course {
   title: string;
   slug: string;
   description: string;
+   category_id?: number;
+}
+
+interface CourseCategory {
+  id: number;
+  name: string;
+  slug?: string;
 }
 
 @Component({
@@ -45,12 +54,20 @@ export class TrainingMaterials implements OnInit {
   private readonly trainingService = inject(TrainingService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly authService = inject(AuthService);
+  private readonly location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
 
   // Dynamic lists from backend
   courses = signal<Course[]>([]);
+  categories = signal<CourseCategory[]>([]);
+
   selectedCourseId = signal<number | null>(null);
   courseModules = signal<CourseModule[]>([]);
   courseMaterials = signal<Material[]>([]); // Course level materials
+
+  // Category context (from query params)
+categoryId = signal<number | null>(null);
+selectedCategory = signal<{ id: number; name: string; slug: string; course_count: number } | null>(null);
 
   // API Request States
   loading = signal<boolean>(false);
@@ -67,11 +84,18 @@ export class TrainingMaterials implements OnInit {
     return modules.filter((m) => m.title.toLowerCase().includes(term));
   });
 
+  selectedCourseTitle = computed(() => {
+    const courseId = this.selectedCourseId();
+    if (courseId === null) return '';
+    const course = this.courses().find(c => c.id === courseId);
+    return course ? course.title : '';
+  });
+
   // Delete Confirmation Modal State
   isDeleteConfirmOpen = signal<boolean>(false);
   isDeleting = signal<boolean>(false);
   deleteConfirmMessage = signal<string>('');
-  private deleteTargetType: 'module' | 'material' | null = null;
+  private deleteTargetType: 'module' | 'material' | 'course' | null = null;
   private deleteTargetId: string | null = null;
 
   // Modal / Form States
@@ -79,6 +103,7 @@ export class TrainingMaterials implements OnInit {
   isAddModuleModalOpen = false;
   editingModuleId: string | null = null;
   isAddCourseModalOpen = false;
+  editingCourseId: number | null = null;
   selectedFile: File | null = null;
   materialTitle = '';
   materialCategory = 'pdf';
@@ -98,52 +123,89 @@ export class TrainingMaterials implements OnInit {
 
   isDragOver = false;
 
-  ngOnInit(): void {
-    this.loadCourses();
-  }
+ngOnInit(): void {
+  this.route.queryParamMap.subscribe(params => {
+    const catId = params.get('categoryId');
 
-  loadCourses(): void {
-    this.loading.set(true);
-    this.error.set(null);
+    if (catId) {
+      this.categoryId.set(Number(catId));
+      this.loadCategoryDetails(Number(catId));
+    } else {
+      this.categoryId.set(null);
+      this.loadCourses();
+    }
+  });
+}
 
-    this.trainingService.getCourses().subscribe({
-      next: (res) => {
-        this.loading.set(false);
+loadCategoryDetails(id: number): void {
+  this.loading.set(true);
+  this.error.set(null);
 
-        if (res.status && res.data?.length > 0) {
+  this.trainingService.getCategoryById(id).subscribe({
+    next: (res: any) => {
+      if (res.status && res.data) {
+        this.selectedCategory.set(res.data);
+      }
+      // Category details mil gayi, ab usi category ke courses load karo
+      this.loadCourses();
+    },
 
-          const sorted = [...res.data].sort(
-            (a: Course, b: Course) => a.id - b.id
-          );
+    error: (err: any) => {
+      this.loading.set(false);
+      this.error.set('Unable to load category details.');
+      console.error('Failed to load category', err);
+    }
+  });
+}
 
-          this.courses.set(sorted);
+loadCourses(): void {
+  this.loading.set(true);
+  this.error.set(null);
 
-          // Always select the first course
-          this.selectCourse(sorted[0].id);
+  const catId = this.categoryId() ?? undefined;
 
-        } else {
-          this.courses.set([]);
-          this.selectedCourseId.set(null);
-          this.courseModules.set([]);
-          this.courseMaterials.set([]);
-        }
-      },
+  this.trainingService.getCourses(catId).subscribe({
+    next: (res) => {
+      this.loading.set(false);
 
-      error: (err) => {
-        this.loading.set(false);
-        this.error.set(
-          'Unable to load courses. The backend service or API may be temporarily unavailable.'
+      if (res.status && res.data?.length > 0) {
+
+        const sorted = [...res.data].sort(
+          (a: Course, b: Course) => a.id - b.id
         );
 
-        console.error('Failed to load courses', err);
-      }
-    });
-  }
+        this.courses.set(sorted);
+        this.selectedCourseId.set(null);
+        this.courseModules.set([]);
+        this.courseMaterials.set([]);
 
-  selectCourse(courseId: number): void {
+      } else {
+        this.courses.set([]);
+        this.selectedCourseId.set(null);
+        this.courseModules.set([]);
+        this.courseMaterials.set([]);
+      }
+    },
+
+    error: (err) => {
+      this.loading.set(false);
+      this.error.set(
+        'Unable to load courses. The backend service or API may be temporarily unavailable.'
+      );
+      console.error('Failed to load courses', err);
+    }
+  });
+}
+
+  selectCourse(courseId: number | null): void {
     this.selectedCourseId.set(courseId);
     this.searchTerm.set(''); // Reset search when switching courses
-    this.loadCourseDetails(courseId);
+    if (courseId !== null) {
+      this.loadCourseDetails(courseId);
+    } else {
+      this.courseModules.set([]);
+      this.courseMaterials.set([]);
+    }
   }
 
   deleteModule(id: string): void {
@@ -201,6 +263,21 @@ export class TrainingMaterials implements OnInit {
         error: (err) => {
           this.isDeleting.set(false);
           console.error('Failed to delete material', err);
+          this.cancelDelete();
+        }
+      });
+    } else if (this.deleteTargetType === 'course') {
+      this.trainingService.deleteCourse(Number(this.deleteTargetId)).subscribe({
+        next: (res) => {
+          this.isDeleting.set(false);
+          if (res.status) {
+            this.loadCourses();
+          }
+          this.cancelDelete();
+        },
+        error: (err) => {
+          this.isDeleting.set(false);
+          console.error('Failed to delete course', err);
           this.cancelDelete();
         }
       });
@@ -323,13 +400,29 @@ export class TrainingMaterials implements OnInit {
 
   openAddCourseModal(): void {
     this.isAddCourseModalOpen = true;
+    this.editingCourseId = null;
     this.newCourseTitle = '';
     this.newCourseDescription = '';
+  }
+
+  openEditCourseModal(course: Course): void {
+    this.isAddCourseModalOpen = true;
+    this.editingCourseId = course.id;
+    this.newCourseTitle = course.title || '';
+    this.newCourseDescription = course.description || '';
   }
 
   closeAddCourseModal(): void {
     this.isAddCourseModalOpen = false;
     this.isSavingCourse.set(false);
+    this.editingCourseId = null;
+  }
+
+  requestDeleteCourse(course: Course): void {
+    this.deleteTargetType = 'course';
+    this.deleteTargetId = course.id.toString();
+    this.deleteConfirmMessage.set(`Are you sure you want to delete the course "${course.title}" and all its sessions?`);
+    this.isDeleteConfirmOpen.set(true);
   }
 
   selectFile(files: FileList): void {
@@ -370,24 +463,42 @@ export class TrainingMaterials implements OnInit {
     const payload = {
       title: this.newCourseTitle.trim(),
       description: this.newCourseDescription.trim(),
-      category_id: 1,
+      category_id: this.categoryId() ?? 1,
       created_by: Number(this.authService.getEmpId()),
       status: 'published'
     };
 
-    this.trainingService.createCourse(payload).subscribe({
-      next: (res) => {
-        this.isSavingCourse.set(false);
-        if (res.status && res.data) {
-          this.loadCourses();
-          this.closeAddCourseModal();
+    if (this.editingCourseId) {
+      // UPDATE MODE
+      this.trainingService.updateCourse(this.editingCourseId, payload).subscribe({
+        next: (res) => {
+          this.isSavingCourse.set(false);
+          if (res.status) {
+            this.loadCourses();
+            this.closeAddCourseModal();
+          }
+        },
+        error: (err) => {
+          this.isSavingCourse.set(false);
+          console.error('Failed to update course', err);
         }
-      },
-      error: (err) => {
-        this.isSavingCourse.set(false);
-        console.error('Failed to create course', err);
-      }
-    });
+      });
+    } else {
+      // CREATE MODE
+      this.trainingService.createCourse(payload).subscribe({
+        next: (res) => {
+          this.isSavingCourse.set(false);
+          if (res.status && res.data) {
+            this.loadCourses();
+            this.closeAddCourseModal();
+          }
+        },
+        error: (err) => {
+          this.isSavingCourse.set(false);
+          console.error('Failed to create course', err);
+        }
+      });
+    }
   }
 
   onNewModuleFileSelected(event: Event): void {
@@ -547,4 +658,10 @@ export class TrainingMaterials implements OnInit {
     this.materialTitle = '';
     this.isDragOver = false;
   }
+
+  goBack(): void {
+  this.location.back();
+}
+
+
 }

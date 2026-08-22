@@ -7,7 +7,8 @@ import { DataTable } from "../../../../../shared/components/Data-table/data-tabl
 import { CustomColumnDirective } from '../../../../../shared/components/Data-table/custom-column.directive';
 import { ImplementationService } from '../../../services/implementation/implementation';
 import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
-
+import { CustomDateSelector } from "../../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
+import { ActivatedRoute } from '@angular/router';
 
 export interface Feature {
   mod_id: number;
@@ -64,7 +65,7 @@ interface ClientStatus {
 
 @Component({
   selector: 'app-implementation',
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector],
   templateUrl: './implementation.html',
   styleUrl: './implementation.css',
   standalone: true,
@@ -73,8 +74,8 @@ export class Implementation implements OnInit, OnDestroy {
 
   private readonly implService = inject(ImplementationService);
   private readonly tableEndpoint = `${this.implService.baseUrl}/imp/fetchDataTable`;
-   // private selectedDateFrom = signal<string | null>(null);
-  // private selectedDateTo   = signal<string | null>(null);
+  private selectedDateFrom = signal<string | null>(null);
+  private selectedDateTo   = signal<string | null>(null);
   cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
   statusFilter = signal<string>('all');
   selectedClient    = signal<Client | null>(null);
@@ -84,6 +85,14 @@ export class Implementation implements OnInit, OnDestroy {
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
   private fetchCardTrigger$ = new Subject<void>();
   private destroy$          = new Subject<void>();
+    private route = inject(ActivatedRoute);
+
+    // Populated from ?from=...&to=... query params when navigated in from
+  // the dashboard (e.g. clicking "Live Clients"). Empty by default, in
+  // which case DataTable falls back to its own default ('today').
+  initialDateFrom = signal('');
+  initialDateTo = signal('');
+
 
   get filterTabs() {
     const c = this.cardData();
@@ -118,7 +127,7 @@ export class Implementation implements OnInit, OnDestroy {
     { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
     { key: 'support_owner',      label: 'Support Owner',  sortable: false , hidden :true},
     { key: 'country',            label: 'Country',        sortable: false , hidden : true},
-    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const , hidden : true},
+    { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
     {
       key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
       badgeMap: {
@@ -136,7 +145,7 @@ export class Implementation implements OnInit, OnDestroy {
   ];
 
   private static readonly TOOLBAR_BUTTONS = [
-    // { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
     { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
     { id: 'export',  type: 'export'       as const, label: 'Export' },
     { id: 'refresh', type: 'refresh'      as const },
@@ -169,10 +178,10 @@ export class Implementation implements OnInit, OnDestroy {
         buildRequest: (ctx: RequestContext) => {
   // Jab bhi ctx se real date aaye (user ne date picker se select kiya),
   // usko state me save kar lo.
-  // if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
-  // if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
+  if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
+  if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
 
-  // const today = this.getTodayDateString();
+  const today = this.getTodayDateString();
   const body: DataTablePayload = {
     start:   ctx.page * ctx.pageSize,
     length:  ctx.pageSize,
@@ -184,9 +193,9 @@ export class Implementation implements OnInit, OnDestroy {
     }),
     filter:   JSON.stringify({ ...ctx.filters }),
     tabSts,
-    // Ab yahan ctx.dateFrom/ctx.dateTo ki jagah persisted signal use karo
-    // fromDate: this.selectedDateFrom() || today,
-    // toDate:   this.selectedDateTo()   || today,
+
+    fromDate: this.selectedDateFrom() || today,
+    toDate:   this.selectedDateTo()   || today,
   };
   return { method: 'POST' as const, body };
 },
@@ -224,16 +233,31 @@ export class Implementation implements OnInit, OnDestroy {
     };
   });
 
-  // private getTodayDateString(): string {
-  //   const d = new Date();
-  //   const year = d.getFullYear();
-  //   const month = String(d.getMonth() + 1).padStart(2, '0');
-  //   const day = String(d.getDate()).padStart(2, '0');
-  //   return `${year}-${month}-${day}`;
-  // }
+  private getTodayDateString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
+    this.route.queryParamMap.subscribe(params => {
+      const from = params.get('from');
+      const to   = params.get('to');
+      const tab  = params.get('tab');
+
+      if (from && to) {
+        this.initialDateFrom.set(from);
+        this.initialDateTo.set(to);
+      }
+
+      // Auto-select the tab when navigated from dashboard (e.g. "Pending Implementations" card)
+      if (tab) {
+        this.statusFilter.set(tab);
+      }
+    });
     this.setupCardFetchStream();
     this.fetchCardTrigger$.next();
   }
@@ -521,5 +545,16 @@ export class Implementation implements OnInit, OnDestroy {
       overallProgress: { approved: totalFeatures, total: totalFeatures, percentage: 100 },
     };
     this.selectedClient.set(updated);
+  }
+ onDateApplied(from: string, to: string): void {
+    // this.dateFrom.set(from);
+    // this.dateTo.set(to);
+    // this.page.set(0);
+  }
+  getModulesTooltip(row: any): string {
+    return this.getClientModules(row)
+      .filter((mod: any) => this.getModuleTotalCount(row, mod) > 0)
+      .map((mod: any) => `${mod.label}: ${this.getModuleApprovedCount(row, mod)}/${this.getModuleTotalCount(row, mod)}`)
+      .join('\n');
   }
 }

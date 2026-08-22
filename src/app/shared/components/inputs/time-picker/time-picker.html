@@ -1,0 +1,199 @@
+<div class="relative bg-card-bg rounded-lg" [ngClass]="customClass">
+    <div class="relative">
+
+        <!-- Label -->
+        @if(label){
+        <div class="flex items-center space-x-2  mb-1">
+            <label class="block text-text-secondary text-[13px] ">{{ label }}</label>
+            @if(required){
+            <span class="text-red-500 text-xs font-bold" aria-hidden="true">*</span>
+            }
+        </div>
+        }
+        <!-- Trigger Input -->
+        <input #timeInput type="text" (click)="handleInputClick()" [placeholder]="placeHolder"
+            [value]="handledConditionFor0000hours(manualInputValue)" [disabled]="disabled"
+            class="time-picker-input w-full px-3 py-2 text-text-secondary bg-card-bg border border-card-border rounded-lg text-xs  placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-60 transition-all duration-200"
+            [readOnly]="!showKeyboardInput && !dropdownOpen && !readonly" />
+
+        <!-- Clock Modal -->
+        <div *ngIf="dropdownOpen" #dropdown [id]="id + '-overlay'"
+            class="fixed inset-0 bg-black/40 backdrop-blur-sm  z-[99999] flex items-center justify-center p-4"
+            (click)="closeDropdown()">
+
+            <!-- Modal Card -->
+            <div class="bg-card-bg border border-card-border rounded-2xl shadow-2xl  z-[99999] w-80 p-5 relative"
+                (click)="$event.stopPropagation()">
+
+                <!-- Time Display Row -->
+                <div class="flex justify-center items-center mb-6 mt-2 gap-2">
+
+                    <!-- Hours (display) -->
+                    <div *ngIf="!showKeyboardInput" (click)="switchToHourView()"
+                        class="w-20 h-16 flex items-center justify-center rounded-xl text-2xl font-bold cursor-pointer border border-card-border transition-all duration-200 text-text-secondary"
+                        [ngClass]="{
+              'bg-brand-500/10 border-brand-500 text-brand-600 scale-105': showHourView,
+              'hover:bg-surface-50': !showHourView
+            }">
+                        {{ (tempHours === 0 ? 12 : tempHours > 12 ? tempHours - 12 : tempHours).toString().padStart(2,
+                        '0') }}
+                    </div>
+
+                    <!-- Hours (keyboard) -->
+                    <div *ngIf="showKeyboardInput" class="w-20 h-16 relative">
+                        <input #hourInput type="text" (click)="switchToHourView()"
+                            [value]="(tempHours === 0 ? 12 : tempHours > 12 ? tempHours - 12 : tempHours).toString().padStart(2, '0')"
+                            (input)="updateHourValue($event)" (keydown)="handleInputKeyDown($event, 'hour')"
+                            (keydown.arrowup)="incrementTime('hour', $event)"
+                            (keydown.arrowdown)="decrementTime('hour', $event)" (blur)="onHourBlur(hourInput)"
+                            maxlength="2"
+                            class="time-picker-input w-full h-full rounded-xl text-2xl font-bold text-center border border-card-border transition-all duration-200"
+                            [ngClass]="{
+                'bg-brand-500/10 border-brand-500 text-brand-600 scale-105': showHourView,
+                'bg-card-bg text-text-secondary': !showHourView
+              }" />
+                    </div>
+
+                    <!-- Colon -->
+                    <div class="text-2xl font-bold text-text-secondary">:</div>
+
+                    <!-- Minutes (display) -->
+                    <div *ngIf="!showKeyboardInput" (click)="switchToMinuteView()"
+                        class="w-20 h-16 flex items-center justify-center rounded-xl text-2xl font-bold border border-card-border transition-all duration-200 text-text-secondary"
+                        [ngClass]="{
+              'bg-brand-500/10 border-brand-500 text-brand-600 scale-105': !showHourView,
+              'hover:bg-surface-50 hover:scale-105 cursor-pointer': showHourView && timeSelectionMode !== 'hours',
+              'cursor-not-allowed opacity-50': timeSelectionMode === 'hours'
+            }">
+                        {{ tempMinutes.toString().padStart(2, '0') }}
+                    </div>
+
+                    <!-- Minutes (keyboard) -->
+                    <div *ngIf="showKeyboardInput" class="w-20 h-16 relative">
+                        <input #minuteInput type="text" (click)="switchToMinuteView()"
+                            [value]="tempMinutes.toString().padStart(2, '0')" (input)="updateMinuteValue($event)"
+                            (keydown)="allowOnlyNumbers($event)" (keydown.arrowup)="incrementTime('minute', $event)"
+                            (keydown.arrowdown)="decrementTime('minute', $event)" (blur)="onMinuteBlur(minuteInput)"
+                            [disabled]="timeSelectionMode === 'hours'" maxlength="2"
+                            class="time-picker-input w-full h-full rounded-xl text-2xl font-bold text-center border border-card-border transition-all duration-200"
+                            [ngClass]="{
+                'bg-card-bg text-text-secondary': showHourView,
+                'bg-brand-500/10 border-brand-500 text-brand-600 scale-105': !showHourView,
+                'cursor-not-allowed opacity-50': timeSelectionMode === 'hours'
+              }" />
+                    </div>
+
+                    <!-- AM/PM Selector -->
+                    <div class="ml-1 flex flex-col">
+                        <div (click)="setAmPm('AM')"
+                            class="cursor-pointer py-1.5 px-3 rounded-t-lg text-center border border-card-border text-sm font-bold transition-all duration-200"
+                            [ngClass]="{
+                'bg-brand-500/10 text-brand-600 border-brand-500': tempAmPm === 'AM',
+                'text-text-muted hover:bg-surface-50': tempAmPm !== 'AM'
+              }">
+                            AM
+                        </div>
+                        <div (click)="setAmPm('PM')"
+                            class="cursor-pointer py-1.5 px-3 rounded-b-lg text-center border border-t-0 border-card-border text-sm font-bold transition-all duration-200"
+                            [ngClass]="{
+                'bg-brand-500/10 text-brand-600 border-brand-500': tempAmPm === 'PM',
+                'text-text-muted hover:bg-surface-50': tempAmPm !== 'PM'
+              }">
+                            PM
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clock Face -->
+                <div *ngIf="!showKeyboardInput" #clockFace
+                    class="relative w-56 h-56 bg-surface-50 dark:bg-white/[0.04] rounded-full mx-auto mb-5 shadow-inner border border-card-border"
+                    (mousedown)="startDrag($event)" (touchstart)="startDrag($event)">
+
+                    <!-- Center Dot -->
+                    <div
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-brand-600 rounded-full z-10">
+                    </div>
+
+                    <!-- Clock Hand -->
+                    <div class="absolute top-1/2 left-1/2 w-0.5 origin-top z-[9] transition-all duration-300 ease-in-out"
+                        [style.height.%]="46"
+                        [style.transform]="showHourView ? 'rotate(' + getHourHandRotation() + 'deg)' : 'rotate(' + getMinuteHandRotation() + 'deg)'">
+                        <div class="w-full h-full bg-brand-500 rounded-full"></div>
+
+                        <!-- Draggable Handle -->
+                        <div #dragHandle
+                            class="absolute -ml-4 bottom-0 w-8 h-8 bg-brand-600 rounded-full z-[99] flex items-center justify-center text-white text-xs font-bold cursor-pointer shadow-md shadow-brand-500/20 transition-all duration-200 hover:scale-110"
+                            (mousedown)="startDrag($event)" (touchstart)="startDrag($event)">
+                            <span *ngIf="showHourView"
+                                [style.transform]="'rotate(' + -getHourHandRotation() + 'deg)'">{{
+                                getSelectedHour() }}</span>
+                            <span *ngIf="!showHourView"
+                                [style.transform]="'rotate(' + -getMinuteHandRotation() + 'deg)'">{{
+                                showKeyboardInput ? minutes : tempMinutes }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Hour Numbers -->
+                    <ng-container *ngIf="showHourView">
+                        <div *ngFor="let hour of hourNumbers" (click)="selectHour(hour)"
+                            class="absolute w-9 h-9 -ml-[18px] -mt-[18px] flex items-center justify-center cursor-pointer rounded-full text-sm transition-all duration-200 text-text-secondary hover:bg-brand-500/10 hover:text-brand-600"
+                            [ngClass]="{ 'font-black text-brand-600': getSelectedHour() === hour }"
+                            [style.left.%]="50 + 40 * Math.cos(((hour % 12) * 30 * Math.PI) / 180 - Math.PI / 2)"
+                            [style.top.%]="50 + 40 * Math.sin(((hour % 12) * 30 * Math.PI) / 180 - Math.PI / 2)">
+                            {{ hour }}
+                        </div>
+                    </ng-container>
+
+                    <!-- Minute Markers -->
+                    <ng-container *ngIf="!showHourView">
+                        <div *ngFor="let minute of [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]"
+                            class="absolute w-9 h-9 -ml-[18px] -mt-[18px] flex items-center justify-center text-sm text-text-secondary cursor-pointer transition-all duration-200 hover:text-brand-600"
+                            [style.left.%]="50 + 40 * Math.cos((minute * 6 * Math.PI) / 180 - Math.PI / 2)"
+                            [style.top.%]="50 + 40 * Math.sin((minute * 6 * Math.PI) / 180 - Math.PI / 2)">
+                            {{ minute }}
+                        </div>
+                        <ng-container *ngFor="let minute of minuteNumbers">
+                            <div *ngIf="minute % 5 !== 0" class="absolute size-[3px] bg-card-border rounded-full"
+                                [style.left.%]="49 + 46 * Math.cos((minute * 6 * Math.PI) / 180 - Math.PI / 2)"
+                                [style.top.%]="50 + 46 * Math.sin((minute * 6 * Math.PI) / 180 - Math.PI / 2)">
+                            </div>
+                        </ng-container>
+                    </ng-container>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-between items-center px-1">
+                    <!-- Toggle keyboard/clock -->
+                    <button type="button"
+                        class="p-2 text-text-muted hover:text-brand-600 hover:bg-brand-500/10 rounded-lg transition-all duration-200"
+                        (click)="toggleKeyboardInput($event)">
+                        <!-- Keyboard Icon -->
+                        <svg *ngIf="!showKeyboardInput" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2zM6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12" />
+                        </svg>
+                        <!-- Clock Icon -->
+                        <svg *ngIf="showKeyboardInput" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+
+                    <div class="flex items-center gap-1">
+                        <button type="button" (click)="closeDropdown()"
+                            class="px-4 py-2 text-sm font-bold text-text-muted hover:text-brand-600 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button" (click)="confirmSelection()"
+                            class="px-4 py-2 text-sm font-black text-brand-600 hover:bg-brand-500/10 rounded-lg transition-all">
+                            OK
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

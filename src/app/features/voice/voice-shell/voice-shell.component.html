@@ -6,8 +6,20 @@
       <p class="mt-1 text-sm text-text-muted">Softphone, call history, notes, recordings &amp; voice clients</p>
     </div>
 
-    <!-- Section Tabs -->
-    <div class="inline-flex flex-wrap items-center gap-1 size-md rounded-2xl bg-surface-100 p-1 self-start md:self-auto">
+    <!-- Mobile / Tablet Dropdown Menu (< xl) -->
+    <div class="xl:hidden w-full sm:w-auto">
+      <app-single-input
+        [options]="selectOptions"
+        [value]="activeTabPath"
+        placeHolder="Select section"
+        (valueChange)="onSelectTab($event)"
+        class="w-full sm:w-48">
+      </app-single-input>
+    </div>
+
+
+    <!-- Desktop Section Tabs (xl+) -->
+    <div class="hidden xl:inline-flex items-center gap-1 size-md rounded-2xl bg-surface-100 p-1 shrink-0">
       <a
         *ngFor="let tab of tabs"
         [routerLink]="tab.path"
@@ -15,8 +27,14 @@
         #rla="routerLinkActive"
         [routerLinkActiveOptions]="{ exact: false }"
         [ngClass]="rla.isActive ? 'filter-tab filter-tab-active' : 'filter-tab filter-tab-inactive'"
+        class="whitespace-nowrap inline-flex items-center gap-1.5"
       >
         {{ tab.label }}
+        <span *ngIf="tab.path === 'history' && voiceService.missedCallsCount() > 0"
+          class="inline-flex items-center justify-center min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-danger text-white text-[10px] font-bold leading-none"
+          [title]="voiceService.missedCallsCount() + ' missed call(s) today needing a callback'">
+          {{ voiceService.missedCallsCount() > 9 ? '9+' : voiceService.missedCallsCount() }}
+        </span>
       </a>
     </div>
   </div>

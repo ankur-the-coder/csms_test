@@ -1,134 +1,217 @@
-@if (type === 'trend') {
-<div class="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
-  <div>
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-base font-bold">{{ title || 'Implementation Progress & Trends' }}</h3>
-      @if (actionText) {
+<div class="relative py-4 h-full rounded-2xl w-full bg-white text-slate-800 shadow-sm flex flex-col border border-slate-100"
+  [ngClass]="leaveChart ? 'px-4' : 'px-3'">
+
+  <div class="flex w-full">
+    <div
+      class="flex flex-nowrap mb-4 w-full justify-between items-center bg-white text-slate-800 relative z-20 chart-dropdown">
+      <!-- Chart Type Dropdown (Left Side) -->
+      <div class="relative" (clickOutside)="onClickOutside()">
         <button
-          (click)="onActionClicked()"
-          class="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors shrink-0"
+          type="button"
+          (click)="toggleDropdown()"
+          class="min-w-14 h-8 px-2 border border-slate-300 bg-white text-slate-700 rounded-lg flex items-center justify-between gap-1.5 shadow-xs hover:border-slate-400 hover:bg-slate-50 transition cursor-pointer"
         >
-          {{ actionText }}
+          <div class="flex items-center text-slate-800">
+            @if(selectedChart){
+              <div class="w-4.5 h-4.5 flex items-center justify-center text-slate-800"
+                [innerHTML]="getSanitizedIcon(selectedChart.value)"></div>
+            }
+          </div>
+          <svg
+            class="w-3.5 h-3.5 text-slate-600 transition-transform duration-200"
+            [class.rotate-180]="isDropdownOpen"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
         </button>
-      }
-    </div>
 
-    <!-- Chart with background gridlines, trend lines, gradient fills & dots -->
-    <div class="relative w-full h-44 my-2">
-      <svg viewBox="0 0 400 160" class="w-full h-full" preserveAspectRatio="none">
-        <defs>
-          <!-- Green Gradient Fill -->
-          <linearGradient id="greenTrendFillShared" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
-            <stop offset="100%" stop-color="#10b981" stop-opacity="0.02" />
-          </linearGradient>
-          <!-- Blue/Purple Gradient Fill -->
-          <linearGradient id="blueTrendFillShared" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.2" />
-            <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0" />
-          </linearGradient>
+        @if(isDropdownOpen){
+          <div class="absolute top-full left-0 z-50 mt-1 min-w-[165px] rounded-xl bg-white text-slate-800 border border-slate-200 shadow-xl py-1.5 overflow-hidden">
+            @for (type of getFilteredChartTypes(); track type.value) {
+              <button
+                type="button"
+                (click)="selectChart(type)"
+                class="w-full py-2 px-3 flex items-center gap-2.5 hover:bg-slate-50 focus:outline-none transition-colors text-left cursor-pointer"
+                [class.bg-[#bbf7d0]]="selectedChart?.value === type.value"
+                [class.hover:bg-[#bbf7d0]]="selectedChart?.value === type.value"
+                [class.font-semibold]="selectedChart?.value === type.value"
+              >
+                <div 
+                  [innerHTML]="getSanitizedIcon(type.value)"
+                  class="w-5 h-5 shrink-0 flex items-center justify-center text-slate-800"
+                ></div>
+                <span class="text-xs font-medium whitespace-nowrap text-slate-800">
+                  {{ type.label }}
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
 
-        
-        </defs>
+      <!-- Export Dropdown (Right Side) -->
+      <div class="relative" (clickOutside)="onExportClickOutside()">
+        <button
+          type="button"
+          (click)="toggleExportDropdown()"
+          class="min-w-14 h-8 px-2 border border-slate-300 bg-white text-slate-700 rounded-lg flex items-center justify-between gap-1.5 shadow-xs hover:border-slate-400 hover:bg-slate-50 transition cursor-pointer"
+        >
+          <div class="flex items-center text-slate-800">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"/>
+              <path d="M8 21v-4a2 2 0 012-2h4a2 2 0 012 2v4"/>
+              <path d="M9 7V4a2 2 0 012-2h2a2 2 0 012 2v3"/>
+            </svg>
+          </div>
+          <svg  
+            class="w-3.5 h-3.5 text-slate-600 transition-transform duration-200"
+            [class.rotate-180]="isExportDropdownOpen"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </button>
 
-        <!-- Background Horizontal Gridlines -->
-        <line x1="0" y1="25" x2="400" y2="25" stroke="#f1f5f9" stroke-width="1.5" />
-        <line x1="0" y1="60" x2="400" y2="60" stroke="#f1f5f9" stroke-width="1.5" />
-        <line x1="0" y1="95" x2="400" y2="95" stroke="#f1f5f9" stroke-width="1.5" />
-        <line x1="0" y1="130" x2="400" y2="130" stroke="#f1f5f9" stroke-width="1.5" />
+        @if(isExportDropdownOpen){
+          <div class="absolute top-full right-0 z-50 mt-1 min-w-48 rounded-xl bg-white text-slate-800 border border-slate-200 shadow-xl py-1.5 overflow-hidden">
+            
+            <button
+              type="button"
+              (click)="viewFullScreen()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+              </svg>
+              <span class="text-xs font-medium">View in full screen</span>
+            </button>
 
-        <!-- Blue/Purple Trend Line & Gradient Area (In Progress) -->
-        <path d="M 0,105 L 400,60 L 400,155 L 0,155 Z" fill="url(#blueTrendFillShared)" />
-        <path d="M 0,105 L 400,60" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" />
+            <button
+              type="button"
+              (click)="printChart()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <polyline points="6,9 6,2 18,2 18,9"/>
+                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+              </svg>
+              <span class="text-xs font-medium">Print chart</span>
+            </button>
 
-        <!-- Green Curve Trend Line & Gradient Area (Completed) -->
-        <path d="M 0,125 C 90,115 170,90 250,58 C 300,42 350,25 400,20 L 400,155 L 0,155 Z" fill="url(#greenTrendFillShared)" />
-        <path d="M 0,125 C 90,115 170,90 250,58 C 300,42 350,25 400,20" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            <button
+              type="button"
+              (click)="downloadImage('png')"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span class="text-xs font-medium">Download PNG</span>
+            </button>
 
-      
-       <!-- Amber Trend Line (Pending) -->
-<path d="M 0,150 C 70,152 150,153 220,150 C 300,146 350,140 400,133" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" />
+            <button
+              type="button"
+              (click)="downloadImage('jpeg')"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span class="text-xs font-medium">Download JPEG</span>
+            </button>
 
-        <!-- Slate Trend Line (Not Started) -->
-        <path d="M 0,150 C 70,152 150,153 220,150 C 300,146 350,140 400,133" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3" />
+            <button
+              type="button"
+              (click)="downloadPDF()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+              </svg>
+              <span class="text-xs font-medium">Download PDF</span>
+            </button>
 
-        <!-- Green Circular Markers -->
-        <circle cx="2" cy="125" r="4.5" fill="#10b981" />
-        <circle cx="105" cy="108" r="4.5" fill="#10b981" />
-        <circle cx="190" cy="82" r="4.5" fill="#10b981" />
-        <circle cx="290" cy="48" r="4.5" fill="#10b981" />
-        <circle cx="398" cy="20" r="4.5" fill="#10b981" />
-      </svg>
-    </div>
-  </div>
+            <button
+              type="button"
+              (click)="downloadSVG()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span class="text-xs font-medium">Download SVG</span>
+            </button>
 
-  <!-- Trend Legend -->
-  <div class="flex items-center justify-between border-t border-slate-100 pt-4 text-xs">
-    @if (trendLegends.length) {
-      @for (item of trendLegends; track item.label) {
-        <span class="flex items-center gap-1.5 text-slate-600">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="item.colorClass"></span>
-          <span>{{ item.label }}: <strong class="text-slate-900">{{ item.value }} {{ item.pct ? '(' + item.pct + '%)' : '' }}</strong></span>
-        </span>
-      }
-    } @else {
-      <span class="flex items-center gap-1.5 text-slate-600">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-        <span>Completed: <strong class="text-slate-900">136 (53%)</strong></span> 
-      </span>
-      <span class="flex items-center gap-1.5 text-slate-600">
-        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
-        <span>In Progress: <strong class="text-slate-900">84 (33%)</strong></span>
-      </span>
-      <span class="flex items-center gap-1.5 text-slate-600">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-        <span>Pending: <strong class="text-slate-900">18 (7%)</strong></span>
-      </span>
-      <span class="flex items-center gap-1.5 text-slate-600">
-        <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0"></span>
-        <span>Not Started: <strong class="text-slate-900">18 (7%)</strong></span>
-      </span>
-    }
-  </div>
-</div>
-}
+            <button
+              type="button"
+              (click)="downloadCSV()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+              </svg>
+              <span class="text-xs font-medium">Download CSV</span>
+            </button>
 
+            <button
+              type="button"
+              (click)="downloadExcel()"
+              class="w-full py-2 px-3 flex items-center gap-3 hover:bg-slate-50 focus:outline-none text-left transition-colors cursor-pointer text-slate-800"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-700">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+              </svg>
+              <span class="text-xs font-medium">Download XLS</span>
+            </button>
 
-@if (type === 'donut') {
-<div class="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs flex flex-col justify-between h-full">
-  <div>
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-bold ">{{ title || 'Health Score Distribution' }}</h3>
-      @if (actionText) {
-        <span (click)="onActionClicked()" class="text-xs text-slate-400 font-medium cursor-pointer hover:text-slate-600 transition-colors">{{ actionText }}</span>
-      }
-    </div>
-
-    <!-- Conic-gradient Donut -->
-    <div class="flex items-center justify-center my-4">
-      <div
-        class="w-36 h-36 rounded-full flex items-center justify-center shadow-xs"
-        [style.background]="healthDonutGradient()"
-      >
-        <div class="w-24 h-24 rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
-          <span class="text-2xl font-extrabold text-slate-900">{{ totalCount }}</span>
-          <span class="text-[10px] font-semibold text-slate-500">{{ totalLabel }}</span>
-        </div>
+          </div>
+        }
       </div>
     </div>
   </div>
-
-  <!-- Health Legend Breakdown -->
-  <div class="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-xs">
-    @for (seg of (healthSegments.length ? healthSegments : defaultHealthSegments); track seg.label) {
-      <div class="flex items-center justify-between">
-        <span class="flex items-center gap-1.5 text-slate-600 font-medium">
-          <span class="w-2.5 h-2.5 rounded-full shrink-0" [ngClass]="seg.colorClass"></span>
-          {{ seg.label }}
-        </span>
-        <span class="font-bold text-slate-900">{{ seg.value }} ({{ seg.pct }}%)</span>
-      </div>
-    }
+   
+  <div #chartContainer class="relative w-full h-[280px] min-h-[280px] z-0" (click)="viewFullScreen()">
+    <canvas #chartCanvas class="block w-full h-full rounded-md" [id]="chartId"></canvas>
   </div>
+<hr class="my-3 border-slate-200" *ngIf="leaveChart">
+  @if(leaveChart){
+    <h3 class="ps-1 pe-3 w-full text-center font-semibold py-1 text-slate-800">
+      <span [innerHTML]="headingText"></span>
+    </h3>
+  }
 </div>
-}
+

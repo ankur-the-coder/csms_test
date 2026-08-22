@@ -1,99 +1,222 @@
-<div class="card mb-4 flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
-  <div>
-    <h1 class="page-title">Training</h1>
-    <p class="mt-2 text-sm text-text-muted">
-      Coordinate every training lifecycle from planning to completion with a polished workspace for customer success
-      teams.
-    </p>
-  </div>
+<div class="space-y-4 pb-6">
 
-  <div class="flex flex-wrap gap-3">
-      <button type="button" (click)="navigateToMyTraining()" class="btn-primary inline-flex items-center gap-2">
-        Training Materials
+  <!-- Header Card (Separate) -->
+  <div class="card flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800 leading-tight tracking-tight">Training</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Coordinate every training lifecycle from planning to completion with a polished workspace.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 shrink-0">
+      <button type="button" (click)="openCategoryModal()" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-sm">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Category
       </button>
+    </div>
   </div>
-</div>   
-   
 
+  <!-- Content Section (Separate) -->
+  <div class="card overflow-hidden p-0 shadow-sm border border-slate-200 bg-white rounded-2xl">
+    <div class="border-b border-slate-100 px-5 md:px-6 py-3 flex items-center justify-between bg-white">
+      <h2 class="text-xs font-bold tracking-wider text-slate-500 uppercase">Categories</h2>
+      @if (!isLoadingCategories() && categories().length > 0) {
+        <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/60">{{ categories().length }} Total</span>
+      }
+    </div>
 
+    <div class="p-5 md:p-6 bg-slate-50/40">
 
-<section class="card overflow-hidden p-0">
+    @if (isLoadingCategories()) {
 
-  <div class="border-b border-card-border px-6 py-4">
-
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
-      <div>
-        <h2 class="text-lg font-semibold text-text-primary">
-          Organization List
-        </h2>
-
-        <p class="mt-1 text-sm text-text-muted">
-          Showing organizations available for training.
-        </p>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="h-20 animate-pulse rounded-lg border border-card-border bg-card-border/30"></div>
+        }
       </div>
 
-      <div class="w-full md:w-80">
+    } @else if (categories().length === 0) {
 
+      <div class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-card-border/40">
+          <svg class="h-6 w-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        </div>
+        <p class="text-sm text-text-muted">No categories added yet.</p>
+        <button type="button" (click)="openCategoryModal()" class="text-sm font-medium text-brand hover:underline">
+          Create your first category
+        </button>
+      </div>
+
+    } @else {
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+        @for (category of categories(); track category.id) {
+
+          <div
+            (click)="goToCategoryMaterials(category)"
+            class="group relative bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="min-w-0 flex-1">
+                  <h3 class="text-xl font-bold text-slate-800 leading-snug line-clamp-2 mb-1.5">
+                    {{ category.name }}
+                  </h3>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                    {{ category.course_count }} {{ category.course_count === 1 ? 'Course' : 'Courses' }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    (click)="openEditCategoryModal(category, $event)"
+                    class="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    title="Edit Category"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteCategory(category, $event)"
+                    class="rounded-lg p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    title="Delete Category"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-400">Manage courses</span>
+              <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-200 shadow-sm">
+                <span>View</span>
+                <svg class="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+        }
+
+      </div>
+
+    }
+
+  </div>
+
+</div>
+
+</div>
+
+<!-- Add/Edit Category Modal -->
+@if (isCategoryModalOpen()) {
+
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    (click)="closeCategoryModal()"
+    (keydown.escape)="closeCategoryModal()"
+  >
+ 
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-200" (click)="$event.stopPropagation()">
+
+      <h2 class="text-lg font-bold text-slate-800">{{ editingCategoryId() ? 'Edit Category' : 'Add Category' }}</h2>
+
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-slate-700">Category Name</label>
         <input
           type="text"
-          class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Search organization..."
-          [ngModel]="searchTerm()"
-          (ngModelChange)="searchTerm.set($event)"
+          [ngModel]="categoryName()"
+          (ngModelChange)="categoryName.set($event)"
+          (keydown.enter)="saveCategory()"
+          placeholder="e.g. Attendance"
+          autofocus
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
         />
+        @if (categoryName().trim()) {
+          <p class="mt-1 text-xs text-slate-500">Slug: {{ previewSlug() }}</p>
+        }
+      </div>
 
+      @if (categoryError()) {
+        <p class="mt-3 text-sm text-red-600">{{ categoryError() }}</p>
+      }
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          (click)="closeCategoryModal()"
+          class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          (click)="saveCategory()"
+          [disabled]="isSaving() || !categoryName().trim()"
+          class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+        >
+          @if (isSaving()) {
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+          }
+          {{ isSaving() ? 'Saving...' : (editingCategoryId() ? 'Update Category' : 'Save Category') }}
+        </button>
       </div>
 
     </div>
 
   </div>
 
-  <app-data-table [config]="currentTableConfig()">
+}
 
-    <ng-template appCustomColumn="organization" let-row>
-      <span class="font-medium">
-        {{ row.organization }}
-      </span>
-    </ng-template>
+<!-- Category Delete Confirmation Modal -->
+@if (isDeleteConfirmOpen()) {
+  <div class="fixed inset-0 z-[1300] flex items-center justify-center bg-black/40 px-4 py-6">
+    <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200 animate-fade-in">
+      <div class="flex flex-col items-center text-center space-y-3">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 text-red-500">
+          <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800">Confirm Delete</h3>
+        <p class="text-sm text-slate-500">{{ deleteConfirmMessage() }}</p>
+      </div>
 
-    <ng-template appCustomColumn="contactPerson" let-row>
-      {{ row.contactPerson }}
-    </ng-template>
-
-    <ng-template appCustomColumn="email" let-row>
-      {{ row.email }}
-    </ng-template>
-
-    <ng-template appCustomColumn="phone" let-row>
-      {{ row.phone }}
-    </ng-template>
-
-    <ng-template appCustomColumn="supportOwner" let-row>
-      {{ row.supportOwner }}
-    </ng-template>
-
-    <ng-template appCustomColumn="leadOwner" let-row>
-      {{ row.leadOwner }}
-    </ng-template>
-
-    <ng-template appCustomColumn="stage" let-row>
-
-      <span
-        class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-
-        {{ row.stage }}
-
-      </span>
-
-    </ng-template>
-
-    <ng-template appCustomColumn="createdDate" let-row>
-
-      {{ row.createdDate | date:'dd-MM-yyyy' }}
-
-    </ng-template>
-
-  </app-data-table>
-
-</section>
+      <div class="mt-6 flex gap-3">
+        <button (click)="cancelDelete()" [disabled]="isDeleting()"
+          class="flex-1 rounded-full border border-slate-200 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-60">
+          Cancel
+        </button>
+        <button (click)="confirmDelete()" [disabled]="isDeleting()"
+          class="flex-1 rounded-full bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2">
+          @if (isDeleting()) {
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Deleting...
+          } @else {
+            Delete
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
