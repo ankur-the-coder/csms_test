@@ -676,11 +676,11 @@ export class WebRtcVoiceService {
           const cur = this.activeCall();
           const isBusy = !!cur && cur.status !== 'ended';
 
-          // This is the bridged leg Telnyx dials as part of VoiceService
-          // .answerCall()'s transfer() call -- the agent already clicked
-          // Answer (that's what triggered the transfer in the first place),
-          // so auto-accept immediately instead of showing a second ring.
-          if (this.awaitingBridgeAnswer) {
+          if (cur && cur.direction === 'outbound') {
+            // Explicitly handle outbound calls when PSTN reports 180 Ringing / 183 Session Progress
+            console.log('[Voice][Call] Outbound call is now ringing target phone');
+            this.activeCall.set({ ...cur, status: 'ringing' });
+          } else if (this.awaitingBridgeAnswer) {
             this.activeRTCCall = call;
             this.awaitingBridgeAnswer = false;
             console.log('[Voice][Call] Bridged WebRTC leg is ringing -- auto-accepting (agent already answered via REST).');
@@ -691,7 +691,7 @@ export class WebRtcVoiceService {
             this.activeCall.set({
               providerCallId: call.id,
               customerNumber: fromNumber,
-              customerName: call.options?.remoteCallerName || fromNumber,
+              customerName: call.options?.remoteCallerName || undefined,
               direction: 'inbound',
               status: 'ringing',
               isMuted: false,
@@ -699,12 +699,7 @@ export class WebRtcVoiceService {
               durationSeconds: 0,
             });
           } else if (direction === 'inbound' && isBusy) {
-
             console.warn('[Voice][Call] Second inbound call rang while already busy -- ignoring at the WebRTC layer (SSE path handles the missed-call UI).');
-          } else if (cur) {
-            // Not inbound -- this is our own outbound call's state echoing
-            // back (far end phone is now ringing). Same call, safe to reflect.
-            this.activeCall.set({ ...cur, status: 'ringing' });
           }
         }
 
@@ -751,7 +746,7 @@ export class WebRtcVoiceService {
         if (!call) return;
         console.log('[Voice][Call] Inbound call notification received');
         const fromNumber = call.options?.remoteCallerNumber || call.options?.destinationNumber || 'Unknown';
-        const fromName = call.options?.remoteCallerName || fromNumber;
+        const fromName = call.options?.remoteCallerName || undefined;
 
         if (this.awaitingBridgeAnswer) {
           this.awaitingBridgeAnswer = false;
@@ -947,7 +942,7 @@ export class WebRtcVoiceService {
     this.errorMessage.set(null);
     this.activeCall.set({
       customerNumber: phoneNumber,
-      customerName: customerName || 'Customer',
+      customerName: customerName || undefined,
       direction: 'outbound',
       status: 'dialing',
       isMuted: false,
@@ -1125,7 +1120,7 @@ export class WebRtcVoiceService {
     this.activeCall.set({
       callLogId,
       customerNumber: fromNumber,
-      customerName: customerName || 'Incoming Call',
+      customerName: customerName || undefined,
       direction: 'inbound',
       status: 'ringing',
       isMuted: false,
@@ -1484,7 +1479,7 @@ export class WebRtcVoiceService {
     switch (type) {
       case 'incoming_call':
         console.log('[SSE UI State] Incoming call from:', phoneNumber);
-        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName || 'Incoming PSTN Call');
+        this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName);
         this.notify(`Incoming Call from ${phoneNumber || 'Unknown'}`, 'info');
         break;
 
