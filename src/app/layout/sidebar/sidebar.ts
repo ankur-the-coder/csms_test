@@ -39,15 +39,15 @@ export class Sidebar {
   // ];
 
   csNavItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
-    // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
-    { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
-    { id: 'training', label: 'Training', icon: 'training', route: '/training' },
-    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
+    // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+    // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+    // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
+    // { id: 'implementation', label: 'Implementation', icon: 'implementation',  route: '/implementation' },
+    // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+    // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
 
     // { id: 'connected', label: 'Connected', icon: 'connected',  route: '/connected' },
-    // { id: 'feedback', label: 'Beedback', icon: 'feedback', route: '/feedback' },
+    // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
     // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
 
     { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
