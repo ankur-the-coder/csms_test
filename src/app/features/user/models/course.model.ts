@@ -1,11 +1,12 @@
-export type EnrollmentStatus = 'not_started' | 'in_progress' | 'completed';
+// 0 = not_started (DB default), 1 = completed, 2 = in_progress
+// 3 = not_enrolled (frontend-only sentinel used by getCatalog when no enrollment row exists)
+export type EnrollmentStatus = 0 | 1 | 2 | 3;
 
 export interface CatalogCourse {
   id: number;
   title: string;
   slug: string;
   description: string | null;
-  thumbnail_url: string | null;
   category_name: string | null;
   module_count: number;
   enrollment_status: EnrollmentStatus;
@@ -28,11 +29,8 @@ export interface CourseMaterial {
   id: number;
   course_id: number;
   module_id: number | null;
-  material_type: 'pdf' | 'image';
   title: string;
-  file_path: string;   // S3 key or external URL
-  file_url?: string;   // present when uploaded via CourseMaterialService (S3 public URL)
-  mime_type: string | null;
+  file_path: string;   // public S3 URL stored directly (no material_type / file_url / mime_type)
 }
 
 export interface CourseModuleDetail {
@@ -41,7 +39,6 @@ export interface CourseModuleDetail {
   title: string;
   description: string | null;
   video_url: string | null;
-  video_duration_secs: number | null;
   sort_order: number;
   materials: CourseMaterial[];
   is_completed: boolean;
@@ -69,9 +66,8 @@ export interface CourseDetail {
   title: string;
   slug: string;
   description: string | null;
-  thumbnail_url: string | null;
   category_name: string | null;
-  enrollment: any | null;   // <-- fixed: full row, not trimmed object
+  enrollment: any | null;
   materials: CourseMaterial[];
   modules: CourseModuleDetail[];
 }
@@ -88,7 +84,6 @@ export interface MyLearningCourse {
   id: number;
   title: string;
   slug: string;
-  thumbnail_url: string | null;
   category_name: string | null;
   enrollment_status: EnrollmentStatus;
   progress_percent: number;

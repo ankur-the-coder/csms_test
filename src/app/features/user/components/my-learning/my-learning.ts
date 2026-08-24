@@ -57,21 +57,21 @@ export class MyLearning implements OnInit {
       });
   }
 
-  statusLabel(status: string): string {
-    if (status === 'completed') return 'Completed';
-    if (status === 'in_progress') return 'In progress';
+ statusLabel(status: number): string {
+   if (status === 1) return 'Completed';      // 1 = completed
+   if (status === 2) return 'In progress';     // 2 = in_progress
     return 'Not started';
   }
 
-  statusClass(status: string): string {
-    if (status === 'completed')   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    if (status === 'in_progress') return 'bg-amber-50 text-amber-700 border border-amber-200';
+  statusClass(status: number): string {
+    if (status === 1) return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    if (status === 2) return 'bg-amber-50 text-amber-700 border border-amber-200';
     return 'bg-slate-100 text-slate-500 border border-slate-200';
   }
 
-  actionLabel(status: string): string {
-    if (status === 'completed') return 'Review';
-    if (status === 'in_progress') return 'Continue';
+ actionLabel(status: number): string {
+    if (status === 1) return 'Review';
+    if (status === 2) return 'Continue';
     return 'Start';
   }
 

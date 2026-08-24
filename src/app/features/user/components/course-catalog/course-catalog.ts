@@ -8,7 +8,7 @@ import { finalize } from 'rxjs';
 
 @Pipe({ name: 'filterByStatus', standalone: true })
 export class FilterByStatusPipe implements PipeTransform {
-  transform(courses: CatalogCourse[], status: string): number {
+  transform(courses: CatalogCourse[], status: number): number {
     return courses.filter((c) => c.enrollment_status === status).length;
   }
 }
@@ -67,15 +67,15 @@ export class CourseCatalog implements OnInit {
       });
   }
 
-  statusLabel(status: string): string {
-    if (status === 'completed') return 'Completed';
-    if (status === 'in_progress') return 'In progress';
+  statusLabel(status: number): string {
+    if (status === 1) return 'Completed';
+    if (status === 2) return 'In progress';
     return 'Not started';
   }
 
-  statusClass(status: string): string {
-    if (status === 'completed')   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    if (status === 'in_progress') return 'bg-amber-50 text-amber-700 border border-amber-200';
+  statusClass(status: number): string {
+    if (status === 1)   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    if (status === 2) return 'bg-amber-50 text-amber-700 border border-amber-200';
     return 'bg-slate-100 text-slate-500 border border-slate-200';
   }
 
