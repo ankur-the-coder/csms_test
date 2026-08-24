@@ -41,11 +41,13 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'voice', pathMatch: 'full' },
+
       // { path: 'dashboard', component: DashboardComponent },
       // { path: 'implementation', component: Implementation },
-      // { path: 'training', component: TrainingMaterials },
+      // { path: 'training', component: Training },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },
+
 
       // { path: 'meetings', component: MeetingsComponent },
       // { path: 'client', component: Client },

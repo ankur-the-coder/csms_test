@@ -151,11 +151,11 @@
               [ngClass]="statusClass(course.enrollment_status)">
           <span class="h-1.5 w-1.5 rounded-full"
                 [ngClass]="{
-                  'bg-emerald-500': course.enrollment_status === 'completed',
-                  'bg-amber-400':   course.enrollment_status === 'in_progress',
-                  'bg-slate-400':   course.enrollment_status === 'not_started'
-                }"></span>
-          {{ statusLabel(course.enrollment_status) }}
+                'bg-emerald-500': course.enrollment_status === 1,
+                'bg-amber-400':   course.enrollment_status === 2,
+                'bg-slate-400':   course.enrollment_status === 3
+              }"></span>
+                {{ statusLabel(course.enrollment_status) }}
         </span>
 
         <!-- Last seen / finished -->

@@ -2,35 +2,37 @@
 
   <!-- Header Card -->
   <div
-    class="card flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
-    <div class="flex items-center gap-3.5">
-      <!-- Dynamic Back Button -->
-      @if (selectedCourseId() === null) {
-      <button (click)="goBack()"
-        class="w-9 h-9 rounded  flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition shrink-0"
-        title="Back to Categories">
+    class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 md:p-6 bg-card-bg rounded-2xl border border-card-border shadow-sm">
+    <div class="flex items-center gap-3.5 min-w-0">
+      <button (click)="selectedCourseId() === null ? goBack() : selectCourse(null)"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-text-muted hover:bg-surface-100 hover:text-text-primary active:scale-95 transition shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+        [attr.aria-label]="selectedCourseId() === null ? 'Back to categories' : 'Back to courses'"
+        [title]="selectedCourseId() === null ? 'Back to categories' : 'Back to courses'">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
       </button>
-      } @else {
-      <button (click)="selectCourse(null)"
-        class="w-9 h-9 rounded  flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition shrink-0"
-        title="Back to Courses">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-      </button>
-      }
 
-      <div>
-        <span
-          class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/60 uppercase inline-block mb-1">
-          {{ selectedCourseId() === null ? 'Training Courses' : 'Course Sessions' }}
-        </span>
-        <h2 class="text-xl md:text-2xl font-bold text-slate-800 leading-tight tracking-tight">
+      <div class="min-w-0">
+        <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-brand-600 uppercase mb-1">
+          <span>{{ selectedCourseId() === null ? 'Training Courses' : 'Course Sessions' }}</span>
+          @if (selectedCourseId() !== null) {
+          <span class="text-text-muted/50 normal-case font-normal">/</span>
+          <span class="truncate max-w-[180px] text-text-muted normal-case font-semibold">{{ selectedCourseTitle() }}</span>
+          }
+        </div>
+        <h2 class="text-xl md:text-2xl font-bold text-text-primary leading-tight tracking-tight truncate">
           {{ selectedCourseId() === null ? (selectedCategory()?.name || 'All Courses') : selectedCourseTitle() }}
         </h2>
+        @if (!loading() && !error()) {
+        <p class="text-xs text-text-muted mt-0.5">
+          @if (selectedCourseId() === null) {
+          {{ courses().length }} course{{ courses().length === 1 ? '' : 's' }}
+          } @else {
+          {{ courseModules().length }} session{{ courseModules().length === 1 ? '' : 's' }}
+          }
+        </p>
+        }
       </div>
     </div>
 
@@ -38,7 +40,7 @@
     <div>
       @if (!loading() && !error() && courses().length > 0 && selectedCourseId() === null) {
       <button (click)="openAddCourseModal()"
-        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 shadow-sm shrink-0">
+        class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 shadow-sm shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -48,21 +50,21 @@
     </div>
   </div>
 
-  <!-- Content Section (Separate) -->
-  <div class="card overflow-hidden p-0 shadow-sm border border-slate-200 bg-white rounded-2xl min-h-[400px]">
-    <div class="p-5 md:p-6 bg-slate-50/40">
+  <!-- Content Section -->
+  <div class="overflow-hidden p-0 shadow-sm border border-card-border bg-card-bg rounded-2xl min-h-[400px]">
+    <div class="p-5 md:p-6 bg-surface-50/60">
 
       <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" />
 
       @if (loading()) {
       <!-- Loading skeleton -->
       <div class="p-6 space-y-4 animate-pulse">
-        <div class="h-8 bg-surface-200 rounded-xl w-1/4"></div>
-        <div class="h-12 bg-surface-200 rounded-xl w-full"></div>
+        <div class="h-8 bg-surface-200 rounded-lg w-1/4"></div>
+        <div class="h-12 bg-surface-200 rounded-lg w-full"></div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div class="h-48 bg-surface-200 rounded-2xl"></div>
-          <div class="h-48 bg-surface-200 rounded-2xl"></div>
-          <div class="h-48 bg-surface-200 rounded-2xl"></div>
+          <div class="h-48 bg-surface-200 rounded-xl"></div>
+          <div class="h-48 bg-surface-200 rounded-xl"></div>
+          <div class="h-48 bg-surface-200 rounded-xl"></div>
         </div>
       </div>
       } @else if (error()) {
@@ -77,7 +79,7 @@
         <h3 class="text-lg font-bold text-text-primary">Unable to load data</h3>
         <p class="text-sm text-text-muted">{{ error() }}</p>
         <button (click)="loadCourses()"
-          class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
+          class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
@@ -94,35 +96,35 @@
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
         </div>
-        <h3 class="text-lg font-bold text-text-primary">No Courses Available</h3>
-        <p class="text-sm text-text-muted">Start by creating a new training course module to manage sessions and study
+        <h3 class="text-lg font-bold text-text-primary">No courses yet</h3>
+        <p class="text-sm text-text-muted">Add your first training course to start organizing sessions and study
           materials.</p>
         <button (click)="openAddCourseModal()"
-          class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 cursor-pointer">
+          class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Add Module
+          Add Course
         </button>
       </div>
       } @else {
       @if (selectedCourseId() === null) {
       <!-- ─── COURSE CARDS GRID ───────────────────────────── -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
         @for (course of courses(); track course.id) {
         <div
-          class="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/70 hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer overflow-hidden"
+          class="group bg-card-bg rounded-xl border border-card-border shadow-sm hover:shadow-md hover:border-brand-300 hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer overflow-hidden"
           (click)="selectCourse(course.id)">
           <div class="flex flex-col flex-1 p-5">
             <!-- Top row: Title + Edit/Delete actions -->
             <div class="flex items-start justify-between gap-2 mb-2">
-              <h3 class="text-xl font-semibold text-slate-800 leading-snug line-clamp-2">
+              <h3 class="text-base font-bold text-text-primary leading-snug line-clamp-2">
                 {{ course.title }}
               </h3>
               <div class="flex items-center gap-1 shrink-0">
                 <button
-                  class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                  title="Edit Course"
+                  class="rounded-lg p-1.5 text-text-muted hover:bg-surface-100 hover:text-text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+                  title="Edit course" aria-label="Edit course"
                   (click)="openEditCourseModal(course); $event.stopPropagation()">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -130,8 +132,8 @@
                   </svg>
                 </button>
                 <button
-                  class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                  title="Delete Course"
+                  class="rounded-lg p-1.5 text-text-muted hover:bg-red-50 hover:text-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  title="Delete course" aria-label="Delete course"
                   (click)="requestDeleteCourse(course); $event.stopPropagation()">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -140,16 +142,16 @@
                 </button>
               </div>
             </div>
-            <p class="text-xs text-slate-500 leading-relaxed line-clamp-3 mb-4 flex-1">
+            <p class="text-xs text-text-muted leading-relaxed line-clamp-3 mb-4 flex-1">
               {{ course.description || 'No description available.' }}
             </p>
-            <div class="border-t border-slate-100 pt-4 flex items-center justify-between mt-auto">
+            <div class="border-t border-card-border/60 pt-4 flex items-center justify-between mt-auto">
               <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface-100 text-text-secondary border border-card-border">
                 Course
               </span>
               <button
-                class="group/btn inline-flex items-center gap-1 text-xs font-bold px-3.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 hover:border-emerald-600 transition-all duration-150"
+                class="group/btn inline-flex items-center gap-1 text-xs font-bold px-3.5 py-1.5 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white border border-brand-100 hover:border-brand-600 transition-all duration-150"
                 (click)="selectCourse(course.id); $event.stopPropagation()">
                 Manage Sessions
                 <svg class="w-3 h-3 transition-transform duration-150 group-hover/btn:translate-x-0.5" fill="none"
@@ -175,13 +177,13 @@
               d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)"
-            placeholder="Search sessions..."
-            class="w-full rounded-xl border border-card-border bg-white shadow-sm py-2.5 pl-10 pr-4 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
+            placeholder="Search sessions..." aria-label="Search sessions"
+            class="w-full rounded-lg border border-card-border bg-card-bg shadow-sm py-2.5 pl-10 pr-4 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
         </div>
 
         <!-- Add Session Button (right) -->
         <button (click)="openAddModuleModal()"
-          class="inline-flex items-center gap-2 rounded-xl border border-card-border bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-50 shrink-0">
+          class="inline-flex items-center gap-2 rounded-lg border border-card-border bg-card-bg shadow-sm px-4 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-50 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -191,10 +193,10 @@
       </div>
 
       <!-- Modules List (Compact Grid) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         @for (module of filteredModules(); track module.id) {
         <div
-          class="card p-5 space-y-4 border border-card-border/60 hover:border-brand-300 transition-all flex flex-col justify-between group">
+          class="bg-card-bg rounded-xl border border-card-border/60 hover:border-brand-300 transition-all p-5 space-y-4 flex flex-col justify-between group">
           <div class="space-y-3">
             <!-- Badge & Actions -->
             <div class="flex items-center justify-between">
@@ -204,15 +206,16 @@
               </span>
               <div class="flex items-center gap-1.5">
                 <button (click)="openAddModuleModal(module)"
-                  class="rounded-lg p-1 text-text-muted hover:bg-surface-200 transition-colors" title="Edit Session">
+                  class="rounded-lg p-1 text-text-muted hover:bg-surface-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
+                  title="Edit session" aria-label="Edit session">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
                 </button>
                 <button (click)="deleteModule(module.id)"
-                  class="rounded-lg p-1 text-text-muted hover:bg-red-50 hover:text-red-600 transition-colors"
-                  title="Delete Module">
+                  class="rounded-lg p-1 text-text-muted hover:bg-red-50 hover:text-red-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  title="Delete session" aria-label="Delete session">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -228,30 +231,57 @@
               <p class="text-xs text-text-muted line-clamp-2 mt-1 h-8 leading-4">{{ module.description }}</p>
             </div>
 
-            <!-- YouTube Video Frame (shown whenever a video is attached) -->
+            <!-- ── Video thumbnail (click → open modal) ── -->
             @if (module.video_url && module.safeVideoUrl) {
-            <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-black shadow-sm">
-              <iframe [src]="module.safeVideoUrl" class="h-full w-full" frameborder="0" allowfullscreen></iframe>
+            <div
+              class="relative aspect-video w-full overflow-hidden rounded-lg border border-card-border bg-black shadow-sm cursor-pointer group/media"
+              (click)="openMediaModal('video', module.video_url, module.title)"
+              title="Watch video">
+              <!-- YouTube thumbnail as background -->
+              <img
+                [src]="'https://img.youtube.com/vi/' + extractYoutubeId(module.video_url) + '/hqdefault.jpg'"
+                class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover/media:scale-105"
+                alt="Video thumbnail" />
+              <!-- Dark overlay -->
+              <div class="absolute inset-0 bg-black/30 group-hover/media:bg-black/10 transition-colors duration-200"></div>
+              <!-- Play button -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-14 h-14 rounded-full bg-white/90 shadow-xl flex items-center justify-center group-hover/media:scale-110 transition-transform duration-200">
+                  <svg class="w-6 h-6 text-gray-400 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+              <!-- Label -->
+              <!-- <span class="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/60 px-2 py-0.5 rounded-full">Watch video</span> -->
             </div>
             }
 
-            <!-- Inline PDF Preview Frame (only shown when there is NO video for this session) -->
+            <!-- ── PDF thumbnail (click → open modal) ── -->
             @if (!module.video_url && module.pdfMaterial && module.pdfMaterial.safeUrl) {
-            <div class="aspect-video w-full overflow-hidden rounded-xl border border-card-border bg-white shadow-sm">
-              <iframe [src]="module.pdfMaterial.safeUrl" class="h-full w-[calc(100%+20px)] -mr-5 border-0"
-                frameborder="0" scrolling="no"></iframe>
+            <div
+              class="relative aspect-video w-full overflow-hidden rounded-lg border border-card-border bg-surface-50 shadow-sm cursor-pointer group/media flex flex-col items-center justify-center gap-2"
+              (click)="openMediaModal('pdf', module.pdfMaterial.file_path, module.pdfMaterial.name)"
+              title="View PDF">
+              <svg class="w-12 h-12 text-red-500 group-hover/media:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM9.5 17c-.28 0-.5-.22-.5-.5v-5c0-.28.22-.5.5-.5s.5.22.5.5v5c0 .28-.22.5-.5.5zm3-.5c0 .28-.22.5-.5.5h-1v-6h1c.28 0 .5.22.5.5v5zm2.5-3.5h-1v1h1c.28 0 .5.22.5.5s-.22.5-.5.5h-1v1c0 .28-.22.5-.5.5s-.5-.22-.5-.5V13c0-.28.22-.5.5-.5h1.5c.28 0 .5.22.5.5s-.22.5-.5.5z"/>
+              </svg>
+              <span class="text-xs font-semibold text-text-secondary group-hover/media:text-text-primary transition-colors px-4 text-center line-clamp-1">{{ module.pdfMaterial.name }}</span>
+              <span class="text-[10px] text-text-muted">Click to view PDF</span>
+              <!-- Hover overlay -->
+              <div class="absolute inset-0 bg-brand-500/0 group-hover/media:bg-brand-500/5 border-2 border-transparent group-hover/media:border-brand-300 rounded-lg transition-all duration-200"></div>
             </div>
             }
 
             <!-- Empty state: neither video nor PDF attached -->
             @if (!module.video_url && !module.pdfMaterial) {
             <div
-              class="aspect-video w-full flex flex-col items-center justify-center rounded-xl border border-dashed border-surface-300 bg-surface-50 text-text-muted text-xs p-4">
+              class="aspect-video w-full flex flex-col items-center justify-center rounded-lg border border-dashed border-surface-300 bg-surface-50 text-text-muted text-xs p-4">
               <svg class="h-8 w-8 mb-1 text-text-muted/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              <span>No Video or PDF attached</span>
+              <span>No video or PDF attached</span>
             </div>
             }
           </div>
@@ -267,15 +297,17 @@
               @for (material of module.materials; track material.id) {
               <div class="flex items-center justify-between text-xs p-1.5 hover:bg-surface-100 rounded-lg group/file">
                 <a [href]="material.file_path" target="_blank"
-                  class="truncate font-medium text-text-primary hover:text-brand-500 min-w-0 flex-1 flex items-center gap-1.5">
+                  class="truncate font-medium text-text-primary hover:text-brand-600 min-w-0 flex-1 flex items-center gap-1.5">
                   <span [class]="getTypeIconColor(material.type)"
                     class="px-1.5 py-0.5 rounded border text-[8px] font-bold">{{ material.type }}</span>
                   <span class="truncate">{{ material.name }}</span>
                 </a>
                 <button (click)="deleteMaterial(material.id)"
-                  class="text-text-muted hover:text-red-600 opacity-0 group-hover/file:opacity-100 transition-opacity ml-2">
-                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  class="text-text-muted hover:text-red-600 opacity-0 group-hover/file:opacity-100 transition-opacity ml-2 focus:outline-none focus-visible:opacity-100"
+                  aria-label="Remove material" title="Remove material">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
               </div>
@@ -295,8 +327,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
-          <p class="text-sm font-semibold">No Sessions Created</p>
-          <p class="text-xs text-text-muted mt-1">Start by adding a session with video and document resources.</p>
+          <p class="text-sm font-semibold text-text-primary">No sessions yet</p>
+          <p class="text-xs text-text-muted mt-1">Add a session with a video or document to get this course started.</p>
         </div>
         }
 
@@ -307,7 +339,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <p class="text-sm font-semibold">No Sessions Found</p>
+          <p class="text-sm font-semibold text-text-primary">No sessions found</p>
           <p class="text-xs text-text-muted mt-1">No sessions match "{{ searchTerm() }}". Try a different search term.
           </p>
         </div>
@@ -320,17 +352,17 @@
   </div> <!-- End Unified Card -->
 
 
-  <!-- Add Course Modal -->
+  <!-- Add / Edit Course Modal -->
   @if (isAddCourseModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-4 py-6">
-    <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-card-border animate-fade-in">
+    <div class="w-full max-w-md rounded-2xl bg-card-bg p-6 shadow-2xl border border-card-border animate-fade-in">
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-text-primary">{{ editingCourseId ? 'Edit Course' : 'Add Module' }}</h2>
-          <p class="mt-1 text-sm text-text-muted">{{ editingCourseId ? 'Update the course details.' : 'Create a new learning module.' }}</p>
+          <h2 class="text-lg font-bold text-text-primary">{{ editingCourseId ? 'Edit Course' : 'Add Course' }}</h2>
+          <p class="mt-1 text-sm text-text-muted">{{ editingCourseId ? 'Update the course details.' : 'Create a new training course.' }}</p>
         </div>
-        <button (click)="closeAddCourseModal()"
-          class="rounded-full border border-surface-200 p-2 text-text-muted transition-colors hover:bg-surface-100">
+        <button (click)="closeAddCourseModal()" aria-label="Close dialog"
+          class="rounded-full border border-card-border p-2 text-text-muted transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -340,34 +372,34 @@
 
       <div class="space-y-4">
         <div class="space-y-2">
-          <span class="font-semibold text-text-primary text-sm">Module Title *</span>
+          <span class="font-semibold text-text-primary text-sm">Course Title *</span>
           <input type="text" [(ngModel)]="newCourseTitle"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500"
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             placeholder="e.g. Leave Tracking" />
         </div>
 
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Description</span>
           <textarea [(ngModel)]="newCourseDescription" rows="3"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 resize-none"
-            placeholder="Brief summary of what this module covers..."></textarea>
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-none"
+            placeholder="Brief summary of what this course covers..."></textarea>
         </div>
       </div>
 
       <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button (click)="closeAddCourseModal()"
-          class="rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200">Cancel</button>
+          class="rounded-lg border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">Cancel</button>
         <button (click)="addCourse()"
-          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+          class="rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
           [disabled]="!newCourseTitle.trim() || isSavingCourse()">
           @if (isSavingCourse()) {
           <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          {{ editingCourseId ? 'Updating...' : 'Saving...' }}
+          {{ editingCourseId ? 'Saving...' : 'Saving...' }}
           } @else {
-          {{ editingCourseId ? 'Update Course' : 'Save Module' }}
+          {{ editingCourseId ? 'Save changes' : 'Save Course' }}
           }
         </button>
       </div>
@@ -378,14 +410,14 @@
   <!-- Upload Material Modal -->
   @if (isUploadModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-4 py-6">
-    <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-card-border">
+    <div class="w-full max-w-lg rounded-2xl bg-card-bg p-6 shadow-2xl border border-card-border">
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold text-text-primary">Upload Study Material</h2>
           <p class="mt-1 text-sm text-text-muted">Attach a study file to this module.</p>
         </div>
-        <button (click)="closeUploadModal()"
-          class="rounded-full border border-surface-200 p-2 text-text-muted transition-colors hover:bg-surface-100">
+        <button (click)="closeUploadModal()" aria-label="Close dialog"
+          class="rounded-full border border-card-border p-2 text-text-muted transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -396,18 +428,18 @@
       <div class="space-y-4">
         <!-- Drag & Drop Container -->
         <div (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)"
-          [class]="isDragOver ? 'border-brand-400 bg-brand-50' : 'border-surface-300 bg-surface-100'"
-          class="rounded-3xl border border-dashed p-8 text-center transition-all duration-200">
+          [class]="isDragOver ? 'border-brand-400 bg-brand-50' : 'border-surface-300 bg-surface-50'"
+          class="rounded-2xl border border-dashed p-8 text-center transition-all duration-200">
           <button type="button" (click)="fileInput.click()"
-            class="inline-flex items-center gap-2 rounded-2xl border border-card-border bg-white px-4 py-3 text-sm font-semibold text-text-primary shadow-sm transition-colors hover:bg-surface-200">
+            class="inline-flex items-center gap-2 rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm font-semibold text-text-primary shadow-sm transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
             <svg class="h-5 w-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
             Select file to upload
           </button>
-          <p class="mt-3 text-xs text-text-muted">Drag PDF or Image here directly.</p>
+          <p class="mt-3 text-xs text-text-muted">Drag a PDF or image here directly.</p>
           @if (selectedFile) {
-          <div class="mt-4 rounded-2xl bg-surface-200 px-4 py-3 text-sm text-text-secondary">
+          <div class="mt-4 rounded-xl bg-surface-100 px-4 py-3 text-sm text-text-secondary">
             Selected: <span class="font-semibold text-text-primary">{{ selectedFile.name }}</span>
           </div>
           }
@@ -416,16 +448,16 @@
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Material Title *</span>
           <input type="text" [(ngModel)]="materialTitle"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             placeholder="e.g. Employee Handbook" />
         </div>
       </div>
 
       <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button (click)="closeUploadModal()"
-          class="rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200">Cancel</button>
+          class="rounded-lg border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">Cancel</button>
         <button (click)="confirmUpload()"
-          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+          class="rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
           [disabled]="!selectedFile || !materialTitle.trim()">
           Upload
         </button>
@@ -434,10 +466,10 @@
   </div>
   }
 
-  <!-- Add Chapter / Module Modal -->
+  <!-- Add / Edit Session Modal -->
   @if (isAddModuleModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-4 py-6">
-    <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-card-border">
+    <div class="w-full max-w-lg rounded-2xl bg-card-bg p-6 shadow-2xl border border-card-border">
       <div class="mb-6 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold text-text-primary">
@@ -451,8 +483,8 @@
             }}
           </p>
         </div>
-        <button (click)="closeAddModuleModal()"
-          class="rounded-full border border-surface-200 p-2 text-text-muted transition-colors hover:bg-surface-100">
+        <button (click)="closeAddModuleModal()" aria-label="Close dialog"
+          class="rounded-full border border-card-border p-2 text-text-muted transition-colors hover:bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <line x1="18" y1="6" x2="6" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -465,7 +497,7 @@
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Session Title *</span>
           <input type="text" [(ngModel)]="newModuleTitle"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500"
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             placeholder="e.g. Introduction & Basics" />
         </div>
 
@@ -473,29 +505,29 @@
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">Description</span>
           <textarea [(ngModel)]="newModuleDescription" rows="3"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 resize-none"
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100 resize-none"
             placeholder="Brief outline of the lesson..."></textarea>
         </div>
 
         <!-- Attach Study Material (Between Description & YouTube Video URL) -->
-        <div class="space-y-2 bg-surface-50 p-4 rounded-2xl border border-card-border/60">
+        <div class="space-y-2 bg-surface-50 p-4 rounded-xl border border-card-border/60">
           <div class="flex items-center justify-between">
-            <div>
+            <div class="min-w-0">
               <span class="block text-xs font-bold text-text-primary">Attach Study File (PDF/Image)</span>
               <span class="block text-[10px] text-text-muted truncate max-w-[200px]">
                 {{ newModuleFile ? newModuleFile.name : (existingMaterialName ? 'Existing: ' + existingMaterialName :
                 'No file selected yet') }}
               </span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
               @if (newModuleFile || existingMaterialName) {
               <button type="button" (click)="removePdf()"
-                class="inline-flex items-center gap-1 rounded-xl bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors">
+                class="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300">
                 Remove
               </button>
               }
               <button type="button" (click)="newModuleFileInput.click()"
-                class="inline-flex items-center gap-1.5 rounded-xl bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors">
+                class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
@@ -511,25 +543,25 @@
         <div class="space-y-2">
           <span class="font-semibold text-text-primary text-sm">YouTube Video URL</span>
           <input type="url" [(ngModel)]="newModuleVideoUrl"
-            class="w-full rounded-2xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500"
+            class="w-full rounded-xl border border-card-border bg-card-bg px-4 py-3 text-sm text-text-primary outline-none transition-shadow focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             placeholder="e.g. https://www.youtube.com/watch?v=..." />
         </div>
       </div>
 
       <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button (click)="closeAddModuleModal()"
-          class="rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200">Cancel</button>
+          class="rounded-lg border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">Cancel</button>
         <button (click)="addModule()"
-          class="rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+          class="rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300"
           [disabled]="!newModuleTitle.trim() || isSavingModule()">
           @if (isSavingModule()) {
           <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          {{ editingModuleId ? 'Updating...' : 'Saving...' }}
+          {{ editingModuleId ? 'Saving...' : 'Saving...' }}
           } @else {
-          {{ editingModuleId ? 'Update Session' : 'Save Session' }}
+          {{ editingModuleId ? 'Save changes' : 'Save Session' }}
           }
         </button>
       </div>
@@ -538,10 +570,78 @@
   }
 </div>
 
+
+<!-- ── Media Viewer Modal ────────────────────────────────────────────── -->
+@if (mediaModal()) {
+<div
+  class="fixed inset-0 z-[1400] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 py-6"
+  (click)="closeMediaModal()">
+  <div
+    class="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
+    (click)="$event.stopPropagation()">
+
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between bg-gray-900 px-5 py-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <!-- Icon -->
+        @if (mediaModal()!.type === 'video') {
+        <div class="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+          <svg class="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+        } @else {
+        <div class="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+          <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/>
+          </svg>
+        </div>
+        }
+        <span class="text-white font-semibold text-sm truncate">{{ mediaModal()!.title }}</span>
+      </div>
+      <!-- Close button -->
+      <button
+        (click)="closeMediaModal()"
+        class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        aria-label="Close" title="Close">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <line x1="6" y1="6" x2="18" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Media Body -->
+    @if (mediaModal()!.type === 'video') {
+    <!-- Video iframe -->
+    <div class="bg-black" style="aspect-ratio: 16/9;">
+      <iframe
+        [src]="mediaModal()!.url"
+        class="w-full h-full"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+    } @else {
+    <!-- PDF iframe -->
+    <div class="bg-gray-100" style="height: 80vh;">
+      <iframe
+        [src]="mediaModal()!.url"
+        class="w-full h-full border-0"
+        frameborder="0">
+      </iframe>
+    </div>
+    }
+
+  </div>
+</div>
+}
+
 <!-- Delete Confirmation Modal -->
 @if (isDeleteConfirmOpen()) {
 <div class="fixed inset-0 z-[1300] flex items-center justify-center bg-black/40 px-4 py-6">
-  <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-card-border animate-fade-in">
+  <div class="w-full max-w-sm rounded-2xl bg-card-bg p-6 shadow-2xl border border-card-border animate-fade-in">
     <div class="flex flex-col items-center text-center space-y-3">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 text-red-500">
         <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -549,17 +649,17 @@
             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </div>
-      <h3 class="text-lg font-bold text-text-primary">Confirm Delete</h3>
+      <h3 class="text-lg font-bold text-text-primary">Confirm delete</h3>
       <p class="text-sm text-text-muted">{{ deleteConfirmMessage() }}</p>
     </div>
 
     <div class="mt-6 flex gap-3">
       <button (click)="cancelDelete()" [disabled]="isDeleting()"
-        class="flex-1 rounded-full border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200 disabled:opacity-60 disabled:cursor-not-allowed">
+        class="flex-1 rounded-lg border border-card-border bg-surface-100 px-5 py-3 text-sm font-semibold text-text-secondary transition-colors hover:bg-surface-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
         Cancel
       </button>
       <button (click)="confirmDelete()" [disabled]="isDeleting()"
-        class="flex-1 rounded-full bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+        class="flex-1 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300">
         @if (isDeleting()) {
         <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -573,4 +673,4 @@
     </div>
   </div>
 </div>
-}
+}  
