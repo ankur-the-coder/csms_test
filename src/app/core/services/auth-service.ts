@@ -11,8 +11,7 @@ import { Utils } from '../../shared/utils/utils';
 export class AuthService {
   private readonly baseUrl = environment.apiUrl;
   readonly isLoggedIn = signal<boolean>(this.readStoredLogin());
-
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private get isBrowser(): boolean {
     return typeof window !== 'undefined';
@@ -59,6 +58,11 @@ export class AuthService {
     localStorage.removeItem('empId');
     localStorage.removeItem('designation');
     localStorage.removeItem('isLoggedIn');
+    // localStorage.removeItem('lang');
+    localStorage.removeItem('password');
+    // localStorage.removeItem('ubi-mode');
+    // localStorage.removeItem('ubi-theme');
+    localStorage.removeItem('orgId');
     this.isLoggedIn.set(false);
   }
 
@@ -74,6 +78,9 @@ export class AuthService {
     return this.isBrowser ? (localStorage.getItem('designation') ?? '') : '';
   }
 
+  getOrgId(): string {
+    return this.isBrowser ? (localStorage.getItem('orgId') ?? '') : '';
+  }
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
       return;
@@ -82,6 +89,7 @@ export class AuthService {
     localStorage.setItem('userName', Utils.decode5t(data.userName));
     localStorage.setItem('empId', Utils.decode5t(data.empId));
     localStorage.setItem('designation', data.designation);
+    localStorage.setItem('orgId', data.orgId);
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }
