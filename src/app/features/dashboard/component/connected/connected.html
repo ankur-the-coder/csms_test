@@ -7,27 +7,30 @@
   </div>
 
   <div class="card p-0 overflow-hidden">
-    <app-data-table
-      [config]="tableConfig()"
-      (onRefresh)="loadData()"
-      [filterNames]="['leadOwner', 'supportOwner']"
-      [initialDateFrom]="initialDateFrom()"
+    <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [initialDateFrom]="initialDateFrom()"
       [initialDateTo]="initialDateTo()"
-    >
-      <ng-template appCustomColumn="progress" let-value="value" let-row="row">
-        <div class="flex flex-col gap-1.5 min-w-35">
+
+
+      >
+      <ng-template appCustomColumn="connectedSts" let-value="value" let-row="row">
+       <div class="flex flex-col gap-1.5 min-w-25">
           <div class="flex items-center gap-2">
-            <span class="text-[13px] font-bold text-emerald-600 tabular-nums">{{ value }}%</span>
-            <span class="text-[11px] text-slate-400 font-medium"
-              >{{ row.approvedCount }}{{ row.totalCount }}
-            </span>
+            <div *ngIf="row.connectedSts == 'Actively Connected'"
+              class=" px-4 py-1.5 rounded-full bg-emerald-100 text-slate-700 text-[13px] font-medium">
+              Actively Connected
+            </div>
+
+            <div *ngIf="row.connectedSts == 'Low Connected'"
+              class=" px-4 py-1.5 rounded-full bg-yellow-100 text-slate-700 text-[13px] font-medium">
+              Low Connected
+            </div>
+
+            <div *ngIf="row.connectedSts =='No Connected'"
+              class=" px-4 py-1.5 rounded-full bg-red-100 text-slate-700 text-[13px] font-medium">
+              No Connected
+            </div>
           </div>
-          <div class="h-2 rounded-full bg-slate-200 overflow-hidden w-full">
-            <div
-              class="h-full rounded-full bg-emerald-500 transition-all duration-300"
-              [style.width.%]="value"
-            ></div>
-          </div>
+
         </div>
       </ng-template>
     </app-data-table>

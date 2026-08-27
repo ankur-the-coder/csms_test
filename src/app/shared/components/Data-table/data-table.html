@@ -365,7 +365,7 @@
             (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
             [title]="col.tooltip ?? ''">
-            <span class="st-th-inner inline-flex items-center gap-1.5" [class.cursor-pointer]="col.sortable">
+            <span class="st-th-inner text-black inline-flex items-center gap-1.5" [class.cursor-pointer]="col.sortable">
               {{ col.label }}
               @if (col.sortable) {
               <span class="st-sort-icons flex flex-col -gap-0.5" [class.text-[--st-accent]]="sort().key === col.key">

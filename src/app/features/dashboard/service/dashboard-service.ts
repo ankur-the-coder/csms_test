@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { DashboardCardCount, DashboardChartdata } from '../models/dashboardModel';
+import { ConnectedDataTableResponse } from '../models/connected.model';
+import { FeedbackDataTableResponse } from '../models/feedback.model';
 export interface DataTablePayload {
   start: number;
   length: number;
@@ -21,42 +23,43 @@ export class DashboardService {
 
   constructor(private http: HttpClient) { }
 
-  getDashboardCards(from: string, to: string): Observable<DashboardCardCount> {
+  getDashboardCards(from: string, to: string, orgId: Number): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
+      orgId
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
   }
-  fetchDashBoardFeedbackChart(from: string, to: string): Observable<DashboardChartdata> {
+  fetchDashBoardFeedbackChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to,
+      toDate: to, orgId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
-  fetchDashBoardConnectChart(from: string, to: string): Observable<DashboardChartdata> {
+  fetchDashBoardConnectChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to,
+      toDate: to, orgId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
   }
-  fetchDashBoardUsageChart(from: string, to: string): Observable<DashboardChartdata> {
+  fetchDashBoardUsageChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to,
+      toDate: to, orgId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
-  dashboardImplementProgressChart(from: string, to: string): Observable<DashboardChartdata> {
+  dashboardImplementProgressChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to,
+      toDate: to, orgId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/dashboardImplementProgressChart`, data);
@@ -64,14 +67,14 @@ export class DashboardService {
 
   // Data table Api
 
-  fetchFeedbackDataTable(payload: DataTablePayload): Observable<any> {
+  fetchFeedbackDataTable(payload: DataTablePayload): Observable<FeedbackDataTableResponse> {
 
-    return this.http.post<any>(`${this.apiUrl}/fetchFeedbackDataTable`, payload);
+    return this.http.post<FeedbackDataTableResponse>(`${this.apiUrl}/fetchFeedbackDataTable`, payload);
 
   }
-  fetchConnectedDataTable(payload: DataTablePayload): Observable<any> {
+  fetchConnectedDataTable(payload: DataTablePayload): Observable<ConnectedDataTableResponse> {
 
-    return this.http.post<any>(`${this.apiUrl}/fetchConnectedDataTable`, payload);
+    return this.http.post<ConnectedDataTableResponse>(`${this.apiUrl}/fetchConnectedDataTable`, payload);
 
   }
   fetchUsagesDataTable(payload: DataTablePayload): Observable<any> {

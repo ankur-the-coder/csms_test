@@ -1,4 +1,4 @@
-import { Component, computed, OnInit, signal, WritableSignal, ChangeDetectorRef } from '@angular/core';
+import { Component, computed, OnInit, signal, WritableSignal, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
@@ -6,6 +6,7 @@ import { ChartComponent } from '../../../../shared/components/inputs/charts/char
 import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
 import { CustomDateSelector } from "../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
+import { AuthService } from '../../../../core/services/auth-service';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,7 +16,7 @@ import { CustomDateSelector } from "../../../../shared/components/inputs/custom-
 })
 export class DashboardComponent implements OnInit {
   cardData = signal<Data | null>(null);
-
+private readonly authService = inject(AuthService);
   // Animated (count-up) display values for the top stat cards — these start
   // at 0 and tween up to the real API value whenever cardData() updates.
   animatedTotalClients = signal(0);
@@ -168,6 +169,7 @@ export class DashboardComponent implements OnInit {
   // ---------------------------------------------------------------------
   // Health Score Distribution donut data
   // ---------------------------------------------------------------------
+
   readonly healthSegments = [
     { label: 'Excellent', range: '80-100', value: 120, pct: 47, colorClass: 'bg-emerald-500', colorHex: '#10b981' },
     { label: 'Good', range: '60-79', value: 86, pct: 34, colorClass: 'bg-teal-500', colorHex: '#14b8a6' },
@@ -283,7 +285,7 @@ export class DashboardComponent implements OnInit {
 
 
 
-    this.dashboardService.getDashboardCards(from, to).subscribe({
+    this.dashboardService.getDashboardCards(from, to,Number(this.authService.getOrgId())).subscribe({
       next: (res) => {
         if (res && res.data) {
           this.cardData.set(res.data);
@@ -304,7 +306,7 @@ export class DashboardComponent implements OnInit {
     });
     this.isFeedbackLoading.set(true);
     this.feedbackHasError.set(false);
-    this.dashboardService.fetchDashBoardFeedbackChart(from, to).subscribe({
+    this.dashboardService.fetchDashBoardFeedbackChart(from, to,Number(this.authService.getOrgId())).subscribe({
       next: (res) => {
         this.isFeedbackLoading.set(false);
         if (res && res.data && res.data.length) {
@@ -345,7 +347,7 @@ export class DashboardComponent implements OnInit {
 
     this.isConnectedLoading.set(true);
     this.connectedHasError.set(false);
-    this.dashboardService.fetchDashBoardConnectChart(from, to).subscribe({
+    this.dashboardService.fetchDashBoardConnectChart(from, to,Number(this.authService.getOrgId())).subscribe({
       next: (res) => {
         this.isConnectedLoading.set(false);
         if (res && res.data && res.data.length) {
@@ -386,7 +388,7 @@ export class DashboardComponent implements OnInit {
 
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
-    this.dashboardService.fetchDashBoardUsageChart(from, to).subscribe({
+    this.dashboardService.fetchDashBoardUsageChart(from, to,Number(this.authService.getOrgId())).subscribe({
       next: (res: any) => {
         this.isUsagesLoading.set(false);
         if (res && res.modules) {
