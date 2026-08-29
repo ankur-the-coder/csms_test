@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener,ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -119,6 +119,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   apiMeetings = signal<MeetingRow[]>([]);
   filterDateFrom: string = '';
   filterDateTo: string = '';
+
+  showCancelModal = signal(false);
+cancelMeetingRow = signal<MeetingRow | null>(null);
+cancelSubmitting = signal(false);
 
   // ============ Dashboard KPI Cards (from /meetings/dashboard-stats) ============
   // A signal, not a plain property — under zoneless change detection, a signal
@@ -272,17 +276,33 @@ rescheduleDurationSelectOptions: SelectOption[] = [
       buildRequest: (ctx: RequestContext) => {
   const filters: Record<string, any> = {};
 
-  // Status — only filter when the user actually picks one from the
-  // dropdown. Previously this defaulted to 0 (Scheduled), which hid
-  // every meeting the backend moves out of Scheduled (Pending,
-  // Completed, Cancelled, Host/Client No-Show).
-  if (ctx.filters?.['meetingStatus'] !== undefined) {
-    filters['status'] = Number(ctx.filters['meetingStatus']);
+  // Status — multiSelect sends an array of string values (e.g. ['0','1','2']).
+  // A single selection still comes through as a 1-element array.
+  // Calling Number() on an array gives NaN which serialises to null — so we
+  // must map each element individually.
+  const rawStatus = ctx.filters?.['meetingStatus'];
+  if (rawStatus !== undefined && rawStatus !== null &&
+      !(Array.isArray(rawStatus) && rawStatus.length === 0)) {
+    if (Array.isArray(rawStatus)) {
+      const nums = rawStatus.map((v: any) => Number(v));
+      // Send a plain number when only one value is selected so the backend
+      // can handle both the scalar and array forms.
+      filters['status'] = nums.length === 1 ? nums[0] : nums;
+    } else {
+      filters['status'] = Number(rawStatus);
+    }
   }
 
-  // Priority
-  if (ctx.filters?.['meetingPriority'] !== undefined) {
-    filters['priority'] = Number(ctx.filters['meetingPriority']);
+  // Priority — same multi-select handling as Status above.
+  const rawPriority = ctx.filters?.['meetingPriority'];
+  if (rawPriority !== undefined && rawPriority !== null &&
+      !(Array.isArray(rawPriority) && rawPriority.length === 0)) {
+    if (Array.isArray(rawPriority)) {
+      const nums = rawPriority.map((v: any) => Number(v));
+      filters['priority'] = nums.length === 1 ? nums[0] : nums;
+    } else {
+      filters['priority'] = Number(rawPriority);
+    }
   }
 
   // Organization
@@ -444,7 +464,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
     }
 
     if (row.status === PENDING) {
-      return { canJoin: true, canCancel: true };
+      return { canJoin: false, canCancel: true };
     }
 
     // Scheduled (0) / Rescheduled (2)
@@ -764,10 +784,67 @@ getTodayDate(): string {
   }
 
   cancelMeetingFromMenu(row: MeetingRow): void {
-    if (!this.canCancelMeeting(row)) return;
-    this.confirmCancelMeeting(row);
+  if (!this.canCancelMeeting(row)) {
+    return;
   }
 
+  this.openCancelModal(row);
+}
+
+openCancelModal(row: MeetingRow): void {
+  this.cancelMeetingRow.set(row);
+  this.cancelSubmitting.set(false);
+  this.showCancelModal.set(true);
+}
+
+
+closeCancelModal(): void {
+  if (this.cancelSubmitting()) {
+    return;
+  }
+
+  this.showCancelModal.set(false);
+  this.cancelMeetingRow.set(null);
+}
+
+
+confirmCancelMeeting(): void {
+  const row = this.cancelMeetingRow();
+
+  if (!row || this.cancelSubmitting()) {
+    return;
+  }
+
+  this.cancelSubmitting.set(true);
+
+  this.meetingService.cancelMeeting(row.id).subscribe({
+    next: () => {
+      this.cancelSubmitting.set(false);
+      this.showCancelModal.set(false);
+      this.cancelMeetingRow.set(null);
+
+      this.showToastMessage(`"${row.title}" was cancelled.`);
+
+      // Refresh table
+      this.meetingsTable?.refresh?.();
+
+      // Refresh other views
+      this.fetchApiMeetings();
+      this.fetchDashboardStats();
+      this.fetchRecentActivity();
+    },
+
+    error: (err) => {
+      console.error('Cancel meeting failed:', err);
+
+      this.cancelSubmitting.set(false);
+
+      this.showToastMessage(
+        err?.error?.message || 'Failed to cancel meeting.'
+      );
+    }
+  });
+}
   /**
    * Confirms with the user, then cancels the meeting via Microsoft Graph
    * (POST /meetings/cancel) and refreshes the table so the new "Cancelled"
@@ -775,25 +852,7 @@ getTodayDate(): string {
    * meeting that's already Cancelled or Completed — that error message is
    * shown as-is via the toast.
    */
-  confirmCancelMeeting(row: MeetingRow): void {
-    const confirmed = confirm(`Cancel "${row.title}"? All attendees will be notified.`);
-    if (!confirmed) return;
-
-    this.meetingService.cancelMeeting(row.id).subscribe({
-      next: () => {
-        this.showToastMessage(`"${row.title}" was cancelled.`);
-        // See the ViewChild comment above — swap .refresh() for whatever
-        // your DataTable component's actual reload method is named.
-        this.meetingsTable?.refresh?.();
-        this.fetchApiMeetings();
-        this.fetchDashboardStats();
-        this.fetchRecentActivity();
-      },
-      error: (err) => {
-        this.showToastMessage(err?.error?.message || 'Failed to cancel meeting.');
-      }
-    });
-  }
+ 
 
   /**
    * Opens the "Meeting Detail" modal for a row and checks attendance live
@@ -802,23 +861,43 @@ getTodayDate(): string {
    * message which is shown in the modal instead of attendance data.
    */
   openAttendanceModal(row: MeetingRow): void {
-    this.attendanceMeetingTitle = row.title || 'Meeting';
-    this.showAttendanceModal = true;
-    this.attendanceLoading = true;
-    this.attendanceError = null;
-    this.attendanceResult = null;
+  this.attendanceMeetingTitle = row.title || 'Meeting';
 
-    this.meetingService.checkAttendance(row.id).subscribe({
-      next: (res) => {
-        this.attendanceResult = res;
-        this.attendanceLoading = false;
-      },
-      error: (err) => {
-        this.attendanceError = err?.error?.message || 'Failed to check meeting attendance.';
-        this.attendanceLoading = false;
-      }
-    });
-  }
+  // Open modal immediately
+  this.showAttendanceModal = true;
+
+  // Show loader while API is running
+  this.attendanceLoading = true;
+
+  // Clear previous state
+  this.attendanceError = null;
+  this.attendanceResult = null;
+
+  // Make Angular render the modal + loader immediately
+  this.cdr.detectChanges();
+
+  this.meetingService.checkAttendance(row.id).subscribe({
+    next: (res) => {
+      // API response has arrived
+      this.attendanceResult = res;
+      this.attendanceLoading = false;
+
+      // Immediately update modal with API response
+      this.cdr.detectChanges();
+    },
+
+    error: (err) => {
+      this.attendanceError =
+        err?.error?.message ||
+        'Failed to check meeting attendance.';
+
+      this.attendanceLoading = false;
+
+      // Immediately update modal with error
+      this.cdr.detectChanges();
+    }
+  });
+}
 
   closeAttendanceModal(): void {
     this.showAttendanceModal = false;
@@ -919,7 +998,7 @@ getTodayDate(): string {
     return map[s] ?? map[0];
   }
 
-  constructor(private router: Router, private meetingService: MeetingService) {}
+  constructor(private router: Router, private meetingService: MeetingService , private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.fetchOrganizations();

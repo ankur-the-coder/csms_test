@@ -102,6 +102,7 @@ export class DataTableService {
       case 'meetingStatus':
         return of({
           key: 'meetingStatus',
+          multiSelect: true,
           label: 'Status',
           options: [
             { label: 'Scheduled',   value: '0' },
@@ -117,6 +118,7 @@ export class DataTableService {
       case 'meetingPriority':
         return of({
           key: 'meetingPriority',
+           multiSelect: true,
           label: 'Priority',
           options: [
             { label: 'Low',    value: '0' },
