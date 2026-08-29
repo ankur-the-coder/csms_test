@@ -226,9 +226,10 @@ export class MeetingService {
    * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
    * this month / follow-ups pending). Not cached — always fetch fresh.
    */
-  getDashboardStats(): Observable<DashboardStats> {
+  getDashboardStats(empId?: number): Observable<DashboardStats> {
+    const query = empId ? `?empId=${empId}` : '';
     return this.http
-      .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats`)
+      .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats${query}`)
       .pipe(map(res => res.data));
   }
 
@@ -236,9 +237,10 @@ export class MeetingService {
    * Recent activity feed for the dashboard's "Recent Activity" panel.
    * Not cached — always fetch fresh.
    */
-  getRecentActivity(): Observable<RecentActivity[]> {
+  getRecentActivity(empId?: number): Observable<RecentActivity[]> {
+    const query = empId ? `?empId=${empId}` : '';
     return this.http
-      .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity`)
+      .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
       .pipe(map(res => res.data || []));
   }
 

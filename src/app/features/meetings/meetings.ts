@@ -310,6 +310,15 @@ rescheduleDurationSelectOptions: SelectOption[] = [
     filters['orgId'] = Number(ctx.filters['organization']);
   }
 
+  // Scope every fetch to the logged-in employee only — the person should
+  // never see other employees' meetings in this grid. Read fresh on every
+  // request (rather than cached in a field) so a re-login/switch-user in
+  // the same tab is picked up immediately.
+  const rawEmpId = localStorage.getItem('empId');
+  if (rawEmpId) {
+    filters['empId'] = Number(rawEmpId);
+  }
+
   const body = {
     start: ctx.page * ctx.pageSize,
     length: ctx.pageSize,
@@ -1009,12 +1018,21 @@ confirmCancelMeeting(): void {
   }
 
   fetchApiMeetings(): void {
+    // Same empId scoping as the DataTable's own apiConfig.buildRequest —
+    // this separate call feeds the calendar/list views (apiMeetings signal),
+    // so it needs to stay scoped to the logged-in employee too.
+    const filters: Record<string, any> = {};
+    const rawEmpId = localStorage.getItem('empId');
+    if (rawEmpId) {
+      filters['empId'] = Number(rawEmpId);
+    }
+
     this.meetingService.fetchMeetings({
       start: 0,
       length: 500,
       search: this.searchTerm || '',
       sorting: 'startTime,desc',
-      filter: JSON.stringify({}),
+      filter: JSON.stringify(filters),
       fromDate: this.filterDateFrom || '',
       toDate: this.filterDateTo || ''
     }).subscribe({
@@ -1089,9 +1107,12 @@ confirmCancelMeeting(): void {
   }
 
   /** Pulls the dashboard KPI card numbers from GET /meetings/dashboard-stats. */
+    /** Pulls the dashboard KPI card numbers from GET /meetings/dashboard-stats. */
   fetchDashboardStats(): void {
     this.loadingDashboardStats = true;
-    this.meetingService.getDashboardStats().subscribe({
+    const rawEmpId = localStorage.getItem('empId');
+    const empId = rawEmpId ? Number(rawEmpId) : undefined;
+    this.meetingService.getDashboardStats(empId).subscribe({
       next: (stats) => {
         this.dashboardStats.set(stats);
         this.loadingDashboardStats = false;
