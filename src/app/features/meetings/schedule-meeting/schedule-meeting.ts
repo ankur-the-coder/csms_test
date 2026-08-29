@@ -2,11 +2,12 @@ import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ScheduleMeetingService, Organization, EmployeeDetails } from './schedule-meetings.service';
+import { ScheduleMeetingService, Organization, EmployeeDetails, BookedMeeting } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
 import { DatePicker as DatePickerService } from '../../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../../shared/components/inputs/time-picker/time-picker';
+import { Subscription } from 'rxjs';
 
 type EntryMode = 'select' | 'manual';
 
@@ -43,6 +44,18 @@ export class ScheduleMeeting implements OnInit {
 
   minDateToday: Date = new Date();
 
+  /** Meetings already booked on the selected date (fetched from API). */
+  bookedMeetings: BookedMeeting[] = [];
+
+  /** True while the booked-times API call is in-flight. */
+  loadingBookedTimes = false;
+
+  /** Non-empty when the selected time+duration overlaps an existing meeting. */
+  conflictMessage = '';
+
+  /** Subscription for the booked-times API so we can cancel on rapid date changes. */
+  private bookedTimesSub?: Subscription;
+
   get meetingTimeMinutes(): number {
     if (!this.newMeeting.time) return 0;
     const parts = String(this.newMeeting.time).split(':');
@@ -60,6 +73,7 @@ export class ScheduleMeeting implements OnInit {
     const hours = String(Math.floor(val / 60)).padStart(2, '0');
     const mins = String(val % 60).padStart(2, '0');
     this.newMeeting.time = `${hours}:${mins}`;
+    this.checkTimeConflict();
   }
 
   organizations: Organization[] = [];
@@ -433,7 +447,161 @@ private buildEndDateTime(start: string): string {
       ? this.isValidEmail(m.hostEmail)
       : m.hostName.trim().length > 0 && this.isValidEmail(m.hostEmail);
 
-    return !!(m.title.trim() && m.type && m.date && m.time && orgOk && hostOk && !this.hostDetailsLoading);
+    return !!(m.title.trim() && m.type && m.date && m.time && orgOk && hostOk && !this.hostDetailsLoading && !this.hasConflict && !this.loadingBookedTimes);
+  }
+
+  /** True when the selected time slot conflicts with an existing booking. */
+  get hasConflict(): boolean {
+    return this.conflictMessage.length > 0;
+  }
+
+  // ---------- Booked-times / conflict detection ----------
+
+  /**
+   * Called when the meeting date changes. Fetches booked meetings for
+   * the selected date from the backend and then re-checks for conflicts.
+   */
+  onDateChange(): void {
+    // Cancel any in-flight request
+    this.bookedTimesSub?.unsubscribe();
+    this.bookedMeetings = [];
+    this.conflictMessage = '';
+
+    if (!this.newMeeting.date) return;
+
+    const empId = this.getCurrentEmployeeId();
+    if (!empId) return;
+
+    // Build the date string (yyyy-MM-dd) from the selected date
+    const raw = this.newMeeting.date as unknown;
+    let d: Date;
+    if (raw instanceof Date) {
+      d = raw;
+    } else if (typeof raw === 'string' && raw.includes(',')) {
+      const rev = DatePickerService.reverseFormatDate(raw);
+      d = new Date(rev);
+    } else {
+      d = new Date(raw as string);
+    }
+    if (isNaN(d.getTime())) return;
+
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+
+    this.loadingBookedTimes = true;
+
+    // Immediately check for past time conflict on the newly selected date
+    this.checkTimeConflict();
+
+    this.bookedTimesSub = this.scheduleMeetingService.getBookedTimes(empId, dateStr).subscribe({
+      next: (meetings) => {
+        this.ngZone.run(() => {
+          this.bookedMeetings = meetings || [];
+          this.loadingBookedTimes = false;
+          this.checkTimeConflict();
+        });
+      },
+      error: () => {
+        this.ngZone.run(() => {
+          this.bookedMeetings = [];
+          this.loadingBookedTimes = false;
+          this.checkTimeConflict();
+        });
+      }
+    });
+  }
+
+  /**
+   * Called when time or duration changes. Checks whether:
+   * 1. The proposed meeting time is in the past if the selected date is today.
+   * 2. The proposed meeting window overlaps any already-booked meeting on the selected date.
+   */
+  checkTimeConflict(): void {
+    this.conflictMessage = '';
+
+    if (!this.newMeeting.time || !this.newMeeting.date) {
+      return;
+    }
+
+    // Parse selected date
+    const raw = this.newMeeting.date as unknown;
+    let d: Date;
+    if (raw instanceof Date) {
+      d = raw;
+    } else if (typeof raw === 'string' && raw.includes(',')) {
+      const rev = DatePickerService.reverseFormatDate(raw);
+      d = new Date(rev);
+    } else {
+      d = new Date(raw as string);
+    }
+    if (isNaN(d.getTime())) return;
+
+    // Build proposed start/end as minutes-since-midnight
+    const [h, m] = this.newMeeting.time.split(':').map(Number);
+    const proposedStartMin = h * 60 + m;
+    const proposedEndMin = proposedStartMin + this.getDurationMinutes();
+
+    // 1. Prevent selecting past time if date is today
+    const now = new Date();
+    const isToday = d.getFullYear() === now.getFullYear() &&
+                    d.getMonth() === now.getMonth() &&
+                    d.getDate() === now.getDate();
+
+    if (isToday) {
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+      if (proposedStartMin < currentMin) {
+        this.conflictMessage = 'The selected time has already passed for today. Please select a current or future time.';
+        return;
+      }
+    }
+
+    // 2. Check overlap with existing booked meetings
+    if (this.bookedMeetings && this.bookedMeetings.length > 0) {
+      for (const meeting of this.bookedMeetings) {
+        const start = new Date(meeting.startTime);
+        const end = new Date(meeting.endTime);
+
+        const bookedStartMin = start.getHours() * 60 + start.getMinutes();
+        const bookedEndMin = end.getHours() * 60 + end.getMinutes();
+
+        // Two intervals overlap if one starts before the other ends and vice-versa
+        if (proposedStartMin < bookedEndMin && proposedEndMin > bookedStartMin) {
+          const startStr = this.formatTime(start);
+          const endStr = this.formatTime(end);
+          this.conflictMessage = `A meeting "${meeting.title}" is already scheduled from ${startStr} to ${endStr}. Please choose a different time.`;
+          return;
+        }
+      }
+    }
+  }
+
+  /** Returns the current duration selection as total minutes. */
+  private getDurationMinutes(): number {
+    switch (this.newMeeting.duration) {
+      case '15 minutes': return 15;
+      case '30 minutes': return 30;
+      case '45 minutes': return 45;
+      case '1 hour':     return 60;
+      case '1.5 hours':  return 90;
+      case '2 hours':    return 120;
+      default:           return 60;
+    }
+  }
+
+  /** Formats a Date to a human-readable 12-hour time string. */
+  private formatTime(d: Date): string {
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    const amPm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${String(minutes).padStart(2, '0')} ${amPm}`;
+  }
+
+  /** Re-check conflict whenever the duration dropdown changes. */
+  onDurationChange(): void {
+    this.checkTimeConflict();
   }
 
   // ---------- Inline field errors (shown only after a submit attempt) ----------
