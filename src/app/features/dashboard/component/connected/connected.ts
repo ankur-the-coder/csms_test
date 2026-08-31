@@ -8,6 +8,7 @@ import { Data } from '../../models/connected.model';
 import { CommonModule, NgClass } from '@angular/common';
 import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { AuthService } from '../../../../core/services/auth-service';
+import { Utils } from '../../../../shared/utils/utils';
 
 export interface ClientRow {
   id: string
@@ -181,7 +182,7 @@ export class Connected {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
-            orgId: Number(this.authService.getOrgId())
+            orgId: Utils.encode5t(this.authService.getOrgId().toString()),
           };
 
           return { method: 'POST' as const, body };
