@@ -23,7 +23,7 @@ export class DashboardService {
 
   constructor(private http: HttpClient) { }
 
-  getDashboardCards(from: string, to: string, orgId: Number): Observable<DashboardCardCount> {
+  getDashboardCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
@@ -32,7 +32,7 @@ export class DashboardService {
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
   }
-  fetchDashBoardFeedbackChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
+  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to, orgId
@@ -40,7 +40,7 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
-  fetchDashBoardConnectChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
+  fetchDashBoardConnectChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to, orgId
@@ -48,7 +48,7 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
   }
-  fetchDashBoardUsageChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
+  fetchDashBoardUsageChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to, orgId
@@ -56,7 +56,7 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
-  dashboardImplementProgressChart(from: string, to: string, orgId: Number): Observable<DashboardChartdata> {
+  dashboardImplementProgressChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to, orgId

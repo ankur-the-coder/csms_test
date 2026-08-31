@@ -12,6 +12,7 @@ import { Datum } from '../../models/feedback.model';
 import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { CommonModule, NgClass } from '@angular/common';
 import { AuthService } from '../../../../core/services/auth-service';
+import { Utils } from '../../../../shared/utils/utils';
 
 export interface ClientRow {
   orgId: string;
@@ -228,7 +229,7 @@ private readonly authService = inject(AuthService);
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
-            toDate,orgId:Number(this.authService.getOrgId())
+            toDate,orgId:Utils.encode5t(this.authService.getOrgId().toString()),
           };
 
           return { method: 'POST' as const, body };

@@ -7,6 +7,7 @@ import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
 import { CustomDateSelector } from "../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
 import { AuthService } from '../../../../core/services/auth-service';
+import { Utils } from '../../../../shared/utils/utils';
 
 @Component({
   selector: 'app-dashboard',
@@ -284,8 +285,8 @@ private readonly authService = inject(AuthService);
     console.log(from, to);
 
 
-
-    this.dashboardService.getDashboardCards(from, to,Number(this.authService.getOrgId())).subscribe({
+let orgId=Utils.encode5t(this.authService.getOrgId().toString());
+    this.dashboardService.getDashboardCards(from, to,orgId).subscribe({
       next: (res) => {
         if (res && res.data) {
           this.cardData.set(res.data);
@@ -306,7 +307,7 @@ private readonly authService = inject(AuthService);
     });
     this.isFeedbackLoading.set(true);
     this.feedbackHasError.set(false);
-    this.dashboardService.fetchDashBoardFeedbackChart(from, to,Number(this.authService.getOrgId())).subscribe({
+    this.dashboardService.fetchDashBoardFeedbackChart(from, to,orgId).subscribe({
       next: (res) => {
         this.isFeedbackLoading.set(false);
         if (res && res.data && res.data.length) {
@@ -347,7 +348,7 @@ private readonly authService = inject(AuthService);
 
     this.isConnectedLoading.set(true);
     this.connectedHasError.set(false);
-    this.dashboardService.fetchDashBoardConnectChart(from, to,Number(this.authService.getOrgId())).subscribe({
+    this.dashboardService.fetchDashBoardConnectChart(from, to,orgId).subscribe({
       next: (res) => {
         this.isConnectedLoading.set(false);
         if (res && res.data && res.data.length) {
@@ -388,7 +389,7 @@ private readonly authService = inject(AuthService);
 
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
-    this.dashboardService.fetchDashBoardUsageChart(from, to,Number(this.authService.getOrgId())).subscribe({
+    this.dashboardService.fetchDashBoardUsageChart(from, to,orgId).subscribe({
       next: (res: any) => {
         this.isUsagesLoading.set(false);
         if (res && res.modules) {

@@ -11,7 +11,7 @@ import { Utils } from '../../shared/utils/utils';
 export class AuthService {
   private readonly baseUrl = environment.apiUrl;
   readonly isLoggedIn = signal<boolean>(this.readStoredLogin());
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   private get isBrowser(): boolean {
     return typeof window !== 'undefined';
@@ -37,7 +37,7 @@ export class AuthService {
 
   login(userName: string, password: string): Observable<LoginResponse> {
     const payload = new FormData();
-    payload.append('userName', Utils.encode5t(userName));
+     payload.append('userName', Utils.encode5t(userName));
     payload.append('password', Utils.encode5t(password));
 
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload).pipe(
@@ -86,10 +86,10 @@ export class AuthService {
       return;
     }
 
-    localStorage.setItem('userName', Utils.decode5t(data.userName));
+    localStorage.setItem('userName', data.userName);
     localStorage.setItem('empId', Utils.decode5t(data.empId));
     localStorage.setItem('designation', data.designation);
-    localStorage.setItem('orgId', data.orgId);
+    localStorage.setItem('orgId', Utils.decode5t(data.orgId));
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }
