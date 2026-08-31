@@ -11,7 +11,7 @@
       </div>
       <div class="flex flex-wrap gap-3">
         <button (click)="openScheduleModal()"
-          class="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm">
+          class="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-4 py-2.5 cursor-pointer text-sm font-semibold text-white transition-colors shadow-sm">
           <i class="fas fa-plus-circle"></i> Schedule Meeting
         </button>
       </div>
@@ -184,7 +184,7 @@
         <div class="flex bg-slate-100 p-1 rounded-lg">
           <button (click)="setActiveView('table')" [class.bg-white]="activeView === 'table'"
             [class.shadow-sm]="activeView === 'table'"
-            class="px-3 py-1.5 text-sm font-medium rounded-md flex items-center gap-2 transition"
+            class="px-3 py-1.5 cursor-pointer text-sm font-medium rounded-md flex items-center gap-2 transition"
             [class.text-slate-900]="activeView === 'table'" [class.text-slate-600]="activeView !== 'table'">
             <i class="fas fa-table"></i> Table
             <!-- <span
@@ -193,13 +193,13 @@
           </button>
           <button (click)="setActiveView('timeline')" [class.bg-white]="activeView === 'timeline'"
             [class.shadow-sm]="activeView === 'timeline'"
-            class="px-3 py-1.5 text-sm font-medium rounded-md flex items-center gap-2 transition"
+            class="px-3 py-1.5 cursor-pointer text-sm font-medium rounded-md flex items-center gap-2 transition"
             [class.text-slate-900]="activeView === 'timeline'" [class.text-slate-600]="activeView !== 'timeline'">
             <i class="fas fa-clock"></i> Timeline
           </button>
           <button (click)="setActiveView('calendar')" [class.bg-white]="activeView === 'calendar'"
             [class.shadow-sm]="activeView === 'calendar'"
-            class="px-3 py-1.5 text-sm font-medium rounded-md flex items-center gap-2 transition"
+            class="px-3 py-1.5 cursor-pointer text-sm font-medium rounded-md flex items-center gap-2 transition"
             [class.text-slate-900]="activeView === 'calendar'" [class.text-slate-600]="activeView !== 'calendar'">
             <i class="fas fa-calendar-alt"></i> Calendar
           </button>
