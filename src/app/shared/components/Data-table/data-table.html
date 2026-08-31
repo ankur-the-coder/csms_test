@@ -229,9 +229,8 @@
 
     <!-- DATE PICKER -->
     @else if (button.type === 'datePicker') {
-    <app-custom-date-selector
-    [initialDates]="initialDatesForPicker()"
-    (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
+    <app-custom-date-selector [initialDates]="initialDatesForPicker()"
+      (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
     }
 
     <!-- CUSTOM BUTTON -->
@@ -365,7 +364,8 @@
             (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
             [title]="col.tooltip ?? ''">
-            <span class="st-th-inner text-black inline-flex items-center gap-1.5" [class.cursor-pointer]="col.sortable">
+            <span class="st-th-inner font-bold text-brand-700 inline-flex items-center gap-1.5"
+              [class.cursor-pointer]="col.sortable">
               {{ col.label }}
               @if (col.sortable) {
               <span class="st-sort-icons flex flex-col -gap-0.5" [class.text-[--st-accent]]="sort().key === col.key">
@@ -582,7 +582,8 @@
                 </svg>
                 } @else if (action.icon === 'call') {
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <path
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 } @else {
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -616,9 +617,10 @@
                   <polyline points="3 6 5 6 21 6" />
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
                 </svg>
-                 } @else if (action.icon === 'call') {
+                } @else if (action.icon === 'call') {
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <path
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 } @else {
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -681,15 +683,14 @@
   <div
     class="st-footer flex items-center justify-between gap-3 px-4 py-2.5 border-t border-[--st-border] bg-[--st-surface] rounded-b-[--st-radius-xl] flex-wrap relative">
 
-    <div class="st-showing relative flex-1 cursor-pointer rounded-[--st-radius-sm] p-2"
-      (click)="togglePageSizePopover(); $event.stopPropagation()">
+    <div class="st-showing relative flex-1  rounded-[--st-radius-sm] p-2">
       @if (totalCount() > 0) {
       @if (config().showPagination !== false) {
-      <span class="st-showing-trigger text-[13px] font-medium text-[--st-text] select-none">
+      <span (click)="togglePageSizePopover(); $event.stopPropagation()"
+        class="st-showing-trigger text-[13px] font-medium text-[--st-text] select-none cursor-pointer ">
         Showing <strong class="text-brand-500">{{ startRow() }}</strong> – <strong class="text-brand-500">{{ endRow()
           }}</strong> of <strong class="text-brand-500">{{ totalCount() }}</strong> entries
       </span>
-      <!-- Page size popover -->
       <!-- Page size popover -->
       @if (pageSizePopoverOpen()) {
       <div
@@ -929,12 +930,48 @@
               <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-surface-200">
                 @for (opt of filter.options ?? []; track opt.value) {
                 <label
-                  class="flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-xs font-medium text-text-secondary transition-colors hover:bg-surface-100">
-                  <input type="checkbox"
-                    class="st-checkbox appearance-none w-4 h-4 rounded border border-card-border bg-card-bg cursor-pointer transition-all flex-shrink-0 checked:bg-brand-500 checked:border-brand-500"
-                    [checked]="isTempFilterValueChecked(filter.key, opt.value)"
-                    (change)="toggleTempMultiValue(filter.key, opt.value)" />
-                  <span class="flex-1 truncate select-none">{{ opt.label }}</span>
+                  class="group/opt relative flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 select-none"
+                  [class.bg-brand-50]="isTempFilterValueChecked(filter.key, opt.value)"
+                  [class.hover:bg-brand-50]="isTempFilterValueChecked(filter.key, opt.value)"
+                  [class.hover:bg-surface-100]="!isTempFilterValueChecked(filter.key, opt.value)"
+                  (click)="toggleTempMultiValue(filter.key, opt.value)">
+
+                  <!-- Colored left-border accent when checked -->
+                  <span class="absolute left-0 top-1 bottom-1 w-0.5 rounded-full transition-all duration-200"
+                    [class.bg-brand-500]="isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.opacity-0]="!isTempFilterValueChecked(filter.key, opt.value)"></span>
+
+                  <!-- Custom checkbox box -->
+                  <span
+                    class="relative flex-shrink-0 w-[17px] h-[17px] rounded-[4px] border-[1.5px] transition-all duration-150 flex items-center justify-center"
+                    [class.bg-brand-500]="isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.border-brand-500]="isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.border-slate-300]="!isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.bg-white]="!isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.group-hover/opt:border-brand-400]="!isTempFilterValueChecked(filter.key, opt.value)">
+                    <!-- Animated tick SVG -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"
+                      class="w-2.5 h-2.5 transition-all duration-150"
+                      [class.opacity-100]="isTempFilterValueChecked(filter.key, opt.value)"
+                      [class.scale-100]="isTempFilterValueChecked(filter.key, opt.value)"
+                      [class.opacity-0]="!isTempFilterValueChecked(filter.key, opt.value)"
+                      [class.scale-50]="!isTempFilterValueChecked(filter.key, opt.value)">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </span>
+
+                  <!-- Label text -->
+                  <span class="flex-1 truncate text-xs font-medium transition-colors duration-150"
+                    [class.text-brand-700]="isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.font-semibold]="isTempFilterValueChecked(filter.key, opt.value)"
+                    [class.text-text-secondary]="!isTempFilterValueChecked(filter.key, opt.value)">
+                    {{ opt.label }}
+                  </span>
+
+                  <!-- Check count badge (shown when checked) -->
+                  @if (isTempFilterValueChecked(filter.key, opt.value)) {
+                  <span class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                  }
                 </label>
                 }
 
