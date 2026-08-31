@@ -44,7 +44,7 @@ export const routes: Routes = [
 
       { path: 'dashboard', component: DashboardComponent },
       { path: 'implementation', component: Implementation },
-      { path: 'training', component: TrainingMaterials },
+      { path: 'training', component: Training },
 
 
 
