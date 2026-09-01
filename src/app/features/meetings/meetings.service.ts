@@ -204,6 +204,12 @@ export class MeetingService {
 
 
   getUpcomingMeetings(): Observable<MeetingRow[]> {
+  const rawEmpId = localStorage.getItem('empId');
+  const filters: Record<string, any> = {};
+  if (rawEmpId) {
+    filters['empId'] = Number(rawEmpId);
+  }
+
   return this.http
     .post<FetchMeetingsResponse>(
       `${this.imp}/meetings/fetchMeetings`,
@@ -212,7 +218,7 @@ export class MeetingService {
         length: 50,
         search: '',
         sorting: 'startTime,asc',
-        filter: '',
+        filter: JSON.stringify(filters),
         fromDate: '',
         toDate: ''
       }

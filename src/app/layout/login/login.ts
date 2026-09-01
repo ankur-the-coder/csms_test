@@ -51,7 +51,7 @@ export class Login {
         this.isLoading.set(false);
 
         if (res.status === true) {
-          this.router.navigate(['/voice/dashboard']);
+          this.router.navigate(['/dashboard']);
         } else {
           this.errorMessage.set(
             res.msg || 'Invalid username or password. Please try again.'
