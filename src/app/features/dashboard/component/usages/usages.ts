@@ -1,24 +1,25 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ClientService } from '../../../client/services/client/client';
-import { Datum } from '../../../client/models/client/client.model';
+
 import { BulkAction, RequestContext, SmartColumn, SmartTableConfig } from '../../../../shared/components/Data-table/data-table.types';
 import { DataTable } from "../../../../shared/components/Data-table/data-table";
 import { environment } from '../../../../../environments/environment';
 import { DashboardService } from '../../service/dashboard-service';
+import { Data } from '../../models/usages.model';
+import { AuthService } from '../../../../core/services/auth-service';
+import { Utils } from '../../../../shared/utils/utils';
 
 
 export interface ClientRow {
-  orgId: number;
-  name: string;
-  planStart: string;
-  planEnd: string;
-  userLimit: number;
-  modules: string;
-  leadOwner: string;
-  supportOwner: string;
-  progress: number;
-  stage: string;
+  orgId: string
+  id: string,
+  client: string,
+  // createdDate: string,
+  contactPerson: string,
+  email: string,
+  phone: string,
+  // ticketCount: Number,
+  useSts: string,
 }
 
 @Component({
@@ -28,7 +29,7 @@ export interface ClientRow {
   styleUrl: './usages.css',
 })
 export class Usages {
-  //  private clientApi = inject(ClientService);
+private readonly authService = inject(AuthService);
   private clientApi = inject(DashboardService);
   private readonly apiUrl = environment.apiUrl;
   private route = inject(ActivatedRoute);
@@ -62,18 +63,20 @@ export class Usages {
 
   openClientDetails(client: ClientRow) { }
 
-  private mapDatumToClientRow(raw: Datum): ClientRow {
+  private mapDatumToClientRow(raw: Data): ClientRow {
     return {
+      id: raw.id,
       orgId: raw.orgId,
-      name: raw.client,
-      planStart: String(raw.planStart),
-      planEnd: String(raw.planEnd),
-      userLimit: raw.userLimit,
-      modules: raw.module,
-      leadOwner: raw.leadOwner,
-      supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
-      progress: raw.progress,
-      stage: raw.stage,
+      client: raw.client,
+      useSts: raw.useSts,
+
+
+      // createdDate: string,
+      contactPerson: raw.contactPerson,
+      email: raw.email,
+      phone: raw.phone,
+      // ticketCount: Number,
+
     };
   }
 
@@ -94,38 +97,38 @@ export class Usages {
 
   get bulkActions(): BulkAction<ClientRow>[] {
     return [
-      {
-        id: 'markCompleted',
-        label: 'Mark Completed',
-        icon: 'check',
-        color: '#10b981',
-        // now based on progress percentage instead of a status string
-        hidden: (rows) => rows.every(r => r.progress === 100),
-        onClick: (rows) => this.markImplementation(rows, 'Completed'),
-      },
-      {
-        id: 'markPending',
-        label: 'Mark Pending',
-        icon: 'circle-dot',
-        color: '#f59e0b',
-        hidden: (rows) => rows.every(r => r.progress === 0),
-        onClick: (rows) => this.markImplementation(rows, 'Pending'),
-      },
-      {
-        id: 'exportSelected',
-        label: 'Export Selected',
-        icon: 'download',
-        color: '#3b82f6',
-        onClick: (rows) => this.exportSelected(rows),
-      },
-      {
-        id: 'delete',
-        label: 'Delete',
-        icon: 'delete',
-        color: '#ef4444',
-        disabled: (rows) => rows.some(r => r.stage === 'PREMIUM'),
-        onClick: (rows) => this.deleteSelected(rows),
-      },
+      // {
+      //   id: 'markCompleted',
+      //   label: 'Mark Completed',
+      //   icon: 'check',
+      //   color: '#10b981',
+      //   // now based on progress percentage instead of a status string
+      //   hidden: (rows) => rows.every(r => r.progress === 100),
+      //   onClick: (rows) => this.markImplementation(rows, 'Completed'),
+      // },
+      // {
+      //   id: 'markPending',
+      //   label: 'Mark Pending',
+      //   icon: 'circle-dot',
+      //   color: '#f59e0b',
+      //   hidden: (rows) => rows.every(r => r.progress === 0),
+      //   onClick: (rows) => this.markImplementation(rows, 'Pending'),
+      // },
+      // {
+      //   id: 'exportSelected',
+      //   label: 'Export Selected',
+      //   icon: 'download',
+      //   color: '#3b82f6',
+      //   onClick: (rows) => this.exportSelected(rows),
+      // },
+      // {
+      //   id: 'delete',
+      //   label: 'Delete',
+      //   icon: 'delete',
+      //   color: '#ef4444',
+      //   disabled: (rows) => rows.some(r => r.stage === 'PREMIUM'),
+      //   onClick: (rows) => this.deleteSelected(rows),
+      // },
     ];
   }
 
@@ -134,14 +137,14 @@ export class Usages {
 
     return {
       columns: [
-        { key: 'name', label: 'Client', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true, hideable: true },
         // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
-        { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
-        { key: 'userLimit', label: 'User Limit', sortable: true },
-        { key: 'modules', label: 'Modules', sortable: false },
-        { key: 'leadOwner', label: 'Lead Owner', sortable: false },
-        { key: 'supportOwner', label: 'Support Owner', sortable: false },
-        { key: 'progress', label: 'Implementation', sortable: false },
+        { key: 'phone', label: 'Phone', sortable: false, },
+        { key: 'email', label: 'Email', sortable: true },
+        { key: 'contactPerson', label: 'Contact Person', sortable: false },
+        { key: 'useSts', label: 'user Status', sortable: false },
+        // { key: 'supportOwner', label: 'Support Owner', sortable: false },
+        // { key: 'progress', label: 'Implementation', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
@@ -157,13 +160,13 @@ export class Usages {
 
           const sortColMap: Record<string, string> = {
             name: 'client',
-            planStart: 'planStart',
-            planEnd: 'planEnd',
-            userLimit: 'userLimit',
-            stage: 'stage',
-            modules: 'module',
-            leadOwner: 'leadOwner',
-            supportOwner: 'suppOwner',
+            // planStart: 'planStart',
+            // planEnd: 'planEnd',
+            // userLimit: 'userLimit',
+            // stage: 'stage',
+            // modules: 'module',
+            // leadOwner: 'leadOwner',
+            // supportOwner: 'suppOwner',
           };
           const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'client';
 
@@ -174,13 +177,13 @@ export class Usages {
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
-            toDate,
+            toDate,orgId:Utils.encode5t(this.authService.getOrgId().toString()),
           };
 
           return { method: 'POST' as const, body };
         },
 
-        transformRow: (raw: Datum): ClientRow | null => this.mapDatumToClientRow(raw),
+        transformRow: (raw: Data): ClientRow | null => this.mapDatumToClientRow(raw),
       },
 
       rowIdKey: 'orgId',
@@ -194,7 +197,7 @@ export class Usages {
 
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },
-        { id: 'filter', type: 'filter', label: 'Filter' },
+        // { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },

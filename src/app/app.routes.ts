@@ -55,16 +55,20 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'implementation', component: Implementation },
       { path: 'training', component: Training },
-      { path: 'onboarding', component: Dashboard },
+
+
+
+      // { path: 'onboarding', component: Dashboard },
+
       // { path: 'add-onboarding', component: AddOnboarding },
 
 
-      // { path: 'meetings', component: MeetingsComponent },
-      // { path: 'client', component: Client },
+      { path: 'meetings', component: MeetingsComponent },
+      { path: 'client', component: Client },
 
-      // { path: 'feedback', component: Feedback },
-      // { path: 'connected', component: Connected },
-      // { path: 'usages', component: Usages },
+      { path: 'feedback', component: Feedback },
+      { path: 'connected', component: Connected },
+      { path: 'usages', component: Usages },
       {
         path: 'voice',
         component: VoiceShell,

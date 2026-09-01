@@ -62,7 +62,10 @@ export class Layout {
     if (url.includes('settings')) return 'settings';
     if (url.includes('my-learning')) return 'my-learning';
     if (url.includes('courses')) return 'courses';
- if (url.includes('voice')) return 'voice';
+    if (url.includes('voice')) return 'voice';
+    if (url.includes('connected')) return 'connected';
+    if (url.includes('feedback')) return 'feedback';
+    if (url.includes('usages')) return 'usages';
     return '';
   }
 

@@ -26,6 +26,7 @@ export interface Data {
   userName: string;
   empId: string;
   designation: string
+  orgId: string
 }
 export interface ProfileDetail {
   designation: string;
