@@ -40,6 +40,7 @@ export class Sidebar {
 
   csNavItems: NavItem[] = [
 
+
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
     { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
     // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
@@ -52,10 +53,11 @@ export class Sidebar {
     { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
 
 
+
     { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
-    // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
-    // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
-    // { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
+    { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
+    { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
+    { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
 
   ];
 
