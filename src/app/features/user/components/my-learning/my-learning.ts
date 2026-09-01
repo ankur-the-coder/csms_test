@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CircularProgress } from '../circular-progress/circular-progress';
 import { MyLearningCourse, MyLearningSummary } from '../../models/course.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LearnerCourseService } from '../../services/learner-course.service';
 import { finalize } from 'rxjs';
 
@@ -18,13 +18,20 @@ export class MyLearning implements OnInit {
   loading = true;
   error = '';
 
+  private userId = '';
+  private orgId = '';
+
   constructor(
     private learnerCourseService: LearnerCourseService,
     private router: Router,
-    private cdr: ChangeDetectorRef  // ← needed because withFetch() runs outside Angular zone
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    const qp = this.route.snapshot.queryParams;
+    this.userId = qp['user_id'] ?? '';
+    this.orgId = qp['org_id'] ?? '';
     this.fetchMyLearning();
   }
 
@@ -33,7 +40,7 @@ export class MyLearning implements OnInit {
     this.error = '';
 
     this.learnerCourseService
-      .getMyLearning()
+      .getMyLearning(this.userId, this.orgId)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -76,6 +83,8 @@ export class MyLearning implements OnInit {
   }
 
   goToCourse(course: MyLearningCourse): void {
-    this.router.navigate(['/courses', course.id]);
+    this.router.navigate(['/user/courses', course.id], {
+      queryParams: { user_id: this.userId, org_id: this.orgId },
+    });
   }
 }
