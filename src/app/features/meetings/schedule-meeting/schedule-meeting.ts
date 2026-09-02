@@ -2,6 +2,7 @@ import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService, Organization, EmployeeDetails, BookedMeeting } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../../shared/components/inputs/date-picker/date-picker';
@@ -107,7 +108,8 @@ export class ScheduleMeeting implements OnInit {
   constructor(
     private router: Router,
     private scheduleMeetingService: ScheduleMeetingService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -251,6 +253,7 @@ export class ScheduleMeeting implements OnInit {
   onScheduleClick(): void {
     if (!this.isFormValid()) {
       this.submitted = true;
+      this.toastr.warning('Please fill in all required fields before scheduling.', 'Validation Warning');
       return;
     }
     this.submitted = false;
@@ -270,7 +273,7 @@ export class ScheduleMeeting implements OnInit {
     } catch (err) {
       console.error('Failed to build meeting start/end time', err);
       this.saving = false;
-      alert('Something is wrong with the selected date/time. Please re-pick the date and time and try again.');
+      this.toastr.error('Something is wrong with the selected date/time. Please re-pick the date and time.', 'Invalid Date/Time');
       return;
     }
 
@@ -326,10 +329,10 @@ export class ScheduleMeeting implements OnInit {
 
                 console.log("Teams Response", res);
 
-                this.createdMeetingLink = res.meetingLink;
+                this.createdMeetingLink = res.meetingLink || null;
                 this.saving = false;
 
-                alert("Teams Meeting Created Successfully");
+                this.toastr.success('Teams Meeting Created Successfully!', 'Success');
 
                 this.goBack();
 
@@ -337,7 +340,8 @@ export class ScheduleMeeting implements OnInit {
             error: (err) => {
                 console.error(err);
                 this.saving = false;
-                alert("Failed to create Teams meeting");
+                const errDetail = err?.error?.message || err?.message || 'Failed to create Teams meeting';
+                this.toastr.error(errDetail, 'Creation Failed');
             }
         });
 }
