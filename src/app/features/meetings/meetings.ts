@@ -2,6 +2,7 @@ import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse, RescheduleMeetingResponse, RecentActivity } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
@@ -737,8 +738,9 @@ submitReschedule(): void {
 
         this.showRescheduleModal = false;
 
-        this.showToastMessage(
-          `"${meeting.title}" rescheduled successfully.`
+        this.toastr.success(
+          `"${meeting.title}" rescheduled successfully.`,
+          'Rescheduled'
         );
 
         this.selectedRescheduleMeeting = null;
@@ -760,9 +762,9 @@ submitReschedule(): void {
 
         this.rescheduleLoading = false;
 
-        this.rescheduleError =
-          err?.error?.message ||
-          'Failed to reschedule meeting.';
+        const errMsg = err?.error?.message || 'Failed to reschedule meeting.';
+        this.rescheduleError = errMsg;
+        this.toastr.error(errMsg, 'Reschedule Failed');
       }
     });
 }
@@ -832,7 +834,7 @@ confirmCancelMeeting(): void {
       this.showCancelModal.set(false);
       this.cancelMeetingRow.set(null);
 
-      this.showToastMessage(`"${row.title}" was cancelled.`);
+      this.toastr.success(`"${row.title}" was cancelled successfully.`, 'Meeting Cancelled');
 
       // Refresh table
       this.meetingsTable?.refresh?.();
@@ -845,12 +847,10 @@ confirmCancelMeeting(): void {
 
     error: (err) => {
       console.error('Cancel meeting failed:', err);
-
       this.cancelSubmitting.set(false);
 
-      this.showToastMessage(
-        err?.error?.message || 'Failed to cancel meeting.'
-      );
+      const errMsg = err?.error?.message || 'Failed to cancel meeting.';
+      this.toastr.error(errMsg, 'Cancellation Failed');
     }
   });
 }
@@ -1007,7 +1007,12 @@ confirmCancelMeeting(): void {
     return map[s] ?? map[0];
   }
 
-  constructor(private router: Router, private meetingService: MeetingService , private cdr: ChangeDetectorRef) {}
+  constructor(
+    private router: Router,
+    private meetingService: MeetingService,
+    private cdr: ChangeDetectorRef,
+    private toastr: ToastrService
+  ) {}
 
   ngOnInit(): void {
     this.fetchOrganizations();
@@ -2047,13 +2052,16 @@ confirmCancelMeeting(): void {
 
   // ============ Toast Notifications ============
 
-  showToastMessage(message: string): void {
-    this.toastMessage = message;
-    this.showToast = true;
-    clearTimeout(this.toastTimeout);
-    this.toastTimeout = setTimeout(() => {
-      this.hideToast();
-    }, 3000);
+  showToastMessage(message: string, title = 'Notice', type: 'success' | 'error' | 'warning' | 'info' = 'info'): void {
+    if (type === 'success') {
+      this.toastr.success(message, title || 'Success');
+    } else if (type === 'error') {
+      this.toastr.error(message, title || 'Error');
+    } else if (type === 'warning') {
+      this.toastr.warning(message, title || 'Warning');
+    } else {
+      this.toastr.info(message, title || 'Notice');
+    }
   }
 
   hideToast(): void {

@@ -92,6 +92,36 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
  // True after ngAfterViewInit has run — the canvas ViewChild is only
  // available from that point. ngOnChanges must not touch Chart.js before then.
  private viewInitialized: boolean = false;
+ private readonly fallbackPalette = ['#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56', '#9966FF', '#FF9F40'];
+
+
+private getBorderColorForUpdate(): string | string[] {
+  const colors = this.getSafeColors();
+  const isArea = this.isAreaChart();
+  const isLine = this.isLineChart();
+  const isRadar = this.isRadarChart();
+
+  if (isArea) {
+    const firstColor = colors[0] || '#4BC0C0';
+    if (firstColor.startsWith('rgba')) return firstColor.replace(/[\d\.]+\)$/g, '1)');
+    if (firstColor.startsWith('rgb')) return firstColor;
+    const hex = firstColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  if (isLine || isRadar) return 'rgb(75, 192, 192)';
+  return 'rgba(75, 192, 192, 0.0)';
+}
+
+private getSafeColors(): string[] {
+  return this.chartData.map((_, i) =>
+    (this.backgroundColors[i] && this.backgroundColors[i].trim())
+      ? this.backgroundColors[i]
+      : this.fallbackPalette[i % this.fallbackPalette.length]
+  );
+}
 
   ngOnChanges(changes: SimpleChanges): void {
     // Guard: `createChart()` touches `document` and Chart.js — never run on the server.
@@ -213,6 +243,8 @@ private filterTopData(): void {
     return;
   }
 
+
+  
   // Same chart type (for example, date/filter changed).
   // Do NOT simply assign the new values and call update once: depending on
   // Angular's change-detection timing the browser can paint the final state
@@ -229,6 +261,8 @@ private filterTopData(): void {
   if (this.myChart.data.datasets?.[0]) {
     this.myChart.data.datasets[0].data = targetData.map(() => 0) as any;
     this.myChart.data.datasets[0].label = this.hoverLabel;
+     this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any; 
+  this.myChart.data.datasets[0].borderColor = this.getBorderColorForUpdate() as any; 
   }
 
   this.myChart.update();
@@ -242,6 +276,7 @@ private filterTopData(): void {
     if (this.myChart.data.datasets?.[0]) {
       this.myChart.data.datasets[0].data = targetData as any;
       this.myChart.data.datasets[0].label = this.hoverLabel;
+       this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any;
     }
 
     this.myChart.update();
