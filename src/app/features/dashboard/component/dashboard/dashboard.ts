@@ -1,11 +1,19 @@
-import { Component, computed, OnInit, signal, WritableSignal, ChangeDetectorRef, inject } from '@angular/core';
+import {
+  Component,
+  computed,
+  OnInit,
+  signal,
+  WritableSignal,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DashboardService } from '../../service/dashboard-service';
 import { Data } from '../../models/dashboardModel';
-import { CustomDateSelector } from "../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
+import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
 
@@ -17,7 +25,7 @@ import { Utils } from '../../../../shared/utils/utils';
 })
 export class DashboardComponent implements OnInit {
   cardData = signal<Data | null>(null);
-private readonly authService = inject(AuthService);
+   readonly authService = inject(AuthService);
   // Animated (count-up) display values for the top stat cards — these start
   // at 0 and tween up to the real API value whenever cardData() updates.
   animatedTotalClients = signal(0);
@@ -36,14 +44,12 @@ private readonly authService = inject(AuthService);
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   feedbackDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0', line2: 'Total', line3: 'Feedback'
+    line1: '0',
+    line2: 'Total',
+    line3: 'Feedback',
   });
   isFeedbackLoading = signal(true);
   feedbackHasError = signal(false);
-
-
-
-
 
   // Connected chart — populated dynamically from API
   connectedDonutLabels = signal<string[]>([]);
@@ -52,15 +58,12 @@ private readonly authService = inject(AuthService);
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   connectedDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0', line2: 'Total', line3: 'Connected'
+    line1: '0',
+    line2: 'Total',
+    line3: 'Connected',
   });
   isConnectedLoading = signal(true);
   connectedHasError = signal(false);
-
-
-
-
-
 
   // Usages chart — populated dynamically from API
   usagesChartLabels = signal<string[]>([]);
@@ -73,7 +76,9 @@ private readonly authService = inject(AuthService);
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   usagesDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0', line2: 'Total', line3: 'Usages'
+    line1: '0',
+    line2: 'Total',
+    line3: 'Usages',
   });
   isUsagesLoading = signal(true);
   usagesHasError = signal(false);
@@ -86,8 +91,8 @@ private readonly authService = inject(AuthService);
   constructor(
     private router: Router,
     private dashboardService: DashboardService,
-    private cdr: ChangeDetectorRef
-  ) { }
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     const today = new Date();
@@ -156,7 +161,9 @@ private readonly authService = inject(AuthService);
 
   navigateToImplementation() {
     // this.router.navigate(['/implementation']);
-    this.router.navigate(['/implementation'], { queryParams: { ...this.dateQueryParams(), tab: 'in_progress' } });
+    this.router.navigate(['/implementation'], {
+      queryParams: { ...this.dateQueryParams(), tab: 'in_progress' },
+    });
   }
 
   navigateToTraining() {
@@ -172,15 +179,43 @@ private readonly authService = inject(AuthService);
   // ---------------------------------------------------------------------
 
   readonly healthSegments = [
-    { label: 'Excellent', range: '80-100', value: 120, pct: 47, colorClass: 'bg-emerald-500', colorHex: '#10b981' },
-    { label: 'Good', range: '60-79', value: 86, pct: 34, colorClass: 'bg-teal-500', colorHex: '#14b8a6' },
-    { label: 'Average', range: '40-59', value: 32, pct: 12, colorClass: 'bg-amber-400', colorHex: '#fbbf24' },
-    { label: 'Poor', range: '0-39', value: 18, pct: 6, colorClass: 'bg-rose-500', colorHex: '#f43f5e' },
+    {
+      label: 'Excellent',
+      range: '80-100',
+      value: 120,
+      pct: 47,
+      colorClass: 'bg-emerald-500',
+      colorHex: '#10b981',
+    },
+    {
+      label: 'Good',
+      range: '60-79',
+      value: 86,
+      pct: 34,
+      colorClass: 'bg-teal-500',
+      colorHex: '#14b8a6',
+    },
+    {
+      label: 'Average',
+      range: '40-59',
+      value: 32,
+      pct: 12,
+      colorClass: 'bg-amber-400',
+      colorHex: '#fbbf24',
+    },
+    {
+      label: 'Poor',
+      range: '0-39',
+      value: 18,
+      pct: 6,
+      colorClass: 'bg-rose-500',
+      colorHex: '#f43f5e',
+    },
   ];
 
   readonly healthDonutGradient = computed(() => {
     let acc = 0;
-    const stops = this.healthSegments.map(seg => {
+    const stops = this.healthSegments.map((seg) => {
       const start = acc;
       acc += seg.pct;
       return `${seg.colorHex} ${start}% ${acc}%`;
@@ -196,9 +231,9 @@ private readonly authService = inject(AuthService);
   // ---------------------------------------------------------------------
 
   // Donut chart — reuse the same healthSegments used for the custom widget above.
-  readonly healthDonutLabels: string[] = this.healthSegments.map(seg => seg.label);
-  readonly healthDonutData: number[] = this.healthSegments.map(seg => seg.value);
-  readonly healthDonutColors: string[] = this.healthSegments.map(seg => seg.colorHex);
+  readonly healthDonutLabels: string[] = this.healthSegments.map((seg) => seg.label);
+  readonly healthDonutData: number[] = this.healthSegments.map((seg) => seg.value);
+  readonly healthDonutColors: string[] = this.healthSegments.map((seg) => seg.colorHex);
   readonly healthDonutTotal: number = this.healthSegments.reduce((sum, seg) => sum + seg.value, 0);
   readonly healthDonutCenterText = {
     line1: String(this.healthDonutTotal),
@@ -225,26 +260,93 @@ private readonly authService = inject(AuthService);
   // Calendar Event Data — passed into <app-calendar [eventsByDay]="eventsByDay">
   readonly eventsByDay: Record<number, DayEvent[]> = {
     4: [
-      this.mkEvent('Team Sync', 'Internal', '09:00 AM - 09:30 AM', '09:00 AM', 540, 570, 'bg-blue-50 text-blue-700 border border-blue-200', 'border-blue-500', '🤝'),
+      this.mkEvent(
+        'Team Sync',
+        'Internal',
+        '09:00 AM - 09:30 AM',
+        '09:00 AM',
+        540,
+        570,
+        'bg-blue-50 text-blue-700 border border-blue-200',
+        'border-blue-500',
+        '🤝',
+      ),
     ],
     7: this.buildDay7Events(),
     12: [
-      this.mkEvent('Product Review', 'Internal', '11:00 AM - 12:00 PM', '11:00 AM', 660, 720, 'bg-blue-50 text-blue-700 border border-blue-200', 'border-blue-500', '📋'),
+      this.mkEvent(
+        'Product Review',
+        'Internal',
+        '11:00 AM - 12:00 PM',
+        '11:00 AM',
+        660,
+        720,
+        'bg-blue-50 text-blue-700 border border-blue-200',
+        'border-blue-500',
+        '📋',
+      ),
     ],
   };
 
   private mkEvent(
-    title: string, client: string, timeLabel: string, startTime: string,
-    startMinutes: number, endMinutes: number, chipClass: string, accentClass: string, icon: string
+    title: string,
+    client: string,
+    timeLabel: string,
+    startTime: string,
+    startMinutes: number,
+    endMinutes: number,
+    chipClass: string,
+    accentClass: string,
+    icon: string,
   ): DayEvent {
-    return { title, client, timeLabel, startTime, startMinutes, endMinutes, chipClass, accentClass, icon };
+    return {
+      title,
+      client,
+      timeLabel,
+      startTime,
+      startMinutes,
+      endMinutes,
+      chipClass,
+      accentClass,
+      icon,
+    };
   }
 
   private buildDay7Events(): DayEvent[] {
     const events: DayEvent[] = [
-      this.mkEvent('Admin Training', 'ABC Ind.', '10:00 AM - 11:30 AM', '10:00 AM', 600, 690, 'bg-indigo-50 text-indigo-700 border border-indigo-200', 'border-indigo-500', '🎓'),
-      this.mkEvent('Impl. Meeting', 'XYZ Ltd', '12:00 PM - 01:00 PM', '12:00 PM', 720, 780, 'bg-rose-50 text-rose-700 border border-rose-200', 'border-indigo-600', '🚀'),
-      this.mkEvent('Installation', 'PQR Sol.', '02:30 PM - 04:00 PM', '02:30 PM', 870, 960, 'bg-amber-50 text-amber-700 border border-amber-200', 'border-amber-500', '🛠️'),
+      this.mkEvent(
+        'Admin Training',
+        'ABC Ind.',
+        '10:00 AM - 11:30 AM',
+        '10:00 AM',
+        600,
+        690,
+        'bg-indigo-50 text-indigo-700 border border-indigo-200',
+        'border-indigo-500',
+        '🎓',
+      ),
+      this.mkEvent(
+        'Impl. Meeting',
+        'XYZ Ltd',
+        '12:00 PM - 01:00 PM',
+        '12:00 PM',
+        720,
+        780,
+        'bg-rose-50 text-rose-700 border border-rose-200',
+        'border-indigo-600',
+        '🚀',
+      ),
+      this.mkEvent(
+        'Installation',
+        'PQR Sol.',
+        '02:30 PM - 04:00 PM',
+        '02:30 PM',
+        870,
+        960,
+        'bg-amber-50 text-amber-700 border border-amber-200',
+        'border-amber-500',
+        '🛠️',
+      ),
     ];
 
     const templates = [
@@ -255,18 +357,31 @@ private readonly authService = inject(AuthService);
       { title: 'Client Onboarding', client: 'Acme Corp' },
     ];
 
-    let hour = 9, minute = 45;
+    let hour = 9,
+      minute = 45;
     for (let i = 0; i < 101; i++) {
       const t = templates[i % templates.length];
       const num = i + 4;
       const startMinutes = hour * 60 + minute;
       const label = this.formatClock(hour, minute);
       events.push(
-        this.mkEvent(`${t.title} #${num}`, t.client, label, label, startMinutes, startMinutes + 30,
-          'bg-indigo-50 text-indigo-700 border border-indigo-200', 'border-indigo-500', '📅')
+        this.mkEvent(
+          `${t.title} #${num}`,
+          t.client,
+          label,
+          label,
+          startMinutes,
+          startMinutes + 30,
+          'bg-indigo-50 text-indigo-700 border border-indigo-200',
+          'border-indigo-500',
+          '📅',
+        ),
       );
       minute += 15;
-      if (minute >= 60) { minute -= 60; hour += 1; }
+      if (minute >= 60) {
+        minute -= 60;
+        hour += 1;
+      }
       if (hour >= 24) hour = 0;
     }
     return events;
@@ -284,9 +399,8 @@ private readonly authService = inject(AuthService);
     this.appliedTo.set(to);
     console.log(from, to);
 
-
-let orgId=Utils.encode5t(this.authService.getOrgId().toString());
-    this.dashboardService.getDashboardCards(from, to,orgId).subscribe({
+    let orgId = Utils.encode5t(this.authService.getOrgId().toString());
+    this.dashboardService.getDashboardCards(from, to, orgId).subscribe({
       next: (res) => {
         if (res && res.data) {
           this.cardData.set(res.data);
@@ -303,16 +417,16 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
       },
       error: (err) => {
         console.error('Error fetching dashboard cards:', err);
-      }
+      },
     });
     this.isFeedbackLoading.set(true);
     this.feedbackHasError.set(false);
-    this.dashboardService.fetchDashBoardFeedbackChart(from, to,orgId).subscribe({
+    this.dashboardService.fetchDashBoardFeedbackChart(from, to, orgId).subscribe({
       next: (res) => {
         this.isFeedbackLoading.set(false);
         if (res && res.data && res.data.length) {
-          const labels = res.data.map(item => item.label);
-          const values = res.data.map(item => item.value);
+          const labels = res.data.map((item) => item.label);
+          const values = res.data.map((item) => item.value);
           const total = values.reduce((sum, v) => sum + v, 0);
           const colors = this.generateColors(res.data.length);
 
@@ -320,7 +434,8 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
           this.feedbackDonutData.set(values);
           this.feedbackDonutColors.set(colors);
 
-          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          const primaryTotal =
+            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.feedbackDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
@@ -343,17 +458,17 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
         this.isFeedbackLoading.set(false);
         this.feedbackHasError.set(true);
         this.cdr.markForCheck();
-      }
+      },
     });
 
     this.isConnectedLoading.set(true);
     this.connectedHasError.set(false);
-    this.dashboardService.fetchDashBoardConnectChart(from, to,orgId).subscribe({
+    this.dashboardService.fetchDashBoardConnectChart(from, to, orgId).subscribe({
       next: (res) => {
         this.isConnectedLoading.set(false);
         if (res && res.data && res.data.length) {
-          const labels = res.data.map(item => item.label);
-          const values = res.data.map(item => item.value);
+          const labels = res.data.map((item) => item.label);
+          const values = res.data.map((item) => item.value);
           const total = values.reduce((sum, v) => sum + v, 0);
           const colors = this.generateColors(res.data.length);
 
@@ -361,7 +476,8 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
           this.connectedDonutData.set(values);
           this.connectedDonutColors.set(colors);
 
-          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          const primaryTotal =
+            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.connectedDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
@@ -384,25 +500,21 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
         this.isConnectedLoading.set(false);
         this.connectedHasError.set(true);
         this.cdr.markForCheck();
-      }
+      },
     });
 
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
-    this.dashboardService.fetchDashBoardUsageChart(from, to,orgId).subscribe({
+    this.dashboardService.fetchDashBoardUsageChart(from, to, orgId).subscribe({
       next: (res: any) => {
         this.isUsagesLoading.set(false);
         if (res && res.modules) {
           const modulesObj = res.modules;
           const moduleKeys = Object.keys(modulesObj);
-          const labels = moduleKeys.map(key => key.charAt(0).toUpperCase() + key.slice(1));
-          const groupedData = moduleKeys.map(key => {
+          const labels = moduleKeys.map((key) => key.charAt(0).toUpperCase() + key.slice(1));
+          const groupedData = moduleKeys.map((key) => {
             const mod = modulesObj[key];
-            return [
-              mod.activelyUsages || 0,
-              mod.lowuUsages || 0,
-              mod.nonUsages || 0
-            ];
+            return [mod.activelyUsages || 0, mod.lowuUsages || 0, mod.nonUsages || 0];
           });
 
           this.usagesChartLabels.set(labels);
@@ -418,7 +530,8 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
           this.usagesDonutData.set(values);
           this.usagesDonutColors.set(colors);
 
-          const primaryTotal = (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+          const primaryTotal =
+            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
           this.usagesDonutCenterText.set({
             line1: String(primaryTotal),
             line2: 'Total',
@@ -443,18 +556,15 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
         this.isUsagesLoading.set(false);
         this.usagesHasError.set(true);
         this.cdr.markForCheck();
-      }
+      },
     });
-
   }
-
 
   private dateQueryParams() {
     return this.appliedFrom() && this.appliedTo()
       ? { from: this.appliedFrom(), to: this.appliedTo() }
       : {};
   }
-
 
   /** Returns a palette of hex colors for `count` slices. */
   private generateColors(count: number): string[] {
@@ -473,4 +583,3 @@ let orgId=Utils.encode5t(this.authService.getOrgId().toString());
     return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
   }
 }
-
