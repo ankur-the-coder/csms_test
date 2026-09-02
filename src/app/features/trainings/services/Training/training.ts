@@ -73,7 +73,7 @@ getCourses(categoryId?: number): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/courses/admin/${id}/delete`, {});
   }
 
-  getCourseDetails(courseId: number, userId: number): Observable<any> {
+  getCourseDetails(courseId: number, userId: string): Observable<any> {
     return this.http.get<any>(`${this.API_URL}/courses/learner/${courseId}?user_id=${userId}`);
   }
 
