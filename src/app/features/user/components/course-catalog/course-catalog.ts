@@ -3,12 +3,12 @@ import { CircularProgress } from '../circular-progress/circular-progress';
 import { CommonModule } from '@angular/common';
 import { LearnerCourseService } from '../../services/learner-course.service';
 import { CatalogCourse } from '../../models/course.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
 @Pipe({ name: 'filterByStatus', standalone: true })
 export class FilterByStatusPipe implements PipeTransform {
-  transform(courses: CatalogCourse[], status: string): number {
+  transform(courses: CatalogCourse[], status: number): number {
     return courses.filter((c) => c.enrollment_status === status).length;
   }
 }
@@ -25,13 +25,21 @@ export class CourseCatalog implements OnInit {
   loading = true;
   error = '';
 
+  private userId = '';
+  private orgId = '';
+
   constructor(
     private learnerCourseService: LearnerCourseService,
     private router: Router,
-    private cdr: ChangeDetectorRef   // ← needed because withFetch() runs outside Angular zone
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    // Read user_id and org_id from query params
+    const qp = this.route.snapshot.queryParams;
+    this.userId = qp['user_id'] ?? '';
+    this.orgId = qp['org_id'] ?? '';
     this.fetchCatalog();
   }
 
@@ -40,11 +48,11 @@ export class CourseCatalog implements OnInit {
     this.error = '';
 
     this.learnerCourseService
-      .getCatalog()
+      .getCatalog(this.userId, this.orgId)
       .pipe(
         finalize(() => {
           this.loading = false;
-          this.cdr.markForCheck(); // force Angular to re-render
+          this.cdr.markForCheck();
         })
       )
       .subscribe({
@@ -67,19 +75,21 @@ export class CourseCatalog implements OnInit {
       });
   }
 
-  statusLabel(status: string): string {
-    if (status === 'completed') return 'Completed';
-    if (status === 'in_progress') return 'In progress';
+  statusLabel(status: number): string {
+    if (status === 1) return 'Completed';
+    if (status === 2) return 'In progress';
     return 'Not started';
   }
 
-  statusClass(status: string): string {
-    if (status === 'completed')   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    if (status === 'in_progress') return 'bg-amber-50 text-amber-700 border border-amber-200';
+  statusClass(status: number): string {
+    if (status === 1)   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    if (status === 2) return 'bg-amber-50 text-amber-700 border border-amber-200';
     return 'bg-slate-100 text-slate-500 border border-slate-200';
   }
 
   openCourse(course: CatalogCourse): void {
-    this.router.navigate(['/courses', course.id]);
+    this.router.navigate(['/user/courses', course.id], {
+      queryParams: { user_id: this.userId, org_id: this.orgId },
+    });
   }
 }

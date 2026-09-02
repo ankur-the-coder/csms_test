@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CircularProgress } from '../circular-progress/circular-progress';
 import { MyLearningCourse, MyLearningSummary } from '../../models/course.model';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LearnerCourseService } from '../../services/learner-course.service';
 import { finalize } from 'rxjs';
 
@@ -18,13 +18,20 @@ export class MyLearning implements OnInit {
   loading = true;
   error = '';
 
+  private userId = '';
+  private orgId = '';
+
   constructor(
     private learnerCourseService: LearnerCourseService,
     private router: Router,
-    private cdr: ChangeDetectorRef  // ← needed because withFetch() runs outside Angular zone
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    const qp = this.route.snapshot.queryParams;
+    this.userId = qp['user_id'] ?? '';
+    this.orgId = qp['org_id'] ?? '';
     this.fetchMyLearning();
   }
 
@@ -33,7 +40,7 @@ export class MyLearning implements OnInit {
     this.error = '';
 
     this.learnerCourseService
-      .getMyLearning()
+      .getMyLearning(this.userId, this.orgId)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -57,25 +64,27 @@ export class MyLearning implements OnInit {
       });
   }
 
-  statusLabel(status: string): string {
-    if (status === 'completed') return 'Completed';
-    if (status === 'in_progress') return 'In progress';
+ statusLabel(status: number): string {
+   if (status === 1) return 'Completed';      // 1 = completed
+   if (status === 2) return 'In progress';     // 2 = in_progress
     return 'Not started';
   }
 
-  statusClass(status: string): string {
-    if (status === 'completed')   return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    if (status === 'in_progress') return 'bg-amber-50 text-amber-700 border border-amber-200';
+  statusClass(status: number): string {
+    if (status === 1) return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    if (status === 2) return 'bg-amber-50 text-amber-700 border border-amber-200';
     return 'bg-slate-100 text-slate-500 border border-slate-200';
   }
 
-  actionLabel(status: string): string {
-    if (status === 'completed') return 'Review';
-    if (status === 'in_progress') return 'Continue';
+ actionLabel(status: number): string {
+    if (status === 1) return 'Review';
+    if (status === 2) return 'Continue';
     return 'Start';
   }
 
   goToCourse(course: MyLearningCourse): void {
-    this.router.navigate(['/courses', course.id]);
+    this.router.navigate(['/user/courses', course.id], {
+      queryParams: { user_id: this.userId, org_id: this.orgId },
+    });
   }
 }

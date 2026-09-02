@@ -19,6 +19,7 @@ import { DashboardComponent } from './features/dashboard/component/dashboard/das
 import { CourseCatalog } from './features/user/components/course-catalog/course-catalog';
 import { CourseDetail } from './features/user/components/course-detail/course-detail';
 import { MyLearning } from './features/user/components/my-learning/my-learning';
+import { UserShell } from './features/user/user-shell/user-shell';
 import { authGuard, checkGuard } from './core/guards/auth-guard';
 import { VoiceAnalyticsDashboard } from './features/voice/pages/dashboard/voice-dashboard';
 import { Feedback } from './features/dashboard/component/feedback/feedback';
@@ -32,7 +33,16 @@ export const routes: Routes = [
     path: 'login', component: Login,
     canActivate: [checkGuard]
   },
-
+  // User-facing learning pages — no login required, wrapped in UserShell with its own sidebar
+  {
+    path: 'user/courses',
+    component: UserShell,
+    children: [
+      { path: '', component: CourseCatalog },
+      { path: 'my-learning', component: MyLearning },
+      { path: ':id', component: CourseDetail },
+    ],
+  },
   // Every other route is a child of Layout, so it renders inside the
   // sidebar + navbar shell (Layout owns its own nested <router-outlet>).
   {
@@ -41,18 +51,24 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'voice', pathMatch: 'full' },
-      // { path: 'dashboard', component: DashboardComponent },
-      // { path: 'implementation', component: Implementation },
-      // { path: 'training', component: TrainingMaterials },
+
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'implementation', component: Implementation },
+      { path: 'training', component: Training },
+
+
+
       // { path: 'onboarding', component: Dashboard },
+
       // { path: 'add-onboarding', component: AddOnboarding },
 
-      // { path: 'meetings', component: MeetingsComponent },
-      // { path: 'client', component: Client },
 
-      // { path: 'feedback', component: Feedback },
-      // { path: 'connected', component: Connected },
-      // { path: 'usages', component: Usages },
+      { path: 'meetings', component: MeetingsComponent },
+      { path: 'client', component: Client },
+
+      { path: 'feedback', component: Feedback },
+      { path: 'connected', component: Connected },
+      { path: 'usages', component: Usages },
       {
         path: 'voice',
         component: VoiceShell,
@@ -69,9 +85,7 @@ export const routes: Routes = [
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },
-      { path: 'courses', component: CourseCatalog },
-      { path: 'courses/:id', component: CourseDetail },
-      { path: 'my-learning', component: MyLearning },
+      
     ],
   },
 

@@ -3,6 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError, shareReplay } from 'rxjs/operators';
 
+export interface BookedMeeting {
+  id: number;
+  title: string;
+  startTime: string;   // ISO  e.g. "2026-08-29T06:30:00.000Z"
+  endTime: string;     // ISO  e.g. "2026-08-29T07:30:00.000Z"
+}
+
 export interface Organization {
   orgId: number;
   name: string;
@@ -203,5 +210,17 @@ export class ScheduleMeetingService {
   );
 
 }
+
+  /**
+   * Fetches booked meetings for a given employee on a specific date.
+   * Used to detect time-slot conflicts before scheduling a new meeting.
+   */
+  getBookedTimes(empId: number | string, date: string): Observable<BookedMeeting[]> {
+    return this.http
+      .post<BookedMeeting[]>(`${this.baseUrl}/meetings/booked-times`, { empId: Number(empId), date })
+      .pipe(
+        catchError(() => of([]))
+      );
+  }
 
 }

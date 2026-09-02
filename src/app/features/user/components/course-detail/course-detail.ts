@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { CircularProgress } from '../circular-progress/circular-progress';
 import { CommonModule } from '@angular/common';
 import { SafeResourceUrl, DomSanitizer } from '@angular/platform-browser';
@@ -17,7 +18,7 @@ import { MultiFileInput } from '../../../../shared/components/inputs/multi-file-
   templateUrl: './course-detail.html',
   styleUrl: './course-detail.css',
 })
-export class CourseDetail implements OnInit {
+export class CourseDetail implements OnInit, OnDestroy {
   course: CourseDetailModel | null = null;
   activeModule: CourseModuleDetail | null = null;
   safeVideoUrl: SafeResourceUrl | null = null;
@@ -29,8 +30,11 @@ export class CourseDetail implements OnInit {
   loading = true;
   error = '';
   isLastModuleFlag = false;
+
+  private userId = '';
+  private orgId = '';
+  private subscriptions = new Subscription();
   allPdfUrls: string[] = [];
-  firstModulePdfUrls: string[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -42,16 +46,29 @@ export class CourseDetail implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const courseId = this.route.snapshot.paramMap.get('id');
-    if (!courseId) {
-      this.error = 'No course ID found in URL.';
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
-    }
-    if (isPlatformBrowser(this.platformId)) {
-      this.fetchCourse(courseId);
-    }
+    // Subscribe to query params to reactively capture user_id and org_id
+    this.subscriptions.add(
+      this.route.queryParams.subscribe((qp) => {
+        this.userId = qp['user_id'] ?? '';
+        this.orgId = qp['org_id'] ?? '';
+      })
+    );
+
+    // Subscribe to paramMap to reactively get course ID changes
+    this.subscriptions.add(
+      this.route.paramMap.subscribe((params) => {
+        const courseId = params.get('id');
+        if (!courseId) {
+          this.error = 'No course ID found in URL.';
+          this.loading = false;
+          this.cdr.markForCheck();
+          return;
+        }
+        if (isPlatformBrowser(this.platformId)) {
+          this.fetchCourse(courseId);
+        }
+      })
+    );
   }
 
   fetchCourse(courseId: string): void {
@@ -59,7 +76,7 @@ export class CourseDetail implements OnInit {
     this.error = '';
 
     this.learnerCourseService
-      .getCourseDetail(courseId)
+      .getCourseDetail(courseId, this.userId, this.orgId)
       .pipe(
         finalize(() => {
           this.loading = false;
@@ -132,7 +149,7 @@ private toEmbedUrl(url: string): string | null {
     this.recalcProgress();
     this.cdr.markForCheck();
 
-    this.learnerCourseService.markModuleComplete(module.id).subscribe({
+    this.learnerCourseService.markModuleComplete(module.id, this.userId, this.orgId).subscribe({
       next: (res) => {
         if (this.course?.enrollment) {
           this.course.enrollment.progress_percent = res.percent;
@@ -158,7 +175,9 @@ private toEmbedUrl(url: string): string | null {
   }
 
   backToCatalog(): void {
-    this.router.navigate(['/courses']);
+    this.router.navigate(['/user/courses'], {
+      queryParams: { user_id: this.userId, org_id: this.orgId },
+    });
   }
 
   get progressPercent(): number {
@@ -191,7 +210,9 @@ private toEmbedUrl(url: string): string | null {
   }
 
   finishCourse(): void {
-    this.router.navigate(['/courses']);
+    this.router.navigate(['/user/courses'], {
+      queryParams: { user_id: this.userId, org_id: this.orgId },
+    });
   }
 
   // ── Materials / full-screen PDF viewer ──────────────────────────────
@@ -240,11 +261,6 @@ private toEmbedUrl(url: string): string | null {
     a.click();
   }
 
-  /** Returns the first PDF material from the active module (used as fallback when no video) */
-  get firstModulePdf(): { title: string; file_url?: string; file_path?: string } | null {
-    if (!this.activeModule?.materials?.length) return null;
-    return this.activeModule.materials.find(m => this.isPdf(m)) ?? null;
-  }
 get completedModulesCount(): number {
   if (!this.course?.modules) return 0;
   return this.course.modules.filter((m) => m.is_completed).length;
@@ -266,10 +282,6 @@ get completedModulesCount(): number {
       });
     }
     this.allPdfUrls = urls;
-
-    // Pre-compute the first PDF URL for the video fallback area
-    const firstPdf = this.firstModulePdf;
-    this.firstModulePdfUrls = firstPdf ? [this.getFullUrl(firstPdf)] : [];
   }
 
   closePdfViewer(): void {
@@ -279,8 +291,15 @@ get completedModulesCount(): number {
   }
  
 exitCourse(): void {
-  this.router.navigate(['/courses']);
+  this.router.navigate(['/user/courses'], {
+    queryParams: { user_id: this.userId, org_id: this.orgId },
+  });
 }
+
+ngOnDestroy(): void {
+  this.subscriptions.unsubscribe();
+}
+
 get isCourseCompleted(): boolean {
   return this.progressPercent === 100;
 }

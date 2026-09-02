@@ -34,7 +34,7 @@ interface Course {
   title: string;
   slug: string;
   description: string;
-   category_id?: number;
+  category_id?: number;
 }
 
 interface CourseCategory {
@@ -66,8 +66,8 @@ export class TrainingMaterials implements OnInit {
   courseMaterials = signal<Material[]>([]); // Course level materials
 
   // Category context (from query params)
-categoryId = signal<number | null>(null);
-selectedCategory = signal<{ id: number; name: string; slug: string; course_count: number } | null>(null);
+  categoryId = signal<number | null>(null);
+  selectedCategory = signal<{ id: number; name: string; slug: string; course_count: number } | null>(null);
 
   // API Request States
   loading = signal<boolean>(false);
@@ -98,6 +98,30 @@ selectedCategory = signal<{ id: number; name: string; slug: string; course_count
   private deleteTargetType: 'module' | 'material' | 'course' | null = null;
   private deleteTargetId: string | null = null;
 
+  // ── Media Preview Modal ──────────────────────────────────────────────
+  mediaModal = signal<{
+    type: 'video' | 'pdf';
+    url: SafeResourceUrl;
+    title: string;
+  } | null>(null);
+
+  openMediaModal(type: 'video' | 'pdf', rawUrl: string, title: string): void {
+    let safeUrl: SafeResourceUrl;
+    if (type === 'video') {
+      const videoId = this.extractYoutubeId(rawUrl);
+      safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+        `https://www.youtube.com/embed/${videoId}?autoplay=1`
+      );
+    } else {
+      safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
+    }
+    this.mediaModal.set({ type, url: safeUrl, title });
+  }
+
+  closeMediaModal(): void {
+    this.mediaModal.set(null);
+  }
+
   // Modal / Form States
   isUploadModalOpen = false;
   isAddModuleModalOpen = false;
@@ -123,79 +147,79 @@ selectedCategory = signal<{ id: number; name: string; slug: string; course_count
 
   isDragOver = false;
 
-ngOnInit(): void {
-  this.route.queryParamMap.subscribe(params => {
-    const catId = params.get('categoryId');
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const catId = params.get('categoryId');
 
-    if (catId) {
-      this.categoryId.set(Number(catId));
-      this.loadCategoryDetails(Number(catId));
-    } else {
-      this.categoryId.set(null);
-      this.loadCourses();
-    }
-  });
-}
-
-loadCategoryDetails(id: number): void {
-  this.loading.set(true);
-  this.error.set(null);
-
-  this.trainingService.getCategoryById(id).subscribe({
-    next: (res: any) => {
-      if (res.status && res.data) {
-        this.selectedCategory.set(res.data);
-      }
-      // Category details mil gayi, ab usi category ke courses load karo
-      this.loadCourses();
-    },
-
-    error: (err: any) => {
-      this.loading.set(false);
-      this.error.set('Unable to load category details.');
-      console.error('Failed to load category', err);
-    }
-  });
-}
-
-loadCourses(): void {
-  this.loading.set(true);
-  this.error.set(null);
-
-  const catId = this.categoryId() ?? undefined;
-
-  this.trainingService.getCourses(catId).subscribe({
-    next: (res) => {
-      this.loading.set(false);
-
-      if (res.status && res.data?.length > 0) {
-
-        const sorted = [...res.data].sort(
-          (a: Course, b: Course) => a.id - b.id
-        );
-
-        this.courses.set(sorted);
-        this.selectedCourseId.set(null);
-        this.courseModules.set([]);
-        this.courseMaterials.set([]);
-
+      if (catId) {
+        this.categoryId.set(Number(catId));
+        this.loadCategoryDetails(Number(catId));
       } else {
-        this.courses.set([]);
-        this.selectedCourseId.set(null);
-        this.courseModules.set([]);
-        this.courseMaterials.set([]);
+        this.categoryId.set(null);
+        this.loadCourses();
       }
-    },
+    });
+  }
 
-    error: (err) => {
-      this.loading.set(false);
-      this.error.set(
-        'Unable to load courses. The backend service or API may be temporarily unavailable.'
-      );
-      console.error('Failed to load courses', err);
-    }
-  });
-}
+  loadCategoryDetails(id: number): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.trainingService.getCategoryById(id).subscribe({
+      next: (res: any) => {
+        if (res.status && res.data) {
+          this.selectedCategory.set(res.data);
+        }
+
+        this.loadCourses();
+      },
+
+      error: (err: any) => {
+        this.loading.set(false);
+        this.error.set('Unable to load category details.');
+        console.error('Failed to load category', err);
+      }
+    });
+  }
+
+  loadCourses(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    const catId = this.categoryId() ?? undefined;
+
+    this.trainingService.getCourses(catId).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+
+        if (res.status && res.data?.length > 0) {
+
+          const sorted = [...res.data].sort(
+            (a: Course, b: Course) => a.id - b.id
+          );
+
+          this.courses.set(sorted);
+          this.selectedCourseId.set(null);
+          this.courseModules.set([]);
+          this.courseMaterials.set([]);
+
+        } else {
+          this.courses.set([]);
+          this.selectedCourseId.set(null);
+          this.courseModules.set([]);
+          this.courseMaterials.set([]);
+        }
+      },
+
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(
+          'Unable to load courses. The backend service or API may be temporarily unavailable.'
+        );
+        console.error('Failed to load courses', err);
+      }
+    });
+  }
 
   selectCourse(courseId: number | null): void {
     this.selectedCourseId.set(courseId);
@@ -297,16 +321,20 @@ loadCourses(): void {
               ? [...(res.data.materials || []), ...rawModuleMaterials]
               : rawModuleMaterials;
 
-            const materialsList = combinedMaterials.map((mat: any) => ({
-              id: mat.id.toString(),
-              name: mat.title,
-              size: mat.file_size ? `${(mat.file_size / (1024 * 1024)).toFixed(1)} MB` : 'Unknown Size',
-              date: mat.created_at ? mat.created_at.split('T')[0] : '',
-              type: mat.material_type.toUpperCase(),
-              module_id: m.id.toString(),
-              file_path: mat.file_path,
-              safeUrl: mat.material_type.toLowerCase() === 'pdf' ? this.sanitizer.bypassSecurityTrustResourceUrl(mat.file_path) : undefined
-            }));
+            const materialsList = combinedMaterials.map((mat: any) => {
+              const ext = (mat.file_path || '').split('.').pop()?.toLowerCase() || '';
+              const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
+              return {
+                id: mat.id.toString(),
+                name: mat.title,
+                size: 'Unknown Size',
+                date: mat.created_at ? mat.created_at.split('T')[0] : '',
+                type: matType,
+                module_id: m.id.toString(),
+                file_path: mat.file_path,
+                safeUrl: matType === 'PDF' ? this.sanitizer.bypassSecurityTrustResourceUrl(mat.file_path) : undefined
+              };
+            });
 
             // Find first PDF material to preview in the card
             const pdfMat = materialsList.find((mat: any) => mat.type === 'PDF');
@@ -324,15 +352,19 @@ loadCourses(): void {
           this.courseModules.set(mods);
 
           // Course-level materials (not bound to modules)
-          const mats = (res.data.materials || []).map((mat: any) => ({
-            id: mat.id.toString(),
-            name: mat.title,
-            size: mat.file_size ? `${(mat.file_size / (1024 * 1024)).toFixed(1)} MB` : 'Unknown Size',
-            date: mat.created_at ? mat.created_at.split('T')[0] : '',
-            type: mat.material_type.toUpperCase(),
-            module_id: null,
-            file_path: mat.file_path
-          }));
+          const mats = (res.data.materials || []).map((mat: any) => {
+            const ext = (mat.file_path || '').split('.').pop()?.toLowerCase() || '';
+            const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
+            return {
+              id: mat.id.toString(),
+              name: mat.title,
+              size: 'Unknown Size',
+              date: mat.created_at ? mat.created_at.split('T')[0] : '',
+              type: matType,
+              module_id: null,
+              file_path: mat.file_path
+            };
+          });
           this.courseMaterials.set(mats);
         }
       },
@@ -660,8 +692,8 @@ loadCourses(): void {
   }
 
   goBack(): void {
-  this.location.back();
-}
+    this.location.back();
+  }
 
 
 }
