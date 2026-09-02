@@ -10,6 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TrainingService } from '../../services/Training/training';
+import { ToastrService } from 'ngx-toastr';
 
 export interface CategoryRecord {
   id: string;
@@ -30,6 +31,7 @@ export class Training implements OnInit {
 
   private readonly router = inject(Router);
   private readonly trainingService = inject(TrainingService);
+  private readonly toastr = inject(ToastrService);
 
   ngOnInit(): void {
     this.loadCategories();
@@ -129,9 +131,19 @@ export class Training implements OnInit {
         this.isSaving.set(false);
 
         if (res.status) {
+          if (editId) {
+            this.toastr.success('Category updated successfully');
+          } else {
+            this.toastr.success('Category created successfully');
+          }
           this.closeCategoryModal();
           this.loadCategories();
         } else {
+          if (editId) {
+            this.toastr.error('Failed to update category');
+          } else {
+            this.toastr.error('Failed to create category');
+          }
           this.categoryError.set(res.msg || 'Something went wrong. Please try again.');
         }
 
@@ -139,6 +151,11 @@ export class Training implements OnInit {
 
       error: (err: any) => {
         this.isSaving.set(false);
+        if (editId) {
+          this.toastr.error('Failed to update category');
+        } else {
+          this.toastr.error('Failed to create category');
+        }
         this.categoryError.set('Failed to save category. Please try again.');
         console.error('Failed to save category:', err);
       }
@@ -171,15 +188,22 @@ export class Training implements OnInit {
       next: (res: any) => {
         this.isDeleting.set(false);
         if (res.status) {
+          this.toastr.success('Category deleted successfully');
           this.cancelDelete();
           this.loadCategories();
         } else {
+          if (category.course_count && category.course_count > 0) {
+            this.toastr.error('Cannot delete category — it contains courses');
+          } else {
+            this.toastr.error(res.msg || 'Failed to delete category');
+          }
           console.error('Failed to delete category:', res.msg);
           this.cancelDelete();
         }
       },
       error: (err: any) => {
         this.isDeleting.set(false);
+        this.toastr.error('Failed to delete category');
         console.error('Failed to delete category:', err);
         this.cancelDelete();
       }
