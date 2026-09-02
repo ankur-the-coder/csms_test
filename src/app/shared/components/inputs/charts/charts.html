@@ -34,7 +34,7 @@
         </button>
 
         @if(isDropdownOpen){
-          <div class="absolute top-full left-0 z-50 mt-1 min-w-[165px] rounded-xl bg-white text-slate-800 border border-slate-200 shadow-xl py-1.5 overflow-hidden">
+          <div class="absolute top-full left-0 z-50 mt-1 min-w-41.25 rounded-xl bg-white text-slate-800 border border-slate-200 shadow-xl py-1.5 overflow-hidden">
             @for (type of getFilteredChartTypes(); track type.value) {
               <button
                 type="button"
@@ -204,7 +204,7 @@
     </div>
   </div>
    
-  <div #chartContainer class="relative w-full h-[280px] min-h-[280px] z-0" (click)="viewFullScreen()">
+  <div #chartContainer class="relative w-full h-70 min-h-70 z-0" (click)="viewFullScreen()">
     <canvas #chartCanvas class="block w-full h-full rounded-md" [id]="chartId"></canvas>
   </div>
 <hr class="my-3 border-slate-200" *ngIf="leaveChart">
