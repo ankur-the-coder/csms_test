@@ -7,7 +7,6 @@ import {
 } from '../models/course.model';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
-import { AuthService } from '../../../core/services/auth-service';
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 const SERVER_BASE = 'http://127.0.0.1:5000';
@@ -22,66 +21,70 @@ interface ApiResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class LearnerCourseService {
-  constructor(private http: HttpClient, private auth: AuthService) {}
+  constructor(private http: HttpClient) {}
 
-  // ── GET /courses/learner/catalog?user_id=X ───────────────────────────────
-  getCatalog(): Observable<CatalogResponse> {
+  // ── GET /courses/learner/catalog?user_id=X&org_id=Y ──────────────────────
+  getCatalog(userId: string, orgId: string): Observable<CatalogResponse> {
     return this.http
       .get<ApiResponse<CatalogResponse>>(`${LEARNER_BASE}/catalog`, {
-        params: { user_id: this.auth.getEmpId() },
+        params: { user_id: userId, org_id: orgId },
       })
       .pipe(map((res) => res.data));
   }
 
-  // ── GET /courses/learner/my-learning?user_id=X ──────────────────────────
-  getMyLearning(): Observable<MyLearningResponse> {
+  // ── GET /courses/learner/my-learning?user_id=X&org_id=Y ──────────────────
+  getMyLearning(userId: string, orgId: string): Observable<MyLearningResponse> {
     return this.http
       .get<ApiResponse<MyLearningResponse>>(`${LEARNER_BASE}/my-learning`, {
-        params: { user_id: this.auth.getEmpId() },
+        params: { user_id: userId, org_id: orgId },
       })
       .pipe(map((res) => res.data));
   }
 
-  // ── GET /courses/learner/:id?user_id=X ──────────────────────────────────
-  getCourseDetail(courseId: number | string): Observable<CourseDetail> {
+  // ── GET /courses/learner/:id?user_id=X&org_id=Y ─────────────────────────
+  getCourseDetail(courseId: number | string, userId: string, orgId: string): Observable<CourseDetail> {
     return this.http
       .get<ApiResponse<CourseDetail>>(`${LEARNER_BASE}/${courseId}`, {
-        params: { user_id: this.auth.getEmpId() },
+        params: { user_id: userId, org_id: orgId },
       })
       .pipe(map((res) => res.data));
   }
 
-  // ── POST /courses/learner/:id/enroll  { user_id } ───────────────────────
-  enroll(courseId: number | string): Observable<EnrollmentRecord> {
+  // ── POST /courses/learner/:id/enroll  { user_id, org_id } ────────────────
+  enroll(courseId: number | string, userId: string, orgId: string): Observable<EnrollmentRecord> {
     return this.http
       .post<ApiResponse<EnrollmentRecord>>(
         `${LEARNER_BASE}/${courseId}/enroll`,
-        { user_id: this.auth.getEmpId() }
+        { user_id: userId, org_id: orgId }
       )
       .pipe(map((res) => res.data));
   }
 
-  // ── POST /courses/learner/modules/:id/complete  { user_id } ─────────────
+  // ── POST /courses/learner/modules/:id/complete  { user_id, org_id } ──────
   markModuleComplete(
-    moduleId: number
+    moduleId: number,
+    userId: string,
+    orgId: string
   ): Observable<{ percent: number; status: string; module_id: number; course_id: number }> {
     return this.http
       .post<ApiResponse<{ percent: number; status: string; module_id: number; course_id: number }>>(
         `${LEARNER_BASE}/modules/${moduleId}/complete`,
-        { user_id: this.auth.getEmpId() }
+        { user_id: userId, org_id: orgId }
       )
       .pipe(map((res) => res.data));
   }
 
-  // ── POST /courses/learner/modules/:id/progress  { user_id, watched_percent } ─
+  // ── POST /courses/learner/modules/:id/progress  { user_id, org_id, watched_percent } ─
   updateWatchedPercent(
     moduleId: number,
-    watchedPercent: number
+    watchedPercent: number,
+    userId: string,
+    orgId: string
   ): Observable<{ percent: number; status: string }> {
     return this.http
       .post<ApiResponse<{ percent: number; status: string }>>(
         `${LEARNER_BASE}/modules/${moduleId}/progress`,
-        { user_id: this.auth.getEmpId(), watched_percent: watchedPercent }
+        { user_id: userId, org_id: orgId, watched_percent: watchedPercent }
       )
       .pipe(map((res) => res.data));
   }
