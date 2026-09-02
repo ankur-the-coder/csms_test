@@ -115,7 +115,6 @@ export class ScheduleMeeting implements OnInit {
   ngOnInit(): void {
     this.loadAllData();
     this.loadHostDetails();
-    this.toastr.success("data loaded successfully","done");
   }
 
   private loadAllData(): void {
