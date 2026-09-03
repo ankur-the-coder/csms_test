@@ -7,6 +7,7 @@ import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { ToastrService } from 'ngx-toastr';
 
 interface Material {
   id: string;
@@ -56,6 +57,7 @@ export class TrainingMaterials implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly location = inject(Location);
   private readonly route = inject(ActivatedRoute);
+  private readonly toastr = inject(ToastrService);
 
   // Dynamic lists from backend
   courses = signal<Course[]>([]);
@@ -263,13 +265,17 @@ export class TrainingMaterials implements OnInit {
         next: (res) => {
           this.isDeleting.set(false);
           if (res.status) {
+            this.toastr.success('Session deleted successfully.', 'Deleted');
             const courseId = this.selectedCourseId();
             if (courseId) this.loadCourseDetails(courseId);
+          } else {
+            this.toastr.error(res.msg || 'Failed to delete session.', 'Error');
           }
           this.cancelDelete();
         },
         error: (err) => {
           this.isDeleting.set(false);
+          this.toastr.error('Failed to delete session due to a server error.', 'Server Error');
           console.error('Failed to delete module', err);
           this.cancelDelete();
         }
@@ -279,13 +285,17 @@ export class TrainingMaterials implements OnInit {
         next: (res) => {
           this.isDeleting.set(false);
           if (res.status) {
+            this.toastr.success('Material deleted successfully.', 'Deleted');
             const courseId = this.selectedCourseId();
             if (courseId) this.loadCourseDetails(courseId);
+          } else {
+            this.toastr.error(res.msg || 'Failed to delete material.', 'Error');
           }
           this.cancelDelete();
         },
         error: (err) => {
           this.isDeleting.set(false);
+          this.toastr.error('Failed to delete material due to a server error.', 'Server Error');
           console.error('Failed to delete material', err);
           this.cancelDelete();
         }
@@ -295,12 +305,16 @@ export class TrainingMaterials implements OnInit {
         next: (res) => {
           this.isDeleting.set(false);
           if (res.status) {
+            this.toastr.success('Course deleted successfully.', 'Deleted');
             this.loadCourses();
+          } else {
+            this.toastr.error(res.msg || 'Failed to delete course.', 'Error');
           }
           this.cancelDelete();
         },
         error: (err) => {
           this.isDeleting.set(false);
+          this.toastr.error('Failed to delete course due to a server error.', 'Server Error');
           console.error('Failed to delete course', err);
           this.cancelDelete();
         }
@@ -416,6 +430,7 @@ export class TrainingMaterials implements OnInit {
     this.newModuleFile = null;
     this.existingMaterialName = '';
     this.pdfRemoved = true;
+    this.toastr.info('Attached file removed.', 'Attachment');
   }
 
   closeAddModuleModal(): void {
@@ -459,13 +474,36 @@ export class TrainingMaterials implements OnInit {
 
   selectFile(files: FileList): void {
     if (!files || files.length === 0) return;
-    this.selectedFile = files[0];
-    this.materialTitle = this.materialTitle || files[0].name;
+    const file = files[0];
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const allowed = ['pdf', 'png', 'jpg', 'jpeg'];
+    if (!allowed.includes(ext)) {
+      this.toastr.error(`Invalid file type (.${ext}). Allowed formats: PDF, PNG, JPG, JPEG.`, 'Invalid File');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.toastr.warning('File size exceeds the 2 MB limit.', 'File Too Large');
+      return;
+    }
+    this.selectedFile = file;
+    this.materialTitle = this.materialTitle || file.name;
+    this.toastr.info(`Selected "${file.name}"`, 'File Selected');
   }
 
   confirmUpload(): void {
     const courseId = this.selectedCourseId();
-    if (!courseId || !this.selectedFile || !this.materialTitle.trim()) return;
+    if (!courseId) {
+      this.toastr.error('Please select a course first.', 'Error');
+      return;
+    }
+    if (!this.selectedFile) {
+      this.toastr.warning('Please select a file to upload.', 'Validation Warning');
+      return;
+    }
+    if (!this.materialTitle.trim()) {
+      this.toastr.warning('Please enter a title for the material.', 'Validation Warning');
+      return;
+    }
 
     const formData = new FormData();
     formData.append('file', this.selectedFile);
@@ -479,16 +517,25 @@ export class TrainingMaterials implements OnInit {
     this.trainingService.uploadMaterial(formData).subscribe({
       next: (res) => {
         if (res.status) {
+          this.toastr.success('Material uploaded successfully.', 'Success');
           this.loadCourseDetails(courseId);
           this.closeUploadModal();
+        } else {
+          this.toastr.error(res.msg || 'Failed to upload material.', 'Error');
         }
       },
-      error: (err) => console.error('Material upload failed', err)
+      error: (err) => {
+        this.toastr.error('Failed to upload material due to a server error.', 'Server Error');
+        console.error('Material upload failed', err);
+      }
     });
   }
 
   addCourse(): void {
-    if (!this.newCourseTitle.trim()) return;
+    if (!this.newCourseTitle.trim()) {
+      this.toastr.warning('Please enter a course title.', 'Validation Warning');
+      return;
+    }
 
     this.isSavingCourse.set(true);
 
@@ -506,12 +553,16 @@ export class TrainingMaterials implements OnInit {
         next: (res) => {
           this.isSavingCourse.set(false);
           if (res.status) {
+            this.toastr.success('Course updated successfully.', 'Success');
             this.loadCourses();
             this.closeAddCourseModal();
+          } else {
+            this.toastr.error(res.msg || 'Failed to update course.', 'Error');
           }
         },
         error: (err) => {
           this.isSavingCourse.set(false);
+          this.toastr.error('Failed to update course due to a server error.', 'Server Error');
           console.error('Failed to update course', err);
         }
       });
@@ -521,12 +572,16 @@ export class TrainingMaterials implements OnInit {
         next: (res) => {
           this.isSavingCourse.set(false);
           if (res.status && res.data) {
+            this.toastr.success('Course created successfully.', 'Success');
             this.loadCourses();
             this.closeAddCourseModal();
+          } else {
+            this.toastr.error(res.msg || 'Failed to create course.', 'Error');
           }
         },
         error: (err) => {
           this.isSavingCourse.set(false);
+          this.toastr.error('Failed to create course due to a server error.', 'Server Error');
           console.error('Failed to create course', err);
         }
       });
@@ -536,14 +591,35 @@ export class TrainingMaterials implements OnInit {
   onNewModuleFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.newModuleFile = input.files[0];
+      const file = input.files[0];
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const allowed = ['pdf', 'png', 'jpg', 'jpeg'];
+      if (!allowed.includes(ext)) {
+        this.toastr.error(`Invalid file type (.${ext}). Allowed formats: PDF, PNG, JPG, JPEG.`, 'Invalid File');
+        input.value = '';
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        this.toastr.warning('File size exceeds the 2 MB limit.', 'File Too Large');
+        input.value = '';
+        return;
+      }
+      this.newModuleFile = file;
       this.pdfRemoved = false;
+      this.toastr.info(`Attached "${file.name}"`, 'File Selected');
     }
   }
 
   addModule(): void {
     const courseId = this.selectedCourseId();
-    if (!courseId || !this.newModuleTitle.trim()) return;
+    if (!courseId) {
+      this.toastr.error('Please select a course first.', 'Error');
+      return;
+    }
+    if (!this.newModuleTitle.trim()) {
+      this.toastr.warning('Please enter a session title.', 'Validation Warning');
+      return;
+    }
 
     this.isSavingModule.set(true);
 
@@ -579,12 +655,16 @@ export class TrainingMaterials implements OnInit {
         next: (res: any) => {
           this.isSavingModule.set(false);
           if (res.status) {
+            this.toastr.success('Session updated successfully.', 'Success');
             this.loadCourseDetails(courseId);
             this.closeAddModuleModal();
+          } else {
+            this.toastr.error(res.msg || 'Failed to update session.', 'Error');
           }
         },
         error: (err: any) => {
           this.isSavingModule.set(false);
+          this.toastr.error('Failed to update session due to a server error.', 'Server Error');
           console.error('Failed to update module', err);
         }
       });
@@ -606,12 +686,16 @@ export class TrainingMaterials implements OnInit {
       next: (res: any) => {
         this.isSavingModule.set(false);
         if (res.status) {
+          this.toastr.success('Session created successfully.', 'Success');
           this.loadCourseDetails(courseId);
           this.closeAddModuleModal();
+        } else {
+          this.toastr.error(res.msg || 'Failed to create session.', 'Error');
         }
       },
       error: (err: any) => {
         this.isSavingModule.set(false);
+        this.toastr.error('Failed to create session due to a server error.', 'Server Error');
         console.error('Failed to create module', err);
       }
     });
