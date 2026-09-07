@@ -104,6 +104,7 @@ export class TrainingMaterials implements OnInit {
   mediaModal = signal<{
     type: 'video' | 'pdf';
     url: SafeResourceUrl;
+    rawUrl?: string;
     title: string;
   } | null>(null);
 
@@ -117,7 +118,7 @@ export class TrainingMaterials implements OnInit {
     } else {
       safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
     }
-    this.mediaModal.set({ type, url: safeUrl, title });
+    this.mediaModal.set({ type, url: safeUrl, rawUrl, title });
   }
 
   closeMediaModal(): void {
@@ -336,7 +337,8 @@ export class TrainingMaterials implements OnInit {
               : rawModuleMaterials;
 
             const materialsList = combinedMaterials.map((mat: any) => {
-              const ext = (mat.file_path || '').split('.').pop()?.toLowerCase() || '';
+              const urlToUse = mat.file_url || mat.file_path;
+              const ext = (urlToUse || '').split('.').pop()?.toLowerCase() || '';
               const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
               return {
                 id: mat.id.toString(),
@@ -345,8 +347,8 @@ export class TrainingMaterials implements OnInit {
                 date: mat.created_at ? mat.created_at.split('T')[0] : '',
                 type: matType,
                 module_id: m.id.toString(),
-                file_path: mat.file_path,
-                safeUrl: matType === 'PDF' ? this.sanitizer.bypassSecurityTrustResourceUrl(mat.file_path) : undefined
+                file_path: urlToUse,
+                safeUrl: matType === 'PDF' ? this.sanitizer.bypassSecurityTrustResourceUrl(urlToUse) : undefined
               };
             });
 
@@ -367,7 +369,8 @@ export class TrainingMaterials implements OnInit {
 
           // Course-level materials (not bound to modules)
           const mats = (res.data.materials || []).map((mat: any) => {
-            const ext = (mat.file_path || '').split('.').pop()?.toLowerCase() || '';
+            const urlToUse = mat.file_url || mat.file_path;
+            const ext = (urlToUse || '').split('.').pop()?.toLowerCase() || '';
             const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
             return {
               id: mat.id.toString(),
@@ -376,7 +379,7 @@ export class TrainingMaterials implements OnInit {
               date: mat.created_at ? mat.created_at.split('T')[0] : '',
               type: matType,
               module_id: null,
-              file_path: mat.file_path
+              file_path: urlToUse
             };
           });
           this.courseMaterials.set(mats);
@@ -651,7 +654,7 @@ export class TrainingMaterials implements OnInit {
         formData.append('file', '');
       }
 
-      this.trainingService.createModule(courseId, formData).subscribe({
+      this.trainingService.updateModule(Number(this.editingModuleId), formData).subscribe({
         next: (res: any) => {
           this.isSavingModule.set(false);
           if (res.status) {
