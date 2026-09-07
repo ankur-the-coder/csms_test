@@ -2060,7 +2060,7 @@ confirmCancelMeeting(): void {
     } else if (type === 'warning') {
       this.toastr.warning(message, title || 'Warning');
     } else {
-      this.toastr.info(message, title || 'Notice');
+      this.toastr.info(message, title || 'Info');
     }
   }
 

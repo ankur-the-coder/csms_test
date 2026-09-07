@@ -25,10 +25,10 @@
           Save Draft
         </button> -->
         <button (click)="onScheduleClick()"
-          [disabled]="saving || hostDetailsLoading || hasConflict || loadingBookedTimes"
+          [disabled]="saving || hostDetailsLoading || hasConflict || loadingBookedTimes || newMeeting.hostEmail?.includes('@gmail')"
           class="px-5 py-2 text-xs font-semibold text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors shadow-sm">
           @if (saving) {
-          Scheduling...
+          <span><i class="fas fa-circle-notch fa-spin"></i> Scheduling...</span>
           } @else if (hasConflict) {
           <span class="flex items-center gap-1.5">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -269,6 +269,16 @@
           <p class="mt-1.5 text-[11px] text-text-muted">
             This meeting will be scheduled on Teams on your behalf.
           </p>
+          @if (newMeeting.hostEmail.includes('@gmail')) {
+          <span
+            class="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 text-[10px] font-semibold bg-orange-100 text-orange-600 rounded-md">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            Meeting Can not schedule with Google mail.
+          </span>
+          }
         </div>
         } @else {
         <div
