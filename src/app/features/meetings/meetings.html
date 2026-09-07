@@ -239,7 +239,7 @@
         <div class="min-w-[110px] text-xs">
           @if (row.startTime) {
           <div class="font-medium text-slate-800">
-            {{ row.startTime | date: 'yyyy-MM-dd' }}
+            {{ row.startTime | date: 'dd MMMM, yyyy' }}
           </div>
           <div class="text-slate-400 mt-0.5">
             {{ row.startTime | date: 'hh:mm a' }}
@@ -486,7 +486,7 @@
                 <div class="flex items-center gap-4 mt-3 text-xs text-slate-500 flex-wrap">
                   @if (meeting.startTime) {
                   <span class="flex items-center gap-1"><i class="far fa-calendar text-indigo-500"></i> {{
-                    meeting.startTime | date:'yyyy-MM-dd' }}</span>
+                    meeting.startTime | date:'dd MMMM, yyyy' }}</span>
                   <span class="flex items-center gap-1"><i class="far fa-clock text-indigo-500"></i> {{
                     meeting.startTime | date:'hh:mm a' }}</span>
                   }
