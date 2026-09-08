@@ -251,6 +251,8 @@ rescheduleDurationSelectOptions: SelectOption[] = [
         label: 'Meeting Detail',
         sortable: false,
         align: 'center' as const,
+        excludeFromExport: true,
+        excludeFromPdf: true,
       },
       {
         key: 'clientMail',
@@ -261,9 +263,10 @@ rescheduleDurationSelectOptions: SelectOption[] = [
         key: 'rowActions',
         label: 'actions',
         sortable: false,
-        
         hideable: false,
-        sticky:true,
+        sticky: true,
+        excludeFromExport: true,
+        excludeFromPdf: true,
       },
     ],
 
@@ -343,7 +346,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
     showPagination: true,
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
-    exportFileName: 'meetings',
+    exportFileName: 'Meetings',
     emptyMessage: 'No meetings found.',
     clickable: false,
     toolbarButtons: [
@@ -956,10 +959,53 @@ confirmCancelMeeting(): void {
     return { label: 'Host No-Show', badgeClass: 'text-rose-700 bg-rose-50 border-rose-200', icon: 'fa-user-clock' };
   }
 
-  /** Converts '01:00:00.000000' → '01:00:00' */
-  formatDuration(raw: string): string {
-    if (!raw) return '00:00:00';
-    return raw.split('.')[0] || raw;
+  /** Converts duration like '01:00:00.000000', '00:30:00', '01:30:00' → '1 hour', '30 mins', '1 hour 30 mins' */
+  formatDuration(raw: string | null | undefined): string {
+    if (!raw) return '—';
+    const str = String(raw).trim();
+    if (!str || str === '0' || str === '00:00:00' || str === '00:00:00.000000') return '0 mins';
+
+    // If it already has human readable duration (e.g. "1 hour", "45 minutes", "15 minutes")
+    if (/hour|min|sec/i.test(str)) {
+      return str;
+    }
+
+    // Handle HH:MM:SS or HH:MM:SS.ffffff
+    if (str.includes(':')) {
+      const parts = str.split('.')[0].split(':');
+      const hours = parseInt(parts[0], 10) || 0;
+      const minutes = parseInt(parts[1], 10) || 0;
+      const seconds = parseInt(parts[2], 10) || 0;
+
+      const result: string[] = [];
+      if (hours > 0) {
+        result.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+      }
+      if (minutes > 0) {
+        result.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
+      }
+      if (hours === 0 && minutes === 0 && seconds > 0) {
+        result.push(`${seconds} ${seconds === 1 ? 'sec' : 'secs'}`);
+      }
+      return result.join(' ') || '0 mins';
+    }
+
+    // Handle integer/number (e.g. total minutes)
+    const num = Number(str);
+    if (!isNaN(num) && num > 0) {
+      const hours = Math.floor(num / 60);
+      const minutes = num % 60;
+      const result: string[] = [];
+      if (hours > 0) {
+        result.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+      }
+      if (minutes > 0) {
+        result.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
+      }
+      return result.join(' ') || `${num} mins`;
+    }
+
+    return str;
   }
 
   /** Returns coloured initials avatar background for an org name */
