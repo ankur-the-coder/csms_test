@@ -28,7 +28,7 @@ export class ScheduleMeeting implements OnInit {
     time: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
 
-    orgMode: 'select' as EntryMode,
+    orgMode: 'manual' as EntryMode,
     orgId: null as number | null,
     orgName: '',
     orgEmail: '',
@@ -225,6 +225,7 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgId = null;
     this.newMeeting.orgName = '';
     this.newMeeting.orgEmail = '';
+    this.isEditingOrgEmail = false;
   }
 
   onOrganizationSelect(orgIdValue: any): void {
@@ -233,7 +234,30 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgId = org ? org.orgId : null;
     this.newMeeting.orgName = org ? org.name : '';
     this.newMeeting.orgEmail = org ? org.email : '';
+    this.isEditingOrgEmail = false;
   }
+
+  // ---------- Organization email override ----------
+// Lets the user override the registered org email for this one meeting
+// without touching the organization's actual record.
+
+isEditingOrgEmail = false;
+private orgEmailBeforeEdit = '';
+
+enableOrgEmailEdit(): void {
+  this.orgEmailBeforeEdit = this.newMeeting.orgEmail;
+  this.isEditingOrgEmail = true;
+}
+
+saveOrgEmailEdit(): void {
+  if (!this.isValidEmail(this.newMeeting.orgEmail)) return;
+  this.isEditingOrgEmail = false;
+}
+
+cancelOrgEmailEdit(): void {
+  this.newMeeting.orgEmail = this.orgEmailBeforeEdit;
+  this.isEditingOrgEmail = false;
+}
 
   // ---------- Misc ----------
 
@@ -431,7 +455,7 @@ private buildEndDateTime(start: string): string {
 
 }
 
-  private isValidEmail(value: string): boolean {
+  isValidEmail(value: string): boolean {
     const email = value.trim();
     // Standard RFC-5322-ish check. Deliberately provider-agnostic —
     // gmail.com, outlook.com, hotmail.com, any company domain, all pass.
@@ -442,7 +466,7 @@ private buildEndDateTime(start: string): string {
     const m = this.newMeeting;
 
     const orgOk = m.orgMode === 'select'
-      ? !!m.orgId
+      ? !!m.orgId && this.isValidEmail(m.orgEmail)
       : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
 
     // 'select' mode means the host was auto-filled from the logged-in user;

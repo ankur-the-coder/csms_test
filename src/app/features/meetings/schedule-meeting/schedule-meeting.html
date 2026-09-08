@@ -207,9 +207,40 @@
         }
 
         @if (newMeeting.orgId) {
-        <div class="p-3 bg-surface-50 border border-card-border rounded-lg text-xs space-y-1">
+        <div class="p-3 bg-surface-50 border border-card-border rounded-lg text-xs space-y-1.5">
           <div class="font-medium text-text-primary">{{ newMeeting.orgName }}</div>
-          <div class="text-text-muted truncate">{{ newMeeting.orgEmail || 'No email registered' }}</div>
+
+          @if (!isEditingOrgEmail) {
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-text-muted truncate">{{ newMeeting.orgEmail || 'No email registered' }}</span>
+            <button type="button" (click)="enableOrgEmailEdit()"
+              class="text-[11px] font-semibold text-brand-600 hover:text-brand-700 flex-shrink-0">
+              Change
+            </button>
+          </div>
+          } @else {
+          <div class="pt-0.5">
+            <input type="email" [(ngModel)]="newMeeting.orgEmail" name="orgEmailOverride" autofocus
+              class="w-full px-2.5 py-1.5 text-xs bg-card-bg border rounded-lg text-text-primary focus:outline-none focus:border-brand-500 transition-colors"
+              [class.border-card-border]="isValidEmail(newMeeting.orgEmail)"
+              [class.border-red-400]="!isValidEmail(newMeeting.orgEmail)" placeholder="e.g. jane@acme.com">
+
+            @if (!isValidEmail(newMeeting.orgEmail)) {
+            <p class="mt-1 text-[11px] text-red-500">Enter a valid email address.</p>
+            }
+
+            <div class="mt-1.5 flex items-center gap-3">
+              <button type="button" (click)="saveOrgEmailEdit()" [disabled]="!isValidEmail(newMeeting.orgEmail)"
+                class="text-[11px] font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                Save
+              </button>
+              <button type="button" (click)="cancelOrgEmailEdit()"
+                class="text-[11px] font-medium text-text-muted hover:text-text-secondary">
+                Cancel
+              </button>
+            </div>
+          </div>
+          }
         </div>
         }
         } @else {
