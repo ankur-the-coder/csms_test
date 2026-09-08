@@ -42,6 +42,12 @@ export interface SmartColumn<T> {
   allowHtml?: boolean;
   badgeMap?: Record<string, BadgeMapEntry>;
   cellTemplate?: TemplateRef<any>;
+  /** Optional custom formatter function for display and export */
+  formatter?: (value: any, row: T) => string;
+  /** Set to true to hide this column from PDF modal and export */
+  excludeFromPdf?: boolean;
+  /** Set to true to hide this column from all exports (PDF, CSV, Excel, Print) */
+  excludeFromExport?: boolean;
 }
 
 // ── Sort / Filter ─────────────────────────────────────────────────────────────
@@ -203,6 +209,8 @@ export interface SmartTableConfig<T> {
 
   // Export
   exportFileName?: string;
+  excludePdfColumns?: string[];
+  excludeExportColumns?: string[];
 
   /** In static-data mode: which row field the Date Range filter checks against. */
   dateRangeKey?: string;

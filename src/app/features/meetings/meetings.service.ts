@@ -9,6 +9,14 @@ export interface Organization {
   name: string;
 }
 
+export interface InviteAttendeesResponse {
+  status: boolean;
+  message: string;
+  meetingId: number;
+  addedEmails: string[];
+  totalAttendees: number;
+}
+
 export interface MeetingRow {
   id: number;
   orgId: number | null;
@@ -244,7 +252,8 @@ export class MeetingService {
    * Not cached — always fetch fresh.
    */
   getRecentActivity(empId?: number): Observable<RecentActivity[]> {
-    const query = empId ? `?empId=${empId}` : '';
+    const rawEmpId = empId ?? (localStorage.getItem('empId') ? Number(localStorage.getItem('empId')) : undefined);
+    const query = rawEmpId ? `?empId=${rawEmpId}` : '';
     return this.http
       .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
       .pipe(map(res => res.data || []));
@@ -265,4 +274,14 @@ export class MeetingService {
     }
   );
 }
+
+// inside MeetingService class:
+inviteAttendees(meetingId: number, emails: string[], message?: string): Observable<InviteAttendeesResponse> {
+  return this.http.post<InviteAttendeesResponse>(`${this.imp}/meetings/invite`, {
+    meetingId,
+    emails,
+    message
+  });
+}
+
 }
