@@ -42,6 +42,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   @Input() preDefinedPresent: string = '';
   @Input() selectedDays: number = 0;
   @Input() showEmpty: boolean = false;
+  @Input() defaultPreset: 'today' | 'currentMonth' | 'lastWeek'|'last90days' |'yesterday' |'custom' = 'today';
 
   @Output() onApplyDate = new EventEmitter<DateRangeOutput>();
 
@@ -120,7 +121,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     if (!this.showEmpty) {
       if (this.initialDates.from === '' && !this.preDefinedPresent) {
         this.initialDates = { from: new Date(), to: new Date() };
-        this.selectPreset('today');
+        this.selectPreset(this.defaultPreset);
       }
       this.submittedStartDate = this.selectedStartDate;
       this.submittedEndDate = this.selectedEndDate;

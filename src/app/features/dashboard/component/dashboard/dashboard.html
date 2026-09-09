@@ -254,6 +254,11 @@
   </div>
 
   <!-- Shared Custom Calendar Component -->
-  <app-calendar [eventsByDay]="eventsByDay"  ></app-calendar>
+   <app-calendar
+    [eventsByDay]="calendarEvents()"
+    (eventClick)="onCalendarEventClick($event)"
+    (dateSelect)="onCalendarDateChange($event)"
+    (viewModeChange)="onCalendarViewChange($event)">
+  </app-calendar>
 
 </div>

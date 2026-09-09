@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { DashboardCardCount, DashboardChartdata } from '../models/dashboardModel';
+import { DashboardCardCount, DashboardChartdata, CalendarApiResponse } from '../models/dashboardModel';
 import { ConnectedDataTableResponse } from '../models/connected.model';
 import { FeedbackDataTableResponse } from '../models/feedback.model';
 export interface DataTablePayload {
@@ -64,13 +64,13 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/dashboardImplementProgressChart`, data);
   }
-  fetchDashBoardCalendar(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  fetchDashBoardCalendar(from: string, to: string, orgId: string): Observable<CalendarApiResponse> {
     let data = {
       fromDate: from,
       toDate: to, orgId
     };
 
-    return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
+    return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
   }
 
   // Data table Api

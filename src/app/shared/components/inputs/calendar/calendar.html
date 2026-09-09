@@ -99,16 +99,16 @@
 
               <!-- Events -->
               <div class="cal-events-list">
-                @for (ev of day.visibleEvents; track ev.title) {
+                @for (ev of day.visibleEvents; track $index) {
                   <div
                     class="cal-chip"
                     [ngClass]="ev.chipClass || 'chip-blue'"
-                    (click)="onEventClicked(ev)"
-                    [title]="ev.title"
-                  >{{ ev.title }}</div>
+                    (click)="openScheduleDrawer(day); $event.stopPropagation()"
+                    [title]="(ev.client ? ev.client + ': ' : '') + ev.title"
+                  >{{ ev.client || ev.title }}</div>
                 }
                 @if (day.moreCount > 0) {
-                  <button class="cal-more-link" (click)="openScheduleDrawer(day)">
+                  <button class="cal-more-link" (click)="openScheduleDrawer(day); $event.stopPropagation()">
                     +{{ day.moreCount }} more
                   </button>
                 }
@@ -238,18 +238,50 @@
         class="w-full bg-slate-50 hover:bg-slate-100 focus:bg-white text-xs px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-emerald-400 transition-colors"
       />
     </div>
-    <div class="flex-1 overflow-y-auto p-4 space-y-2.5 custom-scrollbar">
-      @for (ev of scheduleDrawerFiltered(); track ev.title) {
+    <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+      @for (ev of scheduleDrawerFiltered(); track $index) {
         <div
-          (click)="onEventClicked(ev)"
-          class="rounded-lg border-l-4 border border-slate-200/80 bg-white px-3 py-2.5 flex items-center justify-between gap-3 shadow-2xs hover:shadow-xs transition-shadow cursor-pointer"
-          [ngClass]="ev.accentClass || 'border-indigo-500'"
+          class="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs hover:shadow-xs transition-shadow"
         >
-          <div class="min-w-0">
-            <div class="text-xs font-bold text-slate-900 truncate">{{ ev.title }}</div>
-            <div class="text-[10px] text-slate-400 font-medium truncate">Client: {{ ev.client }}</div>
+          <!-- Top Row: Title + Status -->
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-slate-900 leading-snug">{{ ev.title }}</div>
+              <div class="text-xs font-semibold text-indigo-600 mt-0.5 flex items-center gap-1">
+                <span>🏢</span> {{ ev.client }}
+              </div>
+            </div>
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"
+              [ngClass]="ev.status === 1 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
+            >
+              {{ ev.status === 1 ? 'Active' : (ev.status !== undefined ? 'Status ' + ev.status : 'Scheduled') }}
+            </span>
           </div>
-          <span class="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold shrink-0">{{ ev.startTime }}</span>
+
+          <!-- Details Grid: Type, Time, Duration -->
+          <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100">
+            <div class="flex items-center gap-1.5 text-slate-600">
+              <span class="text-slate-400 font-medium">Type:</span>
+              <span class="font-semibold text-slate-800">{{ ev.meetingType || 'Meeting' }}</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-600">
+              <span class="text-slate-400 font-medium">Time:</span>
+              <span class="font-semibold text-slate-800">{{ ev.timeLabel || ev.startTime }}</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-slate-600">
+              <span class="text-slate-400 font-medium">Duration:</span>
+              <span class="font-semibold text-slate-800">{{ ev.duration || 'N/A' }}</span>
+            </div>
+          </div>
+
+          <!-- Purpose if present -->
+          @if (ev.purpose) {
+            <div class="mt-2 pt-2 border-t border-slate-100/70 text-[11px] text-slate-600 flex items-start gap-1.5">
+              <span class="text-slate-400 font-medium shrink-0">Purpose:</span>
+              <span class="font-medium text-slate-700">{{ ev.purpose }}</span>
+            </div>
+          }
         </div>
       } @empty {
         <div class="text-xs text-slate-400 font-medium text-center py-8">No meetings match your search.</div>
