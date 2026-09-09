@@ -249,12 +249,12 @@ export class DashboardComponent implements OnInit {
 
   // Daily Tasks & Operations
   readonly dailyOps = [
-    { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
-    { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
-    { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
-    { label: "Today's Meetings", value: 7, pct: 40, danger: false, barClass: 'bg-indigo-600' },
-    { label: "Today's Trainings", value: 5, pct: 28, danger: false, barClass: 'bg-emerald-500' },
-    { label: 'Installations', value: 3, pct: 18, danger: false, barClass: 'bg-cyan-500' },
+    // { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
+    // { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
+    // { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
+    { label: "Today's Meetings", value: 7, pct: 80, danger: false, barClass: 'bg-indigo-600' },
+    { label: "Today's Trainings", value: 5, pct: 68, danger: false, barClass: 'bg-emerald-500' },
+    { label: "Today's Implementations", value: 3, pct: 48, danger: false, barClass: 'bg-cyan-500' },
   ];
 
   // Calendar Event Data — passed into <app-calendar [eventsByDay]="eventsByDay">
@@ -558,6 +558,49 @@ export class DashboardComponent implements OnInit {
         this.cdr.markForCheck();
       },
     });
+
+
+ this.dashboardService.fetchDashBoardCalendar(from, to, orgId).subscribe({
+      next: (res) => {
+console.log('Calendar chart response:', res);
+        // this.isConnectedLoading.set(false);
+        // if (res && res.data && res.data.length) {
+        //   const labels = res.data.map((item) => item.label);
+        //   const values = res.data.map((item) => item.value);
+        //   const total = values.reduce((sum, v) => sum + v, 0);
+        //   const colors = this.generateColors(res.data.length);
+
+        //   this.connectedDonutLabels.set(labels);
+        //   this.connectedDonutData.set(values);
+        //   this.connectedDonutColors.set(colors);
+
+        //   const primaryTotal =
+        //     (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
+        //   this.connectedDonutCenterText.set({
+        //     line1: String(primaryTotal),
+        //     line2: 'Total',
+        //     line3: 'Connected',
+        //   });
+        // } else {
+        //   this.connectedDonutLabels.set([]);
+        //   this.connectedDonutData.set([]);
+        //   this.connectedDonutColors.set([]);
+        //   this.connectedDonutCenterText.set({
+        //     line1: '0',
+        //     line2: 'Total',
+        //     line3: 'Connected',
+        //   });
+        // }
+        // this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error fetching connect chart:', err);
+        // this.isConnectedLoading.set(false);
+        // this.connectedHasError.set(true);
+        // this.cdr.markForCheck();
+      },
+    });
+
   }
 
   private dateQueryParams() {
