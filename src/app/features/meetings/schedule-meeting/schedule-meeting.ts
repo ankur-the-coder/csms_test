@@ -88,7 +88,7 @@ export class ScheduleMeeting implements OnInit {
   /** True if fetching the host's details failed — UI falls back to manual host entry. */
   hostDetailsError = false;
 
-  meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
+  meetingTypesList: string[] = [];
   priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
 
   // Backend validates priority via an enum rule expecting a number: 0 = Low, 1 = Medium, 2 = High.
@@ -132,6 +132,22 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => { this.loadingInitialData = false; });
       }
     });
+
+      this.scheduleMeetingService.getMeetingTypes().subscribe({
+    next: (types) => {
+      this.ngZone.run(() => {
+        this.meetingTypesList = types.length > 0
+          ? types.map(t => t.name)
+          : ['Failed to load Options'];
+      });
+    },
+    error: (err) => {
+      console.error('Failed to load meeting types', err);
+      this.ngZone.run(() => {
+        this.meetingTypesList = ['Failed to load Options'];
+      });
+    }
+  });
   }
 
   /**
@@ -669,4 +685,6 @@ private buildEndDateTime(start: string): string {
   get showHostEmailError(): boolean {
     return this.submitted && this.newMeeting.hostMode === 'manual' && !this.isValidEmail(this.newMeeting.hostEmail);
   }
+
+  
 }

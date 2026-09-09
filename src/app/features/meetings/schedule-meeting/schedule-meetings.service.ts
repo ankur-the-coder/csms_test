@@ -122,6 +122,16 @@ export interface CreateTeamsMeetingResponse {
 
 }
 
+export interface MeetingType {
+  id: number;
+  name: string;
+}
+
+interface MeetingTypeApiResponse {
+  status: boolean;
+  data: MeetingType[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -222,5 +232,22 @@ export class ScheduleMeetingService {
         catchError(() => of([]))
       );
   }
+
+
+  // inside ScheduleMeetingService class:
+private meetingTypes$?: Observable<MeetingType[]>;
+
+getMeetingTypes(): Observable<MeetingType[]> {
+  if (!this.meetingTypes$) {
+    this.meetingTypes$ = this.http
+      .get<MeetingTypeApiResponse>(`${this.baseUrl}/meetings/meeting-types`)
+      .pipe(
+        map(res => res.data || []),
+        catchError(() => of([])),
+        shareReplay(1)
+      );
+  }
+  return this.meetingTypes$;
+}
 
 }
