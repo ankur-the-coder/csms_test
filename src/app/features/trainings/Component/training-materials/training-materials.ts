@@ -99,6 +99,7 @@ export class TrainingMaterials implements OnInit {
   deleteConfirmMessage = signal<string>('');
   private deleteTargetType: 'module' | 'material' | 'course' | null = null;
   private deleteTargetId: string | null = null;
+  private deleteTargetFilePath: string | null = null;
 
   // ── Media Preview Modal ──────────────────────────────────────────────
   mediaModal = signal<{
@@ -242,9 +243,10 @@ export class TrainingMaterials implements OnInit {
     this.isDeleteConfirmOpen.set(true);
   }
 
-  deleteMaterial(id: string): void {
+  deleteMaterial( material: Material): void {
     this.deleteTargetType = 'material';
-    this.deleteTargetId = id;
+    this.deleteTargetId = material.id;
+    this.deleteTargetFilePath = material.file_path;
     this.deleteConfirmMessage.set('Are you sure you want to delete this material?');
     this.isDeleteConfirmOpen.set(true);
   }
@@ -254,6 +256,7 @@ export class TrainingMaterials implements OnInit {
     this.isDeleting.set(false);
     this.deleteTargetType = null;
     this.deleteTargetId = null;
+    this.deleteTargetFilePath = null;
   }
 
   confirmDelete(): void {
@@ -281,27 +284,27 @@ export class TrainingMaterials implements OnInit {
           this.cancelDelete();
         }
       });
-    } else if (this.deleteTargetType === 'material') {
-      this.trainingService.deleteMaterial(Number(this.deleteTargetId)).subscribe({
-        next: (res) => {
-          this.isDeleting.set(false);
-          if (res.status) {
-            this.toastr.success('Material deleted successfully.', 'Deleted');
-            const courseId = this.selectedCourseId();
-            if (courseId) this.loadCourseDetails(courseId);
-          } else {
-            this.toastr.error(res.msg || 'Failed to delete material.', 'Error');
-          }
-          this.cancelDelete();
-        },
-        error: (err) => {
-          this.isDeleting.set(false);
-          this.toastr.error('Failed to delete material due to a server error.', 'Server Error');
-          console.error('Failed to delete material', err);
-          this.cancelDelete();
-        }
-      });
-    } else if (this.deleteTargetType === 'course') {
+} else if (this.deleteTargetType === 'material') {
+  this.trainingService.deleteMaterial(Number(this.deleteTargetId), this.deleteTargetFilePath ?? '').subscribe({
+    next: (res) => {
+      this.isDeleting.set(false);
+      if (res.status) {
+        this.toastr.success('Material deleted successfully.', 'Deleted');
+        const courseId = this.selectedCourseId();
+        if (courseId) this.loadCourseDetails(courseId);
+      } else {
+        this.toastr.error(res.msg || 'Failed to delete material.', 'Error');
+      }
+      this.cancelDelete();
+    },
+    error: (err) => {
+      this.isDeleting.set(false);
+      this.toastr.error('Failed to delete material due to a server error.', 'Server Error');
+      console.error('Failed to delete material', err);
+      this.cancelDelete();
+    }
+  });
+} else if (this.deleteTargetType === 'course') {
       this.trainingService.deleteCourse(Number(this.deleteTargetId)).subscribe({
         next: (res) => {
           this.isDeleting.set(false);
@@ -628,14 +631,15 @@ export class TrainingMaterials implements OnInit {
 
     const empId = this.authService.getEmpId();
     const encodedUser = Utils.encode5t(empId);
+    const encodedOrgId = Utils.encode5t(this.authService.getOrgId());
 
     const formData = new FormData();
     formData.append('title', this.newModuleTitle.trim());
     formData.append('description', this.newModuleDescription.trim());
     formData.append('video_url', this.newModuleVideoUrl.trim());
     formData.append('course_id', courseId.toString());
-    formData.append('updated_by', encodedUser);
-    formData.append('org_id', this.authService.getOrgId());
+    formData.append('user_id', encodedUser);
+    formData.append('org_id', encodedOrgId );
     formData.append('module_id', this.editingModuleId ? this.editingModuleId.toString() : '');
 
     if (this.editingModuleId) {
