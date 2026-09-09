@@ -72,6 +72,15 @@ export class DashboardService {
 
     return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
   }
+  fetchTodaysTasksData(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+    let data = {
+      fromDate: from,
+      toDate: to, orgId
+    };
+
+    return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchTodaysTasksData`, data);
+  }
+
 
   // Data table Api
 
