@@ -242,7 +242,14 @@ export class Client {
           orgId: row.orgId,
         },
       });
-    } else if (action === 'Send Mail') {
+    } else if (action === 'View Client') {
+      this.closeActionMenu();
+      this.router.navigate(['/client/client-dashboard'], {
+        queryParams: {
+          orgId: row.orgId,
+        },
+      });
+    }else if (action === 'Send Mail') {
       this.sendWelcomeMail(row);
     } else if (action === 'Client Timeline') {
       this.openClientTimeline(row);
