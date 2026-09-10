@@ -39,7 +39,7 @@ export interface ClientRow {
 
 @Component({
   selector: 'app-feedback',
-imports: [DataTable, CustomColumnDirective, NgClass,CommonModule],
+imports: [DataTable, CustomColumnDirective,CommonModule],
   templateUrl: './feedback.html',
   styleUrl: './feedback.css',
 })
