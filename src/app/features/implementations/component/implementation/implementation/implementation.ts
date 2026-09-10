@@ -7,7 +7,6 @@ import { DataTable } from "../../../../../shared/components/Data-table/data-tabl
 import { CustomColumnDirective } from '../../../../../shared/components/Data-table/custom-column.directive';
 import { ImplementationService } from '../../../services/implementation/implementation';
 import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
-import { CustomDateSelector } from "../../../../../shared/components/inputs/custom-date-selector/custom-date-selector";
 import { ActivatedRoute } from '@angular/router';
 
 export interface Feature {
@@ -65,7 +64,7 @@ interface ClientStatus {
 
 @Component({
   selector: 'app-implementation',
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
   templateUrl: './implementation.html',
   styleUrl: './implementation.css',
   standalone: true,
