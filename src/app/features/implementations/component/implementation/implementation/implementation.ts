@@ -141,7 +141,12 @@ export class Implementation implements OnInit, OnDestroy {
     { key: 'licence_start_date', label: 'Start Date',     sortable: false },
     { key: 'licence_end_date',   label: 'End Date',       sortable: false },
     { key: 'overallProgress',    label: 'Progress',       align: 'center' as const, tooltip: 'Overall implementation progress' },
-    { key: 'modules',            label: 'Modules',        align: 'center' as const, tooltip: 'Module-wise completion status' },
+    { key: 'modules',            label: 'Modules',        align: 'center' as const, tooltip: 'Module-wise completion status',
+      formatter: (value: any) => {
+        if (!Array.isArray(value) || value.length === 0) return '—';
+        return value.map((m: any) => m?.label ?? m?.key ?? '').filter(Boolean).join(', ');
+      }
+    },
   ];
 
   private static readonly TOOLBAR_BUTTONS = [

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { DashboardCardCount, DashboardChartdata } from '../models/dashboardModel';
+import { DashboardCardCount, DashboardChartdata, CalendarApiResponse } from '../models/dashboardModel';
 import { ConnectedDataTableResponse } from '../models/connected.model';
 import { FeedbackDataTableResponse } from '../models/feedback.model';
 export interface DataTablePayload {
@@ -14,6 +14,16 @@ export interface DataTablePayload {
   tabSts: number;
   fromDate: string;
   toDate: string;
+}
+export interface TodaysTasksResponse {
+  data: {
+    meetingCount: number;
+    pendingTrainingCount: number;
+    orgCounts: number; // implementations
+  };
+  total: number;
+  status: boolean;
+  msg: string;
 }
 @Injectable({
   providedIn: 'root',
@@ -64,6 +74,23 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/dashboardImplementProgressChart`, data);
   }
+  fetchDashBoardCalendar(from: string, to: string, orgId: string): Observable<CalendarApiResponse> {
+    let data = {
+      fromDate: from,
+      toDate: to, orgId
+    };
+
+    return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
+  }
+  fetchTodaysTasksData(from: string, to: string, orgId: string): Observable<TodaysTasksResponse> {
+    let data = {
+      fromDate: from,
+      toDate: to, orgId
+    };
+
+    return this.http.post<TodaysTasksResponse>(`${this.apiUrl}/fetchTodaysTasksData`, data);
+  }
+
 
   // Data table Api
 
@@ -82,5 +109,9 @@ export class DashboardService {
     return this.http.post<any>(`${this.apiUrl}/fetchDashBoardUsagesTable`, payload);
 
   }
+
+
+
+
 
 }

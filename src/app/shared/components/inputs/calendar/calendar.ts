@@ -5,13 +5,19 @@ import { MonthDatePicker } from '../month-date-picker/month-date-picker';
 export interface DayEvent {
   title: string;
   client: string;
-  timeLabel: string;   // "10:00 AM - 11:30 AM"
-  startTime: string;   // "09:45 AM"
+  timeLabel: string;    // "10:00 AM - 11:30 AM"
+  startTime: string;    // "09:45 AM"
   startMinutes: number; // minutes since midnight
   endMinutes: number;
   chipClass?: string;   // month-view chip colors
   accentClass?: string; // week/day-view left border accent
   icon?: string;
+  // Extended fields from API (optional — only set when data comes from server)
+  purpose?: string;
+  meetingType?: string;
+  duration?: string;    // human-readable, e.g. "1h 0m"
+  status?: number;      // 1 = Active, etc.
+  orgId?: number;
 }
 
 export interface TimeSlot {
@@ -38,7 +44,16 @@ export interface CalendarDay {
   styleUrl: './calendar.css',
 })
 export class Calendar {
-  @Input() eventsByDay: Record<string | number, DayEvent[]> = {};
+  private readonly _eventsByDay = signal<Record<string | number, DayEvent[]>>({});
+
+  @Input()
+  set eventsByDay(val: Record<string | number, DayEvent[]>) {
+    this._eventsByDay.set(val || {});
+  }
+  get eventsByDay(): Record<string | number, DayEvent[]> {
+    return this._eventsByDay();
+  }
+
   @Output() eventClick = new EventEmitter<DayEvent>();
   @Output() dateSelect = new EventEmitter<Date>();
   @Output() viewModeChange = new EventEmitter<'day' | 'week' | 'month'>();
@@ -64,10 +79,11 @@ export class Calendar {
     const day = String(date.getDate()).padStart(2, '0');
     const dateKey = `${year}-${month}-${day}`;
 
-    if (this.eventsByDay[dateKey]) {
-      return this.eventsByDay[dateKey];
+    const map = this._eventsByDay();
+    if (map[dateKey]) {
+      return map[dateKey];
     }
-    return this.eventsByDay[date.getDate()] ?? [];
+    return map[date.getDate()] ?? [];
   }
 
   private buildCalendarDay(date: Date, isCurrentMonth: boolean): CalendarDay {

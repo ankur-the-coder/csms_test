@@ -1,7 +1,7 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService, Organization, EmployeeDetails, BookedMeeting } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
@@ -9,6 +9,7 @@ import { DatePicker } from '../../../shared/components/inputs/date-picker/date-p
 import { DatePicker as DatePickerService } from '../../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../../shared/components/inputs/time-picker/time-picker';
 import { Subscription } from 'rxjs';
+import { Location } from '@angular/common';
 
 type EntryMode = 'select' | 'manual';
 
@@ -28,7 +29,7 @@ export class ScheduleMeeting implements OnInit {
     time: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
 
-    orgMode: 'select' as EntryMode,
+    orgMode: 'manual' as EntryMode,
     orgId: null as number | null,
     orgName: '',
     orgEmail: '',
@@ -88,7 +89,7 @@ export class ScheduleMeeting implements OnInit {
   /** True if fetching the host's details failed — UI falls back to manual host entry. */
   hostDetailsError = false;
 
-  meetingTypesList = ['Kickoff', 'Review', 'Training', 'QBR', 'Go Live', 'Renewal'];
+  meetingTypesList: string[] = [];
   priorities: Array<'Low' | 'Medium' | 'High'> = ['Low', 'Medium', 'High'];
 
   // Backend validates priority via an enum rule expecting a number: 0 = Low, 1 = Medium, 2 = High.
@@ -107,14 +108,41 @@ export class ScheduleMeeting implements OnInit {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private scheduleMeetingService: ScheduleMeetingService,
     private ngZone: NgZone,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
+    this.readQueryParams();
     this.loadAllData();
     this.loadHostDetails();
+  }
+
+  private readQueryParams(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const orgName = params.get('orgName') || params.get('name') || params.get('companyName');
+      const email = params.get('email') || params.get('orgEmail');
+      const orgId = params.get('orgId');
+
+      if (orgName) {
+        this.newMeeting.orgName = orgName;
+      }
+      if (email) {
+        this.newMeeting.orgEmail = email;
+      }
+      if (orgId) {
+        const parsedId = Number(orgId);
+        if (!isNaN(parsedId)) {
+          this.newMeeting.orgId = parsedId;
+        }
+      }
+      if (orgName || email) {
+        this.newMeeting.orgMode = 'manual';
+      }
+    });
   }
 
   private loadAllData(): void {
@@ -132,6 +160,22 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => { this.loadingInitialData = false; });
       }
     });
+
+      this.scheduleMeetingService.getMeetingTypes().subscribe({
+    next: (types) => {
+      this.ngZone.run(() => {
+        this.meetingTypesList = types.length > 0
+          ? types.map(t => t.name)
+          : [];
+      });
+    },
+    error: (err) => {
+      console.error('Failed to load meeting types', err);
+      this.ngZone.run(() => {
+        this.meetingTypesList = ['Failed to load Options'];
+      });
+    }
+  });
   }
 
   /**
@@ -225,6 +269,7 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgId = null;
     this.newMeeting.orgName = '';
     this.newMeeting.orgEmail = '';
+    this.isEditingOrgEmail = false;
   }
 
   onOrganizationSelect(orgIdValue: any): void {
@@ -233,7 +278,30 @@ export class ScheduleMeeting implements OnInit {
     this.newMeeting.orgId = org ? org.orgId : null;
     this.newMeeting.orgName = org ? org.name : '';
     this.newMeeting.orgEmail = org ? org.email : '';
+    this.isEditingOrgEmail = false;
   }
+
+  // ---------- Organization email override ----------
+// Lets the user override the registered org email for this one meeting
+// without touching the organization's actual record.
+
+isEditingOrgEmail = false;
+private orgEmailBeforeEdit = '';
+
+enableOrgEmailEdit(): void {
+  this.orgEmailBeforeEdit = this.newMeeting.orgEmail;
+  this.isEditingOrgEmail = true;
+}
+
+saveOrgEmailEdit(): void {
+  if (!this.isValidEmail(this.newMeeting.orgEmail)) return;
+  this.isEditingOrgEmail = false;
+}
+
+cancelOrgEmailEdit(): void {
+  this.newMeeting.orgEmail = this.orgEmailBeforeEdit;
+  this.isEditingOrgEmail = false;
+}
 
   // ---------- Misc ----------
 
@@ -242,7 +310,7 @@ export class ScheduleMeeting implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/meetings']);
+    this.location.back();
   }
 
   saveAsDraft(): void {
@@ -431,7 +499,7 @@ private buildEndDateTime(start: string): string {
 
 }
 
-  private isValidEmail(value: string): boolean {
+  isValidEmail(value: string): boolean {
     const email = value.trim();
     // Standard RFC-5322-ish check. Deliberately provider-agnostic —
     // gmail.com, outlook.com, hotmail.com, any company domain, all pass.
@@ -442,7 +510,7 @@ private buildEndDateTime(start: string): string {
     const m = this.newMeeting;
 
     const orgOk = m.orgMode === 'select'
-      ? !!m.orgId
+      ? !!m.orgId && this.isValidEmail(m.orgEmail)
       : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
 
     // 'select' mode means the host was auto-filled from the logged-in user;
@@ -645,4 +713,6 @@ private buildEndDateTime(start: string): string {
   get showHostEmailError(): boolean {
     return this.submitted && this.newMeeting.hostMode === 'manual' && !this.isValidEmail(this.newMeeting.hostEmail);
   }
+
+  
 }
