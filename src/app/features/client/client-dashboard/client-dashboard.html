@@ -1,1 +1,324 @@
-<p>client-dashboard works!</p>
+<div class="bg-slate-100 rounded-[20px]  font-sans text-slate-800">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between bg-white rounded-2xl px-6 py-4 mb-5">
+    <div>
+      <h1 class="text-xl font-bold m-0">Dashboard</h1>
+      <p class="text-xs text-slate-400 mt-0.5"></p>
+    </div>
+    <!-- <div class="flex items-center gap-3.5">
+      <button class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-full text-xs font-medium">
+        Need Help?
+      </button>
+      <button class="w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20.52 3.48A11.9 11.9 0 0 0 12.06 0C5.52 0 .2 5.32.2 11.86c0 2.09.55 4.13 1.6 5.93L0 24l6.37-1.67a11.9 11.9 0 0 0 5.69 1.45h.01c6.54 0 11.86-5.32 11.86-11.86 0-3.17-1.23-6.15-3.41-8.44zM12.06 21.6a9.7 9.7 0 0 1-4.95-1.36l-.35-.21-3.78.99 1.01-3.68-.23-.38a9.72 9.72 0 0 1-1.49-5.1c0-5.37 4.37-9.74 9.75-9.74 2.6 0 5.05 1.02 6.89 2.86a9.68 9.68 0 0 1 2.85 6.89c0 5.38-4.37 9.73-9.7 9.73z"/></svg>
+      </button>
+      <button class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <div class="flex items-center gap-2 pl-2 border-l border-slate-200">
+        <img src="https://i.pravatar.cc/40?img=12" alt="Ravi Kumar" class="w-9 h-9 rounded-full object-cover" />
+        <div class="flex flex-col leading-tight">
+          <span class="text-sm font-semibold">Ravi Kumar</span>
+          <span class="text-[11px] text-slate-400">Admin</span>
+        </div>
+      </div>
+    </div> -->
+  </header>
+
+  <!-- Top Stat Cards -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+
+    <!-- Plan card -->
+    <div class="bg-white rounded-xl p-3.5 flex flex-col min-h-[140px]">
+      <p class="text-xs font-semibold text-slate-700 m-0">Premium Enterprise Plan</p>
+      <p class="text-[10px] text-slate-400 mt-0.5 mb-1.5">Expires on 31 Mar 2027</p>
+      <p class="text-xl font-bold m-0">482 <span class="text-xs font-medium text-slate-400">/ 500</span></p>
+      <p class="text-[11px] text-slate-400 mt-0.5 mb-auto">Employees</p>
+      <a class="text-blue-500 text-[11px] font-semibold cursor-pointer mt-2">View Plan</a>
+    </div>
+
+    <!-- Implementation Progress ring -->
+    <div class="bg-white rounded-xl p-3.5 flex flex-col items-center text-center min-h-[140px]">
+      <p class="text-xs font-semibold text-slate-700 m-0">Implementation Progress</p>
+      <div class="relative w-[72px] h-[72px] my-1.5">
+        <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#eef0f5" stroke-width="10" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#22b07d" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="52.3" />
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm font-bold">84%</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-auto">6 of 7 completed</p>
+      <a class="text-blue-500 text-[11px] font-semibold cursor-pointer mt-2">View Details</a>
+    </div>
+
+    <!-- Training Progress ring -->
+    <div class="bg-white rounded-xl p-3.5 flex flex-col items-center text-center min-h-[140px]">
+      <p class="text-xs font-semibold text-slate-700 m-0">Training Progress</p>
+      <div class="relative w-[72px] h-[72px] my-1.5">
+        <svg viewBox="0 0 120 120" class="w-full h-full -rotate-90">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#eef0f5" stroke-width="10" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#3b82f6" stroke-width="10"
+                  stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="81.7" />
+        </svg>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-sm font-bold">3 / 4</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-400 mb-auto">Completed</p>
+      <a class="text-blue-500 text-[11px] font-semibold cursor-pointer mt-2">View Training</a>
+    </div>
+
+    <!-- Support Cases -->
+    <div class="bg-white rounded-xl p-3.5 flex flex-col min-h-[140px]">
+      <p class="text-xs font-semibold text-slate-700 m-0">Support Cases</p>
+      <p class="text-2xl font-bold my-2">4</p>
+      <p class="text-[11px] text-slate-400 mb-auto">Open Cases</p>
+      <a class="text-blue-500 text-[11px] font-semibold cursor-pointer mt-2">View All</a>
+    </div>
+  </section>
+
+  <!-- Implementation Tracker + Add-ons -->
+  <section class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-4 mb-5">
+
+    <!-- Tracker -->
+    <div class="bg-white rounded-2xl p-5">
+      <h2 class="text-[15px] font-bold mb-3.5">Implementation Tracker</h2>
+      <ul class="list-none m-0 p-0">
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span>Company Setup</span>
+          <span class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span>Attendance Rules</span>
+          <span class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span>Shift Setup</span>
+          <span class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span>Biometric Integration</span>
+          <span class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span>Leave Configuration</span>
+          <span class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium">
+          <span class="text-slate-400">Payroll Setup</span>
+          <span class="w-[22px] h-[22px] rounded-full border-2 border-slate-200"></span>
+        </li>
+        <li class="flex items-center justify-between py-2.5 text-sm font-medium">
+          <span class="text-slate-400">Go Live</span>
+          <span class="w-[22px] h-[22px] rounded-full border-2 border-slate-200"></span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Add-ons -->
+    <div class="bg-white rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-3.5">
+        <h2 class="text-[15px] font-bold">Purchased Add-ons</h2>
+        <a class="text-blue-500 text-xs font-semibold cursor-pointer">Upgrade</a>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="10" r="1"/><circle cx="15" cy="10" r="1"/><path d="M9 15c1 1 5 1 6 0"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Face Recognition</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-sky-50 text-sky-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Geo Fencing</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-violet-50 text-violet-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Shift Planner</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Payroll</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Visitor Management</p>
+            <p class="text-[11px] text-orange-500 m-0">Disabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-sky-50 text-sky-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 4 4 12l5 8"/><path d="M15 4l5 8-5 8"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">API Access</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-violet-50 text-violet-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">Mobile App</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+          <div class="w-[34px] h-[34px] rounded-[10px] bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold m-0">ESS Portal</p>
+            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Trainings + Support Tickets -->
+  <section class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
+
+    <!-- Upcoming Trainings -->
+    <div class="bg-white rounded-2xl p-5">
+      <h2 class="text-[15px] font-bold mb-3.5">Upcoming Trainings</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th class="text-left text-[11px] text-slate-400 font-semibold pb-2.5 px-2">Training</th>
+              <th class="text-left text-[11px] text-slate-400 font-semibold pb-2.5 px-2">Date &amp; Time</th>
+              <th class="text-left text-[11px] text-slate-400 font-semibold pb-2.5 px-2">Trainer</th>
+              <th class="text-left text-[11px] text-slate-400 font-semibold pb-2.5 px-2">Status</th>
+              <th class="text-left text-[11px] text-slate-400 font-semibold pb-2.5 px-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Supervisor Training</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">21 Jul 2025, 10:00 AM</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Neha Singh</td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <span class="inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-600">Scheduled</span>
+              </td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <button class="bg-indigo-50 text-blue-500 border-none rounded-lg px-3.5 py-1.5 text-xs font-semibold">Join</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Employee Training</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">25 Jul 2025, 03:00 PM</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Amit Verma</td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <span class="inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-600">Scheduled</span>
+              </td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <button class="bg-indigo-50 text-blue-500 border-none rounded-lg px-3.5 py-1.5 text-xs font-semibold">Book</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Payroll Training</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">02 Aug 2025, 11:00 AM</td>
+              <td class="py-3 px-2 border-t border-slate-100 font-medium">Neha Singh</td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <span class="inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-600">Scheduled</span>
+              </td>
+              <td class="py-3 px-2 border-t border-slate-100">
+                <button class="bg-indigo-50 text-blue-500 border-none rounded-lg px-3.5 py-1.5 text-xs font-semibold">Book</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Support Tickets -->
+    <div class="bg-white rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-3.5">
+        <h2 class="text-[15px] font-bold">Recent Support Tickets</h2>
+        <a class="text-blue-500 text-xs font-semibold cursor-pointer">View All</a>
+      </div>
+      <ul class="list-none m-0 p-0">
+        <li class="flex items-center gap-2.5 py-2.5 border-b border-slate-100">
+          <span class="w-[30px] h-[30px] rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/></svg>
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold m-0">#TKT-1287</p>
+            <p class="text-[11px] text-slate-400 m-0 truncate">Face recognition not working</p>
+          </div>
+          <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 whitespace-nowrap">In Progress</span>
+          <span class="text-[11px] text-slate-400 whitespace-nowrap">20 Jul 2025</span>
+        </li>
+        <li class="flex items-center gap-2.5 py-2.5 border-b border-slate-100">
+          <span class="w-[30px] h-[30px] rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold m-0">#TKT-1286</p>
+            <p class="text-[11px] text-slate-400 m-0 truncate">Report export issue</p>
+          </div>
+          <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600 whitespace-nowrap">Resolved</span>
+          <span class="text-[11px] text-slate-400 whitespace-nowrap">18 Jul 2025</span>
+        </li>
+        <li class="flex items-center gap-2.5 py-2.5">
+          <span class="w-[30px] h-[30px] rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold m-0">#TKT-1281</p>
+            <p class="text-[11px] text-slate-400 m-0 truncate">Mobile app login issue</p>
+          </div>
+          <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-600 whitespace-nowrap">Resolved</span>
+          <span class="text-[11px] text-slate-400 whitespace-nowrap">12 Jul 2025</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+</div>
