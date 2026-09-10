@@ -14,6 +14,18 @@ export interface DataTablePayload {
   toDate?: string;
 }
 
+export interface SendWelcomeMailPayload {
+  hostEmail: string;
+  toEmail: string;
+  companyName: string;
+  contactName: string;
+}
+
+export interface SendWelcomeMailResponse {
+  status: boolean;
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -24,5 +36,9 @@ export class ClientService {
 
   getClientDataTable(payload: DataTablePayload): Observable<ClientDataTableResponse> {
     return this.http.post<ClientDataTableResponse>(`${this.baseUrl}/clientDataTable`, payload);
+  }
+
+  sendWelcomeMail(payload: SendWelcomeMailPayload): Observable<SendWelcomeMailResponse> {
+    return this.http.post<SendWelcomeMailResponse>(`${this.baseUrl}/meetings/send-welcome-mail`, payload);
   }
 }
