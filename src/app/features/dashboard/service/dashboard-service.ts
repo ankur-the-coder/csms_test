@@ -15,6 +15,16 @@ export interface DataTablePayload {
   fromDate: string;
   toDate: string;
 }
+export interface TodaysTasksResponse {
+  data: {
+    meetingCount: number;
+    pendingTrainingCount: number;
+    orgCounts: number; // implementations
+  };
+  total: number;
+  status: boolean;
+  msg: string;
+}
 @Injectable({
   providedIn: 'root',
 })
@@ -72,13 +82,13 @@ export class DashboardService {
 
     return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
   }
-  fetchTodaysTasksData(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  fetchTodaysTasksData(from: string, to: string, orgId: string): Observable<TodaysTasksResponse> {
     let data = {
       fromDate: from,
       toDate: to, orgId
     };
 
-    return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchTodaysTasksData`, data);
+    return this.http.post<TodaysTasksResponse>(`${this.apiUrl}/fetchTodaysTasksData`, data);
   }
 
 
@@ -99,5 +109,9 @@ export class DashboardService {
     return this.http.post<any>(`${this.apiUrl}/fetchDashBoardUsagesTable`, payload);
 
   }
+
+
+
+
 
 }

@@ -16,6 +16,14 @@ import { Data, CalendarApiResponse, CalendarMeeting } from '../../models/dashboa
 import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
+interface DailyOpStat {
+  label: string;
+  value: number;
+  target: number;      // used to compute pct dynamically
+  danger?: boolean;
+  barClass: string;
+  pct: number;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -25,7 +33,7 @@ import { Utils } from '../../../../shared/utils/utils';
 })
 export class DashboardComponent implements OnInit {
   cardData = signal<Data | null>(null);
-   readonly authService = inject(AuthService);
+  readonly authService = inject(AuthService);
   // Animated (count-up) display values for the top stat cards — these start
   // at 0 and tween up to the real API value whenever cardData() updates.
   animatedTotalClients = signal(0);
@@ -73,7 +81,7 @@ export class DashboardComponent implements OnInit {
   usagesDonutLabels = signal<string[]>([]);
   usagesDonutData = signal<number[]>([]);
   usagesDonutColors = signal<string[]>([]);
-    calendarEvents = signal<Record<string, DayEvent[]>>({});
+  calendarEvents = signal<Record<string, DayEvent[]>>({});
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   usagesDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
@@ -93,7 +101,7 @@ export class DashboardComponent implements OnInit {
     private router: Router,
     private dashboardService: DashboardService,
     private cdr: ChangeDetectorRef,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const today = new Date();
@@ -103,6 +111,25 @@ export class DashboardComponent implements OnInit {
     const todayStr = `${year}-${month}-${day}`;
     this.onDateApplied(todayStr, todayStr);
     this.fetchCalendarForMonth(today);
+
+    this.dashboardService
+  .fetchTodaysTasksData('2026-09-01', '2026-09-30', this.authService.getOrgId())
+  .subscribe({
+    next: (res) => {
+      if (res && res.status && res.data) {
+        this.meetingsToday = res.data.meetingCount ?? 0;
+        this.trainingsToday = res.data.pendingTrainingCount ?? 0;
+        this.implementationsToday = res.data.orgCounts ?? 0;
+        this.total.set(res.total ?? 0);
+
+        this.buildDailyOps();
+        this.cdr.markForCheck();
+      }
+    },
+    error: (err) => {
+      console.error('Error fetching daily ops:', err);
+    },
+  });
   }
 
   onCalendarEventClick(event: DayEvent): void {
@@ -120,10 +147,10 @@ export class DashboardComponent implements OnInit {
    * Fetches meetings for the entire month containing `date`.
    */
   fetchCalendarForMonth(date: Date): void {
-    const year  = date.getFullYear();
+    const year = date.getFullYear();
     const month = date.getMonth(); // 0-indexed
-    const from  = this.toDateStr(new Date(year, month, 1));
-    const to    = this.toDateStr(new Date(year, month + 1, 0)); // last day of month
+    const from = this.toDateStr(new Date(year, month, 1));
+    const to = this.toDateStr(new Date(year, month + 1, 0)); // last day of month
     const rawOrg = this.authService.getOrgId();
     const orgId = Utils.encode5t((rawOrg || '101').toString());
     console.log('[Calendar] fetchCalendarForMonth:', from, '->', to, 'orgId:', orgId);
@@ -274,14 +301,14 @@ export class DashboardComponent implements OnInit {
   readonly ImplementationData: number[] = [62, 65, 68, 71, 74, 78];
 
   // Daily Tasks & Operations
-  readonly dailyOps = [
-    // { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
-    // { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
-    // { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
-    { label: "Today's Meetings", value: 7, pct: 80, danger: false, barClass: 'bg-indigo-600' },
-    { label: "Today's Trainings", value: 5, pct: 68, danger: false, barClass: 'bg-emerald-500' },
-    { label: "Today's Implementations", value: 3, pct: 48, danger: false, barClass: 'bg-cyan-500' },
-  ];
+  // readonly dailyOps = [
+  //   // { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
+  //   // { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
+  //   // { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
+  //   { label: "Today's Meetings", value: 7, pct: 80, danger: false, barClass: 'bg-indigo-600' },
+  //   { label: "Today's Trainings", value: 5, pct: 68, danger: false, barClass: 'bg-emerald-500' },
+  //   { label: "Today's Implementations", value: 3, pct: 48, danger: false, barClass: 'bg-cyan-500' },
+  // ];
 
   // Calendar Event Data — passed into <app-calendar [eventsByDay]="eventsByDay">
   readonly eventsByDay: Record<number, DayEvent[]> = {
@@ -419,7 +446,7 @@ export class DashboardComponent implements OnInit {
     return `${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
   }
 
-    onCalendarViewChange(mode: 'day' | 'week' | 'month'): void {
+  onCalendarViewChange(mode: 'day' | 'week' | 'month'): void {
     // TODO: re-fetch events scoped to the new view range if required
     console.log('[Calendar] view changed:', mode);
   }
@@ -662,25 +689,25 @@ export class DashboardComponent implements OnInit {
           };
 
           const startLabel = fmt(startH, startM);
-          const endLabel   = fmt(endH, endM);
+          const endLabel = fmt(endH, endM);
 
           const durationDisplay = dHours > 0 ? `${dHours}h ${dMins}m` : `${dMins || 60}m`;
 
           const event: DayEvent = {
-            title:        m.Title || m.OrgName || 'Meeting',
-            client:       m.OrgName || 'Client',
-            timeLabel:    `${startLabel} - ${endLabel}`,
-            startTime:    startLabel,
+            title: m.Title || m.OrgName || 'Meeting',
+            client: m.OrgName || 'Client',
+            timeLabel: `${startLabel} - ${endLabel}`,
+            startTime: startLabel,
             startMinutes,
             endMinutes,
-            chipClass:    'bg-blue-50 text-blue-700 border border-blue-200',
-            accentClass:  'border-blue-500',
-            icon:         '🤝',
-            purpose:      m.Purpose,
-            meetingType:  m.MeetingType,
-            duration:     durationDisplay,
-            status:       m.Status,
-            orgId:        m.OrgId,
+            chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+            accentClass: 'border-blue-500',
+            icon: '🤝',
+            purpose: m.Purpose,
+            meetingType: m.MeetingType,
+            duration: durationDisplay,
+            status: m.Status,
+            orgId: m.OrgId,
           };
 
           if (!eventMap[dateKey]) eventMap[dateKey] = [];
@@ -718,5 +745,78 @@ export class DashboardComponent implements OnInit {
       '#6366f1', // indigo
     ];
     return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
+  }
+
+  // raw counts — normally these come from a service call
+  meetingsToday = 0;
+  trainingsToday = 0;
+  implementationsToday = 0;
+
+  // optional "targets" so pct isn't hardcoded either —
+  // e.g. target = max expected per day, or total capacity
+  meetingsTarget = 10;
+  trainingsTarget = 8;
+  implementationsTarget = 6;
+  total = signal(0);
+  dailyOps: DailyOpStat[] = [];
+  //today task in dashboard //
+  private loadDailyOps(): void {
+    // replace this with your real data source (service/store/API)
+
+  }
+
+ private buildDailyOps(): void {
+  const total = this.total() || 1; // avoid divide-by-zero
+
+  const rows: Omit<DailyOpStat, 'pct'>[] = [
+    {
+      label: "Today's Meetings",
+      value: this.meetingsToday,
+      target: total,
+      barClass: 'bg-emerald-600',
+      danger: this.isDanger(this.meetingsToday, total),
+    },
+    {
+      label: "Today's Trainings",
+      value: this.trainingsToday,
+      target: total,
+      barClass: 'bg-emerald-500',
+      danger: this.isDanger(this.trainingsToday, total),
+    },
+    {
+      label: "Today's Implementations",
+      value: this.implementationsToday,
+      target: total,
+      barClass: 'bg-cyan-500',
+      danger: this.isDanger(this.implementationsToday, total),
+    },
+  ];
+
+  this.dailyOps = rows.map((op) => ({
+    ...op,
+    pct: this.computePct(op.value, op.target),
+  }));
+}
+
+private computePct(value: number, target: number): number {
+  if (!target) return 0;
+  return Math.min(100, Math.round((value / target) * 100));
+}
+
+private isDanger(value: number, target: number): boolean {
+  return target > 0 && value / target >= 0.5; // flag when a category is ≥50% of the day's total load — adjust threshold as needed
+}
+
+  // private computePct(value: number, target: number): number {
+  //   if (!target) return 0;
+  //   return Math.min(100, Math.round((value / target) * 100));
+  // }
+
+  // private isDanger(value: number, target: number): boolean {
+  //   return target > 0 && value / target >= 0.9; // e.g. flag when ≥90% of target
+  // }
+
+  get totalTasks(): number {
+    return this.dailyOps.reduce((sum, op) => sum + op.value, 0);
   }
 }
