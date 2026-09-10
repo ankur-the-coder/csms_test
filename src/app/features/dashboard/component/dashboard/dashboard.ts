@@ -113,23 +113,23 @@ export class DashboardComponent implements OnInit {
     this.fetchCalendarForMonth(today);
 
     this.dashboardService
-  .fetchTodaysTasksData('2026-09-01', '2026-09-30', this.authService.getOrgId())
-  .subscribe({
-    next: (res) => {
-      if (res && res.status && res.data) {
-        this.meetingsToday = res.data.meetingCount ?? 0;
-        this.trainingsToday = res.data.pendingTrainingCount ?? 0;
-        this.implementationsToday = res.data.orgCounts ?? 0;
-        this.total.set(res.total ?? 0);
+      .fetchTodaysTasksData('2026-09-01', '2026-09-30', this.authService.getOrgId())
+      .subscribe({
+        next: (res) => {
+          if (res && res.status && res.data) {
+            this.meetingsToday = res.data.meetingCount ?? 0;
+            this.trainingsToday = res.data.pendingTrainingCount ?? 0;
+            this.implementationsToday = res.data.orgCounts ?? 0;
+            this.total.set(res.total ?? 0);
 
-        this.buildDailyOps();
-        this.cdr.markForCheck();
-      }
-    },
-    error: (err) => {
-      console.error('Error fetching daily ops:', err);
-    },
-  });
+            this.buildDailyOps();
+            this.cdr.markForCheck();
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching daily ops:', err);
+        },
+      });
   }
 
   onCalendarEventClick(event: DayEvent): void {
@@ -212,13 +212,18 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/client'], { queryParams: this.dateQueryParams() });
   }
 
-  navigateToImplementation() {
+  navigateToPendingImplementation() {
     // this.router.navigate(['/implementation']);
     this.router.navigate(['/implementation'], {
       queryParams: { ...this.dateQueryParams(), tab: 'in_progress' },
     });
   }
-
+  navigateToCompletedImplementation() {
+    // this.router.navigate(['/implementation']);
+    this.router.navigate(['/implementation'], {
+      queryParams: { ...this.dateQueryParams(), tab: 'completed' },
+    });
+  }
   navigateToTraining() {
     this.router.navigate(['/training']);
   }
@@ -765,47 +770,47 @@ export class DashboardComponent implements OnInit {
 
   }
 
- private buildDailyOps(): void {
-  const total = this.total() || 1; // avoid divide-by-zero
+  private buildDailyOps(): void {
+    const total = this.total() || 1; // avoid divide-by-zero
 
-  const rows: Omit<DailyOpStat, 'pct'>[] = [
-    {
-      label: "Today's Meetings",
-      value: this.meetingsToday,
-      target: total,
-      barClass: 'bg-emerald-600',
-      danger: this.isDanger(this.meetingsToday, total),
-    },
-    {
-      label: "Today's Trainings",
-      value: this.trainingsToday,
-      target: total,
-      barClass: 'bg-emerald-500',
-      danger: this.isDanger(this.trainingsToday, total),
-    },
-    {
-      label: "Today's Implementations",
-      value: this.implementationsToday,
-      target: total,
-      barClass: 'bg-cyan-500',
-      danger: this.isDanger(this.implementationsToday, total),
-    },
-  ];
+    const rows: Omit<DailyOpStat, 'pct'>[] = [
+      {
+        label: "Today's Meetings",
+        value: this.meetingsToday,
+        target: total,
+        barClass: 'bg-emerald-600',
+        danger: this.isDanger(this.meetingsToday, total),
+      },
+      {
+        label: "Today's Trainings",
+        value: this.trainingsToday,
+        target: total,
+        barClass: 'bg-emerald-500',
+        danger: this.isDanger(this.trainingsToday, total),
+      },
+      {
+        label: "Today's Implementations",
+        value: this.implementationsToday,
+        target: total,
+        barClass: 'bg-cyan-500',
+        danger: this.isDanger(this.implementationsToday, total),
+      },
+    ];
 
-  this.dailyOps = rows.map((op) => ({
-    ...op,
-    pct: this.computePct(op.value, op.target),
-  }));
-}
+    this.dailyOps = rows.map((op) => ({
+      ...op,
+      pct: this.computePct(op.value, op.target),
+    }));
+  }
 
-private computePct(value: number, target: number): number {
-  if (!target) return 0;
-  return Math.min(100, Math.round((value / target) * 100));
-}
+  private computePct(value: number, target: number): number {
+    if (!target) return 0;
+    return Math.min(100, Math.round((value / target) * 100));
+  }
 
-private isDanger(value: number, target: number): boolean {
-  return target > 0 && value / target >= 0.5; // flag when a category is ≥50% of the day's total load — adjust threshold as needed
-}
+  private isDanger(value: number, target: number): boolean {
+    return target > 0 && value / target >= 0.5; // flag when a category is ≥50% of the day's total load — adjust threshold as needed
+  }
 
   // private computePct(value: number, target: number): number {
   //   if (!target) return 0;
