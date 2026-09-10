@@ -9,7 +9,7 @@ import {
 } from '../../../shared/components/Data-table/data-table.types';
 import { ClientService, SendWelcomeMailPayload } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
-import { ActivatedRoute,  Router  } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService } from '../../meetings/schedule-meeting/schedule-meetings.service';
@@ -31,6 +31,15 @@ export interface ClientRow {
   email: string;
   phoneNumber: string;
   country: string;
+}
+
+export interface TimelineEvent {
+  date: string;
+  year: string;
+  title: string;
+  description: string;
+  status: 'success' | 'warning' | 'danger';
+  current?: boolean;
 }
 
 @Component({
@@ -60,7 +69,7 @@ export class Client {
   }
 
   ngOnInit() {
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.subscribe((params) => {
       const from = params.get('from');
       const to = params.get('to');
       if (from && to) {
@@ -121,6 +130,106 @@ export class Client {
     }
   }
 
+  // ── Client Timeline drawer ──────────────────────────────────────────────
+  timelineDrawerOpen = signal(false);
+  timelineDrawerRow = signal<ClientRow | null>(null);
+  timelineEvents = signal<TimelineEvent[]>([]);
+
+  openClientTimeline(row: ClientRow): void {
+    console.log('opening timeline for', row);
+    this.timelineDrawerRow.set(row);
+    this.timelineEvents.set(this.buildTimelineForRow(row));
+    this.timelineDrawerOpen.set(true);
+    this.closeActionMenu();
+  }
+
+  closeTimelineDrawer(): void {
+    this.timelineDrawerOpen.set(false);
+  }
+
+  private buildTimelineForRow(row: ClientRow): TimelineEvent[] {
+    return [
+      {
+        date: '10 Jan',
+        year: '2025',
+        title: 'Welcome Email Sent',
+        description: `Welcome email and portal access sent to ${row.contactPerson || row.name}.`,
+        status: 'success',
+      },
+      {
+        date: '11 Jan',
+        year: '2025',
+        title: 'Kickoff Meeting',
+        description: 'Initial kickoff meeting completed with the team.',
+        status: 'success',
+      },
+      {
+        date: '13 Jan',
+        year: '2025',
+        title: 'Company Created',
+        description: `Company profile and admin user created for ${row.name}.`,
+        status: 'success',
+      },
+      {
+        date: '15 Jan',
+        year: '2025',
+        title: 'Employees Imported',
+        description: `${row.userLimit} employees imported successfully.`,
+        status: 'success',
+      },
+      {
+        date: '16 Jan',
+        year: '2025',
+        title: 'Device Connected',
+        description: 'ZKTeco device integrated and connected.',
+        status: 'success',
+        current: true,
+      },
+      {
+        date: '18 Jan',
+        year: '2025',
+        title: 'Admin Training',
+        description: 'Admin training completed.',
+        status: 'success',
+      },
+      {
+        date: '20 Jan',
+        year: '2025',
+        title: 'Go Live',
+        description: 'System is live and in production.',
+        status: 'success',
+      },
+      {
+        date: '15 Feb',
+        year: '2025',
+        title: 'Support Ticket',
+        description: 'Issue reported: Face recognition setup.',
+        status: 'warning',
+      },
+      {
+        date: '18 Feb',
+        year: '2025',
+        title: 'Training',
+        description: 'Supervisor training conducted.',
+        status: 'success',
+      },
+      {
+        date: '12 Mar',
+        year: '2025',
+        title: 'Quarterly Review',
+        description: 'Quarterly business review meeting.',
+        status: 'success',
+      },
+      {
+        date: '20 Mar',
+        year: '2025',
+        title: 'Renewal Reminder',
+        description: `Renewal reminder sent for ${row.planEnd || '31 Mar 2027'}.`,
+        status: 'danger',
+      },
+    ];
+  }
+
   onClientMenuAction(action: string, row: ClientRow): void {
     console.log(`${action}:`, row.orgId);
 
@@ -135,9 +244,12 @@ export class Client {
       });
     } else if (action === 'Send Mail') {
       this.sendWelcomeMail(row);
+    } else if (action === 'Client Timeline') {
+      this.openClientTimeline(row);
     } else {
       this.closeActionMenu();
     }
+
   }
 
   private sendWelcomeMail(row: ClientRow): void {
@@ -194,7 +306,7 @@ export class Client {
             const errMsg = err?.error?.message || err?.message || 'Failed to send welcome email.';
             this.toastr.error(errMsg, 'Error');
             this.closeActionMenu();
-          }
+          },
         });
       },
       error: (err) => {
@@ -202,7 +314,7 @@ export class Client {
         const errMsg = err?.error?.message || err?.message || 'Failed to fetch host details.';
         this.toastr.error(errMsg, 'Error');
         this.closeActionMenu();
-      }
+      },
     });
   }
 
@@ -215,7 +327,8 @@ export class Client {
       userLimit: raw.userLimit,
       modules: raw.module,
       leadOwner: raw.leadOwner,
-      supportOwner: raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
+      supportOwner:
+        raw.supportOwner && String(raw.supportOwner) !== '-' ? String(raw.supportOwner) : '—',
       progress: raw.progress,
       stage: raw.stage,
       trainingStatus: raw.trainingStatus,
@@ -229,16 +342,19 @@ export class Client {
 
   // ── Bulk action handlers ────────────────────────────────────────────────
   private markImplementation(rows: ClientRow[], status: 'Pending' | 'Completed'): void {
-    const ids = rows.map(r => r.orgId);
+    const ids = rows.map((r) => r.orgId);
     console.log(`Mark ${status}:`, ids);
   }
 
   private exportSelected(rows: ClientRow[]): void {
-    console.log('Export selected:', rows.map(r => r.orgId));
+    console.log(
+      'Export selected:',
+      rows.map((r) => r.orgId),
+    );
   }
 
   private deleteSelected(rows: ClientRow[]): void {
-    const ids = rows.map(r => r.orgId);
+    const ids = rows.map((r) => r.orgId);
     console.log('Delete:', ids);
   }
 
@@ -250,7 +366,7 @@ export class Client {
         icon: 'check',
         color: '#10b981',
         // now based on progress percentage instead of a status string
-        hidden: (rows) => rows.every(r => r.progress === 100),
+        hidden: (rows) => rows.every((r) => r.progress === 100),
         onClick: (rows) => this.markImplementation(rows, 'Completed'),
       },
       {
@@ -258,7 +374,7 @@ export class Client {
         label: 'Mark Pending',
         icon: 'circle-dot',
         color: '#f59e0b',
-        hidden: (rows) => rows.every(r => r.progress === 0),
+        hidden: (rows) => rows.every((r) => r.progress === 0),
         onClick: (rows) => this.markImplementation(rows, 'Pending'),
       },
       {
@@ -273,7 +389,7 @@ export class Client {
         label: 'Delete',
         icon: 'delete',
         color: '#ef4444',
-        disabled: (rows) => rows.some(r => r.stage === 'PREMIUM'),
+        disabled: (rows) => rows.some((r) => r.stage === 'PREMIUM'),
         onClick: (rows) => this.deleteSelected(rows),
       },
     ];
@@ -327,7 +443,11 @@ export class Client {
             start: ctx.page * ctx.pageSize,
             length: ctx.pageSize,
             search: ctx.search ?? '',
-            sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
+            sorting: JSON.stringify({
+              require: ctx.sortKey ? 1 : 0,
+              col: sortCol,
+              dir: ctx.sortDir ?? 'asc',
+            }),
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
