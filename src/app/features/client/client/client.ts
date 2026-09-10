@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../../shared/components/Data-table/custom-column.directive';
 import {
@@ -9,7 +9,7 @@ import {
 } from '../../../shared/components/Data-table/data-table.types';
 import { ClientService } from '../services/client/client';
 import { Datum } from '../models/client/client.model';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute,  Router  } from '@angular/router';
 import { NgClass } from '@angular/common';
 
 export interface ClientRow {
@@ -40,6 +40,7 @@ export interface ClientRow {
 export class Client {
   private clientApi = inject(ClientService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   statusFilter = signal<string>('all');
 
@@ -69,6 +70,68 @@ export class Client {
   loadData() {}
 
   openClientDetails(client: ClientRow) {}
+
+  actionMenuOpenRowId = signal<number | null>(null);
+  actionMenuRow = signal<ClientRow | null>(null);
+  actionMenuPosition = signal<{ top: number; left: number } | null>(null);
+
+  toggleActionMenu(row: ClientRow, event: MouseEvent): void {
+    event.stopPropagation();
+
+    if (this.actionMenuOpenRowId() === row.orgId) {
+      this.closeActionMenu();
+      return;
+    }
+
+    const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 176;
+
+    this.actionMenuOpenRowId.set(row.orgId);
+    this.actionMenuRow.set(row);
+    this.actionMenuPosition.set({
+      top: trigger.bottom + 6,
+      left: Math.max(8, trigger.right - menuWidth),
+    });
+  }
+
+  closeActionMenu(): void {
+    this.actionMenuOpenRowId.set(null);
+    this.actionMenuRow.set(null);
+    this.actionMenuPosition.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  @HostListener('window:resize')
+  onWindowResizeCloseActionMenu(): void {
+    if (this.actionMenuOpenRowId() !== null) {
+      this.closeActionMenu();
+    }
+  }
+
+  onClientMenuAction(action: string, row: ClientRow): void {
+    console.log(`${action}:`, row.orgId);
+    this.closeActionMenu();
+
+  //    if (action === 'Meeting Schedule') {
+  //   this.router.navigate(['/meetings/schedule']);
+  // }
+
+if (action === 'Meeting Schedule') {
+    this.router.navigate(['/meetings/schedule'], {
+      queryParams: {
+        orgName: row.name,
+        email: row.email,
+      },
+    });
+  }
+
+  }
 
   private mapDatumToClientRow(raw: Datum): ClientRow {
     return {
@@ -153,14 +216,15 @@ export class Client {
         { key: 'email', label: 'Email', sortable: false },
         { key: 'phoneNumber', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
-        // { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
+        { key: 'planStart', label: 'Plan Start', sortable: false, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
-        { key: 'progress', label: 'Implementation', sortable: false },
-        { key: 'trainingStatus', label: 'Training', sortable: false },
+        // { key: 'progress', label: 'Implementation', sortable: false },
+        // { key: 'trainingStatus', label: 'Training', sortable: false },
+        { key: 'action', label: 'Action', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
