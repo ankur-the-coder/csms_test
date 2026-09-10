@@ -45,14 +45,13 @@ import { DatePicker } from '../../shared/components/inputs/date-picker/date-pick
 import { DatePicker as DatePickerService } from '../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../shared/components/inputs/time-picker/time-picker';
 
-import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {

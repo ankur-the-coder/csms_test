@@ -745,6 +745,13 @@ private applyInitialDatesEffect = effect(() => {
     this.colVisibility.update(v => ({ ...v, [key]: visible }));
   }
 
+  isColVisible(key: string): boolean {
+    const col = this.config().columns.find(c => String(c.key) === key);
+    if (col && col.hideable === false) return true;
+    const override = this.colVisibility()[key];
+    return override !== undefined ? override : !(col?.hidden);
+  }
+
   // ── Sort ──────────────────────────────────────────────────────────────────
   onSort(key: keyof T): void {
     if (this.wasDragging()) return;
