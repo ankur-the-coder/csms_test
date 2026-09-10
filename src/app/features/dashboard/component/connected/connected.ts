@@ -25,7 +25,7 @@ export interface ClientRow {
 
 @Component({
   selector: 'app-connected',
-  imports: [DataTable, CustomColumnDirective, NgClass, CommonModule],
+  imports: [DataTable, CustomColumnDirective, CommonModule],
   templateUrl: './connected.html',
   styleUrl: './connected.css',
 })

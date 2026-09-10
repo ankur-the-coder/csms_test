@@ -35,7 +35,7 @@ export interface ClientRow {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable],
 
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
