@@ -138,7 +138,7 @@ export class ScheduleMeeting implements OnInit {
       this.ngZone.run(() => {
         this.meetingTypesList = types.length > 0
           ? types.map(t => t.name)
-          : ['Failed to load Options'];
+          : [];
       });
     },
     error: (err) => {
