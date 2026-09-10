@@ -10,7 +10,7 @@
       </p>
     </div>
     <div class="w-full md:w-64 lg:w-64 ">
-      <app-custom-date-selector (onApplyDate)="onDateApplied($event.from, $event.to)"></app-custom-date-selector>
+      <app-custom-date-selector  (onApplyDate)="onDateApplied($event.from, $event.to)" ></app-custom-date-selector>
 
 
       <!-- @if (showDateError) {
@@ -101,7 +101,35 @@
       </div>
     </div>
   </div>
+ <!-- Completed Implementations -->
+<div
+    (click)="navigateToMeetings()"
+    class="bg-purple-50/50 hover:bg-purple-100/90 rounded-2xl p-4
+           border border-purple-400/90 shadow-xs
+           flex flex-col justify-between cursor-pointer
+           transform hover:-translate-y-1.5 hover:scale-[1.03]
+           hover:shadow-xl hover:shadow-purple-500/25
+           hover:border-purple-500 transition-all duration-300 ease-out group"
+  >
+    <div class="text-2xl font-bold text-slate-900">
+      {{ animatedMeeting() }}
+    </div>
 
+    <div class="flex items-center justify-between text-text-primary">
+      <span class="text-sm"> Completed Implementations</span>
+
+      <div class="p-1.5 rounded-lg bg-purple-100 text-purple-600 group-hover:scale-110 transition-transform">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 14l9-5-9-5-9 5 9 5z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
   <!-- Pending Trainings -->
   <div
     (click)="navigateToTraining()"
@@ -132,8 +160,9 @@
     </div>
   </div>
 
+
   <!-- Meetings Scheduled -->
-  <div
+  <!-- <div
     (click)="navigateToMeetings()"
     class="bg-purple-50/50 hover:bg-purple-100/90 rounded-2xl p-4
            border border-purple-400/90 shadow-xs
@@ -160,7 +189,7 @@
         </svg>
       </div>
     </div>
-  </div>
+  </div> -->
 
 </div>
 
@@ -204,7 +233,7 @@
     <div>
       <div class="flex items-center justify-between mb-5">
         <h3 class="text-base font-bold ">Daily Tasks & Operations</h3>
-        <span class="text-xs text-slate-400 font-medium">54 Total Tasks</span>
+        <span class="text-xs text-slate-400 font-medium">15 Total Tasks</span>
       </div>
 
       <div class="space-y-3.5">
@@ -225,6 +254,11 @@
   </div>
 
   <!-- Shared Custom Calendar Component -->
-  <app-calendar [eventsByDay]="eventsByDay"></app-calendar>
+   <app-calendar
+    [eventsByDay]="calendarEvents()"
+    (eventClick)="onCalendarEventClick($event)"
+    (dateSelect)="onCalendarDateChange($event)"
+    (viewModeChange)="onCalendarViewChange($event)">
+  </app-calendar>
 
 </div>

@@ -164,10 +164,10 @@ getCourses(categoryId?: number): Observable<any> {
     );
   }
 
-  deleteMaterial(id: number): Observable<any> {
+  deleteMaterial(id: number, filePath: string): Observable<any> {
     return this.http.post<any>(
       `${this.API_URL}/courses/admin/materials/${id}/delete`,
-      {}
+      { id, file_url: filePath }
     );
   }
 

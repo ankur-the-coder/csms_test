@@ -12,7 +12,7 @@ import { Router } from '@angular/router';
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
 import { DashboardService } from '../../service/dashboard-service';
-import { Data } from '../../models/dashboardModel';
+import { Data, CalendarApiResponse, CalendarMeeting } from '../../models/dashboardModel';
 import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
@@ -73,6 +73,7 @@ export class DashboardComponent implements OnInit {
   usagesDonutLabels = signal<string[]>([]);
   usagesDonutData = signal<number[]>([]);
   usagesDonutColors = signal<string[]>([]);
+    calendarEvents = signal<Record<string, DayEvent[]>>({});
   // Center text: show total number only (primary line). Secondary
   // lines are left empty so the chart renders a single-line total.
   usagesDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
@@ -101,8 +102,33 @@ export class DashboardComponent implements OnInit {
     const day = String(today.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
     this.onDateApplied(todayStr, todayStr);
+    this.fetchCalendarForMonth(today);
   }
 
+  onCalendarEventClick(event: DayEvent): void {
+    console.log('[Calendar] event clicked:', event);
+  }
+
+  /**
+   * Called when the user navigates to a new date/month in the calendar component.
+   */
+  onCalendarDateChange(date: Date): void {
+    this.fetchCalendarForMonth(date);
+  }
+
+  /**
+   * Fetches meetings for the entire month containing `date`.
+   */
+  fetchCalendarForMonth(date: Date): void {
+    const year  = date.getFullYear();
+    const month = date.getMonth(); // 0-indexed
+    const from  = this.toDateStr(new Date(year, month, 1));
+    const to    = this.toDateStr(new Date(year, month + 1, 0)); // last day of month
+    const rawOrg = this.authService.getOrgId();
+    const orgId = Utils.encode5t((rawOrg || '101').toString());
+    console.log('[Calendar] fetchCalendarForMonth:', from, '->', to, 'orgId:', orgId);
+    this.fetchCalendarEvents(from, to, orgId);
+  }
   // fetchDashboardCards(): void {
   //   this.dashboardService.getDashboardCards().subscribe({
   //     next: (res) => {
@@ -249,12 +275,12 @@ export class DashboardComponent implements OnInit {
 
   // Daily Tasks & Operations
   readonly dailyOps = [
-    { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
-    { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
-    { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
-    { label: "Today's Meetings", value: 7, pct: 40, danger: false, barClass: 'bg-indigo-600' },
-    { label: "Today's Trainings", value: 5, pct: 28, danger: false, barClass: 'bg-emerald-500' },
-    { label: 'Installations', value: 3, pct: 18, danger: false, barClass: 'bg-cyan-500' },
+    // { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
+    // { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
+    // { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
+    { label: "Today's Meetings", value: 7, pct: 80, danger: false, barClass: 'bg-indigo-600' },
+    { label: "Today's Trainings", value: 5, pct: 68, danger: false, barClass: 'bg-emerald-500' },
+    { label: "Today's Implementations", value: 3, pct: 48, danger: false, barClass: 'bg-cyan-500' },
   ];
 
   // Calendar Event Data — passed into <app-calendar [eventsByDay]="eventsByDay">
@@ -391,6 +417,11 @@ export class DashboardComponent implements OnInit {
     const h12 = ((hour + 11) % 12) + 1;
     const ampm = hour < 12 ? 'AM' : 'PM';
     return `${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+  }
+
+    onCalendarViewChange(mode: 'day' | 'week' | 'month'): void {
+    // TODO: re-fetch events scoped to the new view range if required
+    console.log('[Calendar] view changed:', mode);
   }
 
   // ── Date filter ────────────────────────────────────────────────────────────
@@ -556,6 +587,112 @@ export class DashboardComponent implements OnInit {
         this.isUsagesLoading.set(false);
         this.usagesHasError.set(true);
         this.cdr.markForCheck();
+      },
+    });
+
+
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  /** Format a Date as "YYYY-MM-DD". */
+  private toDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  /**
+   * Fetch calendar meetings for [from, to] and update the calendarEvents signal.
+   * Handles responses shaped as: { meetings: [...] }, { data: { meetings: [...] } },
+   * { data: [...] }, or a flat array.
+   */
+  private fetchCalendarEvents(from: string, to: string, orgId: string): void {
+    this.dashboardService.fetchDashBoardCalendar(from, to, orgId).subscribe({
+      next: (res: any) => {
+        console.log('[Calendar] API response:', res);
+
+        let meetings: CalendarMeeting[] = [];
+        if (Array.isArray(res?.meetings)) {
+          meetings = res.meetings;
+        } else if (Array.isArray(res?.data?.meetings)) {
+          meetings = res.data.meetings;
+        } else if (Array.isArray(res?.data)) {
+          meetings = res.data;
+        } else if (Array.isArray(res)) {
+          meetings = res;
+        }
+
+        console.log('[Calendar] Extracted meetings count:', meetings.length);
+
+        const eventMap: Record<string, DayEvent[]> = {};
+
+        for (const m of meetings) {
+          // Date: EndTime or Date or StartTime date component
+          let rawDate = m.EndTime || (m as any).Date || (m as any).date || (m as any).MeetingDate || '';
+          if (!rawDate && m.StartTime && m.StartTime.includes('-')) {
+            rawDate = m.StartTime;
+          }
+          const dateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
+          if (!dateKey) continue;
+
+          // Start Time
+          const startRaw = m.StartTime || '09:00';
+          const startParts = startRaw.split(':').map(Number);
+          const startH = isNaN(startParts[0]) ? 9 : startParts[0];
+          const startM = isNaN(startParts[1]) ? 0 : startParts[1];
+          const startMinutes = startH * 60 + startM;
+
+          // Duration
+          const durationRaw = m.Duration || '01:00:00';
+          const dParts = durationRaw.split(':');
+          const dHours = parseInt(dParts[0], 10) || 0;
+          const dMins = parseInt(dParts[1], 10) || 0;
+          const durationMins = dHours * 60 + dMins || 60;
+          const endMinutes = startMinutes + durationMins;
+
+          const endH = Math.floor(endMinutes / 60) % 24;
+          const endM = endMinutes % 60;
+
+          const fmt = (h: number, mi: number) => {
+            const h12 = ((h + 11) % 12) + 1;
+            const ampm = h < 12 ? 'AM' : 'PM';
+            return `${String(h12).padStart(2, '0')}:${String(mi).padStart(2, '0')} ${ampm}`;
+          };
+
+          const startLabel = fmt(startH, startM);
+          const endLabel   = fmt(endH, endM);
+
+          const durationDisplay = dHours > 0 ? `${dHours}h ${dMins}m` : `${dMins || 60}m`;
+
+          const event: DayEvent = {
+            title:        m.Title || m.OrgName || 'Meeting',
+            client:       m.OrgName || 'Client',
+            timeLabel:    `${startLabel} - ${endLabel}`,
+            startTime:    startLabel,
+            startMinutes,
+            endMinutes,
+            chipClass:    'bg-blue-50 text-blue-700 border border-blue-200',
+            accentClass:  'border-blue-500',
+            icon:         '🤝',
+            purpose:      m.Purpose,
+            meetingType:  m.MeetingType,
+            duration:     durationDisplay,
+            status:       m.Status,
+            orgId:        m.OrgId,
+          };
+
+          if (!eventMap[dateKey]) eventMap[dateKey] = [];
+          eventMap[dateKey].push(event);
+        }
+
+        console.log('[Calendar] Processed eventMap keys:', Object.keys(eventMap));
+        this.calendarEvents.set({ ...eventMap });
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('[Calendar] Error fetching calendar data:', err);
       },
     });
   }
