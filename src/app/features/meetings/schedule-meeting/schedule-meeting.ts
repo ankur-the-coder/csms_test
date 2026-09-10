@@ -1,7 +1,7 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService, Organization, EmployeeDetails, BookedMeeting } from './schedule-meetings.service';
 import { SingleInput, SelectOption } from '../../../shared/components/inputs/single-input/single-input';
@@ -108,6 +108,7 @@ export class ScheduleMeeting implements OnInit {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private scheduleMeetingService: ScheduleMeetingService,
     private ngZone: NgZone,
     private toastr: ToastrService,
@@ -115,8 +116,33 @@ export class ScheduleMeeting implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.readQueryParams();
     this.loadAllData();
     this.loadHostDetails();
+  }
+
+  private readQueryParams(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const orgName = params.get('orgName') || params.get('name') || params.get('companyName');
+      const email = params.get('email') || params.get('orgEmail');
+      const orgId = params.get('orgId');
+
+      if (orgName) {
+        this.newMeeting.orgName = orgName;
+      }
+      if (email) {
+        this.newMeeting.orgEmail = email;
+      }
+      if (orgId) {
+        const parsedId = Number(orgId);
+        if (!isNaN(parsedId)) {
+          this.newMeeting.orgId = parsedId;
+        }
+      }
+      if (orgName || email) {
+        this.newMeeting.orgMode = 'manual';
+      }
+    });
   }
 
   private loadAllData(): void {
