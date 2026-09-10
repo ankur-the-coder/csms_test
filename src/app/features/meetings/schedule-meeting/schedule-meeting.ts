@@ -9,6 +9,7 @@ import { DatePicker } from '../../../shared/components/inputs/date-picker/date-p
 import { DatePicker as DatePickerService } from '../../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../../shared/components/inputs/time-picker/time-picker';
 import { Subscription } from 'rxjs';
+import { Location } from '@angular/common';
 
 type EntryMode = 'select' | 'manual';
 
@@ -109,7 +110,8 @@ export class ScheduleMeeting implements OnInit {
     private router: Router,
     private scheduleMeetingService: ScheduleMeetingService,
     private ngZone: NgZone,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -282,7 +284,7 @@ cancelOrgEmailEdit(): void {
   }
 
   goBack(): void {
-    this.router.navigate(['/meetings']);
+    this.location.back();
   }
 
   saveAsDraft(): void {
