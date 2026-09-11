@@ -247,6 +247,7 @@ export class Client {
       this.router.navigate(['/client/client-dashboard'], {
         queryParams: {
           orgId: row.orgId,
+          orgName: row.name,
         },
       });
     } else if (action === 'Send Mail') {
