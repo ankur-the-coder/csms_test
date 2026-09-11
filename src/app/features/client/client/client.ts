@@ -249,7 +249,7 @@ export class Client {
           orgId: row.orgId,
         },
       });
-    }else if (action === 'Send Mail') {
+    } else if (action === 'Send Mail') {
       this.sendWelcomeMail(row);
     } else if (action === 'Client Timeline') {
       this.openClientTimeline(row);
