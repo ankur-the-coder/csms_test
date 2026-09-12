@@ -107,7 +107,15 @@ export class DashboardService {
 
   }
 
+ fetchFeedbackCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
+    let data = {
+      fromDate: from,
+      toDate: to,
+      orgId
+    };
 
+    return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchFeedbackCards`, data);
+  }
 
 
 

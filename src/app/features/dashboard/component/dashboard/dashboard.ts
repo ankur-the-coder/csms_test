@@ -696,7 +696,7 @@ export class DashboardComponent implements OnInit {
 
   navigateToUsages(): void {
     this.router.navigate(
-      ['/usage'],
+      ['/usages'],
       {
         queryParams:
           this.dateQueryParams(),
