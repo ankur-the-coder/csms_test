@@ -13,7 +13,7 @@ import {
   OnDestroy,
   OnChanges,
   Inject,
-  PLATFORM_ID
+  PLATFORM_ID,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -42,7 +42,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   @Input() preDefinedPresent: string = '';
   @Input() selectedDays: number = 0;
   @Input() showEmpty: boolean = false;
-  @Input() defaultPreset: 'today' | 'currentMonth' | 'lastWeek'|'last90days' |'yesterday' |'custom' = 'today';
+  @Input() defaultPreset:
+    'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' = 'today';
+  @Input() disableFutureDates: boolean = false;
+  @Input() disablePastDates: boolean = false;
 
   @Output() onApplyDate = new EventEmitter<DateRangeOutput>();
 
@@ -72,7 +75,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     { key: 'lastMonth', label: 'Last Month' },
     { key: 'currentMonth', label: 'Current Month' },
     { key: 'last90days', label: 'Last 90 Days' },
-    { key: 'custom', label: 'Custom Date' }
+    { key: 'custom', label: 'Custom Date' },
   ];
 
   private dateRangeYears: number = 10;
@@ -82,8 +85,18 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   hoveredDate: Date | null = null;
 
   months: string[] = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   showMonthDropdown: boolean = false;
@@ -95,7 +108,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   constructor(
     private elementRef: ElementRef,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
@@ -122,9 +135,11 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       if (this.initialDates.from === '' && !this.preDefinedPresent) {
         this.initialDates = { from: new Date(), to: new Date() };
         this.selectPreset(this.defaultPreset);
+        this.applyDateRange();
+      } else {
+        this.submittedStartDate = this.selectedStartDate;
+        this.submittedEndDate = this.selectedEndDate;
       }
-      this.submittedStartDate = this.selectedStartDate;
-      this.submittedEndDate = this.selectedEndDate;
     }
   }
 
@@ -153,7 +168,11 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
         this.selectedPreset = null;
       } else {
         this.updateSelectedPreset();
-        this.currentMonth = new Date(this.selectedStartDate.getFullYear(), this.selectedStartDate.getMonth(), 1);
+        this.currentMonth = new Date(
+          this.selectedStartDate.getFullYear(),
+          this.selectedStartDate.getMonth(),
+          1,
+        );
       }
 
       this.renderCalendar(this.currentMonth);
@@ -168,12 +187,22 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     const diffTime = this.selectedEndDate.getTime() - this.selectedStartDate.getTime();
     const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
 
-    const lastDayOfCurrentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth() + 1, 0);
+    const lastDayOfCurrentMonth = new Date(
+      this.currentDate.getFullYear(),
+      this.currentDate.getMonth() + 1,
+      0,
+    );
 
     const isFirstDayOfCurrentMonth = this.selectedStartDate.getDate() === 1;
-    const isEndDateBeforeOrEqualLastDayOfCurrentMonth = this.selectedEndDate <= lastDayOfCurrentMonth;
+    const isEndDateBeforeOrEqualLastDayOfCurrentMonth =
+      this.selectedEndDate <= lastDayOfCurrentMonth;
 
-    if (isFirstDayOfCurrentMonth && isEndDateBeforeOrEqualLastDayOfCurrentMonth && diffDays > 1 && diffDays !== 7) {
+    if (
+      isFirstDayOfCurrentMonth &&
+      isEndDateBeforeOrEqualLastDayOfCurrentMonth &&
+      diffDays > 1 &&
+      diffDays !== 7
+    ) {
       this.selectedPreset = 'currentMonth';
     } else if (diffDays >= 28 && diffDays <= 31) {
       this.selectedPreset = 'currentMonth';
@@ -193,7 +222,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       this.currentMonth = new Date(
         (this.selectedEndDate || this.currentDate).getFullYear(),
         (this.selectedEndDate || this.currentDate).getMonth(),
-        1
+        1,
       );
       this.renderCalendar(this.currentMonth);
       this.showDatePicker = true;
@@ -212,7 +241,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
     const buttonElement = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const pickerWidth = 360; 
+    const pickerWidth = 360;
 
     if (buttonElement.left + pickerWidth > viewportWidth) {
       this.datePickerPosition = 'right-0';
@@ -251,6 +280,13 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   get minDate(): Date {
+    if (this.disablePastDates) {
+      const todayNormalized = this.normalizeDate(new Date());
+      // if an explicit setMinDate is later than today, respect that instead
+      return this.setMinDate && this.setMinDate > todayNormalized
+        ? this.setMinDate
+        : todayNormalized;
+    }
     if (this.setMinDate) return this.setMinDate;
     const min = new Date(this.currentDate);
     min.setFullYear(min.getFullYear() - this.dateRangeYears);
@@ -258,10 +294,81 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   get maxDate(): Date {
+    if (this.disableFutureDates) {
+      const todayNormalized = this.normalizeDate(new Date());
+      // if an explicit setMaxDate is earlier than today, respect that instead
+      return this.setMaxDate && this.setMaxDate < todayNormalized
+        ? this.setMaxDate
+        : todayNormalized;
+    }
     if (this.setMaxDate) return this.setMaxDate;
     const max = new Date(this.currentDate);
     max.setFullYear(max.getFullYear() + this.dateRangeYears);
     return max;
+  }
+
+  /** True when `date` falls outside the allowed [minDate, maxDate] window. */
+  isDateDisabled(date: Date): boolean {
+    const normalizedDate = this.normalizeDate(date);
+    const normalizedMin = this.minDate ? this.normalizeDate(this.minDate) : null;
+    const normalizedMax = this.maxDate ? this.normalizeDate(this.maxDate) : null;
+    return (
+      !!(normalizedMin && normalizedDate < normalizedMin) ||
+      !!(normalizedMax && normalizedDate > normalizedMax)
+    );
+  }
+
+  /** True when the month containing `monthIndex` (within currentMonth's year) is fully out of range. */
+  isMonthDisabled(monthIndex: number): boolean {
+    const candidate = new Date(this.currentMonth.getFullYear(), monthIndex, 1);
+    if (this.disableFutureDates) {
+      const maxNormalized = this.normalizeDate(this.maxDate);
+      if (candidate > new Date(maxNormalized.getFullYear(), maxNormalized.getMonth(), 1))
+        return true;
+    }
+    if (this.disablePastDates) {
+      const minNormalized = this.normalizeDate(this.minDate);
+      if (candidate < new Date(minNormalized.getFullYear(), minNormalized.getMonth(), 1))
+        return true;
+    }
+    return false;
+  }
+
+  /** True when `year` is fully out of range. */
+  isYearDisabled(year: number): boolean {
+    if (this.disableFutureDates) {
+      const maxNormalized = this.normalizeDate(this.maxDate);
+      if (year > maxNormalized.getFullYear()) return true;
+    }
+    if (this.disablePastDates) {
+      const minNormalized = this.normalizeDate(this.minDate);
+      if (year < minNormalized.getFullYear()) return true;
+    }
+    return false;
+  }
+
+  /** Whether the next-month arrow should be enabled. */
+  canGoNextMonth(): boolean {
+    if (!this.disableFutureDates) return true;
+    const maxNormalized = this.normalizeDate(this.maxDate);
+    const nextMonthDate = new Date(
+      this.currentMonth.getFullYear(),
+      this.currentMonth.getMonth() + 1,
+      1,
+    );
+    return nextMonthDate <= maxNormalized;
+  }
+
+  /** Whether the prev-month arrow should be enabled. */
+  canGoPrevMonth(): boolean {
+    if (!this.disablePastDates) return true;
+    const minNormalized = this.normalizeDate(this.minDate);
+    const prevMonthLastDay = new Date(
+      this.currentMonth.getFullYear(),
+      this.currentMonth.getMonth(),
+      0,
+    );
+    return prevMonthLastDay >= minNormalized;
   }
 
   renderCalendar(date: Date): void {
@@ -280,6 +387,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   prevMonth(): void {
+    if (!this.canGoPrevMonth()) return;
     const newMonth = new Date(this.currentMonth);
     newMonth.setMonth(this.currentMonth.getMonth() - 1);
     this.currentMonth = newMonth;
@@ -287,6 +395,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   nextMonth(): void {
+    if (!this.canGoNextMonth()) return;
     const newMonth = new Date(this.currentMonth);
     newMonth.setMonth(this.currentMonth.getMonth() + 1);
     this.currentMonth = newMonth;
@@ -367,7 +476,9 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   getCurrentMonth(currentMonth: Date | string | null): string {
     const date = currentMonth ? new Date(currentMonth) : null;
-    return date && !isNaN(date.getTime()) ? date.toLocaleString('default', { month: 'long' }) : 'Invalid month';
+    return date && !isNaN(date.getTime())
+      ? date.toLocaleString('default', { month: 'long' })
+      : 'Invalid month';
   }
 
   cancelSelection() {
@@ -395,7 +506,8 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     if (this.showMonthDropdown && this.isBrowser) {
       setTimeout(() => {
         if (!this.monthDropdownElement) return;
-        const selectedMonthElement = this.monthDropdownElement.nativeElement.querySelector('.bg-indigo-50');
+        const selectedMonthElement =
+          this.monthDropdownElement.nativeElement.querySelector('.bg-indigo-50');
         if (selectedMonthElement) {
           selectedMonthElement.scrollIntoView({ block: 'center', behavior: 'auto' });
         }
@@ -411,7 +523,8 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     if (this.showYearDropdown && this.isBrowser) {
       setTimeout(() => {
         if (!this.yearDropdownElement) return;
-        const selectedYearElement = this.yearDropdownElement.nativeElement.querySelector('.bg-indigo-50');
+        const selectedYearElement =
+          this.yearDropdownElement.nativeElement.querySelector('.bg-indigo-50');
         if (selectedYearElement) {
           selectedYearElement.scrollIntoView({ block: 'center', behavior: 'auto' });
         }
@@ -420,6 +533,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   selectMonth(monthIndex: number) {
+    if (this.isMonthDisabled(monthIndex)) return;
     const newDate = new Date(this.currentMonth);
     newDate.setMonth(monthIndex);
     this.currentMonth = newDate;
@@ -428,11 +542,33 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   }
 
   selectYear(year: number) {
+    if (this.isYearDisabled(year)) return;
     const newDate = new Date(this.currentMonth);
     newDate.setFullYear(year);
     this.currentMonth = newDate;
     this.renderCalendar(this.currentMonth);
     this.showYearDropdown = false;
+  }
+
+  private clampRange(start: Date, end: Date): { start: Date; end: Date } {
+    let newStart = start;
+    let newEnd = end;
+
+    if (this.disableFutureDates) {
+      const maxNormalized = this.normalizeDate(this.maxDate);
+      if (newEnd > maxNormalized) newEnd = maxNormalized;
+      if (newStart > maxNormalized) newStart = maxNormalized;
+    }
+
+    if (this.disablePastDates) {
+      const minNormalized = this.normalizeDate(this.minDate);
+      if (newStart < minNormalized) newStart = minNormalized;
+      if (newEnd < minNormalized) newEnd = minNormalized;
+    }
+
+    if (newStart > newEnd) newStart = newEnd;
+
+    return { start: newStart, end: newEnd };
   }
 
   private normalizeDate(date: Date): Date {
@@ -463,67 +599,106 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     return `${year}-${month}-${day}`;
   }
 
-  canShiftDate(direction: number): boolean {
-    if (!this.selectedStartDate || !this.selectedEndDate) return false;
 
-    const newStartDate = this.addDays(this.selectedStartDate, direction);
-    const newEndDate = this.addDays(this.selectedEndDate, direction);
+  private computeShiftedRange(direction: number): { start: Date; end: Date } | null {
+    if (!this.selectedStartDate || !this.selectedEndDate) return null;
 
-    return (
-      newStartDate >= this.normalizeDate(this.minDate) &&
-      newEndDate <= this.normalizeDate(this.maxDate)
-    );
-  }
-
-  shiftDateRange(direction: number, event: MouseEvent): void {
-    event.stopPropagation();
-    if (!this.selectedStartDate || !this.selectedEndDate) return;
+    let newStart: Date;
+    let newEnd: Date;
 
     switch (this.selectedPreset) {
       case 'today':
       case 'yesterday':
-        this.selectedStartDate = this.addDays(this.selectedStartDate, direction);
-        this.selectedEndDate = this.addDays(this.selectedEndDate, direction);
+        newStart = this.addDays(this.selectedStartDate, direction);
+        newEnd = this.addDays(this.selectedEndDate, direction);
         break;
 
       case 'lastWeek':
-        this.selectedStartDate = this.addDays(this.selectedStartDate, 7 * direction);
-        this.selectedEndDate = this.addDays(this.selectedEndDate, 7 * direction);
+        newStart = this.addDays(this.selectedStartDate, 7 * direction);
+        newEnd = this.addDays(this.selectedEndDate, 7 * direction);
         break;
 
       case 'lastMonth':
-      case 'currentMonth':
+      case 'currentMonth': {
         const currentStart = this.selectedStartDate;
         const newMonth = currentStart.getMonth() + direction;
         const newYear = currentStart.getFullYear() + Math.floor(newMonth / 12);
         const adjustedMonth = ((newMonth % 12) + 12) % 12;
 
-        this.selectedStartDate = new Date(newYear, adjustedMonth, 1, 12, 0, 0, 0);
+        newStart = new Date(newYear, adjustedMonth, 1, 12, 0, 0, 0);
         const lastDay = new Date(newYear, adjustedMonth + 1, 0).getDate();
-        this.selectedEndDate = new Date(newYear, adjustedMonth, lastDay, 12, 0, 0, 0);
-
-        if (this.setMaxDate) {
-          const normalizedMax = this.normalizeDate(this.setMaxDate);
-          if (this.selectedEndDate > normalizedMax) this.selectedEndDate = normalizedMax;
-        }
+        newEnd = new Date(newYear, adjustedMonth, lastDay, 12, 0, 0, 0);
         break;
+      }
 
       case 'last90days':
-        this.selectedStartDate = this.addDays(this.selectedStartDate, 90 * direction);
-        this.selectedEndDate = this.addDays(this.selectedEndDate, 90 * direction);
+        newStart = this.addDays(this.selectedStartDate, 90 * direction);
+        newEnd = this.addDays(this.selectedEndDate, 90 * direction);
         break;
 
-      case 'custom':
-        const diffInDays = Math.round((this.selectedEndDate.getTime() - this.selectedStartDate.getTime()) / (1000 * 60 * 60 * 24));
-        this.selectedStartDate = this.addDays(this.selectedStartDate, direction * (diffInDays + 1));
-        this.selectedEndDate = this.addDays(this.selectedEndDate, direction * (diffInDays + 1));
+      case 'custom': {
+        const diffInDays = Math.round(
+          (this.selectedEndDate.getTime() - this.selectedStartDate.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        newStart = this.addDays(this.selectedStartDate, direction * (diffInDays + 1));
+        newEnd = this.addDays(this.selectedEndDate, direction * (diffInDays + 1));
         break;
+      }
 
       default:
-        return;
+        return null;
     }
 
-    this.currentMonth = new Date(this.selectedStartDate.getFullYear(), this.selectedStartDate.getMonth(), 1);
+    return { start: newStart, end: newEnd };
+  }
+
+  canShiftDate(direction: number): boolean {
+    if (!this.selectedStartDate || !this.selectedEndDate) return false;
+
+    if (direction > 0 && this.disableFutureDates) {
+      const maxNormalized = this.normalizeDate(this.maxDate);
+      // already at (or past) today — nothing further forward to show
+      if (this.normalizeDate(this.selectedEndDate) >= maxNormalized) return false;
+    }
+
+    if (direction < 0 && this.disablePastDates) {
+      const minNormalized = this.normalizeDate(this.minDate);
+      // already at (or before) the earliest allowed date — nothing further back to show
+      if (this.normalizeDate(this.selectedStartDate) <= minNormalized) return false;
+    }
+
+    return true;
+  }
+
+  shiftDateRange(direction: number, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!this.selectedStartDate || !this.selectedEndDate) return;
+    if (!this.canShiftDate(direction)) return; // blocks only once we're already at the boundary
+
+    const shifted = this.computeShiftedRange(direction);
+    if (!shifted) return;
+
+
+    if (this.setMaxDate) {
+      const normalizedMax = this.normalizeDate(this.setMaxDate);
+      if (shifted.end > normalizedMax) shifted.end = normalizedMax;
+    }
+    if (this.setMinDate) {
+      const normalizedMin = this.normalizeDate(this.setMinDate);
+      if (shifted.start < normalizedMin) shifted.start = normalizedMin;
+    }
+
+    const clamped = this.clampRange(shifted.start, shifted.end);
+
+    this.selectedStartDate = clamped.start;
+    this.selectedEndDate = clamped.end;
+
+    this.currentMonth = new Date(
+      this.selectedStartDate.getFullYear(),
+      this.selectedStartDate.getMonth(),
+      1,
+    );
     this.renderCalendar(this.currentMonth);
     this.applyDateRange();
   }
@@ -591,20 +766,27 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
         return;
     }
 
-    this.selectedStartDate = startDate;
-    this.selectedEndDate = endDate;
-    this.currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    const clamped = this.clampRange(startDate, endDate);
+    this.selectedStartDate = clamped.start;
+    this.selectedEndDate = clamped.end;
+    this.currentMonth = new Date(clamped.start.getFullYear(), clamped.start.getMonth(), 1);
     this.renderCalendar(this.currentMonth);
   }
 
   selectDate(date: Date): void {
+    if (this.isDateDisabled(date)) return;
+
     if (!this.previousPreset) this.previousPreset = this.selectedPreset;
 
     const normalizedDate = this.normalizeDate(date);
     const normalizedMin = this.minDate ? this.normalizeDate(this.minDate) : null;
     const normalizedMax = this.maxDate ? this.normalizeDate(this.maxDate) : null;
 
-    if ((normalizedMin && normalizedDate < normalizedMin) || (normalizedMax && normalizedDate > normalizedMax)) return;
+    if (
+      (normalizedMin && normalizedDate < normalizedMin) ||
+      (normalizedMax && normalizedDate > normalizedMax)
+    )
+      return;
 
     this.selectedPreset = 'custom';
 
@@ -625,7 +807,10 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     }
 
     if (this.selectedStartDate && this.selectedEndDate && this.selectedDays > 0) {
-      const diffInDays = Math.ceil(Math.abs(this.selectedStartDate.getTime() - this.selectedEndDate.getTime()) / (1000 * 3600 * 24));
+      const diffInDays = Math.ceil(
+        Math.abs(this.selectedStartDate.getTime() - this.selectedEndDate.getTime()) /
+          (1000 * 3600 * 24),
+      );
       if (diffInDays > this.selectedDays) {
         this.selectedStartDate = null;
         this.selectedEndDate = null;

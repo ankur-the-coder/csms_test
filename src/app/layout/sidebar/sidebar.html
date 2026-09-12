@@ -42,6 +42,7 @@
 
 
         <button *ngFor="let item of csNavItems" (click)="selectNav(item.id)"
+
           class="w-full flex rounded-lg text-xs font-medium transition-all group relative cursor-pointer" [ngClass]="{
             'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': activeNav === item.id,
             'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': activeNav !== item.id,

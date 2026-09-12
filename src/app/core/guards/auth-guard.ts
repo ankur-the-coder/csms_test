@@ -29,7 +29,7 @@ export const checkGuard: CanActivateFn = (route, state) => {
   }
 
   if (authService.isAuthenticated()) {
-    return router.createUrlTree(['/dashboard']);
+    return router.createUrlTree(['/voice']);
   }
 
   return true;
