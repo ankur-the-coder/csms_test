@@ -1,827 +1,816 @@
 import {
   Component,
-  computed,
   OnInit,
   signal,
-  WritableSignal,
-  ChangeDetectorRef,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+
 import { Calendar, DayEvent } from '../../../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
-import { DashboardService } from '../../service/dashboard-service';
-import { Data, CalendarApiResponse, CalendarMeeting } from '../../models/dashboardModel';
 import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
+
+import { DashboardService } from '../../service/dashboard-service';
+import {
+  CalendarMeeting,
+  Data,
+} from '../../models/dashboardModel';
+
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
-interface DailyOpStat {
-  label: string;
-  value: number;
-  target: number;      // used to compute pct dynamically
-  danger?: boolean;
-  barClass: string;
-  pct: number;
+
+interface DashboardCardData {
+  premiumClients: number;
+  usages: number;
+  meetingPending: number;
+  renewable: number;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, Calendar, ChartComponent, CustomDateSelector],
+  standalone: true,
+  imports: [
+    CommonModule,
+    Calendar,
+    ChartComponent,
+    CustomDateSelector,
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
 export class DashboardComponent implements OnInit {
-  cardData = signal<Data | null>(null);
+  private readonly router = inject(Router);
+  private readonly dashboardService = inject(DashboardService);
   readonly authService = inject(AuthService);
-  // Animated (count-up) display values for the top stat cards — these start
-  // at 0 and tween up to the real API value whenever cardData() updates.
-  animatedTotalClients = signal(0);
-  animatedLiveClients = signal(0);
-  animatedImplPending = signal(0);
-  animatedTrainingPending = signal(0);
-  animatedMeeting = signal(0);
-  connect = signal(0);
-  isTrendLoading = signal(true);
-  trendHasError = signal(false);
 
-  // Feedback chart — populated dynamically from API
-  feedbackDonutLabels = signal<string[]>([]);
-  feedbackDonutData = signal<number[]>([]);
-  feedbackDonutColors = signal<string[]>([]);
-  // Center text: show total number only (primary line). Secondary
-  // lines are left empty so the chart renders a single-line total.
-  feedbackDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
-    line1: '0',
-    line2: 'Total',
-    line3: 'Feedback',
+  // ---------------------------------------------------------------------------
+  // Dashboard Cards
+  // ---------------------------------------------------------------------------
+
+  readonly cardData = signal<DashboardCardData>({
+    premiumClients: 0,
+    usages: 0,
+    meetingPending: 0,
+    renewable: 0,
   });
-  isFeedbackLoading = signal(true);
-  feedbackHasError = signal(false);
 
-  // Connected chart — populated dynamically from API
-  connectedDonutLabels = signal<string[]>([]);
-  connectedDonutData = signal<number[]>([]);
-  connectedDonutColors = signal<string[]>([]);
-  // Center text: show total number only (primary line). Secondary
-  // lines are left empty so the chart renders a single-line total.
-  connectedDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+  // ---------------------------------------------------------------------------
+  // Connected Chart
+  // ---------------------------------------------------------------------------
+
+  readonly connectedDonutLabels = signal<string[]>([]);
+  readonly connectedDonutData = signal<number[]>([]);
+  readonly connectedDonutColors = signal<string[]>([]);
+
+  readonly connectedDonutCenterText = signal({
     line1: '0',
     line2: 'Total',
     line3: 'Connected',
   });
-  isConnectedLoading = signal(true);
-  connectedHasError = signal(false);
 
-  // Usages chart — populated dynamically from API
-  usagesChartLabels = signal<string[]>([]);
-  usagesGroupedData = signal<number[][]>([]);
-  usagesGroupLabels = signal<string[]>(['Actively Usages', 'Low Usages', 'Non Usages']);
-  usagesGroupColors = signal<string[]>(['#10B981', '#F59E0B', '#EF4444']);
-  usagesDonutLabels = signal<string[]>([]);
-  usagesDonutData = signal<number[]>([]);
-  usagesDonutColors = signal<string[]>([]);
-  calendarEvents = signal<Record<string, DayEvent[]>>({});
-  // Center text: show total number only (primary line). Secondary
-  // lines are left empty so the chart renders a single-line total.
-  usagesDonutCenterText = signal<{ line1: string; line2: string; line3: string }>({
+  readonly isConnectedLoading = signal(true);
+  readonly connectedHasError = signal(false);
+
+  // ---------------------------------------------------------------------------
+  // Usages Chart
+  // ---------------------------------------------------------------------------
+
+  readonly usagesChartLabels = signal<string[]>([]);
+  readonly usagesGroupedData = signal<number[][]>([]);
+  readonly usagesGroupLabels = signal([
+    'Actively Usages',
+    'Low Usages',
+    'Non Usages',
+  ]);
+
+  readonly usagesGroupColors = signal([
+    '#10B981',
+    '#F59E0B',
+    '#EF4444',
+  ]);
+
+  readonly isUsagesLoading = signal(true);
+  readonly usagesHasError = signal(false);
+
+  // ---------------------------------------------------------------------------
+  // Feedback Chart
+  // ---------------------------------------------------------------------------
+
+  readonly feedbackDonutLabels = signal<string[]>([]);
+  readonly feedbackDonutData = signal<number[]>([]);
+  readonly feedbackDonutColors = signal<string[]>([]);
+
+  readonly feedbackDonutCenterText = signal({
     line1: '0',
     line2: 'Total',
-    line3: 'Usages',
+    line3: 'Feedback',
   });
-  isUsagesLoading = signal(true);
-  usagesHasError = signal(false);
 
-  // Tracks whatever date range the user last applied on the dashboard's
-  // own date picker, so a card click can carry it forward as query params.
-  appliedFrom = signal('');
-  appliedTo = signal('');
+  readonly isFeedbackLoading = signal(true);
+  readonly feedbackHasError = signal(false);
 
-  constructor(
-    private router: Router,
-    private dashboardService: DashboardService,
-    private cdr: ChangeDetectorRef,
-  ) { }
+  // ---------------------------------------------------------------------------
+  // Calendar
+  // ---------------------------------------------------------------------------
+
+  readonly calendarEvents = signal<Record<string, DayEvent[]>>({});
+
+  // ---------------------------------------------------------------------------
+  // Date Filter
+  // ---------------------------------------------------------------------------
+
+  readonly appliedFrom = signal('');
+  readonly appliedTo = signal('');
 
   ngOnInit(): void {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-    this.onDateApplied(todayStr, todayStr);
+
+    const todayString = this.toDateString(today);
+
+    this.onDateApplied(todayString, todayString);
     this.fetchCalendarForMonth(today);
+  }
 
+  // ---------------------------------------------------------------------------
+  // Date Filter
+  // ---------------------------------------------------------------------------
+
+  onDateApplied(from: string, to: string): void {
+    this.appliedFrom.set(from);
+    this.appliedTo.set(to);
+
+    const orgId = Utils.encode5t(
+      this.authService.getOrgId().toString(),
+    );
+
+    this.fetchDashboardCards(from, to, orgId);
+    this.fetchFeedbackChart(from, to, orgId);
+    this.fetchConnectedChart(from, to, orgId);
+    this.fetchUsagesChart(from, to, orgId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dashboard Cards
+  // ---------------------------------------------------------------------------
+
+  private fetchDashboardCards(
+    from: string,
+    to: string,
+    orgId: string,
+  ): void {
     this.dashboardService
-      .fetchTodaysTasksData('2026-09-01', '2026-09-30', this.authService.getOrgId())
+      .getDashboardCards(from, to, orgId)
       .subscribe({
-        next: (res) => {
-          if (res && res.status && res.data) {
-            this.meetingsToday = res.data.meetingCount ?? 0;
-            this.trainingsToday = res.data.pendingTrainingCount ?? 0;
-            this.implementationsToday = res.data.orgCounts ?? 0;
-            this.total.set(res.total ?? 0);
-
-            this.buildDailyOps();
-            this.cdr.markForCheck();
+        next: (res: any) => {
+          if (!res?.data) {
+            return;
           }
+
+          const data = res.data;
+
+          this.cardData.set({
+            /*
+             * New API names:
+             * premiumClients
+             * usages
+             * meetingPending
+             * renewable
+             *
+             * Fallbacks are kept for your existing API response.
+             */
+            premiumClients:
+              Number(
+                data.premiumClients ??
+                data.liveClients ??
+                data.totalClients ??
+                0,
+              ),
+
+            usages:
+              Number(
+                data.usages ??
+                data.connect ??
+                0,
+              ),
+
+            meetingPending:
+              Number(
+                data.meetingPending ??
+                data.meeting ??
+                data.meetingPendingCount ??
+                0,
+              ),
+
+            renewable:
+              Number(
+                data.renewable ??
+                data.renewableCount ??
+                data.renewal ??
+                0,
+              ),
+          });
         },
-        error: (err) => {
-          console.error('Error fetching daily ops:', err);
+
+        error: (error) => {
+          console.error(
+            'Error fetching dashboard cards:',
+            error,
+          );
         },
       });
   }
 
-  onCalendarEventClick(event: DayEvent): void {
-    console.log('[Calendar] event clicked:', event);
+  // ---------------------------------------------------------------------------
+  // Feedback Chart
+  // ---------------------------------------------------------------------------
+
+  private fetchFeedbackChart(
+    from: string,
+    to: string,
+    orgId: string,
+  ): void {
+    this.isFeedbackLoading.set(true);
+    this.feedbackHasError.set(false);
+
+    this.dashboardService
+      .fetchDashBoardFeedbackChart(from, to, orgId)
+      .subscribe({
+        next: (res: any) => {
+          this.isFeedbackLoading.set(false);
+
+          const data = Array.isArray(res?.data)
+            ? res.data
+            : [];
+
+          const labels = data.map(
+            (item: any) => item.label,
+          );
+
+          const values = data.map(
+            (item: any) => Number(item.value) || 0,
+          );
+
+          const total = values.reduce(
+            (sum: number, value: number) => sum + value,
+            0,
+          );
+
+          this.feedbackDonutLabels.set(labels);
+          this.feedbackDonutData.set(values);
+          this.feedbackDonutColors.set(
+            this.generateColors(values.length),
+          );
+
+          const apiTotal = Number(
+            res?.total?.line1 ?? total,
+          );
+
+          this.feedbackDonutCenterText.set({
+            line1: String(apiTotal),
+            line2: 'Total',
+            line3: 'Feedback',
+          });
+        },
+
+        error: (error) => {
+          console.error(
+            'Error fetching feedback chart:',
+            error,
+          );
+
+          this.isFeedbackLoading.set(false);
+          this.feedbackHasError.set(true);
+        },
+      });
   }
 
-  /**
-   * Called when the user navigates to a new date/month in the calendar component.
-   */
+  // ---------------------------------------------------------------------------
+  // Connected Chart
+  // ---------------------------------------------------------------------------
+
+  private fetchConnectedChart(
+    from: string,
+    to: string,
+    orgId: string,
+  ): void {
+    this.isConnectedLoading.set(true);
+    this.connectedHasError.set(false);
+
+    this.dashboardService
+      .fetchDashBoardConnectChart(from, to, orgId)
+      .subscribe({
+        next: (res: any) => {
+          this.isConnectedLoading.set(false);
+
+          const data = Array.isArray(res?.data)
+            ? res.data
+            : [];
+
+          const labels = data.map(
+            (item: any) => item.label,
+          );
+
+          const values = data.map(
+            (item: any) => Number(item.value) || 0,
+          );
+
+          const total = values.reduce(
+            (sum: number, value: number) => sum + value,
+            0,
+          );
+
+          this.connectedDonutLabels.set(labels);
+          this.connectedDonutData.set(values);
+          this.connectedDonutColors.set(
+            this.generateColors(values.length),
+          );
+
+          const apiTotal = Number(
+            res?.total?.line1 ?? total,
+          );
+
+          this.connectedDonutCenterText.set({
+            line1: String(apiTotal),
+            line2: 'Total',
+            line3: 'Connected',
+          });
+        },
+
+        error: (error) => {
+          console.error(
+            'Error fetching connected chart:',
+            error,
+          );
+
+          this.isConnectedLoading.set(false);
+          this.connectedHasError.set(true);
+        },
+      });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Usages Chart
+  // ---------------------------------------------------------------------------
+
+  private fetchUsagesChart(
+    from: string,
+    to: string,
+    orgId: string,
+  ): void {
+    this.isUsagesLoading.set(true);
+    this.usagesHasError.set(false);
+
+    this.dashboardService
+      .fetchDashBoardUsageChart(from, to, orgId)
+      .subscribe({
+        next: (res: any) => {
+          this.isUsagesLoading.set(false);
+
+          if (res?.modules) {
+            const moduleKeys = Object.keys(
+              res.modules,
+            );
+
+            this.usagesChartLabels.set(
+              moduleKeys.map((key) =>
+                this.formatLabel(key),
+              ),
+            );
+
+            this.usagesGroupedData.set(
+              moduleKeys.map((key) => {
+                const module = res.modules[key];
+
+                return [
+                  Number(module?.activelyUsages) || 0,
+                  Number(module?.lowuUsages) || 0,
+                  Number(module?.nonUsages) || 0,
+                ];
+              }),
+            );
+
+            return;
+          }
+
+          // Fallback if API returns normal data array.
+          if (Array.isArray(res?.data)) {
+            this.usagesChartLabels.set(
+              res.data.map(
+                (item: any) => item.label,
+              ),
+            );
+
+            this.usagesGroupedData.set(
+              res.data.map((item: any) => [
+                Number(item.activelyUsages) || 0,
+                Number(item.lowuUsages) || 0,
+                Number(item.nonUsages) || 0,
+              ]),
+            );
+
+            return;
+          }
+
+          this.usagesChartLabels.set([]);
+          this.usagesGroupedData.set([]);
+        },
+
+        error: (error) => {
+          console.error(
+            'Error fetching usages chart:',
+            error,
+          );
+
+          this.isUsagesLoading.set(false);
+          this.usagesHasError.set(true);
+        },
+      });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Calendar
+  // ---------------------------------------------------------------------------
+
   onCalendarDateChange(date: Date): void {
     this.fetchCalendarForMonth(date);
   }
 
-  /**
-   * Fetches meetings for the entire month containing `date`.
-   */
-  fetchCalendarForMonth(date: Date): void {
+  onCalendarEventClick(event: DayEvent): void {
+    console.log('Calendar event clicked:', event);
+  }
+
+  onCalendarViewChange(
+    mode: 'day' | 'week' | 'month',
+  ): void {
+    console.log('Calendar view changed:', mode);
+  }
+
+  private fetchCalendarForMonth(date: Date): void {
     const year = date.getFullYear();
-    const month = date.getMonth(); // 0-indexed
-    const from = this.toDateStr(new Date(year, month, 1));
-    const to = this.toDateStr(new Date(year, month + 1, 0)); // last day of month
-    const rawOrg = this.authService.getOrgId();
-    const orgId = Utils.encode5t((rawOrg || '101').toString());
-    console.log('[Calendar] fetchCalendarForMonth:', from, '->', to, 'orgId:', orgId);
-    this.fetchCalendarEvents(from, to, orgId);
-  }
-  // fetchDashboardCards(): void {
-  //   this.dashboardService.getDashboardCards().subscribe({
-  //     next: (res) => {
-  //       if (res && res.data) {
-  //         this.cardData.set(res.data);
-  //         this.cdr.markForCheck();
-  //         this.cdr.detectChanges();
+    const month = date.getMonth();
 
-  //         this.animateCount(this.animatedTotalClients, res.data.totalClients);
-  //         this.animateCount(this.animatedLiveClients, res.data.liveClients);
-  //         this.animateCount(this.animatedImplPending, res.data.implPending);
-  //         this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
-  //         this.animateCount(this.animatedMeeting, res.data.meeting);
-  //       }
-  //     },
-  //     error: (err) => {
-  //       console.error('Error fetching dashboard cards:', err);
-  //     }
-  //   });
-  // }
+    const from = this.toDateString(
+      new Date(year, month, 1),
+    );
 
-  /** Tweens a signal from its current value up (or down) to `target` over `duration`ms. */
-  private animateCount(target$: WritableSignal<number>, target: number, duration = 900): void {
-    if (typeof window === 'undefined') {
-      // SSR — no requestAnimationFrame available, just set the final value.
-      target$.set(target);
-      return;
-    }
+    const to = this.toDateString(
+      new Date(year, month + 1, 0),
+    );
 
-    const start = target$();
-    if (start === target) return;
+    const rawOrgId = this.authService.getOrgId();
 
-    const startTime = performance.now();
-    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    const orgId = Utils.encode5t(
+      (rawOrgId || '101').toString(),
+    );
 
-    const step = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = easeOutCubic(progress);
-      target$.set(Math.round(start + (target - start) * eased));
-
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        target$.set(target);
-      }
-    };
-
-    requestAnimationFrame(step);
+    this.fetchCalendarEvents(
+      from,
+      to,
+      orgId,
+    );
   }
 
-  navigateToClient() {
-    // this.router.navigate(['/client']);
-    this.router.navigate(['/client'], { queryParams: this.dateQueryParams() });
-  }
+  private fetchCalendarEvents(
+    from: string,
+    to: string,
+    orgId: string,
+  ): void {
+    this.dashboardService
+      .fetchDashBoardCalendar(
+        from,
+        to,
+        orgId,
+      )
+      .subscribe({
+        next: (res: any) => {
+          const meetings =
+            this.extractMeetings(res);
 
-  navigateToPendingImplementation() {
-    // this.router.navigate(['/implementation']);
-    this.router.navigate(['/implementation'], {
-      queryParams: { ...this.dateQueryParams(), tab: 'in_progress' },
-    });
-  }
-  navigateToCompletedImplementation() {
-    // this.router.navigate(['/implementation']);
-    this.router.navigate(['/implementation'], {
-      queryParams: { ...this.dateQueryParams(), tab: 'completed' },
-    });
-  }
-  navigateToTraining() {
-    this.router.navigate(['/training']);
-  }
+          const eventMap: Record<
+            string,
+            DayEvent[]
+          > = {};
 
-  navigateToMeetings() {
-    this.router.navigate(['/meetings']);
-  }
+          for (const meeting of meetings) {
+            const event =
+              this.createCalendarEvent(
+                meeting,
+              );
 
-  // ---------------------------------------------------------------------
-  // Health Score Distribution donut data
-  // ---------------------------------------------------------------------
+            if (!event) {
+              continue;
+            }
 
-  readonly healthSegments = [
-    {
-      label: 'Excellent',
-      range: '80-100',
-      value: 120,
-      pct: 47,
-      colorClass: 'bg-emerald-500',
-      colorHex: '#10b981',
-    },
-    {
-      label: 'Good',
-      range: '60-79',
-      value: 86,
-      pct: 34,
-      colorClass: 'bg-teal-500',
-      colorHex: '#14b8a6',
-    },
-    {
-      label: 'Average',
-      range: '40-59',
-      value: 32,
-      pct: 12,
-      colorClass: 'bg-amber-400',
-      colorHex: '#fbbf24',
-    },
-    {
-      label: 'Poor',
-      range: '0-39',
-      value: 18,
-      pct: 6,
-      colorClass: 'bg-rose-500',
-      colorHex: '#f43f5e',
-    },
-  ];
+            if (!eventMap[event.dateKey]) {
+              eventMap[event.dateKey] = [];
+            }
 
-  readonly healthDonutGradient = computed(() => {
-    let acc = 0;
-    const stops = this.healthSegments.map((seg) => {
-      const start = acc;
-      acc += seg.pct;
-      return `${seg.colorHex} ${start}% ${acc}%`;
-    });
-    return `conic-gradient(${stops.join(', ')})`;
-  });
-
-  // ---------------------------------------------------------------------
-  // Data shaped specifically for <app-charts> (ChartComponent).
-  // ChartComponent's real inputs are: chartType, chartData, chartLabels,
-  // backgroundColors, headingText, hoverLabel, donutCenterText, chartId,
-  // xAxisTitle, yAxisTitle, leaveChart — NOT `type`/`title`/`totalLabel`.
-  // ---------------------------------------------------------------------
-
-  // Donut chart — reuse the same healthSegments used for the custom widget above.
-  readonly healthDonutLabels: string[] = this.healthSegments.map((seg) => seg.label);
-  readonly healthDonutData: number[] = this.healthSegments.map((seg) => seg.value);
-  readonly healthDonutColors: string[] = this.healthSegments.map((seg) => seg.colorHex);
-  readonly healthDonutTotal: number = this.healthSegments.reduce((sum, seg) => sum + seg.value, 0);
-  readonly healthDonutCenterText = {
-    line1: String(this.healthDonutTotal),
-    line2: 'Total',
-    line3: 'Clients',
-  };
-
-  // Client Health Score Trend (line chart).
-  // TODO: replace with real data from DashboardService once a trend
-  // endpoint is available — using representative placeholder values for now.
-  readonly ImplementationLabels: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  readonly ImplementationData: number[] = [62, 65, 68, 71, 74, 78];
-
-  // Daily Tasks & Operations
-  // readonly dailyOps = [
-  //   // { label: 'Overdue Tasks', value: 16, pct: 92, danger: true, barClass: 'bg-rose-600' },
-  //   // { label: 'Pending Docs', value: 14, pct: 78, danger: false, barClass: 'bg-amber-500' },
-  //   // { label: 'Integrations', value: 9, pct: 52, danger: false, barClass: 'bg-purple-600' },
-  //   { label: "Today's Meetings", value: 7, pct: 80, danger: false, barClass: 'bg-indigo-600' },
-  //   { label: "Today's Trainings", value: 5, pct: 68, danger: false, barClass: 'bg-emerald-500' },
-  //   { label: "Today's Implementations", value: 3, pct: 48, danger: false, barClass: 'bg-cyan-500' },
-  // ];
-
-  // Calendar Event Data — passed into <app-calendar [eventsByDay]="eventsByDay">
-  readonly eventsByDay: Record<number, DayEvent[]> = {
-    4: [
-      this.mkEvent(
-        'Team Sync',
-        'Internal',
-        '09:00 AM - 09:30 AM',
-        '09:00 AM',
-        540,
-        570,
-        'bg-blue-50 text-blue-700 border border-blue-200',
-        'border-blue-500',
-        '🤝',
-      ),
-    ],
-    7: this.buildDay7Events(),
-    12: [
-      this.mkEvent(
-        'Product Review',
-        'Internal',
-        '11:00 AM - 12:00 PM',
-        '11:00 AM',
-        660,
-        720,
-        'bg-blue-50 text-blue-700 border border-blue-200',
-        'border-blue-500',
-        '📋',
-      ),
-    ],
-  };
-
-  private mkEvent(
-    title: string,
-    client: string,
-    timeLabel: string,
-    startTime: string,
-    startMinutes: number,
-    endMinutes: number,
-    chipClass: string,
-    accentClass: string,
-    icon: string,
-  ): DayEvent {
-    return {
-      title,
-      client,
-      timeLabel,
-      startTime,
-      startMinutes,
-      endMinutes,
-      chipClass,
-      accentClass,
-      icon,
-    };
-  }
-
-  private buildDay7Events(): DayEvent[] {
-    const events: DayEvent[] = [
-      this.mkEvent(
-        'Admin Training',
-        'ABC Ind.',
-        '10:00 AM - 11:30 AM',
-        '10:00 AM',
-        600,
-        690,
-        'bg-indigo-50 text-indigo-700 border border-indigo-200',
-        'border-indigo-500',
-        '🎓',
-      ),
-      this.mkEvent(
-        'Impl. Meeting',
-        'XYZ Ltd',
-        '12:00 PM - 01:00 PM',
-        '12:00 PM',
-        720,
-        780,
-        'bg-rose-50 text-rose-700 border border-rose-200',
-        'border-indigo-600',
-        '🚀',
-      ),
-      this.mkEvent(
-        'Installation',
-        'PQR Sol.',
-        '02:30 PM - 04:00 PM',
-        '02:30 PM',
-        870,
-        960,
-        'bg-amber-50 text-amber-700 border border-amber-200',
-        'border-amber-500',
-        '🛠️',
-      ),
-    ];
-
-    const templates = [
-      { title: 'Dev Sync', client: 'GlobalTech' },
-      { title: 'Executive Review', client: 'Nexus Ltd' },
-      { title: 'Sales Demo', client: 'Apex Systems' },
-      { title: '1-on-1 Checkin', client: 'Starlight Inc' },
-      { title: 'Client Onboarding', client: 'Acme Corp' },
-    ];
-
-    let hour = 9,
-      minute = 45;
-    for (let i = 0; i < 101; i++) {
-      const t = templates[i % templates.length];
-      const num = i + 4;
-      const startMinutes = hour * 60 + minute;
-      const label = this.formatClock(hour, minute);
-      events.push(
-        this.mkEvent(
-          `${t.title} #${num}`,
-          t.client,
-          label,
-          label,
-          startMinutes,
-          startMinutes + 30,
-          'bg-indigo-50 text-indigo-700 border border-indigo-200',
-          'border-indigo-500',
-          '📅',
-        ),
-      );
-      minute += 15;
-      if (minute >= 60) {
-        minute -= 60;
-        hour += 1;
-      }
-      if (hour >= 24) hour = 0;
-    }
-    return events;
-  }
-
-  private formatClock(hour: number, minute: number): string {
-    const h12 = ((hour + 11) % 12) + 1;
-    const ampm = hour < 12 ? 'AM' : 'PM';
-    return `${String(h12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
-  }
-
-  onCalendarViewChange(mode: 'day' | 'week' | 'month'): void {
-    // TODO: re-fetch events scoped to the new view range if required
-    console.log('[Calendar] view changed:', mode);
-  }
-
-  // ── Date filter ────────────────────────────────────────────────────────────
-  onDateApplied(from: string, to: string): void {
-    this.appliedFrom.set(from);
-    this.appliedTo.set(to);
-    console.log(from, to);
-
-    let orgId = Utils.encode5t(this.authService.getOrgId().toString());
-    this.dashboardService.getDashboardCards(from, to, orgId).subscribe({
-      next: (res) => {
-        if (res && res.data) {
-          this.cardData.set(res.data);
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-
-          this.animateCount(this.animatedTotalClients, res.data.totalClients);
-          this.animateCount(this.animatedLiveClients, res.data.liveClients);
-          this.animateCount(this.animatedImplPending, res.data.implPending);
-          this.animateCount(this.animatedTrainingPending, res.data.trainingPending);
-          this.animateCount(this.animatedMeeting, res.data.meeting);
-          this.animateCount(this.connect, res.data.connect);
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching dashboard cards:', err);
-      },
-    });
-    this.isFeedbackLoading.set(true);
-    this.feedbackHasError.set(false);
-    this.dashboardService.fetchDashBoardFeedbackChart(from, to, orgId).subscribe({
-      next: (res) => {
-        this.isFeedbackLoading.set(false);
-        if (res && res.data && res.data.length) {
-          const labels = res.data.map((item) => item.label);
-          const values = res.data.map((item) => item.value);
-          const total = values.reduce((sum, v) => sum + v, 0);
-          const colors = this.generateColors(res.data.length);
-
-          this.feedbackDonutLabels.set(labels);
-          this.feedbackDonutData.set(values);
-          this.feedbackDonutColors.set(colors);
-
-          const primaryTotal =
-            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
-          this.feedbackDonutCenterText.set({
-            line1: String(primaryTotal),
-            line2: 'Total',
-            line3: 'Feedback',
-          });
-        } else {
-          this.feedbackDonutLabels.set([]);
-          this.feedbackDonutData.set([]);
-          this.feedbackDonutColors.set([]);
-          this.feedbackDonutCenterText.set({
-            line1: '0',
-            line2: 'Total',
-            line3: 'Feedback',
-          });
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error fetching feedback chart:', err);
-        this.isFeedbackLoading.set(false);
-        this.feedbackHasError.set(true);
-        this.cdr.markForCheck();
-      },
-    });
-
-    this.isConnectedLoading.set(true);
-    this.connectedHasError.set(false);
-    this.dashboardService.fetchDashBoardConnectChart(from, to, orgId).subscribe({
-      next: (res) => {
-        this.isConnectedLoading.set(false);
-        if (res && res.data && res.data.length) {
-          const labels = res.data.map((item) => item.label);
-          const values = res.data.map((item) => item.value);
-          const total = values.reduce((sum, v) => sum + v, 0);
-          const colors = this.generateColors(res.data.length);
-
-          this.connectedDonutLabels.set(labels);
-          this.connectedDonutData.set(values);
-          this.connectedDonutColors.set(colors);
-
-          const primaryTotal =
-            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
-          this.connectedDonutCenterText.set({
-            line1: String(primaryTotal),
-            line2: 'Total',
-            line3: 'Connected',
-          });
-        } else {
-          this.connectedDonutLabels.set([]);
-          this.connectedDonutData.set([]);
-          this.connectedDonutColors.set([]);
-          this.connectedDonutCenterText.set({
-            line1: '0',
-            line2: 'Total',
-            line3: 'Connected',
-          });
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error fetching connect chart:', err);
-        this.isConnectedLoading.set(false);
-        this.connectedHasError.set(true);
-        this.cdr.markForCheck();
-      },
-    });
-
-    this.isUsagesLoading.set(true);
-    this.usagesHasError.set(false);
-    this.dashboardService.fetchDashBoardUsageChart(from, to, orgId).subscribe({
-      next: (res: any) => {
-        this.isUsagesLoading.set(false);
-        if (res && res.modules) {
-          const modulesObj = res.modules;
-          const moduleKeys = Object.keys(modulesObj);
-          const labels = moduleKeys.map((key) => key.charAt(0).toUpperCase() + key.slice(1));
-          const groupedData = moduleKeys.map((key) => {
-            const mod = modulesObj[key];
-            return [mod.activelyUsages || 0, mod.lowuUsages || 0, mod.nonUsages || 0];
-          });
-
-          this.usagesChartLabels.set(labels);
-          this.usagesGroupedData.set(groupedData);
-          this.usagesGroupLabels.set(['Actively Usages', 'Low Usages', 'Non Usages']);
-        } else if (res && res.data && res.data.length) {
-          const labels = res.data.map((item: any) => item.label);
-          const values = res.data.map((item: any) => item.value);
-          const total = values.reduce((sum: number, v: number) => sum + v, 0);
-          const colors = this.generateColors(res.data.length);
-
-          this.usagesDonutLabels.set(labels);
-          this.usagesDonutData.set(values);
-          this.usagesDonutColors.set(colors);
-
-          const primaryTotal =
-            (res && res.total && (res.total.line1 ?? res.total?.line1)) ?? total ?? 0;
-          this.usagesDonutCenterText.set({
-            line1: String(primaryTotal),
-            line2: 'Total',
-            line3: 'Usages',
-          });
-        } else {
-          this.usagesChartLabels.set([]);
-          this.usagesGroupedData.set([]);
-          this.usagesDonutLabels.set([]);
-          this.usagesDonutData.set([]);
-          this.usagesDonutColors.set([]);
-          this.usagesDonutCenterText.set({
-            line1: '0',
-            line2: 'Total',
-            line3: 'Usages',
-          });
-        }
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Error fetching usages chart:', err);
-        this.isUsagesLoading.set(false);
-        this.usagesHasError.set(true);
-        this.cdr.markForCheck();
-      },
-    });
-
-
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
-  /** Format a Date as "YYYY-MM-DD". */
-  private toDateStr(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  /**
-   * Fetch calendar meetings for [from, to] and update the calendarEvents signal.
-   * Handles responses shaped as: { meetings: [...] }, { data: { meetings: [...] } },
-   * { data: [...] }, or a flat array.
-   */
-  private fetchCalendarEvents(from: string, to: string, orgId: string): void {
-    this.dashboardService.fetchDashBoardCalendar(from, to, orgId).subscribe({
-      next: (res: any) => {
-        console.log('[Calendar] API response:', res);
-
-        let meetings: CalendarMeeting[] = [];
-        if (Array.isArray(res?.meetings)) {
-          meetings = res.meetings;
-        } else if (Array.isArray(res?.data?.meetings)) {
-          meetings = res.data.meetings;
-        } else if (Array.isArray(res?.data)) {
-          meetings = res.data;
-        } else if (Array.isArray(res)) {
-          meetings = res;
-        }
-
-        console.log('[Calendar] Extracted meetings count:', meetings.length);
-
-        const eventMap: Record<string, DayEvent[]> = {};
-
-        for (const m of meetings) {
-          // Date: EndTime or Date or StartTime date component
-          let rawDate = m.EndTime || (m as any).Date || (m as any).date || (m as any).MeetingDate || '';
-          if (!rawDate && m.StartTime && m.StartTime.includes('-')) {
-            rawDate = m.StartTime;
+            eventMap[event.dateKey].push(
+              event.dayEvent,
+            );
           }
-          const dateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
-          if (!dateKey) continue;
 
-          // Start Time
-          const startRaw = m.StartTime || '09:00';
-          const startParts = startRaw.split(':').map(Number);
-          const startH = isNaN(startParts[0]) ? 9 : startParts[0];
-          const startM = isNaN(startParts[1]) ? 0 : startParts[1];
-          const startMinutes = startH * 60 + startM;
+          this.calendarEvents.set(eventMap);
+        },
 
-          // Duration
-          const durationRaw = m.Duration || '01:00:00';
-          const dParts = durationRaw.split(':');
-          const dHours = parseInt(dParts[0], 10) || 0;
-          const dMins = parseInt(dParts[1], 10) || 0;
-          const durationMins = dHours * 60 + dMins || 60;
-          const endMinutes = startMinutes + durationMins;
+        error: (error) => {
+          console.error(
+            'Error fetching calendar data:',
+            error,
+          );
 
-          const endH = Math.floor(endMinutes / 60) % 24;
-          const endM = endMinutes % 60;
-
-          const fmt = (h: number, mi: number) => {
-            const h12 = ((h + 11) % 12) + 1;
-            const ampm = h < 12 ? 'AM' : 'PM';
-            return `${String(h12).padStart(2, '0')}:${String(mi).padStart(2, '0')} ${ampm}`;
-          };
-
-          const startLabel = fmt(startH, startM);
-          const endLabel = fmt(endH, endM);
-
-          const durationDisplay = dHours > 0 ? `${dHours}h ${dMins}m` : `${dMins || 60}m`;
-
-          const event: DayEvent = {
-            title: m.Title || m.OrgName || 'Meeting',
-            client: m.OrgName || 'Client',
-            timeLabel: `${startLabel} - ${endLabel}`,
-            startTime: startLabel,
-            startMinutes,
-            endMinutes,
-            chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
-            accentClass: 'border-blue-500',
-            icon: '🤝',
-            purpose: m.Purpose,
-            meetingType: m.MeetingType,
-            duration: durationDisplay,
-            status: m.Status,
-            orgId: m.OrgId,
-          };
-
-          if (!eventMap[dateKey]) eventMap[dateKey] = [];
-          eventMap[dateKey].push(event);
-        }
-
-        console.log('[Calendar] Processed eventMap keys:', Object.keys(eventMap));
-        this.calendarEvents.set({ ...eventMap });
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('[Calendar] Error fetching calendar data:', err);
-      },
-    });
+          this.calendarEvents.set({});
+        },
+      });
   }
 
-  private dateQueryParams() {
-    return this.appliedFrom() && this.appliedTo()
-      ? { from: this.appliedFrom(), to: this.appliedTo() }
+  private extractMeetings(
+    res: any,
+  ): CalendarMeeting[] {
+    if (Array.isArray(res?.meetings)) {
+      return res.meetings;
+    }
+
+    if (Array.isArray(res?.data?.meetings)) {
+      return res.data.meetings;
+    }
+
+    if (Array.isArray(res?.data)) {
+      return res.data;
+    }
+
+    if (Array.isArray(res)) {
+      return res;
+    }
+
+    return [];
+  }
+
+  private createCalendarEvent(
+    meeting: CalendarMeeting,
+  ): {
+    dateKey: string;
+    dayEvent: DayEvent;
+  } | null {
+    const rawDate =
+      meeting.EndTime ||
+      (meeting as any).Date ||
+      (meeting as any).date ||
+      (meeting as any).MeetingDate ||
+      meeting.StartTime ||
+      '';
+
+    const dateKey = String(rawDate)
+      .split('T')[0]
+      .split(' ')[0]
+      .trim();
+
+    if (!dateKey) {
+      return null;
+    }
+
+    const startTime =
+      meeting.StartTime || '09:00';
+
+    const startParts = startTime
+      .split(':')
+      .map(Number);
+
+    const startHour = Number.isNaN(
+      startParts[0],
+    )
+      ? 9
+      : startParts[0];
+
+    const startMinute = Number.isNaN(
+      startParts[1],
+    )
+      ? 0
+      : startParts[1];
+
+    const startMinutes =
+      startHour * 60 + startMinute;
+
+    const duration =
+      meeting.Duration || '01:00:00';
+
+    const durationParts =
+      duration.split(':');
+
+    const durationHours =
+      Number(durationParts[0]) || 0;
+
+    const durationMinutes =
+      Number(durationParts[1]) || 0;
+
+    const totalDuration =
+      durationHours * 60 +
+      durationMinutes ||
+      60;
+
+    const endMinutes =
+      startMinutes + totalDuration;
+
+    const endHour =
+      Math.floor(endMinutes / 60) % 24;
+
+    const endMinute =
+      endMinutes % 60;
+
+    const startLabel =
+      this.formatTime(
+        startHour,
+        startMinute,
+      );
+
+    const endLabel =
+      this.formatTime(
+        endHour,
+        endMinute,
+      );
+
+    const durationLabel =
+      durationHours > 0
+        ? `${durationHours}h ${durationMinutes}m`
+        : `${durationMinutes || 60}m`;
+
+    const dayEvent: DayEvent = {
+      title:
+        meeting.Title ||
+        meeting.OrgName ||
+        'Meeting',
+
+      client:
+        meeting.OrgName ||
+        'Client',
+
+      timeLabel:
+        `${startLabel} - ${endLabel}`,
+
+      startTime: startLabel,
+
+      startMinutes,
+
+      endMinutes,
+
+      chipClass:
+        'bg-blue-50 text-blue-700 border border-blue-200',
+
+      accentClass:
+        'border-blue-500',
+
+      icon: '🤝',
+
+      purpose: meeting.Purpose,
+
+      meetingType:
+        meeting.MeetingType,
+
+      duration: durationLabel,
+
+      status: meeting.Status,
+
+      orgId: meeting.OrgId,
+    };
+
+    return {
+      dateKey,
+      dayEvent,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Navigation
+  // ---------------------------------------------------------------------------
+
+  navigateToClient(): void {
+    this.router.navigate(
+      ['/client'],
+      {
+        queryParams:
+          this.dateQueryParams(),
+      },
+    );
+  }
+
+  navigateToUsages(): void {
+    this.router.navigate(
+      ['/usage'],
+      {
+        queryParams:
+          this.dateQueryParams(),
+      },
+    );
+  }
+
+  navigateToPendingMeetings(): void {
+    this.router.navigate(
+      ['/meetings'],
+      {
+        queryParams: {
+          ...this.dateQueryParams(),
+          status: 'pending',
+        },
+      },
+    );
+  }
+
+  navigateToRenewable(): void {
+    this.router.navigate(
+      ['/client'],
+      {
+        queryParams: {
+          ...this.dateQueryParams(),
+          status: 'renewable',
+        },
+      },
+    );
+  }
+
+  private dateQueryParams(): {
+    from?: string;
+    to?: string;
+  } {
+    const from = this.appliedFrom();
+    const to = this.appliedTo();
+
+    return from && to
+      ? { from, to }
       : {};
   }
 
-  /** Returns a palette of hex colors for `count` slices. */
-  private generateColors(count: number): string[] {
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  private toDateString(date: Date): string {
+    const year = date.getFullYear();
+
+    const month = String(
+      date.getMonth() + 1,
+    ).padStart(2, '0');
+
+    const day = String(
+      date.getDate(),
+    ).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatTime(
+    hour: number,
+    minute: number,
+  ): string {
+    const hour12 =
+      ((hour + 11) % 12) + 1;
+
+    const period =
+      hour < 12 ? 'AM' : 'PM';
+
+    return `${String(hour12).padStart(
+      2,
+      '0',
+    )}:${String(minute).padStart(
+      2,
+      '0',
+    )} ${period}`;
+  }
+
+  private formatLabel(
+    value: string,
+  ): string {
+    return value
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/[_-]/g, ' ')
+      .replace(/^./, (char) =>
+        char.toUpperCase(),
+      )
+      .trim();
+  }
+
+  private generateColors(
+    count: number,
+  ): string[] {
     const palette = [
-      '#10b981', // emerald
-      '#3b82f6', // blue
-      '#f59e0b', // amber
-      '#f43f5e', // rose
-      '#8b5cf6', // violet
-      '#06b6d4', // cyan
-      '#ec4899', // pink
-      '#14b8a6', // teal
-      '#f97316', // orange
-      '#6366f1', // indigo
-    ];
-    return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
-  }
-
-  // raw counts — normally these come from a service call
-  meetingsToday = 0;
-  trainingsToday = 0;
-  implementationsToday = 0;
-
-  // optional "targets" so pct isn't hardcoded either —
-  // e.g. target = max expected per day, or total capacity
-  meetingsTarget = 10;
-  trainingsTarget = 8;
-  implementationsTarget = 6;
-  total = signal(0);
-  dailyOps: DailyOpStat[] = [];
-  //today task in dashboard //
-  private loadDailyOps(): void {
-    // replace this with your real data source (service/store/API)
-
-  }
-
-  private buildDailyOps(): void {
-    const total = this.total() || 1; // avoid divide-by-zero
-
-    const rows: Omit<DailyOpStat, 'pct'>[] = [
-      {
-        label: "Today's Meetings",
-        value: this.meetingsToday,
-        target: total,
-        barClass: 'bg-emerald-600',
-        danger: this.isDanger(this.meetingsToday, total),
-      },
-      {
-        label: "Today's Trainings",
-        value: this.trainingsToday,
-        target: total,
-        barClass: 'bg-emerald-500',
-        danger: this.isDanger(this.trainingsToday, total),
-      },
-      {
-        label: "Today's Implementations",
-        value: this.implementationsToday,
-        target: total,
-        barClass: 'bg-cyan-500',
-        danger: this.isDanger(this.implementationsToday, total),
-      },
+      '#10B981',
+      '#3B82F6',
+      '#F59E0B',
+      '#F43F5E',
+      '#8B5CF6',
+      '#06B6D4',
+      '#EC4899',
+      '#14B8A6',
+      '#F97316',
+      '#6366F1',
     ];
 
-    this.dailyOps = rows.map((op) => ({
-      ...op,
-      pct: this.computePct(op.value, op.target),
-    }));
-  }
-
-  private computePct(value: number, target: number): number {
-    if (!target) return 0;
-    return Math.min(100, Math.round((value / target) * 100));
-  }
-
-  private isDanger(value: number, target: number): boolean {
-    return target > 0 && value / target >= 0.5; // flag when a category is ≥50% of the day's total load — adjust threshold as needed
-  }
-
-  // private computePct(value: number, target: number): number {
-  //   if (!target) return 0;
-  //   return Math.min(100, Math.round((value / target) * 100));
-  // }
-
-  // private isDanger(value: number, target: number): boolean {
-  //   return target > 0 && value / target >= 0.9; // e.g. flag when ≥90% of target
-  // }
-
-  get totalTasks(): number {
-    return this.dailyOps.reduce((sum, op) => sum + op.value, 0);
+    return Array.from(
+      { length: count },
+      (_, index) =>
+        palette[
+          index % palette.length
+        ],
+    );
   }
 }

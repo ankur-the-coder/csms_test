@@ -39,13 +39,13 @@ export interface ClientRow {
 
 @Component({
   selector: 'app-feedback',
-imports: [DataTable, CustomColumnDirective, CommonModule],
+  imports: [DataTable, CustomColumnDirective, CommonModule],
   templateUrl: './feedback.html',
   styleUrl: './feedback.css',
 })
 export class Feedback {
   private clientApi = inject(DashboardService);
-private readonly authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   private route = inject(ActivatedRoute);
   private readonly apiUrl = environment.apiUrl;
   private readonly tableEndpoint = `${this.apiUrl}/fetchFeedbackDataTable`;
@@ -160,44 +160,44 @@ private readonly authService = inject(AuthService);
 
     return {
       columns: [
-  // { key: 'orgId', label: 'Organization ID', sortable: true, hideable: true },
+        // { key: 'orgId', label: 'Organization ID', sortable: true, hideable: true },
 
-  { key: 'client', label: 'Client', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true, hideable: true },
 
-  { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: true },
+        { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: true },
 
-  // { key: 'phone', label: 'Phone', sortable: true, hideable: true },
+        // { key: 'phone', label: 'Phone', sortable: true, hideable: true },
 
-  // { key: 'email', label: 'Email', sortable: true, hideable: true },
+        // { key: 'email', label: 'Email', sortable: true, hideable: true },
 
-  // { key: 'ticketId', label: 'Ticket ID', sortable: true, hideable: true },
-//
-  // { key: 'ticketUid', label: 'Ticket UID', sortable: true, hideable: true },
+        // { key: 'ticketId', label: 'Ticket ID', sortable: true, hideable: true },
+        //
+        // { key: 'ticketUid', label: 'Ticket UID', sortable: true, hideable: true },
 
-  { key: 'customerName', label: 'Customer Name', sortable: true, hideable: true },
+        { key: 'customerName', label: 'Customer Name', sortable: true, hideable: true },
 
-  { key: 'phone', label: 'Customer Phone', sortable: true, hideable: true },
+        { key: 'phone', label: 'Customer Phone', sortable: true, hideable: true },
 
-  { key: 'customerEmail', label: 'Customer Email', sortable: true, hideable: true },
+        { key: 'customerEmail', label: 'Customer Email', sortable: true, hideable: true },
 
-  { key: 'subject', label: 'Subject', sortable: true, hideable: true },
+        { key: 'subject', label: 'Subject', sortable: true, hideable: true },
 
-  { key: 'rating', label: 'Rating', sortable: true, hideable: true },
+        { key: 'rating', label: 'Rating', sortable: true, hideable: true },
 
-  // { key: 'ratingSubmittedAt', label: 'Rating Submitted At', sortable: true, hideable: true },
+        // { key: 'ratingSubmittedAt', label: 'Rating Submitted At', sortable: true, hideable: true },
 
-  // { key: 'likedMost', label: 'Liked Most', sortable: false, hideable: true },
+        // { key: 'likedMost', label: 'Liked Most', sortable: false, hideable: true },
 
-  // { key: 'improveFeedback', label: 'Improve Feedback', sortable: false, hideable: true },
+        // { key: 'improveFeedback', label: 'Improve Feedback', sortable: false, hideable: true },
 
-  // { key: 'status', label: 'Status', sortable: true, hideable: true },
+        // { key: 'status', label: 'Status', sortable: true, hideable: true },
 
-  // { key: 'priority', label: 'Priority', sortable: true, hideable: true },
+        // { key: 'priority', label: 'Priority', sortable: true, hideable: true },
 
-  // { key: 'assignedAgent', label: 'Assigned Agent', sortable: true, hideable: true },
+        // { key: 'assignedAgent', label: 'Assigned Agent', sortable: true, hideable: true },
 
-  // { key: 'createdAt', label: 'Created At', sortable: true, hideable: true, type: 'date' },
-]  as SmartColumn<ClientRow>[],
+        // { key: 'createdAt', label: 'Created At', sortable: true, hideable: true, type: 'date' },
+      ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
         endpoint: this.tableEndpoint,
@@ -229,7 +229,7 @@ private readonly authService = inject(AuthService);
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
-            toDate,orgId:Utils.encode5t(this.authService.getOrgId().toString()),
+            toDate, orgId: Utils.encode5t(this.authService.getOrgId().toString()),
           };
 
           return { method: 'POST' as const, body };
@@ -256,4 +256,67 @@ private readonly authService = inject(AuthService);
       ],
     };
   });
+  private ratingColorMap: Record<number, RatingCard['colorClasses']> = {
+    1: {
+      card: 'border-red-200 bg-gradient-to-br from-red-50 to-white hover:border-red-400 hover:shadow-red-500/10',
+      icon: 'bg-red-100 text-red-600',
+      star: 'text-red-400',
+    },
+    2: {
+      card: 'border-green-200 bg-gradient-to-br from-green-50 to-white hover:border-green-400 hover:shadow-green-500/10',
+      icon: 'bg-green-100 text-green-600',
+      star: 'text-green-400',
+    },
+    3: {
+      card: 'border-blue-200 bg-gradient-to-br from-blue-50 to-white hover:border-blue-400 hover:shadow-blue-500/10',
+      icon: 'bg-blue-100 text-blue-600',
+      star: 'text-blue-400',
+    },
+    4: {
+      card: 'border-yellow-200 bg-gradient-to-br from-yellow-50 to-white hover:border-yellow-400 hover:shadow-yellow-500/10',
+      icon: 'bg-yellow-100 text-yellow-600',
+      star: 'text-yellow-400',
+    },
+    5: {
+      card: 'border-purple-200 bg-gradient-to-br from-purple-50 to-white hover:border-purple-400 hover:shadow-purple-500/10',
+      icon: 'bg-purple-100 text-purple-600',
+      star: 'text-purple-400',
+    },
+  };
+
+
+
+
+
+
+
+
+
+
+
+  cardData = signal({
+    ratingCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number>,
+  });
+
+  ratingCards = computed<RatingCard[]>(() => {
+    const counts = this.cardData().ratingCounts;
+    return [1, 2, 3, 4, 5].map(stars => ({
+      stars,
+      count: counts[stars] ?? 0,
+      colorClasses: this.ratingColorMap[stars],
+    }));
+  });
+
+  navigateToRating(stars: number) {
+    console.log('Navigate to rating:', stars);
+  }
+}
+interface RatingCard {
+  stars: number;
+  count: number;
+  colorClasses: {
+    card: string;
+    icon: string;
+    star: string;
+  };
 }
