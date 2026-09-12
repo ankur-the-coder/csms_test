@@ -63,7 +63,7 @@ get password() {
         this.isLoading.set(false);
 
         if (res.status === true) {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/voice']);
         } else {
           this.errorMessage.set(
             res.msg || 'Invalid username or password. Please try again.'
