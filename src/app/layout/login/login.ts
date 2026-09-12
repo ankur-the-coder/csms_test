@@ -19,29 +19,41 @@ export class Login {
   kickedOutMsg = signal('');
   showPassword = signal(false);
   errorMessage = signal('');
-  loginForm = new FormGroup({
-    username: new FormControl<string>('', Validators.required),
-    password: new FormControl<string>('', Validators.required),
-  });
+loginForm = new FormGroup({
+  // username: new FormControl<string>('', [
+  //   Validators.required,
+  //   Validators.minLength(5)
+  // ]),
+  username: new FormControl<string>('', [
+    Validators.required
+  ]),
+  password: new FormControl<string>('', Validators.required),
+});
 
   constructor(
     private router: Router,
     private authService: AuthService
   ) {}
+get username() {
+  return this.loginForm.controls.username;
+}
 
+get password() {
+  return this.loginForm.controls.password;
+}
   togglePasswordVisibility(): void {
     this.showPassword.set(!this.showPassword());
   }
 
-  onSubmit(): void {
+ onSubmit(): void {
     this.errorMessage.set('');
-    this.isLoading.set(true);
 
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
-      this.isLoading.set(false);
       return;
     }
+
+    this.isLoading.set(true);
 
     const username = this.loginForm.controls.username.value?.trim() || '';
     const password = this.loginForm.controls.password.value?.trim() || '';
@@ -67,6 +79,4 @@ export class Login {
     });
   }
 }
-
-
 
