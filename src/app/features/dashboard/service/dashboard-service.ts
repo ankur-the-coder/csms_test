@@ -90,10 +90,7 @@ export class DashboardService {
 
     return this.http.post<TodaysTasksResponse>(`${this.apiUrl}/fetchTodaysTasksData`, data);
   }
-
-
   // Data table Api
-
   fetchFeedbackDataTable(payload: DataTablePayload): Observable<FeedbackDataTableResponse> {
 
     return this.http.post<FeedbackDataTableResponse>(`${this.apiUrl}/fetchFeedbackDataTable`, payload);
