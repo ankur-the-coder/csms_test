@@ -79,6 +79,8 @@ export class DataTable<T extends object> implements AfterContentInit {
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
   permissions = input<{ canEdit?: boolean }>({ canEdit: true });
+  excludePdfColumns = input<string[]>([]);
+  excludeExportColumns = input<string[]>([]);
 
   // ── Outputs ───────────────────────────────────────────────────────────────
   rowClick = output<T>();
@@ -743,6 +745,13 @@ private applyInitialDatesEffect = effect(() => {
     this.colVisibility.update(v => ({ ...v, [key]: visible }));
   }
 
+  isColVisible(key: string): boolean {
+    const col = this.config().columns.find(c => String(c.key) === key);
+    if (col && col.hideable === false) return true;
+    const override = this.colVisibility()[key];
+    return override !== undefined ? override : !(col?.hidden);
+  }
+
   // ── Sort ──────────────────────────────────────────────────────────────────
   onSort(key: keyof T): void {
     if (this.wasDragging()) return;
@@ -801,10 +810,130 @@ private applyInitialDatesEffect = effect(() => {
     return cleaned || emptyPlaceholder;
   }
 
+  isColumnExcludedFromExport(col: SmartColumn<any>, isPdf = false): boolean {
+    const key = String(col.key ?? '').toLowerCase();
+    const defaultExcludes = ['actions', 'action', 'photo', 'rowactions'];
+    if (defaultExcludes.includes(key)) {
+      return true;
+    }
+
+    if (col.excludeFromExport) return true;
+    if (isPdf && col.excludeFromPdf) return true;
+
+    const inputPdfExcludes = (this.excludePdfColumns() || []).map(k => String(k).toLowerCase());
+    const inputExportExcludes = (this.excludeExportColumns() || []).map(k => String(k).toLowerCase());
+    const cfgPdfExcludes = (this.config().excludePdfColumns || []).map(k => String(k).toLowerCase());
+    const cfgExportExcludes = (this.config().excludeExportColumns || []).map(k => String(k).toLowerCase());
+
+    if (inputExportExcludes.includes(key) || cfgExportExcludes.includes(key)) return true;
+    if (isPdf && (inputPdfExcludes.includes(key) || cfgPdfExcludes.includes(key))) return true;
+
+    return false;
+  }
+
   private exportableColumns(): SmartColumn<any>[] {
-    return this.config().columns.filter(c =>
-      !['actions', 'action', 'photo'].includes(c.key as string)
-    );
+    return this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, false));
+  }
+
+  /** Formats a cell value according to its column type, badgeMap, dates, booleans, numbers, or custom formatter. */
+  formatExportCell(row: any, col: SmartColumn<any>): string {
+    const rawVal = getByPath(row, col.key as string);
+
+    // If column has custom formatter
+    if (col.formatter) {
+      try {
+        return this.sanitizeCell(col.formatter(rawVal, row), '—');
+      } catch (e) {
+        console.warn('Column formatter error:', e);
+      }
+    }
+
+    if (rawVal === null || rawVal === undefined || rawVal === '') {
+      return '—';
+    }
+
+    // Badge mapping (handles status, priority, badge columns)
+    if (col.type === 'badge' || col.badgeMap) {
+      if (col.badgeMap) {
+        const entry = col.badgeMap[String(rawVal)];
+        if (entry?.label !== undefined) return this.sanitizeCell(entry.label, '—');
+      }
+      return this.sanitizeCell(this.getBadgeLabel(col, rawVal), '—');
+    }
+
+    // Boolean
+    if (col.type === 'boolean' || typeof rawVal === 'boolean') {
+      return rawVal ? 'Yes' : 'No';
+    }
+
+    // Explicit date type
+    if (col.type === 'date') {
+      try {
+        const d = new Date(rawVal as any);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      } catch {}
+      return this.sanitizeCell(rawVal, '—');
+    }
+
+    // Automatic date/time detection for strings
+    if (typeof rawVal === 'string') {
+      const colKeyLower = col.key.toString().toLowerCase();
+      const isDateKey = colKeyLower.includes('time') || colKeyLower.includes('date') || colKeyLower.includes('at');
+      const isIsoPattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
+
+      if (isDateKey || isIsoPattern) {
+        try {
+          const d = new Date(rawVal);
+          if (!isNaN(d.getTime())) {
+            const hasTime = rawVal.includes('T') || rawVal.includes(':') || d.getHours() > 0 || d.getMinutes() > 0;
+            const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            if (hasTime && isDateKey) {
+              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+              return `${dateStr}, ${timeStr}`;
+            }
+            return dateStr;
+          }
+        } catch {}
+      }
+    }
+
+    // Duration formatting (e.g. '01:00:00.000000' -> '1 hour' or '45 mins' or '1 hour 30 mins')
+    if (col.key.toString().toLowerCase() === 'duration') {
+      const dStr = String(rawVal).trim();
+      if (/hour|min|sec/i.test(dStr)) return dStr;
+      if (dStr.includes(':')) {
+        const parts = dStr.split('.')[0].split(':');
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+        const res: string[] = [];
+        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
+        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
+        return res.join(' ') || '0 mins';
+      }
+      const num = Number(dStr);
+      if (!isNaN(num) && num > 0) {
+        const h = Math.floor(num / 60);
+        const m = num % 60;
+        const res: string[] = [];
+        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
+        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
+        return res.join(' ') || `${num} mins`;
+      }
+    }
+
+    // Currency
+    if (col.type === 'currency' && typeof rawVal === 'number') {
+      return rawVal.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+    }
+
+    // Number
+    if (col.type === 'number' && typeof rawVal === 'number') {
+      return rawVal.toLocaleString();
+    }
+
+    return this.sanitizeCell(this.formatCellValue(rawVal), '—');
   }
 
   private timestampForFilename(): string {
@@ -901,7 +1030,7 @@ private applyInitialDatesEffect = effect(() => {
       const cols = this.exportableColumns();
       const sanitize = (v: unknown) => `"${this.sanitizeCell(v).replace(/"/g, '""')}"`;
       const header = ['S.No', ...cols.map(c => c.label)].map(sanitize).join(',');
-      const body = data.map((row, i) => [i + 1, ...cols.map(c => sanitize((row as any)[c.key]))].join(','));
+      const body = data.map((row, i) => [i + 1, ...cols.map(c => sanitize(this.formatExportCell(row, c)))].join(','));
 
       this.pdfProgress.set(100);
       const csv = '\ufeff' + [header, ...body].join('\r\n');
@@ -938,7 +1067,7 @@ private applyInitialDatesEffect = effect(() => {
       const cols = this.exportableColumns();
       const worksheetData = data.map((row, idx) => {
         const obj: any = { 'S.No': idx + 1 };
-        cols.forEach(col => { obj[col.label] = this.sanitizeCell((row as any)[col.key], '—'); });
+        cols.forEach(col => { obj[col.label] = this.formatExportCell(row, col); });
         return obj;
       });
 
@@ -962,8 +1091,9 @@ private applyInitialDatesEffect = effect(() => {
     this.pdfPageSize.set('A4');
     this.pdfRowLimit.set('all');
     const limit = this.PAGE_SIZE_LIMITS['A4'];
+    const exportable = this.pdfExportableColumns();
     const visibleKeys = this.visibleColumns()
-      .filter(c => !['actions', 'action', 'photo'].includes(c.key as string))
+      .filter(c => exportable.some(ec => ec.key === c.key))
       .map(c => c.key as string)
       .slice(0, limit);
     this.pdfSelectedColumns.set(visibleKeys);
@@ -999,57 +1129,133 @@ private applyInitialDatesEffect = effect(() => {
     this.pdfProgress.set(0);
   }
 
-  private reportLogoPromise: Promise<HTMLImageElement | null> | null = null;
+  private reportLogoPromise: Promise<{ original: HTMLImageElement; watermarkDataUrl: string } | null> | null = null;
 
-  /** Loads an optional logo (from /logo.png) once and caches the promise. */
-  private getReportLogo(): Promise<HTMLImageElement | null> {
+  /** Loads the ubiclient logo (from /onlyLogo.png) and creates a faded watermark data URL. */
+  private getReportLogo(): Promise<{ original: HTMLImageElement; watermarkDataUrl: string } | null> {
     if (!this.reportLogoPromise) {
       this.reportLogoPromise = new Promise((resolve) => {
-        const img = new Image();
-        img.src = '/logo.png';
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null); // no logo asset — export still proceeds
+        const candidates = ['/onlyLogo.png', 'onlyLogo.png', '/logo.png', 'logo.png'];
+        let idx = 0;
+
+        const tryNext = () => {
+          if (idx >= candidates.length) {
+            resolve(null);
+            return;
+          }
+          const src = candidates[idx++];
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            let watermarkDataUrl = '';
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth || 400;
+              canvas.height = img.naturalHeight || 400;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 0.12; // Faded watermark opacity
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                watermarkDataUrl = canvas.toDataURL('image/png');
+              }
+            } catch (e) {
+              console.warn('Could not generate watermark canvas', e);
+            }
+            resolve({ original: img, watermarkDataUrl: watermarkDataUrl || img.src });
+          };
+          img.onerror = () => tryNext();
+          img.src = src;
+        };
+
+        tryNext();
       });
     }
     return this.reportLogoPromise;
   }
 
-  private buildAndSavePdf(rows: any[], exportColumns: SmartColumn<any>[], baseFileName: string, logo: HTMLImageElement | null): void {
+  private buildAndSavePdf(
+    rows: any[],
+    exportColumns: SmartColumn<any>[],
+    baseFileName: string,
+    logoInfo: { original: HTMLImageElement; watermarkDataUrl: string } | null
+  ): void {
     const doc = new jsPDF({ orientation: 'landscape', format: this.pdfPageSize().toLowerCase() as any });
     const generatedOn = this.timestampForDisplay();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const centerX = pageWidth / 2;
 
-    if (logo) {
-      const logoWidth = 18;
-      const logoHeight = (logo.naturalHeight / logo.naturalWidth) * logoWidth;
-      doc.addImage(logo, 'PNG', 10, 4, logoWidth, logoHeight);
-    }
+    const drawWatermark = () => {
+      if (logoInfo?.watermarkDataUrl) {
+        const watermarkSize = Math.min(pageWidth, pageHeight) * 0.55;
+        const aspect = (logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1);
+        const wWidth = watermarkSize;
+        const wHeight = watermarkSize * aspect;
+        const wx = (pageWidth - wWidth) / 2;
+        const wy = (pageHeight - wHeight) / 2 + 5;
+        doc.addImage(logoInfo.watermarkDataUrl, 'PNG', wx, wy, wWidth, wHeight, undefined, 'FAST');
+      }
+    };
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text(baseFileName.replace(/[-_]/g, ' '), centerX, 14, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated on: ${generatedOn}  •  Rows: ${rows.length}`, centerX, 20, { align: 'center' });
+    const drawHeader = () => {
+      if (logoInfo?.original) {
+        const logoWidth = 20;
+        const logoHeight = ((logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1)) * logoWidth;
+        doc.addImage(logoInfo.original, 'PNG', 10, 5, logoWidth, logoHeight);
+      }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(33, 37, 41);
+      doc.text(baseFileName.replace(/[-_]/g, ' '), centerX, 13, { align: 'center' });
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 110, 120);
+      doc.text(`Generated on: ${generatedOn}  •  Rows: ${rows.length}`, centerX, 19, { align: 'center' });
+    };
 
     autoTable(doc, {
       head: [['S.No', ...exportColumns.map(c => c.label)]],
-      body: rows.map((row, idx) => [idx + 1, ...exportColumns.map(col => this.sanitizeCell(row[col.key], '—'))]),
+      body: rows.map((row, idx) => [idx + 1, ...exportColumns.map(col => this.formatExportCell(row, col))]),
       startY: 26,
-      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
-      headStyles: { fillColor: [29, 158, 117], fontSize: 8, fontStyle: 'bold' },
-      margin: { top: 26, left: 10, right: 10 },
-      didDrawPage: (data) => {
-        const pageCount = doc.getNumberOfPages();
-        const pageSize = doc.internal.pageSize;
-        const pageHeight = pageSize.getHeight();
-        doc.setFontSize(7);
-        doc.setTextColor(120);
-        doc.text(`Generated: ${generatedOn}`, 10, pageHeight - 8);
-        doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageSize.getWidth() - 10, pageHeight - 8, { align: 'right' });
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        overflow: 'linebreak',
+        textColor: [33, 37, 41],
+        fillColor: false,
+        lineColor: [220, 225, 230],
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [17, 24, 39],
+        fontSize: 8.5,
+        fontStyle: 'bold',
+        lineColor: [209, 213, 219],
+        lineWidth: 0.2,
+      },
+      alternateRowStyles: {
+        fillColor: false,
+      },
+      margin: { top: 26, left: 10, right: 10, bottom: 12 },
+      willDrawPage: () => {
+        drawWatermark();
+        drawHeader();
       },
     });
+
+    const totalPages = (doc as any).internal.getNumberOfPages ? (doc as any).internal.getNumberOfPages() : doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 150, 160);
+      doc.text(`Generated: ${generatedOn}`, 10, pageHeight - 5);
+      doc.text(`Page ${i} of ${totalPages}`, pageWidth - 10, pageHeight - 5, { align: 'right' });
+    }
 
     doc.save(`${baseFileName}_${this.timestampForFilename()}.pdf`);
   }
@@ -1089,27 +1295,36 @@ private applyInitialDatesEffect = effect(() => {
 
   async printTable(): Promise<void> {
     this.closeExportMenu();
-    const cols = this.visibleColumns().filter(c => !['actions', 'action'].includes(c.key as string));
+    const cols = this.exportableColumns();
     const rows = await this.getAllDataForExport('all');
     const title = this.config().exportFileName ?? 'Table Data';
     const generatedOn = this.timestampForDisplay();
     const headHtml = cols.map(c => `<th>${this.escapeHtml(c.label)}</th>`).join('');
-    const bodyHtml = rows.map(row =>
-      `<tr>${cols.map(col => `<td>${this.escapeHtml(this.stripHtml(this.formatCellValue((row as any)[col.key])))}</td>`).join('')}</tr>`
+    const bodyHtml = rows.map((row, idx) =>
+      `<tr><td>${idx + 1}</td>${cols.map(col => `<td>${this.escapeHtml(this.formatExportCell(row, col))}</td>`).join('')}</tr>`
     ).join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>
         @page{size:A4 landscape;margin:14mm}
-        body{font-family:Arial,sans-serif;padding:12px;color:#111827}
-        h2{text-align:center;margin:0 0 4px;color:#1f2937}
-        .subtitle{text-align:center;color:#6b7280;font-size:12px;margin:0 0 20px}
-        table{width:100%;border-collapse:collapse;table-layout:fixed}
-        th{background:#f3f4f6;text-align:left}
-        th,td{border:1px solid #d1d5db;padding:6px 8px;font-size:10px;word-break:break-word}
+        body{font-family:Arial,sans-serif;padding:12px;color:#111827;position:relative}
+        .watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.1;width:420px;pointer-events:none;z-index:-1}
+        .header-container{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:18px}
+        .logo{position:absolute;left:0;top:0;height:38px;width:auto}
+        h2{text-align:center;margin:0 0 4px;color:#1f2937;font-size:16px}
+        .subtitle{text-align:center;color:#6b7280;font-size:11px;margin:0}
+        table{width:100%;border-collapse:collapse;table-layout:fixed;background:transparent}
+        th{background:#f9fafb;text-align:left;border:1px solid #d1d5db;padding:6px 8px;font-size:10px;font-weight:600}
+        td{border:1px solid #e5e7eb;padding:6px 8px;font-size:10px;word-break:break-word;background:transparent}
       </style></head><body>
-      <h2>${title} List</h2>
-      <p class="subtitle">Generated on: ${this.escapeHtml(generatedOn)}</p>
-      <table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
+      <img class="watermark" src="/onlyLogo.png" alt="" />
+      <div class="header-container">
+        <img class="logo" src="/onlyLogo.png" alt="Logo" />
+        <div>
+          <h2>${this.escapeHtml(title)}</h2>
+          <p class="subtitle">Generated on: ${this.escapeHtml(generatedOn)}  •  Rows: ${rows.length}</p>
+        </div>
+      </div>
+      <table><thead><tr><th>S.No</th>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
     </body></html>`;
     const w = window.open('', '_blank', 'width=1200,height=800');
     if (!w) { console.warn('Print popup was blocked by the browser.'); return; }
@@ -1481,7 +1696,7 @@ selectStarRating(key: string, value: any): void {
   this.dropdownPosition.set(null);
 }
 pdfExportableColumns = computed(() =>
-  this.config().columns.filter(c => !['actions', 'action', 'photo'].includes(c.key as string))
+  this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, true))
 );
 
 selectAllPdfColumns(): void {

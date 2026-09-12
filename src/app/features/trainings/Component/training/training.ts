@@ -10,6 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TrainingService } from '../../services/Training/training';
+import { ToastrService } from 'ngx-toastr';
 
 export interface CategoryRecord {
   id: string;
@@ -30,6 +31,7 @@ export class Training implements OnInit {
 
   private readonly router = inject(Router);
   private readonly trainingService = inject(TrainingService);
+  private readonly toastr = inject(ToastrService);
 
   ngOnInit(): void {
     this.loadCategories();
@@ -97,6 +99,7 @@ export class Training implements OnInit {
 
       error: (err: any) => {
         this.isLoadingCategories.set(false);
+        this.toastr.error('Failed to load categories. Please try again.', 'Server Error');
         console.error('Failed to load categories:', err);
       }
 
@@ -109,6 +112,7 @@ export class Training implements OnInit {
     const name = this.categoryName().trim();
 
     if (!name) {
+      this.toastr.warning('Please enter a category name.', 'Validation Warning');
       return;
     }
 
@@ -129,9 +133,19 @@ export class Training implements OnInit {
         this.isSaving.set(false);
 
         if (res.status) {
+          if (editId) {
+            this.toastr.success('Category updated successfully.', 'Success');
+          } else {
+            this.toastr.success('Category created successfully.', 'Success');
+          }
           this.closeCategoryModal();
           this.loadCategories();
         } else {
+          if (editId) {
+            this.toastr.error('Failed to update category.', 'Error');
+          } else {
+            this.toastr.error('Failed to create category.', 'Error');
+          }
           this.categoryError.set(res.msg || 'Something went wrong. Please try again.');
         }
 
@@ -139,6 +153,11 @@ export class Training implements OnInit {
 
       error: (err: any) => {
         this.isSaving.set(false);
+        if (editId) {
+          this.toastr.error('Failed to update category due to a server error.', 'Server Error');
+        } else {
+          this.toastr.error('Failed to create category due to a server error.', 'Server Error');
+        }
         this.categoryError.set('Failed to save category. Please try again.');
         console.error('Failed to save category:', err);
       }
@@ -171,15 +190,22 @@ export class Training implements OnInit {
       next: (res: any) => {
         this.isDeleting.set(false);
         if (res.status) {
+          this.toastr.success('Category deleted successfully.', 'Deleted');
           this.cancelDelete();
           this.loadCategories();
         } else {
+          if (category.course_count && category.course_count > 0) {
+            this.toastr.warning('Cannot delete category — it still contains courses.', 'Warning');
+          } else {
+            this.toastr.error(res.msg || 'Failed to delete category.', 'Error');
+          }
           console.error('Failed to delete category:', res.msg);
           this.cancelDelete();
         }
       },
       error: (err: any) => {
         this.isDeleting.set(false);
+        this.toastr.error('Failed to delete category due to a server error.', 'Server Error');
         console.error('Failed to delete category:', err);
         this.cancelDelete();
       }

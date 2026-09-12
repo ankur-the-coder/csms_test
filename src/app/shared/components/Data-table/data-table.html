@@ -337,16 +337,10 @@
           @if (config().selectable) {
           <th
             class="st-th st-check-col sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 w-12">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-4 h-4 cursor-pointer">
+            <label class="relative inline-flex items-center justify-center cursor-pointer">
               <input type="checkbox"
-                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="allSelected()" (change)="toggleSelectAll()" />
-              <span
-                class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </span>
             </label>
           </th>
           }
@@ -364,7 +358,7 @@
             (dragover)="onDragOver($event, col.key.toString())" (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event, col.key.toString())" (click)="col.sortable ? onSort($any(col.key)) : null"
             [title]="col.tooltip ?? ''">
-            <span class="st-th-inner font-bold text-brand-700 inline-flex items-center gap-1.5"
+            <span class="st-th-inner font-bold text-gray-800 inline-flex items-center gap-1.5"
               [class.cursor-pointer]="col.sortable">
               {{ col.label }}
               @if (col.sortable) {
@@ -444,19 +438,13 @@
           <td
             class="st-td st-check-col px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50 w-12"
             (click)="$event.stopPropagation()">
-            <label class="st-checkbox-label relative inline-flex items-center justify-center w-5 h-5 cursor-pointer"
+            <label class="relative inline-flex items-center justify-center cursor-pointer"
               [class.cursor-not-allowed]="config().selectableWhen ? !config().selectableWhen!(row) : false">
               <input type="checkbox"
-                class="st-checkbox appearance-none w-4 h-4 rounded-sm border-[1.5px] border-[--st-border] bg-[--st-surface] cursor-pointer transition-all duration-150 shrink-0 hover:border-[--st-accent] checked:bg-[--st-accent] checked:border-[--st-accent] disabled:opacity-30 disabled:cursor-not-allowed"
+                class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 [checked]="isRowSelected(row)"
                 [disabled]="config().selectableWhen ? !config().selectableWhen!(row) : false"
                 (change)="config().selectableWhen ? config().selectableWhen!(row) && toggleRow(row) : toggleRow(row)" />
-              <span
-                class="st-checkbox-check absolute pointer-events-none w-3 h-3 text-white opacity-0 scale-50 transition-all duration-150 flex peer-checked:opacity-100 peer-checked:scale-100">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </span>
             </label>
           </td>
           }
@@ -1009,42 +997,72 @@
 
 <!-- ── Column Picker Modal ────────────────────────────────────────────────── -->
 @if (colPickerModalOpen()) {
-<div class="fixed inset-0 z-1500 bg-black/45 flex items-center justify-center p-6" (click)="closeColPicker()">
+<div
+  class="fixed inset-0 z-[1500] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-[st-fade-in_0.15s_ease-out]"
+  (click)="closeColPicker()">
+
   <div
-    class=" rounded-2xl border border-card-border bg-card-bg w-full max-w-170 max-h-[85vh] flex flex-col overflow-hidden "
+    class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-[620px] max-h-[85vh] flex flex-col overflow-hidden animate-[st-zoom-in_0.2s_cubic-bezier(0.16,1,0.3,1)]"
     (click)="$event.stopPropagation()">
-    <div class=" flex items-center justify-between px-5 py-4 border-b border-card-border">
-      <h3 class="bg-auto text-[16px] font-bold ">Visible Columns</h3>
+
+    <!-- Modal Header -->
+    <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+      <div>
+        <h3 class="text-base font-semibold text-slate-900">Visible Columns</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Customize visible columns in your table.</p>
+      </div>
       <button
-        class=" w-8 h-8 rounded-2xl border-none bg-white text-sm cursor-pointer flex items-center justify-center transition-colors duration-150 "
-        (click)="closeColPicker()" type="button">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        class="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-all cursor-pointer"
+        (click)="closeColPicker()" type="button" aria-label="Close">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"
+          stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
     </div>
-    <div class="st-modal-body px-5 py-4 overflow-y-auto flex-1">
-      <div class="st-col-picker-grid grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2">
+
+    <!-- Modal Body: Column Checkbox Grid -->
+    <div class="flex-1 overflow-y-auto p-5 bg-white">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         @for (col of config().columns; track col.key) {
         <label
-          class="st-col-picker-item flex items-center gap-2 text-[13px] text-[--st-text] px-2.5 py-1.5 rounded-[--st-radius-sm] border-[1.5px] border-[--st-border] transition-colors duration-150 hover:border-[--st-accent] hover:bg-[--st-accent-bg]"
-          [class.cursor-pointer]="col.hideable !== false" [class.opacity-60]="col.hideable === false"
-          [class.cursor-not-allowed]="col.hideable === false">
-          <input type="checkbox" class="w-3.5 h-3.5 accent-[--st-accent]"
-            [class.cursor-pointer]="col.hideable !== false" [class.cursor-not-allowed]="col.hideable === false"
-            [checked]="col.hideable === false ? true : colVisibility()[col.key.toString()] !== false"
+          class="flex items-center gap-2.5 p-2.5 rounded-xl border transition-all group"
+          [class.cursor-pointer]="col.hideable !== false"
+          [class.cursor-not-allowed]="col.hideable === false"
+          [class.opacity-60]="col.hideable === false"
+          [class.border-slate-100]="!isColVisible(col.key.toString())"
+          [class.hover:border-slate-200]="!isColVisible(col.key.toString()) && col.hideable !== false"
+          [class.hover:bg-slate-50/70]="!isColVisible(col.key.toString()) && col.hideable !== false"
+          [class.bg-emerald-50/40]="isColVisible(col.key.toString())"
+          [class.border-emerald-200]="isColVisible(col.key.toString())">
+
+          <input type="checkbox"
+            class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer disabled:cursor-not-allowed"
+            [class.cursor-pointer]="col.hideable !== false"
+            [class.cursor-not-allowed]="col.hideable === false"
+            [checked]="isColVisible(col.key.toString())"
             [disabled]="col.hideable === false"
             (change)="toggleColVisibility(col.key.toString(), $any($event.target).checked)" />
-          <span>{{ col.label }}</span>
+
+          <span class="text-xs font-medium text-slate-700 group-hover:text-slate-900 truncate"
+            [class.text-emerald-950]="isColVisible(col.key.toString())"
+            [class.font-semibold]="isColVisible(col.key.toString())">
+            {{ col.label }}
+          </span>
         </label>
         }
       </div>
     </div>
-    <div
-      class="st-modal-footer relative z-[3000] bg-[--st-surface] flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[--st-border]">
+
+    <!-- Modal Footer -->
+    <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-3.5 border-t border-slate-100 bg-slate-50/50">
+      <span class="hidden sm:inline text-xs font-medium text-slate-500">
+        {{ visibleColumns().length }} of {{ config().columns.length }} columns visible
+      </span>
+
       <button
-        class="st-btn st-btn--primary inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[--st-radius] text-[13px] font-medium font-inherit cursor-pointer border-[1.5px] bg-[--st-accent] text-white border-[--st-accent] transition-colors duration-150 hover:bg-[--st-accent-dark] hover:border-[--st-accent-dark] hover:text-white"
+        class="ml-auto px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs transition-all cursor-pointer"
         (click)="closeColPicker()" type="button">Done</button>
     </div>
   </div>

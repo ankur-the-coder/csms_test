@@ -45,14 +45,13 @@ import { DatePicker } from '../../shared/components/inputs/date-picker/date-pick
 import { DatePicker as DatePickerService } from '../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../shared/components/inputs/time-picker/time-picker';
 
-import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, CustomDateSelector, Calendar, ChartComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -124,6 +123,15 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   showCancelModal = signal(false);
 cancelMeetingRow = signal<MeetingRow | null>(null);
 cancelSubmitting = signal(false);
+
+
+// ============ Invite Attendees Modal ============
+showInviteModal = signal(false);
+inviteMeetingRow = signal<MeetingRow | null>(null);
+inviteEmails = signal<string[]>([]);
+inviteEmailInput = signal('');
+inviteSubmitting = signal(false);
+inviteError = signal<string | null>(null);
 
   // ============ Dashboard KPI Cards (from /meetings/dashboard-stats) ============
   // A signal, not a plain property — under zoneless change detection, a signal
@@ -251,19 +259,23 @@ rescheduleDurationSelectOptions: SelectOption[] = [
         label: 'Meeting Detail',
         sortable: false,
         align: 'center' as const,
+        excludeFromExport: true,
+        excludeFromPdf: true,
       },
       {
         key: 'clientMail',
         label: 'Client Email',
         sortable: false,
+        hidden:true
       },
       {
         key: 'rowActions',
         label: 'actions',
         sortable: false,
-        
         hideable: false,
-        sticky:true,
+        sticky: true,
+        excludeFromExport: true,
+        excludeFromPdf: true,
       },
     ],
 
@@ -343,7 +355,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
     showPagination: true,
     defaultPageSize: 10,
     pageSizeOptions: [10, 25, 50, 100],
-    exportFileName: 'meetings',
+    exportFileName: 'Meetings',
     emptyMessage: 'No meetings found.',
     clickable: false,
     toolbarButtons: [
@@ -956,10 +968,53 @@ confirmCancelMeeting(): void {
     return { label: 'Host No-Show', badgeClass: 'text-rose-700 bg-rose-50 border-rose-200', icon: 'fa-user-clock' };
   }
 
-  /** Converts '01:00:00.000000' → '01:00:00' */
-  formatDuration(raw: string): string {
-    if (!raw) return '00:00:00';
-    return raw.split('.')[0] || raw;
+  /** Converts duration like '01:00:00.000000', '00:30:00', '01:30:00' → '1 hour', '30 mins', '1 hour 30 mins' */
+  formatDuration(raw: string | null | undefined): string {
+    if (!raw) return '—';
+    const str = String(raw).trim();
+    if (!str || str === '0' || str === '00:00:00' || str === '00:00:00.000000') return '0 mins';
+
+    // If it already has human readable duration (e.g. "1 hour", "45 minutes", "15 minutes")
+    if (/hour|min|sec/i.test(str)) {
+      return str;
+    }
+
+    // Handle HH:MM:SS or HH:MM:SS.ffffff
+    if (str.includes(':')) {
+      const parts = str.split('.')[0].split(':');
+      const hours = parseInt(parts[0], 10) || 0;
+      const minutes = parseInt(parts[1], 10) || 0;
+      const seconds = parseInt(parts[2], 10) || 0;
+
+      const result: string[] = [];
+      if (hours > 0) {
+        result.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+      }
+      if (minutes > 0) {
+        result.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
+      }
+      if (hours === 0 && minutes === 0 && seconds > 0) {
+        result.push(`${seconds} ${seconds === 1 ? 'sec' : 'secs'}`);
+      }
+      return result.join(' ') || '0 mins';
+    }
+
+    // Handle integer/number (e.g. total minutes)
+    const num = Number(str);
+    if (!isNaN(num) && num > 0) {
+      const hours = Math.floor(num / 60);
+      const minutes = num % 60;
+      const result: string[] = [];
+      if (hours > 0) {
+        result.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+      }
+      if (minutes > 0) {
+        result.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
+      }
+      return result.join(' ') || `${num} mins`;
+    }
+
+    return str;
   }
 
   /** Returns coloured initials avatar background for an org name */
@@ -1023,9 +1078,7 @@ confirmCancelMeeting(): void {
   }
 
   fetchApiMeetings(): void {
-    // Same empId scoping as the DataTable's own apiConfig.buildRequest —
-    // this separate call feeds the calendar/list views (apiMeetings signal),
-    // so it needs to stay scoped to the logged-in employee too.
+    // Scope meetings fetch to the logged-in employee only
     const filters: Record<string, any> = {};
     const rawEmpId = localStorage.getItem('empId');
     if (rawEmpId) {
@@ -1043,15 +1096,20 @@ confirmCancelMeeting(): void {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
-          this.apiMeetings.set(res.data);
-          if (res.data.length > 0 && res.data[0].startTime) {
-            const firstDate = new Date(res.data[0].startTime);
+          const empId = rawEmpId ? Number(rawEmpId) : null;
+          // Ensure client-side filtering for user-specific meetings
+          const userMeetings = empId
+            ? res.data.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId))
+            : res.data;
+          this.apiMeetings.set(userMeetings);
+          if (userMeetings.length > 0 && userMeetings[0].startTime) {
+            const firstDate = new Date(userMeetings[0].startTime);
             if (!isNaN(firstDate.getTime())) {
               this.calendarMonth.set(firstDate.getMonth());
               this.calendarYear.set(firstDate.getFullYear());
             }
           }
-          this.updateMeetingTypesChartFromApi(res.data, res.meta?.total || res.data.length);
+          this.updateMeetingTypesChartFromApi(userMeetings, res.meta?.total || userMeetings.length);
         }
       },
       error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
@@ -1131,27 +1189,45 @@ confirmCancelMeeting(): void {
 
   /** Pulls the "Recent Activity" feed from GET /meetings/recent-activity. */
   fetchRecentActivity(): void {
-  this.loadingRecentActivity = true;
+    this.loadingRecentActivity = true;
+    const rawEmpId = localStorage.getItem('empId');
+    const empId = rawEmpId ? Number(rawEmpId) : undefined;
+    const currentUserName = (localStorage.getItem('userName') || '').trim().toLowerCase();
 
-  this.meetingService.getRecentActivity().subscribe({
-    next: (activity) => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    this.meetingService.getRecentActivity(empId).subscribe({
+      next: (activity) => {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      const recent = (activity || []).filter(item => {
-        const activityDate = new Date(item.time);
-        return !isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
-      });
+        let recent = (activity || []).filter(item => {
+          const activityDate = new Date(item.time);
+          return !isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
+        });
 
-      this.recentActivities.set(recent);
-      this.loadingRecentActivity = false;
-    },
-    error: (err) => {
-      console.error('Failed to fetch recent activity:', err);
-      this.loadingRecentActivity = false;
-    }
-  });
-}
+        // Filter user-wise: if empId or user name is present in activity item
+        if (empId || currentUserName) {
+          recent = recent.filter(item => {
+            const itemEmpId = (item as any).empId ?? (item as any).userId ?? (item as any).createdById;
+            if (empId && itemEmpId !== undefined && itemEmpId !== null) {
+              return Number(itemEmpId) === empId;
+            }
+            if (currentUserName && item.user) {
+              const u = item.user.trim().toLowerCase();
+              return u.includes(currentUserName) || currentUserName.includes(u);
+            }
+            return true;
+          });
+        }
+
+        this.recentActivities.set(recent);
+        this.loadingRecentActivity = false;
+      },
+      error: (err) => {
+        console.error('Failed to fetch recent activity:', err);
+        this.loadingRecentActivity = false;
+      }
+    });
+  }
 
   /**
    * Maps an activity's `action` string to icon/colour classes for display —
@@ -1598,7 +1674,13 @@ confirmCancelMeeting(): void {
   }
 
   getFilteredApiMeetings(): MeetingRow[] {
+    const rawEmpId = localStorage.getItem('empId');
+    const empId = rawEmpId ? Number(rawEmpId) : null;
+
     let result = [...this.apiMeetings()];
+    if (empId) {
+      result = result.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId));
+    }
     if (this.searchTerm) {
       const q = this.searchTerm.toLowerCase();
       result = result.filter(m =>
@@ -2060,7 +2142,7 @@ confirmCancelMeeting(): void {
     } else if (type === 'warning') {
       this.toastr.warning(message, title || 'Warning');
     } else {
-      this.toastr.info(message, title || 'Notice');
+      this.toastr.info(message, title || 'Info');
     }
   }
 
@@ -2069,4 +2151,133 @@ confirmCancelMeeting(): void {
   }
 
   private toastTimeout: any;
+
+
+  private readonly emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+onMenuInvite(row: MeetingRow): void {
+  this.closeActionMenu();
+  this.openInviteModal(row);
+}
+
+openInviteModal(row: MeetingRow): void {
+  this.inviteMeetingRow.set(row);
+  this.inviteEmails.set([]);
+  this.inviteEmailInput.set('');
+  this.inviteError.set(null);
+  this.inviteSubmitting.set(false);
+  this.showInviteModal.set(true);
+}
+
+closeInviteModal(): void {
+  if (this.inviteSubmitting()) return;
+  this.showInviteModal.set(false);
+  this.inviteMeetingRow.set(null);
+}
+
+/** Called on (keydown.enter) / (blur) of the email input — supports
+ *  comma or space separated paste, e.g. pasting "a@x.com, b@x.com". */
+addInviteEmailFromInput(): void {
+  const raw = this.inviteEmailInput().trim();
+  if (!raw) return;
+
+  const candidates = raw.split(/[,\s]+/).filter(Boolean);
+  const current = this.inviteEmails();
+  const toAdd: string[] = [];
+
+  for (const email of candidates) {
+    if (!this.emailRegex.test(email)) {
+      this.inviteError.set(`"${email}" is not a valid email address.`);
+      continue;
+    }
+    if (current.includes(email) || toAdd.includes(email)) continue;
+    toAdd.push(email);
+  }
+
+  if (toAdd.length > 0) {
+    this.inviteEmails.set([...current, ...toAdd]);
+    this.inviteError.set(null);
+  }
+
+  this.inviteEmailInput.set('');
+}
+
+removeInviteEmail(email: string): void {
+  this.inviteEmails.set(this.inviteEmails().filter(e => e !== email));
+}
+
+confirmInviteAttendees(): void {
+  // catch anything still sitting in the input box that wasn't
+  // committed with Enter/blur
+  if (this.inviteEmailInput().trim()) {
+    this.addInviteEmailFromInput();
+  }
+
+  const row = this.inviteMeetingRow();
+  const emails = this.inviteEmails();
+
+  if (!row || this.inviteSubmitting()) return;
+
+  if (emails.length === 0) {
+    this.inviteError.set('Add at least one email address.');
+    return;
+  }
+
+  this.inviteSubmitting.set(true);
+  this.inviteError.set(null);
+
+  this.meetingService.inviteAttendees(row.id, emails).subscribe({
+    next: (res) => {
+      this.inviteSubmitting.set(false);
+      this.showInviteModal.set(false);
+      this.inviteMeetingRow.set(null);
+      this.toastr.success(res.message, 'Invitation Sent');
+      this.fetchRecentActivity();
+    },
+    error: (err) => {
+      this.inviteSubmitting.set(false);
+      this.inviteError.set(err?.error?.message ?? 'Failed to send invites.');
+    }
+  });
+}
+
+copyInviteMeetingLink(): void {
+  const row = this.inviteMeetingRow();
+  const link = row?.meetingLink || row?.webLink;
+
+  if (!link) {
+    this.toastr.warning('No meeting link available for this entry.', 'No Link');
+    return;
+  }
+
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(link).then(
+      () => this.toastr.success('Meeting link copied to clipboard!', 'Copied'),
+      () => this.fallbackCopyInviteLink(link)
+    );
+  } else {
+    this.fallbackCopyInviteLink(link);
+  }
+}
+
+private fallbackCopyInviteLink(text: string): void {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) {
+      this.toastr.success('Meeting link copied to clipboard!', 'Copied');
+    } else {
+      this.toastr.error('Failed to copy meeting link.', 'Error');
+    }
+  } catch {
+    this.toastr.error('Failed to copy meeting link.', 'Error');
+  }
+}
 }

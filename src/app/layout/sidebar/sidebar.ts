@@ -1,4 +1,3 @@
-
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -13,6 +12,28 @@ export interface NavItem {
   route?: string;
 }
 
+
+export const csNavItems: NavItem[] = [
+  // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+  // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+  // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
+  // { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
+  // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+  // { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
+  // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
+  // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+  // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
+  { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
+  // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
+  // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
+  // { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
+];
+
+export const learningNavItems: NavItem[] = [
+  { id: 'courses', label: 'Course Catalog', icon: 'course-catalog', route: '/courses' },
+  { id: 'my-learning', label: 'My Learning', icon: 'my-learning', route: '/my-learning' },
+];
+
 @Component({
   selector: 'app-sidebar',
   imports: [CommonModule],
@@ -23,48 +44,15 @@ export class Sidebar {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'dashboard';
+  @Input() activeNav = 'voice';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
 
   collapsed = false;
-
-  // Controls whether the "Training" accordion is open or closed
   trainingExpanded = true;
-
-  // mainNavItems: NavItem[] = [
-
-
-  // ];
-
-  csNavItems: NavItem[] = [
-
-
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-    { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
-    // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding',  route: '/onboarding' },
-    { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-    { id: 'training', label: 'Training', icon: 'training', route: '/training' },
-    { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-
-    { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
-    { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
-    { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
-
-
-
-    { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
-    { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
-    { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
-    { id: 'settings', label: 'Settings & Master', icon: 'settings', route: '/settings' }
-
-  ];
-
-  learningNavItems: NavItem[] = [
-    { id: 'courses', label: 'Course Catalog', icon: 'course-catalog', route: '/courses' },
-    { id: 'my-learning', label: 'My Learning', icon: 'my-learning', route: '/my-learning' },
-  ];
+  csNavItems = csNavItems;
+  learningNavItems = learningNavItems;
 
   toggleCollapse() {
     this.collapsed = !this.collapsed;
@@ -111,10 +99,8 @@ export class Sidebar {
       </svg>`,
       usages:`
       <svg width="800px" height="800px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><defs><style>.a{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}</style></defs><line class="a" x1="43.5" y1="5.21" x2="4.5" y2="5.21"/><line class="a" x1="41.55" y1="36.41" x2="41.55" y2="5.21"/><line class="a" x1="4.5" y1="36.41" x2="43.5" y2="36.41"/><line class="a" x1="6.45" y1="5.21" x2="6.45" y2="36.41"/><path class="a" d="M33.2,15.64a2.32,2.32,0,1,1-4.64,0V11.51a2.32,2.32,0,0,1,4.64,0Z"/><path class="a" d="M19.44,23.12a2.32,2.32,0,0,1-4.64,0V19a2.32,2.32,0,0,1,4.64,0Z"/><path class="a" d="M33.2,30.6a2.32,2.32,0,0,1-4.64,0V26.47a2.32,2.32,0,0,1,4.64,0Z"/><line class="a" x1="11.33" y1="13.58" x2="28.56" y2="13.58"/><line class="a" x1="11.33" y1="28.53" x2="28.56" y2="28.53"/><line class="a" x1="33.2" y1="13.58" x2="36.67" y2="13.58"/><line class="a" x1="33.2" y1="28.53" x2="36.67" y2="28.53"/><line class="a" x1="19.44" y1="21.06" x2="36.67" y2="21.06"/><line class="a" x1="14.8" y1="21.06" x2="11.33" y2="21.06"/><line class="a" x1="11.93" y1="42.46" x2="17.96" y2="36.41"/><line class="a" x1="24" y1="36.41" x2="24" y2="42.79"/><line class="a" x1="36.07" y1="42.46" x2="30.04" y2="36.41"/></svg>`,
-//
       'course-catalog': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`,
       'my-learning': `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>`,
-
     };
     return this.sanitizer.bypassSecurityTrustHtml(icons[type] || '');
   }

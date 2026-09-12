@@ -11,7 +11,6 @@ import {
 // import { Client, FeatureChecklistRow } from '../../../implementation/implementation.component';
 
 import { DataTable } from '../../../../shared/components/Data-table/data-table';
-import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { ImplementationService } from '../../../implementations/services/implementation/implementation';
 
 import { environment } from '../../../../../environments/environment';
@@ -35,7 +34,7 @@ export interface ClientRow {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable],
 
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',

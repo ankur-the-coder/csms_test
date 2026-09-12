@@ -5,7 +5,7 @@ import { DataTable } from "../../../../shared/components/Data-table/data-table";
 import { DashboardService } from '../../service/dashboard-service';
 import { environment } from '../../../../../environments/environment';
 import { Data } from '../../models/connected.model';
-import { CommonModule, NgClass } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
@@ -25,7 +25,7 @@ export interface ClientRow {
 
 @Component({
   selector: 'app-connected',
-  imports: [DataTable, CustomColumnDirective, NgClass, CommonModule],
+  imports: [DataTable, CustomColumnDirective, CommonModule],
   templateUrl: './connected.html',
   styleUrl: './connected.css',
 })
