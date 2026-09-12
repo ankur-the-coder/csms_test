@@ -73,9 +73,36 @@
         <div class="form-group flex flex-col gap-1.5 mb-5 mt-1">
           <!-- <label class="form-label text-sm font-semibold text-gray-700 block">Password</label> -->
           <div class="password-wrapper relative w-full">
-            <app-text-input formControlName="password" label="Password" placeholder="••••••••••••" [type]="'password'"
-              autocomplete="current-password"></app-text-input>
+            <!-- <app-text-input formControlName="password" label="Password" placeholder="••••••••••••" [type]="'password'"
+              autocomplete="current-password"></app-text-input> -->
+            <label for="password" class="text-sm text-gray-700">
+              Password
+            </label>
 
+            <input id="password" type="text" placeholder="Enter your password" formControlName="password"
+              name="username"
+              class="w-full px-3.5 py-2.5 rounded-xl border bg-white text-sm text-gray-800 outline-none transition-all duration-200"
+              [class.border-gray-300]="!(password.invalid && password.touched)"
+              [class.border-red-400]="password.invalid && password.touched" />
+            @if (password.invalid && password.touched) {
+            <span class="text-xs text-red-500 mt-1">
+
+              @if (password.errors?.['required']) {
+              Password is required.
+              }
+              <!-- @else if (password.errors?.['minlength']) {
+            Password must be at least
+            {{ password.errors?.['minlength'].requiredLength }}
+            characters.
+            } -->
+              <!-- @else if (password.errors?.['maxlength']) {
+            Password cannot exceed
+            {{ password.errors?.['maxlength'].requiredLength }}
+            characters.
+            } -->
+
+            </span>
+            }
             <!-- <input [type]="showPassword() ? 'text' : 'password'"
               class="form-input w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all pr-10"
               placeholder="••••••••••••" formControlName="password" autocomplete="current-password" />
