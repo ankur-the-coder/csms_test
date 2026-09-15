@@ -32,6 +32,11 @@ export interface SendCustomMailPayload {
   subject: string;
   message: string;
   companyName?: string;
+  attachments?: {
+    name: string;
+    contentType: string;
+    contentBytes: string;
+  }[];
   
 }
 

@@ -92,6 +92,8 @@ onEditorChange(html: string): void {
 closeMailModal(): void {
   this.mailModalOpen.set(false);
   this.mailRecipientInput = '';
+  this.mailAttachments.set([]);
+  this.attachmentError.set('');
 }
 
 recipientInputInvalid = signal(false);
@@ -151,6 +153,11 @@ sendCustomMail(): void {
           subject: this.mailSubject,
           message: this.mailBody,
           companyName: row.name,
+          attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
+      name,
+      contentType,
+      contentBytes,
+    })),
         })
         .subscribe({
           next: (res) => {
@@ -600,4 +607,60 @@ sendCustomMail(): void {
       ],
     };
   });
+
+
+  mailAttachments = signal<{ name: string; size: number; contentType: string; contentBytes: string }[]>([]);
+attachmentError = signal('');
+
+private readonly MAX_ATTACHMENT_MB = 3;      // per-file limit
+private readonly MAX_TOTAL_MB = 10;          // total across all files (Graph hard-caps ~25MB via API)
+
+onFilesSelected(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files) return;
+
+  Array.from(input.files).forEach((file) => this.addAttachment(file));
+  input.value = ''; // allow re-selecting the same file later
+}
+
+private addAttachment(file: File): void {
+  this.attachmentError.set('');
+
+  if (file.size > this.MAX_ATTACHMENT_MB * 1024 * 1024) {
+    this.attachmentError.set(`${file.name} exceeds ${this.MAX_ATTACHMENT_MB}MB.`);
+    return;
+  }
+
+  const currentTotal = this.mailAttachments().reduce((sum, a) => sum + a.size, 0);
+  if (currentTotal + file.size > this.MAX_TOTAL_MB * 1024 * 1024) {
+    this.attachmentError.set(`Total attachments can't exceed ${this.MAX_TOTAL_MB}MB.`);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64 = (reader.result as string).split(',')[1]; // strip the data:...;base64, prefix
+    this.mailAttachments.update((list) => [
+      ...list,
+      {
+        name: file.name,
+        size: file.size,
+        contentType: file.type || 'application/octet-stream',
+        contentBytes: base64,
+      },
+    ]);
+  };
+  reader.readAsDataURL(file);
+}
+
+removeAttachment(name: string): void {
+  this.mailAttachments.update((list) => list.filter((a) => a.name !== name));
+}
+
+formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 }
