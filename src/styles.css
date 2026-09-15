@@ -784,3 +784,12 @@ main {
     color: var(--info-text);
   }
 }
+
+input[name="mail-recipient-field"],
+input[name="mail-recipient-field"]:focus,
+input[name="mail-recipient-field"]:focus-visible {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
