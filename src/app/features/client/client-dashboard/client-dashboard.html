@@ -83,10 +83,14 @@
       <h2 class="text-[15px] font-bold mb-3.5">Implementation Tracker</h2>
       <ul class="list-none m-0 p-0">
         <li
+          *ngFor="let item of tracker()"
           class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
         >
-          <span>Company Setup</span>
+          <span [class.text-slate-600]="!isModuleComplete(item)">{{ item.label }}</span>
+
+          <!-- Green tick jab tab_sts === 1 -->
           <span
+            *ngIf="isModuleComplete(item); else incomplete"
             class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center"
           >
             <svg
@@ -100,92 +104,24 @@
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </span>
+
+          <!-- Empty circle jab tab_sts === 0 -->
+          <ng-template #incomplete>
+            <span class="w-[22px] h-[22px] rounded-full border-2 border-slate-200"></span>
+          </ng-template>
         </li>
+
+        <!-- Empty state -->
         <li
-          class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
+          *ngIf="!trackerLoading() && tracker().length === 0"
+          class="py-6 text-center text-slate-400 text-sm"
         >
-          <span>Attendance Rules</span>
-          <span
-            class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
+          No modules found for this organization.
         </li>
-        <li
-          class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
-        >
-          <span>Shift Setup</span>
-          <span
-            class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-        </li>
-        <li
-          class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
-        >
-          <span>Biometric Integration</span>
-          <span
-            class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-        </li>
-        <li
-          class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
-        >
-          <span>Leave Configuration</span>
-          <span
-            class="w-[22px] h-[22px] rounded-full bg-emerald-500 text-white flex items-center justify-center"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="14"
-              height="14"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="3"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-        </li>
-        <li
-          class="flex items-center justify-between py-2.5 border-b border-slate-100 text-sm font-medium"
-        >
-          <span class="text-slate-400">Payroll Setup</span>
-          <span class="w-[22px] h-[22px] rounded-full border-2 border-slate-200"></span>
-        </li>
-        <li class="flex items-center justify-between py-2.5 text-sm font-medium">
-          <span class="text-slate-400">Go Live</span>
-          <span class="w-[22px] h-[22px] rounded-full border-2 border-slate-200"></span>
+
+        <!-- Loading state -->
+        <li *ngIf="trackerLoading()" class="py-6 text-center text-slate-400 text-sm">
+          Loading tracker...
         </li>
       </ul>
     </div>
@@ -237,9 +173,16 @@
         <h2 class="text-[15px] font-bold">Purchased Add-ons</h2>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
+        <div
+          *ngFor="let addon of addons()"
+          class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3"
+        >
           <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-rose-50 text-rose-500 flex items-center justify-center shrink-0"
+            class="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0"
+            [class.bg-emerald-50]="addon.enabled"
+            [class.text-emerald-500]="addon.enabled"
+            [class.bg-rose-50]="!addon.enabled"
+            [class.text-rose-500]="!addon.enabled"
           >
             <svg
               viewBox="0 0 24 24"
@@ -256,163 +199,28 @@
             </svg>
           </div>
           <div>
-            <p class="text-xs font-semibold m-0">Face Recognition</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
+            <p class="text-xs font-semibold m-0">{{ addon.name }}</p>
+            <p
+              class="text-[11px] m-0"
+              [class.text-emerald-500]="addon.enabled"
+              [class.text-slate-400]="!addon.enabled"
+            >
+              {{ addon.status }}
+            </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-sky-50 text-sky-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z" />
-              <circle cx="12" cy="9" r="2.5" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">Geo Fencing</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
+        <!-- No data state -->
+        <div
+          *ngIf="!addonsLoading() && addons().length === 0"
+          class="col-span-2 py-6 text-center text-slate-400 text-sm"
+        >
+          No data found.
         </div>
 
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-violet-50 text-violet-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 3" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">Shift Planner</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <path d="M3 10h18" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">Payroll</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-rose-50 text-rose-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <circle cx="12" cy="8" r="3.2" />
-              <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">Visitor Management</p>
-            <p class="text-[11px] text-orange-500 m-0">Disabled</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-sky-50 text-sky-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <path d="M9 4 4 12l5 8" />
-              <path d="M15 4l5 8-5 8" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">API Access</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-violet-50 text-violet-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <rect x="7" y="2" width="10" height="20" rx="2" />
-              <path d="M11 18h2" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">Mobile App</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2.5 border border-slate-100 rounded-xl p-3">
-          <div
-            class="w-[34px] h-[34px] rounded-[10px] bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M3 9h18" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold m-0">ESS Portal</p>
-            <p class="text-[11px] text-emerald-500 m-0">Enabled</p>
-          </div>
+        <!-- Loading state -->
+        <div *ngIf="addonsLoading()" class="col-span-2 py-6 text-center text-slate-400 text-sm">
+          Loading add-ons...
         </div>
       </div>
     </div>
