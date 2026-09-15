@@ -104,8 +104,18 @@ export class ClientDashboard {
     switch (status) {
       case 0:
         return 'Scheduled';
+      case 1:
+        return 'Completed';
       case 2:
         return 'Rescheduled';
+      case 3:
+        return 'Pending';
+      case 4:
+        return 'Cancelled';
+      case 5:
+        return 'Client No-Show';
+      case 6:
+        return 'Host No-Show';
       default:
         return 'Unknown';
     }
@@ -115,17 +125,32 @@ export class ClientDashboard {
     switch (status) {
       case 0:
         return 'bg-amber-100 text-amber-600';
+      case 1:
+        return 'bg-emerald-100 text-emerald-600';
       case 2:
         return 'bg-sky-100 text-sky-600';
+      case 3:
+        return 'bg-slate-100 text-slate-600';
+      case 4:
+        return 'bg-rose-100 text-rose-600';
+      case 5:
+        return 'bg-orange-100 text-orange-600';
+      case 6:
+        return 'bg-orange-100 text-orange-600';
       default:
         return 'bg-slate-100 text-slate-600';
     }
   }
 
-  joinMeeting(link: string): void {
-    if (link) {
-      window.open(link, '_blank');
+  isJoinDisabled(status: number): boolean {
+    return [1, 3, 4, 5, 6].includes(status);
+  }
+
+  joinMeeting(link: string, status: number): void {
+    if (this.isJoinDisabled(status) || !link) {
+      return;
     }
+    window.open(link, '_blank');
   }
 
   goBack(): void {

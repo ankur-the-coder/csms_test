@@ -461,8 +461,14 @@
               </td>
               <td class="py-3 px-2 border-t border-slate-100">
                 <button
-                  (click)="joinMeeting(meeting.meetingLink)"
-                  class="bg-indigo-50 text-blue-500 border-none rounded-lg px-3.5 py-1.5 text-xs font-semibold cursor-pointer hover:bg-indigo-100 transition-colors"
+                  (click)="joinMeeting(meeting.meetingLink, meeting.status)"
+                  [disabled]="isJoinDisabled(meeting.status)"
+                  [class.opacity-50]="isJoinDisabled(meeting.status)"
+                  [class.cursor-not-allowed]="isJoinDisabled(meeting.status)"
+                  class="bg-indigo-50 text-blue-500 border-none rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors"
+                  [ngClass]="{
+                    'cursor-pointer hover:bg-indigo-100': !isJoinDisabled(meeting.status),
+                  }"
                 >
                   Join
                 </button>
