@@ -26,6 +26,20 @@ export interface SendWelcomeMailResponse {
   message: string;
 }
 
+export interface SendCustomMailPayload {
+  hostEmail: string;
+  toEmails: string[];
+  subject: string;
+  message: string;
+  companyName?: string;
+  
+}
+
+export interface SendCustomMailResponse {
+  status: boolean;
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -40,5 +54,9 @@ export class ClientService {
 
   sendWelcomeMail(payload: SendWelcomeMailPayload): Observable<SendWelcomeMailResponse> {
     return this.http.post<SendWelcomeMailResponse>(`${this.baseUrl}/meetings/send-welcome-mail`, payload);
+  }
+
+  sendCustomMail(payload: SendCustomMailPayload): Observable<SendCustomMailResponse> {
+    return this.http.post<SendCustomMailResponse>(`${this.baseUrl}/meetings/send-custom-mail`, payload);
   }
 }

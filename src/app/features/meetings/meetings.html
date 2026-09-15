@@ -19,100 +19,57 @@
   </div>
 
   <!-- KPI Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
     <!-- Today's Meetings -->
-    <div class="bg-card-bg p-5 rounded-xl border border-card-border shadow-sm hover:shadow-md transition">
-      <div class="flex items-center gap-3 mb-4">
-
-        <div class="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
-          <i class="fas fa-calendar-day text-sm"></i>
-        </div>
-
-        <span class="text-sm font-medium text-text-secondary">
-          Today's Meetings
-        </span>
-
+    <div class="card flex items-center justify-between gap-6 border border-cyan-300 bg-cyan-50 rounded-xl p-4 overflow-hidden">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ getTodayMeetings() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Today's Meetings</span>
       </div>
-
-      <div class="text-3xl font-bold text-text-primary">
-        {{ getTodayMeetings() }}
-      </div>
-
-      <div class="mt-1 text-xs text-text-muted">
-        {{ getYesterdayMeetings() }} yesterday
+      <div class="stat-icon w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
       </div>
     </div>
-
 
     <!-- Upcoming Meetings -->
-    <div class="bg-card-bg p-5 rounded-xl border border-card-border shadow-sm hover:shadow-md transition">
-      <div class="flex items-center gap-3 mb-4">
-
-        <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-          <i class="fas fa-calendar-week text-sm"></i>
-        </div>
-
-        <span class="text-sm font-medium text-text-secondary">
-          Upcoming
-        </span>
-
+    <div class="card flex items-center justify-between gap-6 border border-brand-300 bg-brand-50 rounded-xl p-4 overflow-hidden">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ getUpcomingMeetings() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Upcoming</span>
       </div>
-
-      <div class="text-3xl font-bold text-text-primary">
-        {{ getUpcomingMeetings() }}
-      </div>
-
-      <div class="mt-1 text-xs text-text-muted">
-        Next 7 days
+      <div class="stat-icon w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
     </div>
-
 
     <!-- Completed Meetings -->
-    <div class="bg-card-bg p-5 rounded-xl border border-card-border shadow-sm hover:shadow-md transition">
-      <div class="flex items-center gap-3 mb-4">
-
-        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-          <i class="fas fa-circle-check text-sm"></i>
-        </div>
-
-        <span class="text-sm font-medium text-text-secondary">
-          Completed
-        </span>
-
+    <div class="card flex items-center justify-between gap-6 border border-emerald-300 bg-emerald-50 rounded-xl p-4 overflow-hidden">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ getCompletedCount() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
       </div>
-
-      <div class="text-3xl font-bold text-text-primary">
-        {{ getCompletedCount() }}
-      </div>
-
-      <div class="mt-1 text-xs text-text-muted">
-        {{ getCompletionRate() }}% completion rate
+      <div class="stat-icon w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
     </div>
 
-
     <!-- Pending Follow-ups -->
-    <div class="bg-card-bg p-5 rounded-xl border border-card-border shadow-sm hover:shadow-md transition">
-      <div class="flex items-center gap-3 mb-4">
-
-        <div class="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-          <i class="fas fa-list-check text-sm"></i>
-        </div>
-
-        <span class="text-sm font-medium text-text-secondary">
-          Pending Follow-ups
-        </span>
-
+    <div class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ getPendingFollowUps() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending Follow-ups</span>
       </div>
-
-      <div class="text-3xl font-bold text-text-primary">
-        {{ getPendingFollowUps() }}
-      </div>
-
-      <div class="mt-1 text-xs text-text-muted">
-        {{ getOverdueCount() }} overdue
+      <div class="stat-icon w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
       </div>
     </div>
 

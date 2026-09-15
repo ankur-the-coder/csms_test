@@ -13,6 +13,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService } from '../../meetings/schedule-meeting/schedule-meetings.service';
+import { FormsModule } from '@angular/forms';
+import { RichTextEditor } from '../../../shared/components/rich-text-editor/rich-text-editor';
 
 export interface ClientRow {
   orgId: number;
@@ -44,7 +46,7 @@ export interface TimelineEvent {
 
 @Component({
   selector: 'app-client',
-  imports: [DataTable, CustomColumnDirective, NgClass],
+  imports: [DataTable, CustomColumnDirective, NgClass,FormsModule, RichTextEditor],
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
@@ -59,6 +61,119 @@ export class Client {
 
   initialDateFrom = signal('');
   initialDateTo = signal('');
+
+  // ── Send Mail modal ──────────────────────────────────────────────────────
+mailModalOpen = signal(false);
+mailModalRow = signal<ClientRow | null>(null);
+mailTab = signal<'edit' | 'preview'>('edit');
+mailRecipients = signal<string[]>([]);
+mailRecipientInput = '';
+mailSubject = '';
+mailBody = '';
+mailSending = signal(false);
+
+openMailModal(row: ClientRow): void {
+  this.closeActionMenu();
+  this.mailModalRow.set(row);
+  this.mailTab.set('edit');
+  this.mailRecipients.set(row.email ? [row.email.trim()] : []);
+  this.mailSubject = `Welcome to UbiClient, ${row.name}!`;
+  this.mailBody =
+    `<p>Hi ${row.contactPerson || row.name},</p>` +
+    `<p>Welcome aboard! We're excited to have ${row.name} on UbiClient. Your account has been set up and the portal is ready whenever you are.</p>` +
+    `<p>Best,<br>The UbiClient Team</p>`;
+  this.mailModalOpen.set(true);
+}
+
+onEditorChange(html: string): void {
+  this.mailBody = html;
+}
+
+closeMailModal(): void {
+  this.mailModalOpen.set(false);
+  this.mailRecipientInput = '';
+}
+
+recipientInputInvalid = signal(false);
+
+addRecipient(event: Event): void {
+  event.preventDefault();
+  const value = this.mailRecipientInput.trim().replace(/,$/, '');
+  if (!value) {
+    this.recipientInputInvalid.set(false);
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(value)) {
+    this.recipientInputInvalid.set(true);
+    return;
+  }
+  if (!this.mailRecipients().includes(value)) {
+    this.mailRecipients.update((list) => [...list, value]);
+  }
+  this.mailRecipientInput = '';
+  this.recipientInputInvalid.set(false);
+}
+
+removeRecipient(email: string): void {
+  this.mailRecipients.update((list) => list.filter((e) => e !== email));
+}
+
+sendCustomMail(): void {
+  const row = this.mailModalRow();
+  if (!row) return;
+  if (this.mailRecipients().length === 0) {
+    this.toastr.warning('Add at least one recipient.', 'Warning');
+    return;
+  }
+
+  const empId = localStorage.getItem('empId');
+  if (!empId) {
+    this.toastr.error('Host employee ID not found. Please log in again.', 'Error');
+    return;
+  }
+
+  this.mailSending.set(true);
+
+  this.scheduleMeetingService.getEmployeeDetails(empId).subscribe({
+    next: (details) => {
+      const hostEmail = details?.currentMail;
+      if (!hostEmail) {
+        this.mailSending.set(false);
+        this.toastr.error('Host email not found for the logged-in user.', 'Error');
+        return;
+      }
+
+      this.clientApi
+        .sendCustomMail({
+          hostEmail,
+          toEmails: this.mailRecipients(),
+          subject: this.mailSubject,
+          message: this.mailBody,
+          companyName: row.name,
+        })
+        .subscribe({
+          next: (res) => {
+            this.mailSending.set(false);
+            if (res?.status) {
+              this.toastr.success(res.message || 'Email sent!', 'Success');
+              this.closeMailModal();
+            } else {
+              this.toastr.error(res?.message || 'Failed to send email.', 'Error');
+            }
+          },
+          error: (err) => {
+            this.mailSending.set(false);
+            this.toastr.error(err?.error?.message || 'Failed to send email.', 'Error');
+          },
+        });
+    },
+    error: () => {
+      this.mailSending.set(false);
+      this.toastr.error('Failed to fetch host details.', 'Error');
+    },
+  });
+}
 
   private getTodayDateString(): string {
     const d = new Date();
@@ -251,7 +366,7 @@ export class Client {
         },
       });
     } else if (action === 'Send Mail') {
-      this.sendWelcomeMail(row);
+      this.openMailModal(row);
     } else if (action === 'Client Timeline') {
       this.openClientTimeline(row);
     } else {
