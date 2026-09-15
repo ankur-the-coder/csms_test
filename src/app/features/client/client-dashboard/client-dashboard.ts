@@ -5,6 +5,10 @@ import { Clientdashboard } from '../services/client/clientdashboard/clientdashbo
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
 import { Clientdashboardmeeting } from '../services/client/clientdashboard/clientdashboardmeeting';
 import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.model';
+import { Clientdashboardtracker } from '../services/client/clientdashboard/clientdashboardtracker';
+import { TrackerItem } from '../models/client/clientdashboardtracker.model';
+import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
+import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -15,6 +19,8 @@ import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.m
 export class ClientDashboard {
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
+  private clientDashboardTrackerApi = inject(Clientdashboardtracker);
+  private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
 
@@ -25,10 +31,20 @@ export class ClientDashboard {
   loading = signal(false);
   errorMsg = signal('');
 
+    // ---- Tracker state ----
+  tracker = signal<TrackerItem[]>([]);
+  trackerLoading = signal(false);
+  trackerError = signal('');
+
   // ---- Meetings state ----
   meetings = signal<MeetingDatum[]>([]);
   meetingsLoading = signal(false);
   meetingsError = signal('');
+
+   // ---- Add-ons state ----
+  addons = signal<AddonItem[]>([]);
+  addonsLoading = signal(false);
+  addonsError = signal('');
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -38,6 +54,8 @@ export class ClientDashboard {
       if (this.orgId) {
         this.loadDashboard(this.orgId);
         this.loadMeetings(this.orgId);
+        this.loadTracker(this.orgId);
+        this.loadAddons(this.orgId);
       }
     });
   }
@@ -82,7 +100,47 @@ export class ClientDashboard {
     });
   }
 
-  // ---- Helpers for the template ----
+  private loadTracker(orgId: string): void {
+    this.trackerLoading.set(true);
+    this.trackerError.set('');
+
+    this.clientDashboardTrackerApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.trackerLoading.set(false);
+        if (res?.status) {
+          this.tracker.set(res.data ?? []);
+        } else {
+          this.trackerError.set(res?.msg || 'Failed to load tracker');
+        }
+      },
+      error: (err) => {
+        this.trackerLoading.set(false);
+        this.trackerError.set(err?.error?.msg || 'Failed to load tracker');
+      },
+    });
+  }
+
+   private loadAddons(orgId: string): void {
+    this.addonsLoading.set(true);
+    this.addonsError.set('');
+
+    this.clientDashboardAddonsApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.addonsLoading.set(false);
+        if (res?.status) {
+          this.addons.set(res.data ?? []);
+        } else {
+          this.addonsError.set(res?.msg || 'Failed to load add-ons');
+        }
+      },
+      error: (err) => {
+        this.addonsLoading.set(false);
+        this.addonsError.set(err?.error?.msg || 'Failed to load add-ons');
+      },
+    });
+  }
+
+  // ---- Helpers for Meeting the template ----
 
   formatMeetingDate(startTime: string): string {
     if (!startTime) return '-';
@@ -152,6 +210,12 @@ export class ClientDashboard {
     }
     window.open(link, '_blank');
   }
+
+  // tab_sts === 1 has a green tick, otherwise gray circle
+  isModuleComplete(item: TrackerItem): boolean {
+    return item.tab_sts === 1;
+  }
+
 
   goBack(): void {
     this.location.back();
