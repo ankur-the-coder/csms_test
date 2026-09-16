@@ -34,35 +34,35 @@ export class DashboardService {
 
   constructor(private http: HttpClient) { }
 
-  getDashboardCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
+  getDashboardCards(from: string, to: string, orgId: string,userId:string): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
-      orgId
+      orgId,userId
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
   }
-  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string,userId:string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to, orgId,userId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
-  fetchDashBoardConnectChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  fetchDashBoardConnectChart(from: string, to: string, orgId: string,userId:string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to, orgId,userId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
   }
-  fetchDashBoardUsageChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  fetchDashBoardUsageChart(from: string, to: string, orgId: string ,userId:string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to, orgId,userId
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
@@ -75,10 +75,10 @@ export class DashboardService {
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/dashboardImplementProgressChart`, data);
   }
-  fetchDashBoardCalendar(from: string, to: string, orgId: string): Observable<CalendarApiResponse> {
+  fetchDashBoardCalendar(from: string, to: string, orgId: string,userId:string): Observable<CalendarApiResponse> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to, orgId,userId
     };
 
     return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
