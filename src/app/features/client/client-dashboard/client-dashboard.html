@@ -213,14 +213,52 @@
         <!-- No data state -->
         <div
           *ngIf="!addonsLoading() && addons().length === 0"
-          class="col-span-2 py-6 text-center text-slate-400 text-sm"
+          class="col-span-2 flex flex-col items-center justify-center py-14 text-center"
         >
-          No data found.
+          <div
+            class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+            >
+              <rect x="4" y="4" width="16" height="16" rx="3" />
+              <circle cx="9" cy="10" r="1" />
+              <circle cx="15" cy="10" r="1" />
+              <path d="M9 15c1 1 5 1 6 0" />
+            </svg>
+          </div>
+          <p class="text-sm font-semibold text-slate-600 m-0">No add-ons found</p>
+          <p class="text-xs text-slate-400 mt-1 m-0">
+            Add-ons purchased for this client will show up here.
+          </p>
         </div>
 
         <!-- Loading state -->
-        <div *ngIf="addonsLoading()" class="col-span-2 py-6 text-center text-slate-400 text-sm">
-          Loading add-ons...
+        <div
+          *ngIf="addonsLoading()"
+          class="col-span-2 flex flex-col items-center justify-center py-14 text-center"
+        >
+          <svg class="animate-spin w-6 h-6 text-slate-400 mb-2" viewBox="0 0 24 24" fill="none">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+          </svg>
+          <p class="text-xs text-slate-400 m-0">Loading add-ons...</p>
         </div>
       </div>
     </div>
