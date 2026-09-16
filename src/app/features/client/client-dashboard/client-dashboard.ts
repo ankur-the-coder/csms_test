@@ -5,6 +5,10 @@ import { Clientdashboard } from '../services/client/clientdashboard/clientdashbo
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
 import { Clientdashboardmeeting } from '../services/client/clientdashboard/clientdashboardmeeting';
 import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.model';
+import { Clientdashboardtracker } from '../services/client/clientdashboard/clientdashboardtracker';
+import { TrackerItem } from '../models/client/clientdashboardtracker.model';
+import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
+import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -15,6 +19,8 @@ import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.m
 export class ClientDashboard {
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
+  private clientDashboardTrackerApi = inject(Clientdashboardtracker);
+  private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
 
@@ -25,10 +31,20 @@ export class ClientDashboard {
   loading = signal(false);
   errorMsg = signal('');
 
+    // ---- Tracker state ----
+  tracker = signal<TrackerItem[]>([]);
+  trackerLoading = signal(false);
+  trackerError = signal('');
+
   // ---- Meetings state ----
   meetings = signal<MeetingDatum[]>([]);
   meetingsLoading = signal(false);
   meetingsError = signal('');
+
+   // ---- Add-ons state ----
+  addons = signal<AddonItem[]>([]);
+  addonsLoading = signal(false);
+  addonsError = signal('');
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -38,6 +54,8 @@ export class ClientDashboard {
       if (this.orgId) {
         this.loadDashboard(this.orgId);
         this.loadMeetings(this.orgId);
+        this.loadTracker(this.orgId);
+        this.loadAddons(this.orgId);
       }
     });
   }
@@ -82,7 +100,47 @@ export class ClientDashboard {
     });
   }
 
-  // ---- Helpers for the template ----
+  private loadTracker(orgId: string): void {
+    this.trackerLoading.set(true);
+    this.trackerError.set('');
+
+    this.clientDashboardTrackerApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.trackerLoading.set(false);
+        if (res?.status) {
+          this.tracker.set(res.data ?? []);
+        } else {
+          this.trackerError.set(res?.msg || 'Failed to load tracker');
+        }
+      },
+      error: (err) => {
+        this.trackerLoading.set(false);
+        this.trackerError.set(err?.error?.msg || 'Failed to load tracker');
+      },
+    });
+  }
+
+   private loadAddons(orgId: string): void {
+    this.addonsLoading.set(true);
+    this.addonsError.set('');
+
+    this.clientDashboardAddonsApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.addonsLoading.set(false);
+        if (res?.status) {
+          this.addons.set(res.data ?? []);
+        } else {
+          this.addonsError.set(res?.msg || 'Failed to load add-ons');
+        }
+      },
+      error: (err) => {
+        this.addonsLoading.set(false);
+        this.addonsError.set(err?.error?.msg || 'Failed to load add-ons');
+      },
+    });
+  }
+
+  // ---- Helpers for Meeting the template ----
 
   formatMeetingDate(startTime: string): string {
     if (!startTime) return '-';
@@ -104,8 +162,18 @@ export class ClientDashboard {
     switch (status) {
       case 0:
         return 'Scheduled';
+      case 1:
+        return 'Completed';
       case 2:
         return 'Rescheduled';
+      case 3:
+        return 'Pending';
+      case 4:
+        return 'Cancelled';
+      case 5:
+        return 'Client No-Show';
+      case 6:
+        return 'Host No-Show';
       default:
         return 'Unknown';
     }
@@ -115,18 +183,39 @@ export class ClientDashboard {
     switch (status) {
       case 0:
         return 'bg-amber-100 text-amber-600';
+      case 1:
+        return 'bg-emerald-100 text-emerald-600';
       case 2:
         return 'bg-sky-100 text-sky-600';
+      case 3:
+        return 'bg-slate-100 text-slate-600';
+      case 4:
+        return 'bg-rose-100 text-rose-600';
+      case 5:
+        return 'bg-orange-100 text-orange-600';
+      case 6:
+        return 'bg-orange-100 text-orange-600';
       default:
         return 'bg-slate-100 text-slate-600';
     }
   }
 
-  joinMeeting(link: string): void {
-    if (link) {
-      window.open(link, '_blank');
-    }
+  isJoinDisabled(status: number): boolean {
+    return [1, 3, 4, 5, 6].includes(status);
   }
+
+  joinMeeting(link: string, status: number): void {
+    if (this.isJoinDisabled(status) || !link) {
+      return;
+    }
+    window.open(link, '_blank');
+  }
+
+  // tab_sts === 1 has a green tick, otherwise gray circle
+  isModuleComplete(item: TrackerItem): boolean {
+    return item.tab_sts === 1;
+  }
+
 
   goBack(): void {
     this.location.back();
