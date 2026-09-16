@@ -20,7 +20,7 @@ import {
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule, DatePipe, DecimalPipe, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of, catchError } from 'rxjs';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -207,8 +207,24 @@ private applyInitialFiltersEffect = effect(() => {
       return;
     }
     untracked(() => {
-      forkJoin(names.map(n => this.dataTableService.getFilterOptions(n)))
-        .subscribe(filters => this.loadedFilters.set(filters));
+      forkJoin(
+        names.map(n =>
+          this.dataTableService.getFilterOptions(n).pipe(
+            catchError(err => {
+              console.warn(`[DataTable] Failed to load filter options for "${n}":`, err);
+              return of({ key: n, label: n, options: [] } as TableFilter);
+            })
+          )
+        )
+      ).subscribe({
+        next: (filters) => {
+          this.loadedFilters.set(filters);
+        },
+        error: (err) => {
+          console.error('[DataTable] Error loading filters:', err);
+          this.loadedFilters.set([]);
+        }
+      });
     });
   });
 
