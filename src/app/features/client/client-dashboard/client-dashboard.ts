@@ -34,22 +34,23 @@ export class ClientDashboard {
   loading = signal(false);
   errorMsg = signal('');
 
-    // ---- Tracker state ----
+  // ---- Tracker state ----
   tracker = signal<TrackerItem[]>([]);
   trackerLoading = signal(false);
   trackerError = signal('');
+  showAllTrackerModal = signal(false);
 
   // ---- Meetings state ----
   meetings = signal<MeetingDatum[]>([]);
   meetingsLoading = signal(false);
   meetingsError = signal('');
+  showAllMeetingsModal = signal(false);
 
-   // ---- Add-ons state ----
+  // ---- Add-ons state ----
   addons = signal<AddonItem[]>([]);
   addonsLoading = signal(false);
   addonsError = signal('');
   showAllAddonsModal = signal(false);
-
 
   // ---- Tickets state ----
   tickets = signal<TicketItem[]>([]);
@@ -57,20 +58,28 @@ export class ClientDashboard {
   ticketsError = signal('');
   showAllTicketsModal = signal(false);
 
-
   // Widget me sirf top 5 dikhane ke liye
   topFiveTickets = computed(() => this.tickets().slice(0, 5));
 
   // "View All" tabhi dikhega jab total tickets 5 se jyada hon
   hasMoreTickets = computed(() => this.tickets().length > 5);
 
-
-   // Widget me sirf top 6 dikhane ke liye
+  // Widget me sirf top 6 dikhane ke liye
   topSixAddons = computed(() => this.addons().slice(0, 6));
 
   // "View All" tabhi dikhega jab total addons 6 se jyada hon
   hasMoreAddons = computed(() => this.addons().length > 6);
 
+  // Widget me sirf top 6 dikhane ke liye
+  topSixTracker = computed(() => this.tracker().slice(0, 6));
+
+  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+  hasMoreTracker = computed(() => this.tracker().length > 6);
+
+  // Widget me sirf top 5 dikhane ke liye
+  topFiveMeetings = computed(() => this.meetings().slice(0, 5));
+  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+  hasMoreMeetings = computed(() => this.meetings().length > 5);
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -147,7 +156,7 @@ export class ClientDashboard {
     });
   }
 
-   private loadAddons(orgId: string): void {
+  private loadAddons(orgId: string): void {
     this.addonsLoading.set(true);
     this.addonsError.set('');
 
@@ -167,7 +176,7 @@ export class ClientDashboard {
     });
   }
 
-   private loadTickets(orgId: string): void {
+  private loadTickets(orgId: string): void {
     this.ticketsLoading.set(true);
     this.ticketsError.set('');
 
@@ -187,7 +196,6 @@ export class ClientDashboard {
     });
   }
 
-
   openAllTicketsModal(): void {
     this.showAllTicketsModal.set(true);
   }
@@ -196,7 +204,7 @@ export class ClientDashboard {
     this.showAllTicketsModal.set(false);
   }
 
-    openAllAddonsModal(): void {
+  openAllAddonsModal(): void {
     this.showAllAddonsModal.set(true);
   }
 
@@ -204,7 +212,23 @@ export class ClientDashboard {
     this.showAllAddonsModal.set(false);
   }
 
- // ---- Helpers Tickets ----
+  openAllTrackerModal(): void {
+    this.showAllTrackerModal.set(true);
+  }
+
+  closeAllTrackerModal(): void {
+    this.showAllTrackerModal.set(false);
+  }
+
+  openAllMeetingsModal(): void {
+    this.showAllMeetingsModal.set(true);
+  }
+
+  closeAllMeetingsModal(): void {
+    this.showAllMeetingsModal.set(false);
+  }
+
+  // ---- Helpers Tickets ----
 
   ticketStatusLabel(status: string): string {
     switch (status) {
@@ -241,7 +265,6 @@ export class ClientDashboard {
       year: 'numeric',
     });
   }
-
 
   // ---- Helpers for Meeting the template ----
 
@@ -318,7 +341,6 @@ export class ClientDashboard {
   isModuleComplete(item: TrackerItem): boolean {
     return item.tab_sts === 1;
   }
-
 
   goBack(): void {
     this.location.back();

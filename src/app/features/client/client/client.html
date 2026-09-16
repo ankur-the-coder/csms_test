@@ -7,7 +7,7 @@
   </div>
 
   <div class="card p-0 overflow-hidden">
-    <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [filterNames]="['leadOwner', 'supportOwner']"
+    <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [filterNames]="['leadOwner', 'supportOwner','renewalOwner','leadSource','stage','reseller','tags','rating', 'country','emailStatus','countryType']"
       [initialDateFrom]="initialDateFrom()" [initialDateTo]="initialDateTo()">
       <ng-template appCustomColumn="progress" let-value="value" let-row="row">
         <div class="flex flex-col gap-1.5 min-w-35">
