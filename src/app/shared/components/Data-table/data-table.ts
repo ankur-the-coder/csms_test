@@ -78,6 +78,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   filterNames = input<string[]>([]);
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
+  initialFilters = input<Record<string, any>>({});
   permissions = input<{ canEdit?: boolean }>({ canEdit: true });
   excludePdfColumns = input<string[]>([]);
   excludeExportColumns = input<string[]>([]);
@@ -165,6 +166,17 @@ private applyInitialDatesEffect = effect(() => {
     untracked(() => {
       this.dateFrom.set(from);
       this.dateTo.set(to);
+      this.page.set(0);
+    });
+  }
+});
+
+private applyInitialFiltersEffect = effect(() => {
+  const init = this.initialFilters();
+  if (init && Object.keys(init).length > 0) {
+    untracked(() => {
+      this.activeFilters.update(f => ({ ...f, ...init }));
+      this.tempFilters.set({ ...init });
       this.page.set(0);
     });
   }

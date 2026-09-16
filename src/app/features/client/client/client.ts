@@ -1,4 +1,4 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../../shared/components/Data-table/custom-column.directive';
 import {
@@ -50,7 +50,7 @@ export interface TimelineEvent {
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
-export class Client {
+export class Client implements OnInit, OnDestroy {
   private clientApi = inject(ClientService);
   private scheduleMeetingService = inject(ScheduleMeetingService);
   private toastr = inject(ToastrService);
@@ -190,7 +190,7 @@ sendCustomMail(): void {
     return `${year}-${month}-${day}`;
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const from = params.get('from');
       const to = params.get('to');
@@ -200,6 +200,11 @@ sendCustomMail(): void {
       }
     });
     this.loadData();
+    document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
   loadData() {}
@@ -223,13 +228,19 @@ sendCustomMail(): void {
 
     const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const menuWidth = 176;
+    const menuHeight = 175;
+
+    // If there is not enough room below the trigger, open above it
+    const fitsBelow = trigger.bottom + menuHeight + 8 <= window.innerHeight;
+    const top = fitsBelow
+      ? trigger.bottom + 6
+      : Math.max(8, trigger.top - menuHeight - 6);
+
+    const left = Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8));
 
     this.actionMenuOpenRowId.set(row.orgId);
     this.actionMenuRow.set(row);
-    this.actionMenuPosition.set({
-      top: trigger.bottom + 6,
-      left: Math.max(8, trigger.right - menuWidth),
-    });
+    this.actionMenuPosition.set({ top, left });
   }
 
   closeActionMenu(): void {
@@ -237,6 +248,12 @@ sendCustomMail(): void {
     this.actionMenuRow.set(null);
     this.actionMenuPosition.set(null);
   }
+
+  private closeActionMenuOnScroll = () => {
+    if (this.actionMenuOpenRowId() !== null && this.sendingMailRowId() === null) {
+      this.closeActionMenu();
+    }
+  };
 
   @HostListener('document:click')
   onDocumentClickCloseActionMenu(): void {
