@@ -560,7 +560,7 @@ sendCustomMail(): void {
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         // { key: 'progress', label: 'Implementation', sortable: false },
         // { key: 'trainingStatus', label: 'Training', sortable: false },
-        { key: 'action', label: 'Action', sortable: false },
+        { key: 'action', label: 'Action', sortable: false,sticky:true },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {

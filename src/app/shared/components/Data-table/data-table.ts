@@ -1466,6 +1466,20 @@ private applyInitialFiltersEffect = effect(() => {
   getColumnTemplate(key: string) { return this.templateMap().get(key); }
   getCellValue(row: T, key: any): any { return (row as any)?.[key]; }
 
+  isStickyRight(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    const keyStr = String(col.key).toLowerCase();
+    if (keyStr === 'rowactions' || keyStr === 'action' || keyStr === 'actions') return true;
+    const visCols = this.visibleColumns();
+    if (visCols.length > 0 && visCols[visCols.length - 1].key === col.key) return true;
+    return false;
+  }
+
+  isStickyLeft(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    return !this.isStickyRight(col);
+  }
+
   getSortIcon(key: keyof T): 'up' | 'down' | 'none' {
     const s = this.sort();
     if (s.key !== key) return 'none';
