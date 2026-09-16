@@ -26,6 +26,7 @@ import { Feedback } from './features/dashboard/component/feedback/feedback';
 import { Connected } from './features/dashboard/component/connected/connected';
 import { Usages } from './features/dashboard/component/usages/usages';
 import { ClientDashboard } from './features/client/client-dashboard/client-dashboard';
+import { RenewalComponent } from './features/dashboard/component/renewal-component/renewal-component';
 
 
 export const routes: Routes = [
@@ -73,6 +74,7 @@ export const routes: Routes = [
       { path: 'feedback', component: Feedback },
       { path: 'connected', component: Connected },
       { path: 'usages', component: Usages },
+{ path: 'renewal', component: RenewalComponent },
       {
         path: 'voice',
         component: VoiceShell,
@@ -89,7 +91,7 @@ export const routes: Routes = [
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },
-       { path: 'client/client-dashboard', component: ClientDashboard },
+      { path: 'client/client-dashboard', component: ClientDashboard },
 
     ],
   },
