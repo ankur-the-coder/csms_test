@@ -1,4 +1,4 @@
-import { Component, ElementRef, signal, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { TextInputComponent } from '../../shared/components/inputs/text-input/te
 import { AuthService } from '../../core/services/auth-service';
 import { LoginResponse } from '../../core/models/login.model';
 import { Utils } from '../../shared/utils/utils';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-login',
@@ -15,37 +16,40 @@ import { Utils } from '../../shared/utils/utils';
   styleUrl: './login.css',
 })
 export class Login {
+  private readonly toastr = inject(ToastrService);
+
+
   isLoading = signal(false);
   kickedOutMsg = signal('');
   showPassword = signal(false);
   errorMessage = signal('');
-loginForm = new FormGroup({
-  // username: new FormControl<string>('', [
-  //   Validators.required,
-  //   Validators.minLength(5)
-  // ]),
-  username: new FormControl<string>('', [
-    Validators.required
-  ]),
-  password: new FormControl<string>('', Validators.required),
-});
+  loginForm = new FormGroup({
+    // username: new FormControl<string>('', [
+    //   Validators.required,
+    //   Validators.minLength(5)
+    // ]),
+    username: new FormControl<string>('', [
+      Validators.required
+    ]),
+    password: new FormControl<string>('', Validators.required),
+  });
 
   constructor(
     private router: Router,
     private authService: AuthService
-  ) {}
-get username() {
-  return this.loginForm.controls.username;
-}
+  ) { }
+  get username() {
+    return this.loginForm.controls.username;
+  }
 
-get password() {
-  return this.loginForm.controls.password;
-}
+  get password() {
+    return this.loginForm.controls.password;
+  }
   togglePasswordVisibility(): void {
     this.showPassword.set(!this.showPassword());
   }
 
- onSubmit(): void {
+  onSubmit(): void {
     this.errorMessage.set('');
 
     if (this.loginForm.invalid) {
@@ -63,8 +67,11 @@ get password() {
         this.isLoading.set(false);
 
         if (res.status === true) {
+
+          this.toastr.success('Logged in successfully.', 'Success');
           this.router.navigate(['/dashboard']);
         } else {
+          this.toastr.error(res.msg || 'Failed to login.', 'Error');
           this.errorMessage.set(
             res.msg || 'Invalid username or password. Please try again.'
           );
