@@ -129,7 +129,7 @@
              onSelectClient/fetchAdminClients wiring the old always-expanded
              block used. -->
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <p class="text-xs font-semibold text-text-secondary tracking-wide mb-2">Calling from</p>
             <div class="relative">
@@ -148,7 +148,7 @@
             <p class="text-xs font-semibold text-text-secondary tracking-wide mb-2">Recent calls</p>
             <div class="relative" #recentCallsPickerRef>
               <button type="button" (click)="toggleRecentCallsDropdown()"
-                class="w-full h-[42px] flex items-center gap-2 pl-3.5 pr-3 text-xs text-text-secondary bg-surface-50 border border-card-border rounded-xl hover:border-brand-500 transition-colors">
+                class="w-full h-10.5 flex items-center gap-2 pl-3.5 pr-3 text-xs text-text-secondary bg-surface-50 border border-card-border rounded-xl hover:border-brand-500 transition-colors">
                 <svg class="w-3.5 h-3.5 shrink-0 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -162,7 +162,7 @@
               </button>
 
               <div *ngIf="recentCallsDropdownOpen"
-                class="absolute z-[3000] mt-1.5 w-72 max-w-[calc(100vw-2rem)] right-0 bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden">
+                class="absolute z-3000 mt-1.5 w-72 max-w-[calc(100vw-2rem)] right-0 bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden">
                 <div class="max-h-60 overflow-y-auto p-1 scrollbar-hide">
                   <div *ngFor="let r of voiceService.recentOutboundCalls()"
                     (click)="dialRecent(r); recentCallsDropdownOpen = false"
@@ -188,7 +188,7 @@
             <div>
               <p class="text-xs font-semibold text-text-secondary tracking-wide mb-2">Recent calls</p>
               <div
-                class="h-[42px] flex items-center gap-2 px-3.5 text-xs text-text-muted bg-surface-50 border border-card-border rounded-xl">
+                class="h-10.5 flex items-center gap-2 px-3.5 text-xs text-text-muted bg-surface-50 border border-card-border rounded-xl">
                 <svg class="w-3.5 h-3.5 shrink-0 text-brand-500/60" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -223,17 +223,17 @@
             class="flex items-stretch rounded-xl border border-card-border bg-surface-50 focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-all overflow-visible">
             <div class="relative shrink-0" #countryPickerRef>
               <button type="button" (click)="toggleCountryDropdown()"
-                class="h-full flex items-center gap-2 pl-3.5 pr-2.5 py-3 border-r border-card-border/70 hover:bg-surface-100 focus:outline-none transition-colors rounded-l-xl">
-                <span class="text-xl leading-none flex items-center justify-center translate-y-[-1.5px]"
+                class="h-full flex items-center gap-1.5 sm:gap-2 pl-2.5 sm:pl-3.5 pr-2 sm:pr-2.5 py-3 border-r border-card-border/70 hover:bg-surface-100 focus:outline-none transition-colors rounded-l-xl">
+                <span class="text-lg sm:text-xl leading-none flex items-center justify-center translate-y-[-1.5px]"
                   [title]="selectedCountryIso2">
                   {{ countryFlagEmoji(selectedCountryIso2) }}
                 </span>
 
-                <span class="font-mono text-[17px] leading-none tracking-wide text-text-secondary flex items-center">
+                <span class="font-mono text-sm sm:text-[17px] leading-none tracking-wide text-text-secondary flex items-center">
                   {{ selectedDialCode }}
                 </span>
 
-                <svg class="w-3.5 h-3.5 text-text-muted transition-transform duration-200"
+                <svg class="w-3.5 h-3.5 text-text-muted transition-transform duration-200 shrink-0"
                   [class.rotate-180]="countryDropdownOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -241,7 +241,7 @@
               </button>
 
               <div *ngIf="countryDropdownOpen"
-                class="absolute z-[3000] mt-1.5 w-72 max-w-[calc(100vw-2rem)] left-0 bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden">
+                class="absolute z-3000 mt-1.5 w-72 max-w-[calc(100vw-2rem)] left-0 bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden">
                 <div class="p-2 border-b border-card-border sticky top-0 bg-card-bg">
                   <input type="text" [ngModel]="countrySearchTerm" (ngModelChange)="onCountrySearchInput($event)"
                     (keydown)="onCountrySearchKeydown($event)" role="combobox" aria-expanded="true"
@@ -268,12 +268,12 @@
               </div>
             </div>
             <div class="relative flex-1 min-w-0">
-              <input #phoneInput type="text" inputmode="tel" maxlength="20" [ngModel]="formattedDialNumber"
+              <input #phoneInput type="text" inputmode="tel" maxlength="20" [ngModel]="dialNumber"
                 (ngModelChange)="onDialNumberInput($event)" [placeholder]="phoneNumberPlaceholder"
-                class="w-full h-full pl-3.5 pr-16 py-3 text-xl font-mono tracking-wide tabular-nums text-text-primary bg-transparent border-0 focus:outline-none focus:ring-0" />
+                class="w-full h-full pl-2.5 sm:pl-3.5 pr-14 sm:pr-16 py-3 text-base sm:text-xl font-mono tracking-wide tabular-nums text-text-primary bg-transparent border-0 focus:outline-none focus:ring-0" />
 
               <button *ngIf="dialNumber" (click)="clearDialNumber()"
-                class="absolute right-10 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary text-sm"
+                class="absolute right-9 sm:right-10 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary text-sm"
                 title="Clear (Esc)">
                 ✕
               </button>
@@ -291,7 +291,7 @@
                 </button>
 
                 <div *ngIf="contactPickerOpen"
-                  class="absolute z-[3000] right-0 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden text-left">
+                  class="absolute z-3000 right-0 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-card-bg border border-card-border rounded-xl shadow-dropdown overflow-hidden text-left">
                   <div class="p-2 border-b border-card-border">
                     <input type="text" [ngModel]="clientSearch" (ngModelChange)="onClientSearchChange($event)"
                       (keydown)="onContactSearchKeydown($event)" role="combobox" aria-expanded="true"
@@ -299,7 +299,7 @@
                       class="w-full px-3 py-1.5 text-sm bg-surface-100 border border-card-border rounded-lg text-text-secondary focus:outline-none focus:border-brand-500" />
                   </div>
                   <div id="contact-picker-listbox" role="listbox"
-                    class="max-h-60 overflow-y-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    class="max-h-60 overflow-y-auto p-1 scrollbar-none [&::-webkit-scrollbar]:hidden">
                     <div *ngIf="voiceService.loadingAdminClients()"
                       class="flex flex-col items-center justify-center py-6 text-text-muted">
                       <div class="w-5 h-5 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
@@ -398,7 +398,7 @@
 
       <!-- Idle Call Screen -->
       <div *ngIf="!voiceService.activeCall()"
-        class="h-full min-h-[400px] bg-gradient-to-b from-surface-50 to-card-bg border-2 border-dashed border-card-border rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+        class="h-full min-h-100 bg-linear-to-b from-surface-50 to-card-bg border-2 border-dashed border-card-border rounded-2xl p-8 flex flex-col items-center justify-center text-center">
         <div class="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center text-brand-400 mb-3">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -410,26 +410,26 @@
           PSTN calls on your assigned Telnyx DID line.</p>
 
         <!-- Quick status summary while idle -->
-        <div class="mt-8 w-full max-w-sm grid grid-cols-3 gap-3">
-          <div class="bg-card-bg border border-card-border rounded-xl px-3 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Status</p>
-            <p class="text-sm font-semibold mt-1" [ngClass]="{
+        <div class="mt-8 w-full max-w-sm grid grid-cols-3 gap-2 sm:gap-3">
+          <div class="bg-card-bg border border-card-border rounded-xl px-2 py-2.5 sm:px-3 sm:py-3 min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-text-muted truncate">Status</p>
+            <p class="text-xs sm:text-sm font-semibold mt-1 truncate" [ngClass]="{
                 'text-success': voiceService.connectionState() === 'Registered',
                 'text-danger': voiceService.connectionState() === 'Disconnected',
                 'text-warning': voiceService.connectionState() !== 'Registered' && voiceService.connectionState() !== 'Disconnected'
               }">{{ voiceService.connectionState() }}</p>
           </div>
-          <div class="bg-card-bg border border-card-border rounded-xl px-3 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Mic</p>
-            <p class="text-sm font-semibold mt-1" [ngClass]="{
+          <div class="bg-card-bg border border-card-border rounded-xl px-2 py-2.5 sm:px-3 sm:py-3 min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-text-muted truncate">Mic</p>
+            <p class="text-xs sm:text-sm font-semibold mt-1 truncate" [ngClass]="{
                 'text-success': voiceService.micPermission() === 'Granted',
                 'text-danger': voiceService.micPermission() === 'Denied' || voiceService.micPermission() === 'Blocked',
                 'text-warning': voiceService.micPermission() === 'Prompt'
               }">{{ voiceService.micPermission() }}</p>
           </div>
-          <div class="bg-card-bg border border-card-border rounded-xl px-3 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Numbers</p>
-            <p class="text-sm font-semibold mt-1 text-text-primary">{{ voiceService.voiceNumbers().length }} synced</p>
+          <div class="bg-card-bg border border-card-border rounded-xl px-2 py-2.5 sm:px-3 sm:py-3 min-w-0">
+            <p class="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider text-text-muted truncate">Numbers</p>
+            <p class="text-xs sm:text-sm font-semibold mt-1 text-text-primary truncate">{{ voiceService.voiceNumbers().length }} synced</p>
           </div>
         </div>
       </div>
@@ -627,7 +627,7 @@
 
 <!-- Toast notification -- lastNotification is set (and auto-cleared) by WebRtcVoiceService.notify(), used for sync/copy confirmations and call-lifecycle events -->
 <div *ngIf="voiceService.lastNotification() as note"
-  class="toast-in fixed bottom-6 right-6 z-[5000] flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg max-w-xs"
+  class="toast-in fixed bottom-6 right-6 z-5000 flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg max-w-xs"
   [ngClass]="{
     'bg-success-subtle border-success-border text-success-text': note.type === 'success',
     'bg-danger-subtle border-danger-border text-danger-text': note.type === 'error',
@@ -653,7 +653,7 @@
 
 <!-- Keyboard Shortcuts Cheat Sheet -->
 <div *ngIf="showShortcutsModal" (click)="showShortcutsModal = false"
-  class="fixed inset-0 z-[4000] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
+  class="fixed inset-0 z-4000 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4">
   <div (click)="$event.stopPropagation()"
     class="w-full max-w-sm bg-card-bg border border-card-border rounded-2xl shadow-xl overflow-hidden">
     <div class="flex items-center justify-between px-5 py-4 border-b border-card-border">

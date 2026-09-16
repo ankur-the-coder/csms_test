@@ -60,12 +60,12 @@ export const routes: Routes = [
 
 
 
-      // { path: 'dashboard', component: DashboardComponent },
-      // { path: 'implementation', component: Implementation },
-      // { path: 'training', component: Training },
-      // { path: 'onboarding', component: Dashboard },
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'implementation', component: Implementation },
+      { path: 'training', component: Training },
+      { path: 'onboarding', component: Dashboard },
 
-      // { path: 'add-onboarding', component: AddOnboarding },
+      { path: 'add-onboarding', component: AddOnboarding },
 
 
       { path: 'meetings', component: MeetingsComponent },

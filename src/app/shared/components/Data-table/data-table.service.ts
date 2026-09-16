@@ -31,6 +31,29 @@ interface OrgApiResponse {
   data: OrgApiRow[];
 }
 
+
+export interface leadOwnerResponse {
+    data:   Datum[];
+    status: boolean;
+    msg:    string;
+}
+
+export interface Datum {
+    id:   number;
+    name: string;
+}
+
+export interface TagsResponse {
+    data:   Datum[];
+    status: boolean;
+    msg:    string;
+}
+
+export interface Datum {
+    id:   number ;
+    name: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DataTableService {
   private readonly baseUrl = 'http://127.0.0.1:5000';
@@ -173,51 +196,60 @@ export class DataTableService {
         );
 
       case 'renewalOwner':
-        return of({
-          key: 'renewalOwner',
-          label: 'Renewal Owner',
-          searchable: true,
-          options: [
-            { label: 'Anita Rao',  value: 'anita' },
-            { label: 'Vikram Nair', value: 'vikram' },
-          ],
-        });
+        return this.http.get<leadOwnerResponse>(`${this.baseUrl}/fetchRenewableOwner`).pipe(
+          map((res) => ({
+            key: 'renewalOwner',
+            label: 'Renewal Owner',
+            searchable: true,
+            options: (res?.data || []).map((u) => ({
+              label: u.name ?? '',
+              value: String(u.id ?? ''),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'renewalOwner', label: 'Renewal Owner', searchable: true, options: [] } as TableFilter))
+        );
 
       case 'leadSource':
-        return of({
-          key: 'leadSource',
-          label: 'Lead Source',
-          options: [
-            { label: 'Website',   value: 'website' },
-            { label: 'Referral',  value: 'referral' },
-            { label: 'Cold Call', value: 'cold_call' },
-            { label: 'Social',    value: 'social' },
-          ],
-        });
+        return this.http.get<leadOwnerResponse>(`${this.baseUrl}/fetchLeadSource`).pipe(
+          map((res) => ({
+            key: 'leadSource',
+            label: 'Lead Source',
+            searchable: true,
+            options: (res?.data || []).map((s) => ({
+              label: s.name ?? '',
+              value: String(s.id ?? ''),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'leadSource', label: 'Lead Source', searchable: true, options: [] } as TableFilter))
+        );
 
       case 'reseller':
-        return of({
-          key: 'reseller',
-          label: 'Reseller',
-          searchable: true,
-          options: [
-            { label: 'Partner A', value: 'partner_a' },
-            { label: 'Partner B', value: 'partner_b' },
-          ],
-        });
+        return this.http.get<leadOwnerResponse>(`${this.baseUrl}/fetchReseller`).pipe(
+          map((res) => ({
+            key: 'reseller',
+            label: 'Reseller',
+            searchable: true,
+            options: (res?.data || []).map((u) => ({
+              label: u.name ?? '',
+              value: String(u.id ?? ''),
+            })),
+          } as TableFilter)),
+          catchError(() => of({ key: 'reseller', label: 'Reseller', searchable: true, options: [] } as TableFilter))
+        );
 
-      case 'tags':
-        return of({
-          key: 'tags',
-          label: 'Tags',
-          multiSelect: true,
-          searchable: true,
-          options: [
-            { label: 'Hot',  value: 'hot' },
-            { label: 'Cold', value: 'cold' },
-            { label: 'VIP',  value: 'vip' },
-          ],
-        });
+     case 'tags':
+        return this.http.get<TagsResponse>('${this.baseUrl}/fetchTags').pipe(
+          map((res) => ({
+            key: 'tags',
+            label: 'Tags',
+            multiSelect: true,
+            searchable: true,
+            options: (res.data || []).map((tag) => ({
+              label: tag.name,  
+              value: tag.id,     
+            })),
+          }))
+        );
 
       case 'rating':
         return of({
@@ -237,6 +269,8 @@ export class DataTableService {
   return this.http.get<OwnerApiResponse>(`${this.baseUrl}/fetchAllCountry`).pipe(
     map((res) => ({
       key: 'country',
+      
+      multiSelect: true,
       label: 'Country',
       searchable: true,
       options: (res?.data || []).map((c) => ({
@@ -252,9 +286,9 @@ export class DataTableService {
           key: 'emailStatus',
           label: 'Email Status',
           options: [
-            { label: 'Verified',   value: 'verified' },
-            { label: 'Bounced',    value: 'bounced' },
-            { label: 'Unverified', value: 'unverified' },
+            { label: 'Subscribed',   value: 'subscribed' },
+            { label: 'Unsubscribed',    value: 'unsubscribed' },
+        
           ],
         });
 
@@ -263,10 +297,22 @@ export class DataTableService {
           key: 'stage',
           label: 'Stages',
           options: [
-            { label: 'New',        value: 'new' },
-            { label: 'Contacted',  value: 'contacted' },
-            { label: 'Qualified',  value: 'qualified' },
-            { label: 'Closed Won', value: 'closed_won' },
+            { label: 'Trial',           value: 'trial' },
+          { label: 'Trial Expired',   value: 'trial_expired' },
+          { label: 'Trial Extended',  value: 'trial_extended' },
+          { label: 'Premium',         value: 'premium' },
+          { label: 'Premium Expired', value: 'premium_expired' },
+          ],
+        });
+
+        case 'countryType':
+        return of({
+          key: 'countryType',
+          label: 'Country Type',
+          options: [
+            { label: 'International',    value: '1' },
+            { label: 'National',   value: '2' },
+        
           ],
         });
 
