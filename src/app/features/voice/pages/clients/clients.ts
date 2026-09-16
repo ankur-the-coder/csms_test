@@ -62,7 +62,14 @@ export class Clients {
       { key: 'name', label: 'Client', sortable: true, hideable: true },
       { key: 'phoneNumber', label: 'Phone Number', sortable: false },
       { key: 'altPhoneNumber', label: 'Alt Phone', sortable: false },
+      { key: 'leadOwner', label: 'Lead Owner', sortable: false },
+      { key: 'supportOwner', label: 'Support Owner', sortable: false },
+      { key: 'renewalOwner', label: 'Renewal Owner', sortable: false },
       { key: 'orgStatus', label: 'Status', sortable: true },
+      { key: 'leadSource', label: 'Lead Source', sortable: false },
+      { key: 'reseller', label: 'Reseller', sortable: false },
+      { key: 'tags', label: 'Tags', sortable: false },
+      { key: 'rating', label: 'Rating', sortable: false },
     ] as SmartColumn<AdminClientRow>[],
 
     apiConfig: {
@@ -86,8 +93,7 @@ export class Clients {
           length: ctx.pageSize,
           search: ctx.search ?? '',
           sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'desc' }),
-          // NOTE: backend reads `statusFilter`, not `filter` -- key renamed to match.
-          statusFilter: ctx.filters['leadStage'] ?? '',
+          filter:   JSON.stringify({ ...ctx.filters }),
         };
 
         return { method: 'POST' as const, body };
@@ -105,20 +111,7 @@ export class Clients {
     emptyMessage: 'No admin clients found.',
     clickable: true,
 
-    filters: [
-      {
-        key: 'leadStage',
-        label: 'Lead Stage',
-        type: 'select',
-        options: [
-          { label: 'Trial',           value: 'trial' },
-          { label: 'Trial Expired',   value: 'trial_expired' },
-          { label: 'Trial Extended',  value: 'trial_extended' },
-          { label: 'Premium',         value: 'premium' },
-          { label: 'Premium Expired', value: 'premium_expired' },
-        ],
-      },
-    ],
+
 
     customRowActions: [
       {
@@ -130,6 +123,7 @@ export class Clients {
     ],
 
     toolbarButtons: [
+       { id: 'columns', type: 'columnPicker' as const, label: 'Columns' },
       { id: 'filter', type: 'filter', label: 'Filter' },
       { id: 'refresh', type: 'refresh' },
     ],

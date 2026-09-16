@@ -401,6 +401,11 @@ export class WebRtcVoiceService {
       params.set('page', '1');
       params.set('limit', String(rowFetchLimit));
       params.set('direction', 'outbound');
+       const isAdmin = localStorage.getItem('is_admin') === '1';
+  if (!isAdmin) {
+    const empId = localStorage.getItem('empId');
+    if (empId) params.set('userId', empId);
+  }
       const res = await fetch(`${this.API_BASE}/history?${params.toString()}`);
       const json = await res.json();
       const rows: any[] = json.data || [];
@@ -1014,10 +1019,11 @@ export class WebRtcVoiceService {
   /** POST /api/voice/log-outbound -- creates the call_logs row up front (see makeOutboundCall). */
   private async logOutboundCallToBackend(toNumber: string, fromNumber: string): Promise<void> {
     try {
-      const res = await fetch(`${this.API_BASE}/log-outbound`, {
+        const empId = localStorage.getItem('empId');
+      const res = await fetch(`http://127.0.0.1:5000/api/voice/log-outbound`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to_number: toNumber, from_number: fromNumber }),
+        body: JSON.stringify({ to_number: toNumber, from_number: fromNumber, user_id: empId, }),
       });
       const data = await res.json();
       if (!res.ok || !data.status) {
