@@ -45,7 +45,7 @@ export class Sidebar {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'voice';
+  @Input() activeNav = 'dashboard';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
