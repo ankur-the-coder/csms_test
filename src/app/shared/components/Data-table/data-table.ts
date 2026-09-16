@@ -1729,7 +1729,7 @@ selectAllPdfColumns(): void {
   const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
   const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
   this.pdfSelectedColumns.set(keys);
-}
+} 
 
 clearPdfColumns(): void {
   this.pdfSelectedColumns.set([]);
