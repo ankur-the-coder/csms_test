@@ -78,6 +78,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   filterNames = input<string[]>([]);
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
+  initialFilters = input<Record<string, any>>({});
   permissions = input<{ canEdit?: boolean }>({ canEdit: true });
   excludePdfColumns = input<string[]>([]);
   excludeExportColumns = input<string[]>([]);
@@ -165,6 +166,17 @@ private applyInitialDatesEffect = effect(() => {
     untracked(() => {
       this.dateFrom.set(from);
       this.dateTo.set(to);
+      this.page.set(0);
+    });
+  }
+});
+
+private applyInitialFiltersEffect = effect(() => {
+  const init = this.initialFilters();
+  if (init && Object.keys(init).length > 0) {
+    untracked(() => {
+      this.activeFilters.update(f => ({ ...f, ...init }));
+      this.tempFilters.set({ ...init });
       this.page.set(0);
     });
   }
@@ -1453,6 +1465,20 @@ private applyInitialDatesEffect = effect(() => {
 
   getColumnTemplate(key: string) { return this.templateMap().get(key); }
   getCellValue(row: T, key: any): any { return (row as any)?.[key]; }
+
+  isStickyRight(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    const keyStr = String(col.key).toLowerCase();
+    if (keyStr === 'rowactions' || keyStr === 'action' || keyStr === 'actions') return true;
+    const visCols = this.visibleColumns();
+    if (visCols.length > 0 && visCols[visCols.length - 1].key === col.key) return true;
+    return false;
+  }
+
+  isStickyLeft(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    return !this.isStickyRight(col);
+  }
 
   getSortIcon(key: keyof T): 'up' | 'down' | 'none' {
     const s = this.sort();

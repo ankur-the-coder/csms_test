@@ -1,7 +1,7 @@
 import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener,ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse, RescheduleMeetingResponse, RecentActivity } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
@@ -119,6 +119,9 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   apiMeetings = signal<MeetingRow[]>([]);
   filterDateFrom: string = '';
   filterDateTo: string = '';
+  initialDateFrom = signal<string>('');
+  initialDateTo = signal<string>('');
+  initialFilters = signal<Record<string, any>>({});
 
   showCancelModal = signal(false);
 cancelMeetingRow = signal<MeetingRow | null>(null);
@@ -392,15 +395,19 @@ rescheduleDurationSelectOptions: SelectOption[] = [
 
     const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const menuWidth = 176; // matches w-44 below
+    const menuHeight = 160;
+
+    // If there is not enough room below the trigger, open above it
+    const fitsBelow = trigger.bottom + menuHeight + 8 <= window.innerHeight;
+    const top = fitsBelow
+      ? trigger.bottom + 6
+      : Math.max(8, trigger.top - menuHeight - 6);
+
+    const left = Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8));
 
     this.actionMenuOpenRowId.set(row.id);
     this.actionMenuRow.set(row);
-    this.actionMenuPosition.set({
-      top: trigger.bottom + 6,
-      // Right-align the menu to the trigger so it doesn't run off-screen
-      // for the right-most "Meeting Detail"/"Client Email" columns.
-      left: Math.max(8, trigger.right - menuWidth),
-    });
+    this.actionMenuPosition.set({ top, left });
   }
 
   closeActionMenu(): void {
@@ -1064,17 +1071,64 @@ confirmCancelMeeting(): void {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private meetingService: MeetingService,
     private cdr: ChangeDetectorRef,
     private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      const from = params.get('from');
+      const to = params.get('to');
+      const status = params.get('status');
+
+      if (from && to) {
+        this.initialDateFrom.set(from);
+        this.initialDateTo.set(to);
+        this.filterDateFrom = from;
+        this.filterDateTo = to;
+      }
+
+      if (status) {
+        const s = status.toLowerCase();
+        let statusVal: string | null = null;
+        if (s === 'pending' || s === '3') statusVal = '3';
+        else if (s === 'scheduled' || s === '0') statusVal = '0';
+        else if (s === 'completed' || s === '1') statusVal = '1';
+        else if (s === 'rescheduled' || s === '2') statusVal = '2';
+        else if (s === 'cancelled' || s === '4') statusVal = '4';
+        else if (s === 'client_no_show' || s === '5') statusVal = '5';
+        else if (s === 'host_no_show' || s === '6') statusVal = '6';
+
+        if (statusVal !== null) {
+          this.initialFilters.set({ meetingStatus: [statusVal] });
+        }
+      }
+
+      if (status || (from && to)) {
+        this.activeView = 'table';
+        setTimeout(() => {
+          this.scrollToDataTable();
+        }, 150);
+        setTimeout(() => {
+          this.scrollToDataTable();
+        }, 400);
+      }
+    });
+
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
     this.fetchRecentActivity();
     document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
+  }
+
+  scrollToDataTable(): void {
+    const el = document.getElementById('tableSection');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   fetchApiMeetings(): void {
