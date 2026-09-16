@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { Clientdashboard } from '../services/client/clientdashboard/clientdashboard';
@@ -9,6 +9,8 @@ import { Clientdashboardtracker } from '../services/client/clientdashboard/clien
 import { TrackerItem } from '../models/client/clientdashboardtracker.model';
 import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
 import { AddonItem } from '../models/client/ClientDashboardAddons.model';
+import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
+import { TicketItem } from '../models/client/clientdashboardtickets';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -21,6 +23,7 @@ export class ClientDashboard {
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
   private clientDashboardTrackerApi = inject(Clientdashboardtracker);
   private clientDashboardAddonsApi = inject(Clientdashboardaddons);
+  private clientDashboardTicketsApi = inject(Clientdashboardtickets);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
 
@@ -45,6 +48,29 @@ export class ClientDashboard {
   addons = signal<AddonItem[]>([]);
   addonsLoading = signal(false);
   addonsError = signal('');
+  showAllAddonsModal = signal(false);
+
+
+  // ---- Tickets state ----
+  tickets = signal<TicketItem[]>([]);
+  ticketsLoading = signal(false);
+  ticketsError = signal('');
+  showAllTicketsModal = signal(false);
+
+
+  // Widget me sirf top 5 dikhane ke liye
+  topFiveTickets = computed(() => this.tickets().slice(0, 5));
+
+  // "View All" tabhi dikhega jab total tickets 5 se jyada hon
+  hasMoreTickets = computed(() => this.tickets().length > 5);
+
+
+   // Widget me sirf top 6 dikhane ke liye
+  topSixAddons = computed(() => this.addons().slice(0, 6));
+
+  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+  hasMoreAddons = computed(() => this.addons().length > 6);
+
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -56,6 +82,7 @@ export class ClientDashboard {
         this.loadMeetings(this.orgId);
         this.loadTracker(this.orgId);
         this.loadAddons(this.orgId);
+        this.loadTickets(this.orgId);
       }
     });
   }
@@ -139,6 +166,82 @@ export class ClientDashboard {
       },
     });
   }
+
+   private loadTickets(orgId: string): void {
+    this.ticketsLoading.set(true);
+    this.ticketsError.set('');
+
+    this.clientDashboardTicketsApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.ticketsLoading.set(false);
+        if (res?.status) {
+          this.tickets.set(res.data ?? []);
+        } else {
+          this.ticketsError.set(res?.msg || 'Failed to load tickets');
+        }
+      },
+      error: (err) => {
+        this.ticketsLoading.set(false);
+        this.ticketsError.set(err?.error?.msg || 'Failed to load tickets');
+      },
+    });
+  }
+
+
+  openAllTicketsModal(): void {
+    this.showAllTicketsModal.set(true);
+  }
+
+  closeAllTicketsModal(): void {
+    this.showAllTicketsModal.set(false);
+  }
+
+    openAllAddonsModal(): void {
+    this.showAllAddonsModal.set(true);
+  }
+
+  closeAllAddonsModal(): void {
+    this.showAllAddonsModal.set(false);
+  }
+
+ // ---- Helpers Tickets ----
+
+  ticketStatusLabel(status: string): string {
+    switch (status) {
+      case 'open':
+        return 'Open';
+      case 'on_hold':
+        return 'On Hold';
+      case 'escalated':
+        return 'Escalated';
+      default:
+        return status;
+    }
+  }
+
+  ticketStatusClass(status: string): string {
+    switch (status) {
+      case 'open':
+        return 'bg-amber-100 text-amber-600';
+      case 'on_hold':
+        return 'bg-slate-100 text-slate-600';
+      case 'escalated':
+        return 'bg-rose-100 text-rose-600';
+      default:
+        return 'bg-slate-100 text-slate-600';
+    }
+  }
+
+  formatTicketDate(createdAt: string): string {
+    if (!createdAt) return '-';
+    const d = new Date(createdAt);
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
 
   // ---- Helpers for Meeting the template ----
 
