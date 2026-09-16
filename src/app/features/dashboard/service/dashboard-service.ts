@@ -5,6 +5,7 @@ import { environment } from '../../../../environments/environment';
 import { DashboardCardCount, DashboardChartdata, CalendarApiResponse } from '../models/dashboardModel';
 import { ConnectedDataTableResponse } from '../models/connected.model';
 import { FeedbackDataTableResponse } from '../models/feedback.model';
+import { RenewalTableResponse } from '../models/renewalModel';
 export interface DataTablePayload {
   start: number;
   length: number;
@@ -107,7 +108,7 @@ export class DashboardService {
 
   }
 
- fetchFeedbackCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
+  fetchFeedbackCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
@@ -116,7 +117,12 @@ export class DashboardService {
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchFeedbackCards`, data);
   }
+  // Data table Api
+  fetchRenewablePlanDataTable(payload: DataTablePayload): Observable<RenewalTableResponse> {
 
+    return this.http.post<RenewalTableResponse>(`${this.apiUrl}/fetchRenewablePlanDataTable`, payload);
+
+  }
 
 
 }
