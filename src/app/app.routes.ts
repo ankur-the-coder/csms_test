@@ -74,7 +74,7 @@ export const routes: Routes = [
       { path: 'feedback', component: Feedback },
       { path: 'connected', component: Connected },
       { path: 'usages', component: Usages },
-{ path: 'renewal', component: RenewalComponent },
+      { path: 'renewal', component: RenewalComponent },
       {
         path: 'voice',
         component: VoiceShell,
