@@ -237,18 +237,19 @@ export class DataTableService {
           catchError(() => of({ key: 'reseller', label: 'Reseller', searchable: true, options: [] } as TableFilter))
         );
 
-     case 'tags':
-        return this.http.get<TagsResponse>('${this.baseUrl}/fetchTags').pipe(
+      case 'tags':
+        return this.http.get<TagsResponse>(`${this.baseUrl}/fetchTags`).pipe(
           map((res) => ({
             key: 'tags',
             label: 'Tags',
             multiSelect: true,
             searchable: true,
-            options: (res.data || []).map((tag) => ({
-              label: tag.name,  
-              value: tag.id,     
+            options: (res?.data || []).map((tag) => ({
+              label: tag.name,
+              value: String(tag.id),
             })),
-          }))
+          } as TableFilter)),
+          catchError(() => of({ key: 'tags', label: 'Tags', multiSelect: true, searchable: true, options: [] } as TableFilter))
         );
 
       case 'rating':

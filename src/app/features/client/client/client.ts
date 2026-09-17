@@ -1,4 +1,12 @@
-import { Component, HostListener, computed, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  computed,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../../shared/components/Data-table/custom-column.directive';
 import {
@@ -46,7 +54,7 @@ export interface TimelineEvent {
 
 @Component({
   selector: 'app-client',
-  imports: [DataTable, CustomColumnDirective, NgClass,FormsModule, RichTextEditor],
+  imports: [DataTable, CustomColumnDirective, NgClass, FormsModule, RichTextEditor],
   templateUrl: './client.html',
   styleUrl: './client.css',
 })
@@ -63,124 +71,124 @@ export class Client implements OnInit, OnDestroy {
   initialDateTo = signal('');
 
   // ── Send Mail modal ──────────────────────────────────────────────────────
-mailModalOpen = signal(false);
-mailModalRow = signal<ClientRow | null>(null);
-mailTab = signal<'edit' | 'preview'>('edit');
-mailRecipients = signal<string[]>([]);
-mailRecipientInput = '';
-mailSubject = '';
-mailBody = '';
-mailSending = signal(false);
+  mailModalOpen = signal(false);
+  mailModalRow = signal<ClientRow | null>(null);
+  mailTab = signal<'edit' | 'preview'>('edit');
+  mailRecipients = signal<string[]>([]);
+  mailRecipientInput = '';
+  mailSubject = '';
+  mailBody = '';
+  mailSending = signal(false);
 
-openMailModal(row: ClientRow): void {
-  this.closeActionMenu();
-  this.mailModalRow.set(row);
-  this.mailTab.set('edit');
-  this.mailRecipients.set(row.email ? [row.email.trim()] : []);
-  this.mailSubject = `Welcome to UbiClient, ${row.name}!`;
-  this.mailBody =
-    `<p>Hi ${row.contactPerson || row.name},</p>` +
-    `<p>Welcome aboard! We're excited to have ${row.name} on UbiClient. Your account has been set up and the portal is ready whenever you are.</p>` +
-    `<p>Best,<br>The UbiClient Team</p>`;
-  this.mailModalOpen.set(true);
-}
+  openMailModal(row: ClientRow): void {
+    this.closeActionMenu();
+    this.mailModalRow.set(row);
+    this.mailTab.set('edit');
+    this.mailRecipients.set(row.email ? [row.email.trim()] : []);
+    this.mailSubject = `Welcome to UbiClient, ${row.name}!`;
+    this.mailBody =
+      `<p>Hi ${row.contactPerson || row.name},</p>` +
+      `<p>Welcome aboard! We're excited to have ${row.name} on UbiClient. Your account has been set up and the portal is ready whenever you are.</p>` +
+      `<p>Best,<br>The UbiClient Team</p>`;
+    this.mailModalOpen.set(true);
+  }
 
-onEditorChange(html: string): void {
-  this.mailBody = html;
-}
+  onEditorChange(html: string): void {
+    this.mailBody = html;
+  }
 
-closeMailModal(): void {
-  this.mailModalOpen.set(false);
-  this.mailRecipientInput = '';
-  this.mailAttachments.set([]);
-  this.attachmentError.set('');
-}
+  closeMailModal(): void {
+    this.mailModalOpen.set(false);
+    this.mailRecipientInput = '';
+    this.mailAttachments.set([]);
+    this.attachmentError.set('');
+  }
 
-recipientInputInvalid = signal(false);
+  recipientInputInvalid = signal(false);
 
-addRecipient(event: Event): void {
-  event.preventDefault();
-  const value = this.mailRecipientInput.trim().replace(/,$/, '');
-  if (!value) {
+  addRecipient(event: Event): void {
+    event.preventDefault();
+    const value = this.mailRecipientInput.trim().replace(/,$/, '');
+    if (!value) {
+      this.recipientInputInvalid.set(false);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      this.recipientInputInvalid.set(true);
+      return;
+    }
+    if (!this.mailRecipients().includes(value)) {
+      this.mailRecipients.update((list) => [...list, value]);
+    }
+    this.mailRecipientInput = '';
     this.recipientInputInvalid.set(false);
-    return;
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(value)) {
-    this.recipientInputInvalid.set(true);
-    return;
-  }
-  if (!this.mailRecipients().includes(value)) {
-    this.mailRecipients.update((list) => [...list, value]);
-  }
-  this.mailRecipientInput = '';
-  this.recipientInputInvalid.set(false);
-}
-
-removeRecipient(email: string): void {
-  this.mailRecipients.update((list) => list.filter((e) => e !== email));
-}
-
-sendCustomMail(): void {
-  const row = this.mailModalRow();
-  if (!row) return;
-  if (this.mailRecipients().length === 0) {
-    this.toastr.warning('Add at least one recipient.', 'Warning');
-    return;
   }
 
-  const empId = localStorage.getItem('empId');
-  if (!empId) {
-    this.toastr.error('Host employee ID not found. Please log in again.', 'Error');
-    return;
+  removeRecipient(email: string): void {
+    this.mailRecipients.update((list) => list.filter((e) => e !== email));
   }
 
-  this.mailSending.set(true);
+  sendCustomMail(): void {
+    const row = this.mailModalRow();
+    if (!row) return;
+    if (this.mailRecipients().length === 0) {
+      this.toastr.warning('Add at least one recipient.', 'Warning');
+      return;
+    }
 
-  this.scheduleMeetingService.getEmployeeDetails(empId).subscribe({
-    next: (details) => {
-      const hostEmail = details?.currentMail;
-      if (!hostEmail) {
+    const empId = localStorage.getItem('empId');
+    if (!empId) {
+      this.toastr.error('Host employee ID not found. Please log in again.', 'Error');
+      return;
+    }
+
+    this.mailSending.set(true);
+
+    this.scheduleMeetingService.getEmployeeDetails(empId).subscribe({
+      next: (details) => {
+        const hostEmail = details?.currentMail;
+        if (!hostEmail) {
+          this.mailSending.set(false);
+          this.toastr.error('Host email not found for the logged-in user.', 'Error');
+          return;
+        }
+
+        this.clientApi
+          .sendCustomMail({
+            hostEmail,
+            toEmails: this.mailRecipients(),
+            subject: this.mailSubject,
+            message: this.mailBody,
+            companyName: row.name,
+            attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
+              name,
+              contentType,
+              contentBytes,
+            })),
+          })
+          .subscribe({
+            next: (res) => {
+              this.mailSending.set(false);
+              if (res?.status) {
+                this.toastr.success(res.message || 'Email sent!', 'Success');
+                this.closeMailModal();
+              } else {
+                this.toastr.error(res?.message || 'Failed to send email.', 'Error');
+              }
+            },
+            error: (err) => {
+              this.mailSending.set(false);
+              this.toastr.error(err?.error?.message || 'Failed to send email.', 'Error');
+            },
+          });
+      },
+      error: () => {
         this.mailSending.set(false);
-        this.toastr.error('Host email not found for the logged-in user.', 'Error');
-        return;
-      }
-
-      this.clientApi
-        .sendCustomMail({
-          hostEmail,
-          toEmails: this.mailRecipients(),
-          subject: this.mailSubject,
-          message: this.mailBody,
-          companyName: row.name,
-          attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
-      name,
-      contentType,
-      contentBytes,
-    })),
-        })
-        .subscribe({
-          next: (res) => {
-            this.mailSending.set(false);
-            if (res?.status) {
-              this.toastr.success(res.message || 'Email sent!', 'Success');
-              this.closeMailModal();
-            } else {
-              this.toastr.error(res?.message || 'Failed to send email.', 'Error');
-            }
-          },
-          error: (err) => {
-            this.mailSending.set(false);
-            this.toastr.error(err?.error?.message || 'Failed to send email.', 'Error');
-          },
-        });
-    },
-    error: () => {
-      this.mailSending.set(false);
-      this.toastr.error('Failed to fetch host details.', 'Error');
-    },
-  });
-}
+        this.toastr.error('Failed to fetch host details.', 'Error');
+      },
+    });
+  }
 
   private getTodayDateString(): string {
     const d = new Date();
@@ -232,11 +240,12 @@ sendCustomMail(): void {
 
     // If there is not enough room below the trigger, open above it
     const fitsBelow = trigger.bottom + menuHeight + 8 <= window.innerHeight;
-    const top = fitsBelow
-      ? trigger.bottom + 6
-      : Math.max(8, trigger.top - menuHeight - 6);
+    const top = fitsBelow ? trigger.bottom + 6 : Math.max(8, trigger.top - menuHeight - 6);
 
-    const left = Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8));
+    const left = Math.max(
+      8,
+      Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8),
+    );
 
     this.actionMenuOpenRowId.set(row.orgId);
     this.actionMenuRow.set(row);
@@ -305,30 +314,8 @@ sendCustomMail(): void {
       {
         date: '13 Jan',
         year: '2025',
-        title: 'Company Created',
-        description: `Company profile and admin user created for ${row.name}.`,
-        status: 'success',
-      },
-      {
-        date: '15 Jan',
-        year: '2025',
-        title: 'Employees Imported',
-        description: `${row.userLimit} employees imported successfully.`,
-        status: 'success',
-      },
-      {
-        date: '16 Jan',
-        year: '2025',
-        title: 'Device Connected',
-        description: 'ZKTeco device integrated and connected.',
-        status: 'success',
-        current: true,
-      },
-      {
-        date: '18 Jan',
-        year: '2025',
-        title: 'Admin Training',
-        description: 'Admin training completed.',
+        title: 'Setup',
+        description: `Company setup completed, including organization profile, HRMS configuration, and admin user creation for ${row.name}.`,
         status: 'success',
       },
       {
@@ -337,34 +324,6 @@ sendCustomMail(): void {
         title: 'Go Live',
         description: 'System is live and in production.',
         status: 'success',
-      },
-      {
-        date: '15 Feb',
-        year: '2025',
-        title: 'Support Ticket',
-        description: 'Issue reported: Face recognition setup.',
-        status: 'warning',
-      },
-      {
-        date: '18 Feb',
-        year: '2025',
-        title: 'Training',
-        description: 'Supervisor training conducted.',
-        status: 'success',
-      },
-      {
-        date: '12 Mar',
-        year: '2025',
-        title: 'Quarterly Review',
-        description: 'Quarterly business review meeting.',
-        status: 'success',
-      },
-      {
-        date: '20 Mar',
-        year: '2025',
-        title: 'Renewal Reminder',
-        description: `Renewal reminder sent for ${row.planEnd || '31 Mar 2027'}.`,
-        status: 'danger',
       },
     ];
   }
@@ -396,7 +355,6 @@ sendCustomMail(): void {
     } else {
       this.closeActionMenu();
     }
-
   }
 
   private sendWelcomeMail(row: ClientRow): void {
@@ -560,7 +518,7 @@ sendCustomMail(): void {
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         // { key: 'progress', label: 'Implementation', sortable: false },
         // { key: 'trainingStatus', label: 'Training', sortable: false },
-        { key: 'action', label: 'Action', sortable: false,sticky:true },
+        { key: 'action', label: 'Action', sortable: false, sticky: true },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
@@ -625,59 +583,59 @@ sendCustomMail(): void {
     };
   });
 
+  mailAttachments = signal<
+    { name: string; size: number; contentType: string; contentBytes: string }[]
+  >([]);
+  attachmentError = signal('');
 
-  mailAttachments = signal<{ name: string; size: number; contentType: string; contentBytes: string }[]>([]);
-attachmentError = signal('');
+  private readonly MAX_ATTACHMENT_MB = 3; // per-file limit
+  private readonly MAX_TOTAL_MB = 10; // total across all files (Graph hard-caps ~25MB via API)
 
-private readonly MAX_ATTACHMENT_MB = 3;      // per-file limit
-private readonly MAX_TOTAL_MB = 10;          // total across all files (Graph hard-caps ~25MB via API)
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
 
-onFilesSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files) return;
-
-  Array.from(input.files).forEach((file) => this.addAttachment(file));
-  input.value = ''; // allow re-selecting the same file later
-}
-
-private addAttachment(file: File): void {
-  this.attachmentError.set('');
-
-  if (file.size > this.MAX_ATTACHMENT_MB * 1024 * 1024) {
-    this.attachmentError.set(`${file.name} exceeds ${this.MAX_ATTACHMENT_MB}MB.`);
-    return;
+    Array.from(input.files).forEach((file) => this.addAttachment(file));
+    input.value = ''; // allow re-selecting the same file later
   }
 
-  const currentTotal = this.mailAttachments().reduce((sum, a) => sum + a.size, 0);
-  if (currentTotal + file.size > this.MAX_TOTAL_MB * 1024 * 1024) {
-    this.attachmentError.set(`Total attachments can't exceed ${this.MAX_TOTAL_MB}MB.`);
-    return;
+  private addAttachment(file: File): void {
+    this.attachmentError.set('');
+
+    if (file.size > this.MAX_ATTACHMENT_MB * 1024 * 1024) {
+      this.attachmentError.set(`${file.name} exceeds ${this.MAX_ATTACHMENT_MB}MB.`);
+      return;
+    }
+
+    const currentTotal = this.mailAttachments().reduce((sum, a) => sum + a.size, 0);
+    if (currentTotal + file.size > this.MAX_TOTAL_MB * 1024 * 1024) {
+      this.attachmentError.set(`Total attachments can't exceed ${this.MAX_TOTAL_MB}MB.`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1]; // strip the data:...;base64, prefix
+      this.mailAttachments.update((list) => [
+        ...list,
+        {
+          name: file.name,
+          size: file.size,
+          contentType: file.type || 'application/octet-stream',
+          contentBytes: base64,
+        },
+      ]);
+    };
+    reader.readAsDataURL(file);
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const base64 = (reader.result as string).split(',')[1]; // strip the data:...;base64, prefix
-    this.mailAttachments.update((list) => [
-      ...list,
-      {
-        name: file.name,
-        size: file.size,
-        contentType: file.type || 'application/octet-stream',
-        contentBytes: base64,
-      },
-    ]);
-  };
-  reader.readAsDataURL(file);
-}
+  removeAttachment(name: string): void {
+    this.mailAttachments.update((list) => list.filter((a) => a.name !== name));
+  }
 
-removeAttachment(name: string): void {
-  this.mailAttachments.update((list) => list.filter((a) => a.name !== name));
-}
-
-formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 }
