@@ -167,9 +167,9 @@ export class VoiceAnalyticsDashboard implements OnInit {
     try {
       const from = this.toDateStr(this.fromDate());
       const to = this.toDateStr(this.toDate());
-      
+
       const params = new URLSearchParams({ from, to });
-        const isAdmin = localStorage.getItem('admisSts') == '1';
+        const isAdmin = localStorage.getItem('adminSts') == '1';
   if (!isAdmin) {
     const empId = localStorage.getItem('empId');
     if (empId) params.set('userId', empId);}

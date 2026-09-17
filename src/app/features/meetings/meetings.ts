@@ -286,7 +286,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
       dataPath: 'data',
       totalPath: 'meta.total',
 
-      
+
 
       buildRequest: (ctx: RequestContext) => {
   const filters: Record<string, any> = {};
@@ -436,7 +436,7 @@ if (empId) {
 
   /** '1' = admin/global view (see everyone's data). Anything else = scope to the logged-in employee. */
 private isAdminView(): boolean {
-  return localStorage.getItem('admisSts') === '1';
+  return localStorage.getItem('adminSts') === '1';
 }
 
 /** Returns the empId to filter by, or undefined if the user should see all data (admin). */
@@ -894,7 +894,7 @@ confirmCancelMeeting(): void {
    * meeting that's already Cancelled or Completed — that error message is
    * shown as-is via the toast.
    */
- 
+
 
   /**
    * Opens the "Meeting Detail" modal for a row and checks attendance live

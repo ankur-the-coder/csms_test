@@ -164,7 +164,7 @@ export class History implements OnInit {
         const params = new URLSearchParams();
         params.set('page', String(ctx.page + 1));
         params.set('limit', String(ctx.pageSize));
-           const isAdmin = localStorage.getItem('admisSts') == '1';
+           const isAdmin = localStorage.getItem('adminSts') == '1';
   if (!isAdmin) {
     const empId = localStorage.getItem('empId');
     if (empId) params.set('userId', empId);

@@ -10,7 +10,7 @@ export interface Data {
   empId: string;
   designation: string
   orgId: string
-  admisSts: number,
+  adminSts: number,
   email: string,
   phone: string
 }
