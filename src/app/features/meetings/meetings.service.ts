@@ -252,12 +252,11 @@ export class MeetingService {
    * Not cached — always fetch fresh.
    */
   getRecentActivity(empId?: number): Observable<RecentActivity[]> {
-    const rawEmpId = empId ?? (localStorage.getItem('empId') ? Number(localStorage.getItem('empId')) : undefined);
-    const query = rawEmpId ? `?empId=${rawEmpId}` : '';
-    return this.http
-      .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
-      .pipe(map(res => res.data || []));
-  }
+  const query = empId ? `?empId=${empId}` : '';
+  return this.http
+    .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
+    .pipe(map(res => res.data || []));
+}
 
   rescheduleMeeting(
   meetingId: number,

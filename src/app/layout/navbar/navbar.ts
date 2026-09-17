@@ -53,32 +53,42 @@ export class Navbar implements OnInit, OnDestroy {
 
   constructor(private authService: AuthService) {}
 
+  /** '1' = admin/global view. Meeting notifications are for individual employees only. */
+private isAdminView(): boolean {
+  return localStorage.getItem('admisSts') === '1';
+}
+
   ngOnInit() {
 
     if (isPlatformBrowser(this.plateFormId)) {
 
-      this.adminName.set(
-        this.authService.getUserName()
-      );
+  this.adminName.set(
+    this.authService.getUserName()
+  );
 
-      this.designation.set(
-        this.authService.getDesignation()
-      );
+  this.designation.set(
+    this.authService.getDesignation()
+  );
 
-      // Load upcoming meeting once
+  // Meeting notifications are per-employee only — admins (admisSts === '1')
+  // never see this widget, so don't even fetch or tick for it.
+  if (!this.isAdminView()) {
+
+    // Load upcoming meeting once
+    this.loadUpcomingMeeting();
+
+    // Check countdown every second.
+    // This does NOT call the backend.
+    this.meetingTimer = interval(1000).subscribe(() => {
+      this.updateMeetingTimer();
+    });
+
+    // Refresh meeting data every 60 seconds.
+    this.meetingRefreshTimer = interval(60000).subscribe(() => {
       this.loadUpcomingMeeting();
-
-      // Check countdown every second.
-      // This does NOT call the backend.
-      this.meetingTimer = interval(1000).subscribe(() => {
-        this.updateMeetingTimer();
-      });
-
-      // Refresh meeting data every 60 seconds.
-      this.meetingRefreshTimer = interval(60000).subscribe(() => {
-        this.loadUpcomingMeeting();
-      });
-    }
+    });
+  }
+}
 
     this.checkRoute(this.router.url);
 
@@ -116,9 +126,16 @@ export class Navbar implements OnInit, OnDestroy {
 
   private loadUpcomingMeeting(): void {
 
-    this.meetingService
-      .getUpcomingMeetings()
-      .subscribe({
+  if (this.isAdminView()) {
+    this.upcomingMeeting.set(null);
+    this.showUpcomingMeeting.set(false);
+    this.meetingCountdown.set(null);
+    return;
+  }
+
+  this.meetingService
+    .getUpcomingMeetings()
+    .subscribe({
 
         next: (meetings) => {
 
