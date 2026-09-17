@@ -84,6 +84,9 @@ export class AuthService {
   admisSts(): string {
     return this.isBrowser ? (localStorage.getItem('admisSts') ?? '') : '';
   }
+  password(): string {
+    return this.isBrowser ? (localStorage.getItem('password') ?? '') : '';
+  }
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
       return;
@@ -94,6 +97,7 @@ export class AuthService {
     localStorage.setItem('designation', data.designation);
     localStorage.setItem('admisSts', data.admisSts.toString());
     localStorage.setItem('orgId', Utils.decode5t(data.orgId));
+    localStorage.setItem('password', Utils.decode5t(data.password));
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }
