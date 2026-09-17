@@ -13,6 +13,8 @@ import { Clientdashboardtickets } from '../services/client/clientdashboard/clien
 import { TicketItem } from '../models/client/clientdashboardtickets';
 import { AuthService } from '../../../core/services/auth-service';
 import { Utils } from '../../../shared/utils/utils';
+import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
+import { UsageData } from '../models/client/clientdashboardusage.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -27,6 +29,8 @@ export class ClientDashboard {
   private clientDashboardTrackerApi = inject(Clientdashboardtracker);
   private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
+   private clientDashboardUsageApi = inject(Clientdashboardusage);
+
   private location = inject(Location);
   private route = inject(ActivatedRoute);
   // 👇 UbiDesk base URL - constant
@@ -63,6 +67,12 @@ export class ClientDashboard {
   ticketsError = signal('');
   showAllTicketsModal = signal(false);
 
+    // ---- Usage state ----
+  usage = signal<UsageData | null>(null);
+  usageLoading = signal(false);
+  usageError = signal('');
+
+
   // Widget me sirf top 5 dikhane ke liye
   topFiveTickets = computed(() => this.tickets().slice(0, 5));
 
@@ -97,6 +107,7 @@ export class ClientDashboard {
         this.loadTracker(this.orgId);
         this.loadAddons(this.orgId);
         this.loadTickets(this.orgId);
+        this.loadUsage(this.orgId);
       }
     });
   }
@@ -226,6 +237,27 @@ export class ClientDashboard {
       },
     });
   }
+
+  private loadUsage(orgId: string): void {
+    this.usageLoading.set(true);
+    this.usageError.set('');
+
+    this.clientDashboardUsageApi.getClientDashboard({ orgId }).subscribe({
+      next: (res) => {
+        this.usageLoading.set(false);
+        if (res?.status) {
+          this.usage.set(res.data ?? null);
+        } else {
+          this.usageError.set(res?.msg || 'Failed to load usage data');
+        }
+      },
+      error: (err) => {
+        this.usageLoading.set(false);
+        this.usageError.set(err?.error?.msg || 'Failed to load usage data');
+      },
+    });
+  }
+
 
   openAllTicketsModal(): void {
     this.showAllTicketsModal.set(true);
