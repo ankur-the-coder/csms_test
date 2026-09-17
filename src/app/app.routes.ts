@@ -52,7 +52,7 @@ export const routes: Routes = [
     component: Layout,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'voice', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
       { path: 'dashboard', component: DashboardComponent },
       { path: 'implementation', component: Implementation },
@@ -60,7 +60,7 @@ export const routes: Routes = [
 
 
 
-      { path: 'dashboard', component: DashboardComponent },
+      // { path: 'dashboard', component: DashboardComponent },
       { path: 'implementation', component: Implementation },
       { path: 'training', component: Training },
       { path: 'onboarding', component: Dashboard },
