@@ -13,6 +13,6 @@ export interface Data {
   contactPerson: string,
   email: string,
   phone: string,
-  // ticketCount: Number,
+  module: string,
   useSts: string,
 }

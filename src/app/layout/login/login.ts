@@ -69,7 +69,7 @@ export class Login {
         if (res.status === true) {
 
           this.toastr.success('Logged in successfully.', 'Success');
-          this.router.navigate(['/voice']);
+          this.router.navigate(['/dashboard']);
         } else {
           this.toastr.error(res.msg || 'Failed to login.', 'Error');
           this.errorMessage.set(

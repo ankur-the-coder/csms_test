@@ -18,7 +18,7 @@ export interface ClientRow {
   contactPerson: string,
   email: string,
   phone: string,
-  // ticketCount: Number,
+  module: string,
   useSts: string,
 }
 
@@ -29,7 +29,7 @@ export interface ClientRow {
   styleUrl: './usages.css',
 })
 export class Usages {
-private readonly authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   private clientApi = inject(DashboardService);
   private readonly apiUrl = environment.apiUrl;
   private route = inject(ActivatedRoute);
@@ -69,7 +69,7 @@ private readonly authService = inject(AuthService);
       orgId: raw.orgId,
       client: raw.client,
       useSts: raw.useSts,
-
+      module: raw.module,
 
       // createdDate: string,
       contactPerson: raw.contactPerson,
@@ -142,8 +142,8 @@ private readonly authService = inject(AuthService);
         { key: 'phone', label: 'Phone', sortable: false, },
         { key: 'email', label: 'Email', sortable: true },
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'useSts', label: 'user Status', sortable: false },
-        // { key: 'supportOwner', label: 'Support Owner', sortable: false },
+        // { key: 'useSts', label: 'user Status', sortable: false },
+        { key: 'module', label: 'module', sortable: false },
         // { key: 'progress', label: 'Implementation', sortable: false },
       ] as SmartColumn<ClientRow>[],
 
@@ -177,7 +177,7 @@ private readonly authService = inject(AuthService);
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
-            toDate,orgId:Utils.encode5t(this.authService.getOrgId().toString()),
+            toDate, orgId: Utils.encode5t(this.authService.getOrgId().toString()),
           };
 
           return { method: 'POST' as const, body };
