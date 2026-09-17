@@ -60,6 +60,9 @@ export class AuthService {
     localStorage.removeItem('isLoggedIn');
     // localStorage.removeItem('lang');
     localStorage.removeItem('password');
+    localStorage.removeItem('email');
+    localStorage.removeItem('phone');
+
     localStorage.removeItem('admisSts');
     // localStorage.removeItem('ubi-theme');
     localStorage.removeItem('orgId');
@@ -87,6 +90,12 @@ export class AuthService {
   password(): string {
     return this.isBrowser ? (localStorage.getItem('password') ?? '') : '';
   }
+  email(): string {
+    return this.isBrowser ? (localStorage.getItem('email') ?? '') : '';
+  }
+  phone(): string {
+    return this.isBrowser ? (localStorage.getItem('phone') ?? '') : '';
+  }
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
       return;
@@ -98,6 +107,8 @@ export class AuthService {
     localStorage.setItem('admisSts', data.admisSts.toString());
     localStorage.setItem('orgId', Utils.decode5t(data.orgId));
     localStorage.setItem('password', Utils.decode5t(data.password));
+    localStorage.setItem('email', Utils.decode5t(data.email));
+    localStorage.setItem('phone', Utils.decode5t(data.phone));
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }
