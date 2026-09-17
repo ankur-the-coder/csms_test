@@ -343,9 +343,13 @@ export class TrainingMaterials implements OnInit {
               const urlToUse = mat.file_url || mat.file_path;
               const ext = (urlToUse || '').split('.').pop()?.toLowerCase() || '';
               const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
+
+              // Use the file name from the URL if available, otherwise fallback to the material title
+               const fileNameFromPath = (urlToUse || '').split('/').pop() || mat.title;
+
               return {
                 id: mat.id.toString(),
-                name: mat.title,
+                name: fileNameFromPath, 
                 size: 'Unknown Size',
                 date: mat.created_at ? mat.created_at.split('T')[0] : '',
                 type: matType,
@@ -375,9 +379,12 @@ export class TrainingMaterials implements OnInit {
             const urlToUse = mat.file_url || mat.file_path;
             const ext = (urlToUse || '').split('.').pop()?.toLowerCase() || '';
             const matType = ext === 'pdf' ? 'PDF' : ['jpg', 'jpeg', 'png'].includes(ext) ? 'IMAGE' : ext.toUpperCase();
+
+            // Use the file name from the URL if available, otherwise fallback to the material title
+            const fileNameFromPath = (urlToUse || '').split('/').pop() || mat.title;
             return {
               id: mat.id.toString(),
-              name: mat.title,
+              name: fileNameFromPath,
               size: 'Unknown Size',
               date: mat.created_at ? mat.created_at.split('T')[0] : '',
               type: matType,

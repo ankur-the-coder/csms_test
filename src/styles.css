@@ -548,10 +548,10 @@ main {
   position: relative;
 }
 
-*:focus-visible {
+/* *:focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;
-}
+} */
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -783,4 +783,13 @@ main {
     background: var(--info-subtle);
     color: var(--info-text);
   }
+}
+
+input[name="mail-recipient-field"],
+input[name="mail-recipient-field"]:focus,
+input[name="mail-recipient-field"]:focus-visible {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }

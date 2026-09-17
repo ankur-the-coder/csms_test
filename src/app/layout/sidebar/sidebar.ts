@@ -23,6 +23,7 @@ export const csNavItems: NavItem[] = [
   // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
+  // { id: 'renewal', label: 'Renewal Plans', icon: 'renewal', route: '/renewal' },
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
   // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
   // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
@@ -44,7 +45,7 @@ export class Sidebar {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'voice';
+  @Input() activeNav = 'dashboard';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
@@ -89,6 +90,7 @@ export class Sidebar {
       support: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>`,
       settings: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
       connected: `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 512"><circle fill="currentColor" transform="rotate(45 -181.019 437.02) scale(3.28877)" r="77.84"/><path fill="#fff" d="m162.27 317.75-30.92 30.65 39.62 39.61 31.29-31.03c69.87 57.6 131.69-3.38 177.78-49.48L357.55 285l49.47-49.45c8.33-8.33 8.33-21.98 0-30.32-8.34-8.34-21.99-8.33-30.32 0l-49.46 49.46-63.1-63.09 49.46-49.47c8.34-8.33 8.34-21.98 0-30.31-8.34-8.34-21.98-8.34-30.32 0l-49.46 49.46-21.69-21.7c-47.36 47.36-106.64 105.87-49.86 178.17z"/></svg>`,
+      renewal: `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 512"><circle fill="currentColor" transform="rotate(45 -181.019 437.02) scale(3.28877)" r="77.84"/><path fill="#fff" d="m162.27 317.75-30.92 30.65 39.62 39.61 31.29-31.03c69.87 57.6 131.69-3.38 177.78-49.48L357.55 285l49.47-49.45c8.33-8.33 8.33-21.98 0-30.32-8.34-8.34-21.99-8.33-30.32 0l-49.46 49.46-63.1-63.09 49.46-49.47c8.34-8.33 8.34-21.98 0-30.31-8.34-8.34-21.98-8.34-30.32 0l-49.46 49.46-21.69-21.7c-47.36 47.36-106.64 105.87-49.86 178.17z"/></svg>`,
       feedback:`
       <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M8.24999 18L5.24999 20.25V15.75H2.25C1.85217 15.75 1.47064 15.5919 1.18934 15.3106C0.908034 15.0293 0.749999 14.6478 0.749999 14.25V2.25C0.749999 1.85217 0.908034 1.47064 1.18934 1.18934C1.47064 0.908034 1.85217 0.749999 2.25 0.749999H18.75C19.1478 0.749999 19.5293 0.908034 19.8106 1.18934C20.0919 1.47064 20.25 1.85217 20.25 2.25V6.71484" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
