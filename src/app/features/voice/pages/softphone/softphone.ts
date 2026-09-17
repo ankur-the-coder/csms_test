@@ -81,7 +81,12 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
   toggleCountryDropdown(): void {
     this.countryDropdownOpen = !this.countryDropdownOpen;
     this.countryHighlightIndex = -1;
-    if (!this.countryDropdownOpen) this.countrySearchTerm = '';
+    if (this.countryDropdownOpen) {
+      this.contactPickerOpen = false;
+      this.recentCallsDropdownOpen = false;
+    } else {
+      this.countrySearchTerm = '';
+    }
   }
 
   selectCountry(iso2: string): void {
@@ -134,18 +139,6 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // Closes the country dropdown on any click outside its own trigger/panel --
-  // same click-outside pattern the shared SingleInput component uses.
-  @HostListener('document:click', ['$event'])
-  onDocumentClickForCountryDropdown(event: MouseEvent): void {
-    if (!this.countryDropdownOpen) return;
-    const el = this.countryPickerRef?.nativeElement;
-    if (el && !el.contains(event.target as Node)) {
-      this.countryDropdownOpen = false;
-      this.countrySearchTerm = '';
-    }
-  }
-
   /** Open/closed state for the phone-number field's client/contact picker popover. */
   contactPickerOpen = false;
   @ViewChild('contactPickerRef') contactPickerRef?: ElementRef<HTMLElement>;
@@ -154,6 +147,8 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
     this.contactPickerOpen = !this.contactPickerOpen;
     this.contactHighlightIndex = -1;
     if (this.contactPickerOpen) {
+      this.countryDropdownOpen = false;
+      this.recentCallsDropdownOpen = false;
       // Show a starting set of clients so the popover isn't empty on first open.
       this.voiceService.fetchAdminClients(this.clientSearch);
     }
@@ -190,14 +185,33 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // Closes the contact picker on any click outside its own trigger/panel --
-  // same click-outside pattern the country dropdown above uses.
+  // Closes any open dropdown (country picker, contact picker, recent calls)
+  // on any click outside its respective trigger/panel container.
   @HostListener('document:click', ['$event'])
-  onDocumentClickForContactPicker(event: MouseEvent): void {
-    if (!this.contactPickerOpen) return;
-    const el = this.contactPickerRef?.nativeElement;
-    if (el && !el.contains(event.target as Node)) {
-      this.contactPickerOpen = false;
+  onDocumentClickOutside(event: MouseEvent): void {
+    const target = event.target as Node;
+    if (!target) return;
+
+    if (this.countryDropdownOpen) {
+      const el = this.countryPickerRef?.nativeElement;
+      if (el && !el.contains(target)) {
+        this.countryDropdownOpen = false;
+        this.countrySearchTerm = '';
+      }
+    }
+
+    if (this.contactPickerOpen) {
+      const el = this.contactPickerRef?.nativeElement;
+      if (el && !el.contains(target)) {
+        this.contactPickerOpen = false;
+      }
+    }
+
+    if (this.recentCallsDropdownOpen) {
+      const el = this.recentCallsPickerRef?.nativeElement;
+      if (el && !el.contains(target)) {
+        this.recentCallsDropdownOpen = false;
+      }
     }
   }
 
@@ -466,6 +480,9 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
 
     // Fetch recent outbound calls for the quick-access strip
     this.voiceService.fetchRecentCalls();
+
+    // Fetch Telnyx balance from backend proxy (API key stays on the server)
+    this.voiceService.fetchTelnyxBalance();
   }
 
   ngAfterViewInit(): void {
@@ -528,16 +545,9 @@ export class Softphone implements OnInit, AfterViewInit, OnDestroy {
 
   toggleRecentCallsDropdown(): void {
     this.recentCallsDropdownOpen = !this.recentCallsDropdownOpen;
-  }
-
-  // Closes the recent-calls dropdown on any click outside its own
-  // trigger/panel -- same click-outside pattern as the pickers above.
-  @HostListener('document:click', ['$event'])
-  onDocumentClickForRecentCallsDropdown(event: MouseEvent): void {
-    if (!this.recentCallsDropdownOpen) return;
-    const el = this.recentCallsPickerRef?.nativeElement;
-    if (el && !el.contains(event.target as Node)) {
-      this.recentCallsDropdownOpen = false;
+    if (this.recentCallsDropdownOpen) {
+      this.countryDropdownOpen = false;
+      this.contactPickerOpen = false;
     }
   }
 
