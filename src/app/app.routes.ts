@@ -52,29 +52,29 @@ export const routes: Routes = [
     component: Layout,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: '', redirectTo: 'voice', pathMatch: 'full' },
 
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'implementation', component: Implementation },
-      { path: 'training', component: Training },
+      // { path: 'dashboard', component: DashboardComponent },
+      // { path: 'implementation', component: Implementation },
+      // { path: 'training', component: Training },
 
 
 
       // { path: 'dashboard', component: DashboardComponent },
-      { path: 'implementation', component: Implementation },
-      { path: 'training', component: Training },
-      { path: 'onboarding', component: Dashboard },
+      // { path: 'implementation', component: Implementation },
+      // { path: 'training', component: Training },
+      // { path: 'onboarding', component: Dashboard },
 
-      { path: 'add-onboarding', component: AddOnboarding },
+      // { path: 'add-onboarding', component: AddOnboarding },
 
 
-      { path: 'meetings', component: MeetingsComponent },
-      { path: 'client', component: Client },
+      // { path: 'meetings', component: MeetingsComponent },
+      // { path: 'client', component: Client },
 
-      { path: 'feedback', component: Feedback },
-      { path: 'connected', component: Connected },
-      { path: 'usages', component: Usages },
-      { path: 'renewal', component: RenewalComponent },
+      // { path: 'feedback', component: Feedback },
+      // { path: 'connected', component: Connected },
+      // { path: 'usages', component: Usages },
+      // { path: 'renewal', component: RenewalComponent },
       {
         path: 'voice',
         component: VoiceShell,

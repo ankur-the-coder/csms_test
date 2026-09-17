@@ -88,6 +88,12 @@ export class WebRtcVoiceService {
 
   readonly callAnnouncement = signal<string>('');
 
+  // ── Telnyx Balance ──────────────────────────────────────────────────────
+  /** Live Telnyx available_credit, formatted as a dollar string (e.g. "12.34"). Null until first fetch. */
+  readonly telnyxBalance = signal<string | null>(null);
+  readonly telnyxBalanceLoading = signal<boolean>(false);
+  readonly telnyxBalanceError = signal<string | null>(null);
+
   // ── Private State ───────────────────────────────────────────────────────
   private telnyxClient: TelnyxRTC | null = null;
   private activeRTCCall: any = null;          // TelnyxRTC Call instance
@@ -401,7 +407,7 @@ export class WebRtcVoiceService {
       params.set('page', '1');
       params.set('limit', String(rowFetchLimit));
       params.set('direction', 'outbound');
-       const isAdmin = localStorage.getItem('is_admin') === '1';
+       const isAdmin = localStorage.getItem('admisSts') == '1';
   if (!isAdmin) {
     const empId = localStorage.getItem('empId');
     if (empId) params.set('userId', empId);
@@ -1020,7 +1026,7 @@ export class WebRtcVoiceService {
   private async logOutboundCallToBackend(toNumber: string, fromNumber: string): Promise<void> {
     try {
         const empId = localStorage.getItem('empId');
-      const res = await fetch(`http://127.0.0.1:5000/api/voice/log-outbound`, {
+      const res = await fetch(`${this.API_BASE}/log-outbound`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to_number: toNumber, from_number: fromNumber, user_id: empId, }),
@@ -1604,9 +1610,53 @@ export class WebRtcVoiceService {
     this.activeCall.set(null);
   }
 
+
   formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
+
+ 
+  async fetchTelnyxBalance(): Promise<void> {
+    if (this.telnyxBalanceLoading()) return; // prevent duplicate concurrent requests
+    this.telnyxBalanceLoading.set(true);
+    this.telnyxBalanceError.set(null);
+    try {
+      const res = await fetch(`${this.API_BASE}/balance`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as any).message || (body as any).error || `HTTP ${res.status}`);
+      }
+      const json = await res.json() as {
+        status?: boolean;
+        message?: string;
+        error?: string;
+        data?: {
+          balance?: string | number;
+          availableCredit?: string | number;
+          currency?: string;
+          creditLimit?: string | number;
+        };
+        balance?: string | number;
+      };
+      if (json.status === false || json.error) {
+        throw new Error(json.message || json.error || 'Failed to fetch balance');
+      }
+      const raw = json.data?.availableCredit ?? json.data?.balance ?? json.balance;
+      if (raw !== undefined && raw !== null && raw !== '') {
+        // Format to 2 decimal places (e.g. "10.47")
+        const num = typeof raw === 'number' ? raw : parseFloat(String(raw));
+        this.telnyxBalance.set(isNaN(num) ? String(raw) : num.toFixed(2));
+      } else {
+        this.telnyxBalance.set(null);
+      }
+    } catch (err: any) {
+      this.telnyxBalanceError.set(err?.message || 'Failed to fetch balance');
+      this.telnyxBalance.set(null);
+    } finally {
+      this.telnyxBalanceLoading.set(false);
+    }
+  }
 }
+
