@@ -83,6 +83,55 @@
         </svg>
       </div> -->
     </div>
+    <!-- Meeting Pending -->
+
+    <div (click)="navigateToPendingMeetings()" class="group cursor-pointer rounded-2xl border border-amber-200
+             bg-gradient-to-br from-amber-50 to-white p-5
+             transition-all duration-300
+             hover:-translate-y-1 hover:border-amber-400
+             hover:shadow-lg hover:shadow-amber-500/10">
+      <div class="flex items-start justify-between">
+
+        <div>
+          <p class="text-sm font-medium text-slate-500">
+            Meeting Pending
+          </p>
+
+          <p class="mt-2 text-3xl font-bold text-slate-900">
+            {{ cardData().meetingPending }}
+          </p>
+        </div>
+
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl
+                 bg-amber-100 text-amber-600
+                 transition-transform duration-300
+                 group-hover:scale-110">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0
+                 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-amber-600">
+        <span>View meetings</span>
+
+        <svg
+          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </div> -->
+    </div>
 
 
     <!-- Usages -->
@@ -135,55 +184,6 @@
     </div>
 
 
-    <!-- Meeting Pending -->
-
-    <div (click)="navigateToPendingMeetings()" class="group cursor-pointer rounded-2xl border border-amber-200
-             bg-gradient-to-br from-amber-50 to-white p-5
-             transition-all duration-300
-             hover:-translate-y-1 hover:border-amber-400
-             hover:shadow-lg hover:shadow-amber-500/10">
-      <div class="flex items-start justify-between">
-
-        <div>
-          <p class="text-sm font-medium text-slate-500">
-            Meeting Pending
-          </p>
-
-          <p class="mt-2 text-3xl font-bold text-slate-900">
-            {{ cardData().meetingPending }}
-          </p>
-        </div>
-
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl
-                 bg-amber-100 text-amber-600
-                 transition-transform duration-300
-                 group-hover:scale-110">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0
-                 9 9 0 0118 0z" />
-          </svg>
-        </div>
-
-      </div>
-
-      <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-amber-600">
-        <span>View meetings</span>
-
-        <svg
-          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div> -->
-    </div>
 
 
     <!-- Renewal -->
@@ -197,7 +197,7 @@
 
         <div>
           <p class="text-sm font-medium text-slate-500">
-            Renewal
+            Renewed Clients
           </p>
 
           <p class="mt-2 text-3xl font-bold text-slate-900">
@@ -245,17 +245,17 @@
        DASHBOARD CHARTS
        ========================================================= -->
 
-  <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
 
     <!-- Connected -->
 
-    <div class="min-w-0">
+    <!-- <div class="min-w-0">
       <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
         [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
         [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
         [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()" [yAxisTitle]="'Connected Count'">
       </app-charts>
-    </div>
+    </div> -->
 
 
     <!-- Usages -->
