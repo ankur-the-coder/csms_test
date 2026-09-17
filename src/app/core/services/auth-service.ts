@@ -11,7 +11,7 @@ import { Utils } from '../../shared/utils/utils';
 export class AuthService {
   private readonly baseUrl = environment.apiUrl;
   readonly isLoggedIn = signal<boolean>(this.readStoredLogin());
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private get isBrowser(): boolean {
     return typeof window !== 'undefined';
@@ -37,7 +37,7 @@ export class AuthService {
 
   login(userName: string, password: string): Observable<LoginResponse> {
     const payload = new FormData();
-     payload.append('userName', Utils.encode5t(userName));
+    payload.append('userName', Utils.encode5t(userName));
     payload.append('password', Utils.encode5t(password));
 
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload).pipe(
@@ -60,7 +60,7 @@ export class AuthService {
     localStorage.removeItem('isLoggedIn');
     // localStorage.removeItem('lang');
     localStorage.removeItem('password');
-    // localStorage.removeItem('ubi-mode');
+    localStorage.removeItem('admisSts');
     // localStorage.removeItem('ubi-theme');
     localStorage.removeItem('orgId');
     this.isLoggedIn.set(false);
@@ -81,6 +81,12 @@ export class AuthService {
   getOrgId(): string {
     return this.isBrowser ? (localStorage.getItem('orgId') ?? '') : '';
   }
+  admisSts(): string {
+    return this.isBrowser ? (localStorage.getItem('admisSts') ?? '') : '';
+  }
+  password(): string {
+    return this.isBrowser ? (localStorage.getItem('password') ?? '') : '';
+  }
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
       return;
@@ -89,7 +95,9 @@ export class AuthService {
     localStorage.setItem('userName', data.userName);
     localStorage.setItem('empId', Utils.decode5t(data.empId));
     localStorage.setItem('designation', data.designation);
+    localStorage.setItem('admisSts', data.admisSts.toString());
     localStorage.setItem('orgId', Utils.decode5t(data.orgId));
+    localStorage.setItem('password', Utils.decode5t(data.password));
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }
