@@ -29,7 +29,7 @@ export class ClientDashboard {
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
-   // 👇 UbiDesk base URL - constant
+  // 👇 UbiDesk base URL - constant
   private readonly UBIDESK_BASE_URL = 'https://ubidesk.ubitechsolutions.com';
 
   orgName = '';
@@ -101,21 +101,22 @@ export class ClientDashboard {
     });
   }
 
-   private buildUbiDeskBase(): string {
-    const u = Utils.encode5t(this.authService.getUserName());
+  private buildUbiDeskBase(): string {
+    const u = Utils.encode5t(this.authService.email());
     const p = Utils.encode5t(this.authService.password());
     return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
   }
 
-
-    /** Ek particular ticket ka UbiDesk link */
+  /** Ek particular ticket ka UbiDesk link */
   getTicketUrl(ticketId: string | number): string {
     return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
   }
 
-   getOrgTicketsUrl(): string {
-    const encodedOrgId = Utils.encode5t(this.orgId);
-    return `${this.buildUbiDeskBase()}/org/${encodedOrgId}`;
+  getOrgTicketsUrl(): string {
+    if (!this.orgId) {
+      return '#';
+    }
+    return `${this.buildUbiDeskBase()}/org/${this.orgId}`;
   }
 
   openTicketInUbiDesk(ticketId: string | number): void {
