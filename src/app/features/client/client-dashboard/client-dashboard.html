@@ -656,7 +656,7 @@
         <h2 class="text-[15px] font-bold">Recent Support Tickets</h2>
 
         <a
-          *ngIf="hasMoreTickets()"
+          *ngIf="!ticketsLoading() && tickets().length > 0"
           (click)="openOrgTicketsInUbiDesk()"
           class="text-blue-500 text-xs font-semibold cursor-pointer"
           >View All</a
