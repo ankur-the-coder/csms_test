@@ -657,7 +657,7 @@
 
         <a
           *ngIf="hasMoreTickets()"
-          (click)="openAllTicketsModal()"
+          (click)="openOrgTicketsInUbiDesk()"
           class="text-blue-500 text-xs font-semibold cursor-pointer"
           >View All</a
         >
@@ -683,7 +683,12 @@
             </svg>
           </span>
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold m-0">#{{ ticket.ticketUid }}</p>
+            <a
+              (click)="openTicketInUbiDesk(ticket.ticketUid)"
+              class="text-xs font-semibold m-0 text-blue-600 hover:underline cursor-pointer block"
+            >
+              #{{ ticket.ticketUid }}
+            </a>
             <p class="text-[11px] text-slate-400 m-0 truncate">{{ ticket.subject }}</p>
           </div>
           <span
