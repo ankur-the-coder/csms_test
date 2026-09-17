@@ -14,16 +14,16 @@ export interface NavItem {
 
 
 export const csNavItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-  { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+  // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+  // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
-  { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-  { id: 'training', label: 'Training', icon: 'training', route: '/training' },
-  { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
+  // { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
+  // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+  // { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
-  { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+  // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
-  { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
+  // { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
   // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
   // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
@@ -45,7 +45,7 @@ export class Sidebar {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'dashboard';
+  @Input() activeNav = 'voice';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
