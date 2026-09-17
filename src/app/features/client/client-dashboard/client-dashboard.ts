@@ -11,6 +11,8 @@ import { Clientdashboardaddons } from '../services/client/clientdashboard/client
 import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
 import { TicketItem } from '../models/client/clientdashboardtickets';
+import { AuthService } from '../../../core/services/auth-service';
+import { Utils } from '../../../shared/utils/utils';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -19,6 +21,7 @@ import { TicketItem } from '../models/client/clientdashboardtickets';
   styleUrl: './client-dashboard.css',
 })
 export class ClientDashboard {
+  private authService = inject(AuthService);
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
   private clientDashboardTrackerApi = inject(Clientdashboardtracker);
@@ -26,6 +29,8 @@ export class ClientDashboard {
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
+   // 👇 UbiDesk base URL - constant
+  private readonly UBIDESK_BASE_URL = 'https://ubidesk.ubitechsolutions.com';
 
   orgName = '';
   orgId: string | null = null;
@@ -94,6 +99,31 @@ export class ClientDashboard {
         this.loadTickets(this.orgId);
       }
     });
+  }
+
+   private buildUbiDeskBase(): string {
+    const u = Utils.encode5t(this.authService.getUserName());
+    const p = Utils.encode5t(this.authService.password());
+    return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
+  }
+
+
+    /** Ek particular ticket ka UbiDesk link */
+  getTicketUrl(ticketId: string | number): string {
+    return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
+  }
+
+   getOrgTicketsUrl(): string {
+    const encodedOrgId = Utils.encode5t(this.orgId);
+    return `${this.buildUbiDeskBase()}/org/${encodedOrgId}`;
+  }
+
+  openTicketInUbiDesk(ticketId: string | number): void {
+    window.open(this.getTicketUrl(ticketId), '_blank');
+  }
+
+  openOrgTicketsInUbiDesk(): void {
+    window.open(this.getOrgTicketsUrl(), '_blank');
   }
 
   private loadDashboard(orgId: string): void {
