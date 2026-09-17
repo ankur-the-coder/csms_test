@@ -23,7 +23,7 @@ export const csNavItems: NavItem[] = [
   { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
-  // { id: 'renewal', label: 'Renewal Plans', icon: 'renewal', route: '/renewal' },
+  { id: 'renewal', label: 'Renewal Plans', icon: 'renewal', route: '/renewal' },
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
   // { id: 'health', label: 'Health Score', icon: 'health', route: '/health' },
   // { id: 'support', label: 'Support Tickets', icon: 'support', route: '/support' },
