@@ -731,7 +731,7 @@ export class DashboardComponent implements OnInit {
 
   navigateToRenewable(): void {
     this.router.navigate(
-      ['/client'],
+      ['/renewal'],
       {
         queryParams: {
           ...this.dateQueryParams(),
