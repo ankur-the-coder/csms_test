@@ -150,7 +150,7 @@ export class DashboardComponent implements OnInit {
 
     this.fetchDashboardCards(from, to, orgId, userId);
     this.fetchFeedbackChart(from, to, orgId, userId);
-    this.fetchConnectedChart(from, to, orgId, userId);
+    // this.fetchConnectedChart(from, to, orgId, userId);
     this.fetchUsagesChart(from, to, orgId, userId);
   }
 
