@@ -19,7 +19,7 @@ export const csNavItems: NavItem[] = [
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
 
   { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-  { id: 'training', label: 'Help guide', icon: 'training', route: '/training' },
+  { id: 'training', label: 'Help & Guide', icon: 'training', route: '/training' },
   { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
@@ -49,7 +49,7 @@ export class Sidebar {
   private sanitizer = inject(DomSanitizer);
   private router = inject(Router);
 
-  @Input() activeNav = 'voice';
+  @Input() activeNav = 'dashboard';
   @Input() mobileOpen = false;
   @Output() navChange = new EventEmitter<string>();
   @Output() closeMobile = new EventEmitter<void>();
