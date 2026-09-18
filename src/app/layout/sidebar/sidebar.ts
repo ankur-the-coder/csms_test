@@ -20,8 +20,8 @@ export const csNavItems: NavItem[] = [
 
   { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
   { id: 'helpguide', label: 'Help Guide', icon: 'training', route: '/help-guide' },
-  { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
-  { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
+  { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
+  // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
 
