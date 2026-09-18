@@ -15,6 +15,8 @@ import { AuthService } from '../../../core/services/auth-service';
 import { Utils } from '../../../shared/utils/utils';
 import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
 import { UsageData } from '../models/client/clientdashboardusage.model';
+import { Clientimplementation } from '../services/client/clientdashboard/clientimplementation';
+import { ClientImplementationData, ImplementationModule } from '../models/client/clientimplementation.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -29,7 +31,8 @@ export class ClientDashboard {
   private clientDashboardTrackerApi = inject(Clientdashboardtracker);
   private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
-   private clientDashboardUsageApi = inject(Clientdashboardusage);
+  private clientDashboardUsageApi = inject(Clientdashboardusage);
+  private clientImplementationApi = inject(Clientimplementation);
 
   private location = inject(Location);
   private route = inject(ActivatedRoute);
@@ -42,6 +45,48 @@ export class ClientDashboard {
   dashboardData = signal<ClientDashboardData | null>(null);
   loading = signal(false);
   errorMsg = signal('');
+
+  // ---- Implementation state ----
+  implementationData = signal<ClientImplementationData | null>(null);
+  implementationLoading = signal(false);
+  implementationError = signal('');
+  selectedModuleTab = signal<string>('all');
+  showAllTrackerDrawer = signal(false);
+
+  implementationModules = computed<ImplementationModule[]>(() => {
+    return this.implementationData()?.modules ?? [];
+  });
+
+  displayTrackerModules = computed<ImplementationModule[]>(() => {
+    const tab = this.selectedModuleTab();
+    const modules = this.implementationModules();
+    if (tab === 'all') {
+      return modules;
+    }
+    return modules.filter((m) => m.key === tab);
+  });
+
+  overallImplementationProgress = computed(() => {
+    return this.implementationData()?.overallProgress ?? { approved: 0, total: 0, percentage: 0 };
+  });
+
+  implementationHealth = computed(() => {
+    return this.implementationData()?.health ?? 'Neutral';
+  });
+
+  ringPercentage = computed(() => {
+    if (this.overallImplementationProgress().total > 0) {
+      return this.overallImplementationProgress().percentage;
+    }
+    return this.dashboardData()?.implementationProgress?.percentage ?? 0;
+  });
+
+  ringLabel = computed(() => {
+    if (this.overallImplementationProgress().total > 0) {
+      return `${this.overallImplementationProgress().approved} of ${this.overallImplementationProgress().total} completed`;
+    }
+    return this.dashboardData()?.implementationProgress?.label ?? '0 of 0 completed';
+  });
 
   // ---- Tracker state ----
   tracker = signal<TrackerItem[]>([]);
@@ -66,6 +111,7 @@ export class ClientDashboard {
   ticketsLoading = signal(false);
   ticketsError = signal('');
   showAllTicketsModal = signal(false);
+  ticketFilterDays = signal<number>(28);
 
     // ---- Usage state ----
   usage = signal<UsageData | null>(null);
@@ -108,6 +154,7 @@ export class ClientDashboard {
         this.loadAddons(this.orgId);
         this.loadTickets(this.orgId);
         this.loadUsage(this.orgId);
+        this.loadImplementation(this.orgId);
       }
     });
   }
@@ -218,11 +265,11 @@ export class ClientDashboard {
     });
   }
 
-  private loadTickets(orgId: string): void {
+  private loadTickets(orgId: string, days: number = this.ticketFilterDays()): void {
     this.ticketsLoading.set(true);
     this.ticketsError.set('');
 
-    this.clientDashboardTicketsApi.getClientDashboard({ orgId }).subscribe({
+    this.clientDashboardTicketsApi.getClientDashboard({ orgId, days }).subscribe({
       next: (res) => {
         this.ticketsLoading.set(false);
         if (res?.status) {
@@ -236,6 +283,13 @@ export class ClientDashboard {
         this.ticketsError.set(err?.error?.msg || 'Failed to load tickets');
       },
     });
+  }
+
+  setTicketFilterDays(days: number): void {
+    this.ticketFilterDays.set(days);
+    if (this.orgId) {
+      this.loadTickets(this.orgId, days);
+    }
   }
 
   private loadUsage(orgId: string): void {
@@ -403,6 +457,65 @@ export class ClientDashboard {
   // tab_sts === 1 has a green tick, otherwise gray circle
   isModuleComplete(item: TrackerItem): boolean {
     return item.tab_sts === 1;
+  }
+
+  private loadImplementation(orgId: string): void {
+    this.implementationLoading.set(true);
+    this.implementationError.set('');
+
+    this.clientImplementationApi.getOrgImplementation({ orgId }).subscribe({
+      next: (res) => {
+        this.implementationLoading.set(false);
+        if (res?.status && res?.data) {
+          this.implementationData.set(res.data);
+        } else {
+          this.implementationError.set(res?.msg || 'Failed to load implementation data');
+        }
+      },
+      error: (err) => {
+        this.implementationLoading.set(false);
+        this.implementationError.set(err?.error?.msg || 'Failed to load implementation data');
+      },
+    });
+  }
+
+  openAllTrackerDrawer(): void {
+    this.showAllTrackerDrawer.set(true);
+  }
+
+  closeAllTrackerDrawer(): void {
+    this.showAllTrackerDrawer.set(false);
+  }
+
+  selectModuleTab(tabKey: string): void {
+    this.selectedModuleTab.set(tabKey);
+  }
+
+  formatDate(isoDate: string | null | undefined): string {
+    if (!isoDate) return '-';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return String(isoDate);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  getHealthBadgeClasses(health: string): string {
+    switch (health) {
+      case 'Good':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Excellent':
+        return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'Neutral':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Risk':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
+  }
+
+  getInitials(name: string): string {
+    if (!name) return 'MP';
+    return name.split(' ').map((p) => p.charAt(0)).join('').slice(0, 2).toUpperCase();
   }
 
   goBack(): void {

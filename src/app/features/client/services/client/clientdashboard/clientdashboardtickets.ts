@@ -9,6 +9,7 @@ import { ClientDashboardTicketsResponse } from '../../../models/client/clientdas
 
 export interface ClientDashboardTicketsPayload {
   orgId: string;
+  days?: number;
 }
 
 @Injectable({
