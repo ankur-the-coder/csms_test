@@ -717,17 +717,17 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  navigateToPendingMeetings(): void {
-    this.router.navigate(
-      ['/meetings'],
-      {
-        queryParams: {
-          ...this.dateQueryParams(),
-          status: 'pending',
-        },
-      },
-    );
-  }
+  // navigateToPendingMeetings(): void {
+  //   this.router.navigate(
+  //     ['/meeting'],
+  //     {
+  //       queryParams: {
+  //         ...this.dateQueryParams(),
+  //         status: 'pending',
+  //       },
+  //     },
+  //   );
+  // }
 
   navigateToRenewable(): void {
     this.router.navigate(
