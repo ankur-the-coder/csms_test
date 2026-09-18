@@ -14,11 +14,13 @@
       </button>
 
       <div class="min-w-0">
-        <div class="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold tracking-wider text-brand-600 uppercase mb-1 flex-wrap">
-          <span>{{ selectedCourseId() === null ? 'Training Courses' : 'Course Sessions' }}</span>
+        <div
+          class="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold tracking-wider text-brand-600 uppercase mb-1 flex-wrap">
+          <span>{{ selectedCourseId() === null ? 'Help Guide Courses' : 'Course Sessions' }}</span>
           @if (selectedCourseId() !== null) {
           <span class="text-text-muted/50 normal-case font-normal">/</span>
-          <span class="truncate max-w-[120px] sm:max-w-[180px] text-text-muted normal-case font-semibold">{{ selectedCourseTitle() }}</span>
+          <span class="truncate max-w-[120px] sm:max-w-[180px] text-text-muted normal-case font-semibold">{{
+            selectedCourseTitle() }}</span>
           }
         </div>
         <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-text-primary leading-tight tracking-tight truncate">
@@ -49,14 +51,14 @@
       }
     </div>
   </div>
-   
-  <!-- Content Section -->   
+
+  <!-- Content Section -->
   <div class="overflow-hidden p-0 shadow-sm border border-card-border bg-card-bg rounded-2xl min-h-[400px]">
     <div class="p-4 sm:p-5 md:p-6 bg-surface-50/60">
 
       <input #fileInput type="file" (change)="onFileSelected($event)" class="hidden" />
 
-      @if (loading()) { 
+      @if (loading()) {
       <!-- Loading skeleton -->
       <div class="p-3 sm:p-6 space-y-4 animate-pulse">
         <div class="h-8 bg-surface-200 rounded-lg w-1/2 sm:w-1/4"></div>
@@ -235,18 +237,18 @@
             @if (module.video_url && module.safeVideoUrl) {
             <div
               class="relative aspect-video w-full overflow-hidden rounded-lg border border-card-border bg-black shadow-sm cursor-pointer group/media"
-              (click)="openMediaModal('video', module.video_url, module.title)"
-              title="Watch video">
+              (click)="openMediaModal('video', module.video_url, module.title)" title="Watch video">
               <!-- YouTube thumbnail as background -->
-              <img
-                [src]="'https://img.youtube.com/vi/' + extractYoutubeId(module.video_url) + '/hqdefault.jpg'"
+              <img [src]="'https://img.youtube.com/vi/' + extractYoutubeId(module.video_url) + '/hqdefault.jpg'"
                 class="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover/media:scale-105"
                 alt="Video thumbnail" />
               <!-- Dark overlay -->
-              <div class="absolute inset-0 bg-black/30 group-hover/media:bg-black/10 transition-colors duration-200"></div>
+              <div class="absolute inset-0 bg-black/30 group-hover/media:bg-black/10 transition-colors duration-200">
+              </div>
               <!-- Play button -->
               <div class="absolute inset-0 flex items-center justify-center">
-                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/90 shadow-xl flex items-center justify-center group-hover/media:scale-110 transition-transform duration-200">
+                <div
+                  class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/90 shadow-xl flex items-center justify-center group-hover/media:scale-110 transition-transform duration-200">
                   <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
@@ -268,8 +270,8 @@
               </svg>
               <span class="text-xs font-semibold text-text-secondary group-hover/media:text-text-primary transition-colors px-4 text-center line-clamp-1">{{ module.pdfMaterial.name }}</span>
               <span class="text-[10px] text-text-muted">Click to view PDF</span> -->
-              <!-- Hover overlay -->
-              <!-- <div class="absolute inset-0 bg-brand-500/0 group-hover/media:bg-brand-500/5 border-2 border-transparent group-hover/media:border-brand-300 rounded-lg transition-all duration-200"></div>
+            <!-- Hover overlay -->
+            <!-- <div class="absolute inset-0 bg-brand-500/0 group-hover/media:bg-brand-500/5 border-2 border-transparent group-hover/media:border-brand-300 rounded-lg transition-all duration-200"></div>
             </div>
             } -->
 
@@ -340,7 +342,8 @@
               d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <p class="text-sm font-semibold text-text-primary">No sessions found</p>
-          <p class="text-xs text-text-muted mt-1 break-words">No sessions match "{{ searchTerm() }}". Try a different search term.
+          <p class="text-xs text-text-muted mt-1 break-words">No sessions match "{{ searchTerm() }}". Try a different
+            search term.
           </p>
         </div>
         }
@@ -349,17 +352,20 @@
       }
 
     </div> <!-- End Main Content Area -->
-  </div> 
+  </div>
 
 
   <!-- Add / Edit Course Modal -->
   @if (isAddCourseModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-3 sm:px-4 py-6">
-    <div class="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border animate-fade-in">
+    <div
+      class="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border animate-fade-in">
       <div class="mb-6 flex items-start justify-between gap-3">
         <div class="min-w-0">
-          <h2 class="text-base sm:text-lg font-bold text-text-primary">{{ editingCourseId ? 'Edit Course' : 'Add Course' }}</h2>
-          <p class="mt-1 text-sm text-text-muted">{{ editingCourseId ? 'Update the course details.' : 'Create a new training course.' }}</p>
+          <h2 class="text-base sm:text-lg font-bold text-text-primary">{{ editingCourseId ? 'Edit Course' : 'Add Course'
+            }}</h2>
+          <p class="mt-1 text-sm text-text-muted">{{ editingCourseId ? 'Update the course details.' : 'Create a new
+            training course.' }}</p>
         </div>
         <button (click)="closeAddCourseModal()" aria-label="Close dialog"
           class="rounded-full border border-card-border p-2 text-text-muted transition-colors hover:bg-surface-100 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-300">
@@ -410,7 +416,8 @@
   <!-- Upload Material Modal -->
   @if (isUploadModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-3 sm:px-4 py-6">
-    <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border">
+    <div
+      class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border">
       <div class="mb-6 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h2 class="text-base sm:text-lg font-bold text-text-primary">Upload Study Material</h2>
@@ -469,7 +476,8 @@
   <!-- Add / Edit Session Modal -->
   @if (isAddModuleModalOpen) {
   <div class="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 px-3 sm:px-4 py-6">
-    <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border">
+    <div
+      class="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border">
       <div class="mb-6 flex items-start justify-between gap-3">
         <div class="min-w-0">
           <h2 class="text-base sm:text-lg font-bold text-text-primary">
@@ -576,8 +584,7 @@
 <div
   class="fixed inset-0 z-[1400] flex items-center justify-center bg-black/80 backdrop-blur-sm px-3 sm:px-4 py-4 sm:py-6"
   (click)="closeMediaModal()">
-  <div
-    class="relative w-full max-w-5xl max-h-[95vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+  <div class="relative w-full max-w-5xl max-h-[95vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
     (click)="$event.stopPropagation()">
 
     <!-- Modal Header -->
@@ -593,7 +600,7 @@
         } @else {
         <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-500 flex items-center justify-center shrink-0">
           <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/>
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z" />
           </svg>
         </div>
         }
@@ -602,20 +609,18 @@
       <!-- Header buttons -->
       <div class="flex items-center gap-2 shrink-0">
         @if (mediaModal()!.rawUrl) {
-        <a
-          [href]="mediaModal()!.rawUrl"
-          target="_blank"
+        <a [href]="mediaModal()!.rawUrl" target="_blank"
           class="px-2 sm:px-3 py-1 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors items-center gap-1 shrink-0 hidden sm:inline-flex"
           title="Open in new tab">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
           Open New Tab
         </a>
         }
         <!-- Close button -->
-        <button
-          (click)="closeMediaModal()"
+        <button (click)="closeMediaModal()"
           class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           aria-label="Close" title="Close">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -630,10 +635,7 @@
     @if (mediaModal()!.type === 'video') {
     <!-- Video iframe -->
     <div class="bg-black w-full" style="aspect-ratio: 16/9;">
-      <iframe
-        [src]="mediaModal()!.url"
-        class="w-full h-full"
-        frameborder="0"
+      <iframe [src]="mediaModal()!.url" class="w-full h-full" frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowfullscreen>
       </iframe>
@@ -641,10 +643,7 @@
     } @else {
     <!-- PDF iframe -->
     <div class="bg-gray-100 flex-1" style="height: 70vh; max-height: 80vh;">
-      <iframe
-        [src]="mediaModal()!.url"
-        class="w-full h-full border-0"
-        frameborder="0">
+      <iframe [src]="mediaModal()!.url" class="w-full h-full border-0" frameborder="0">
       </iframe>
     </div>
     }
@@ -656,7 +655,8 @@
 <!-- Delete Confirmation Modal -->
 @if (isDeleteConfirmOpen()) {
 <div class="fixed inset-0 z-[1300] flex items-center justify-center bg-black/40 px-3 sm:px-4 py-6">
-  <div class="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border animate-fade-in">
+  <div
+    class="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl bg-card-bg p-5 sm:p-6 shadow-2xl border border-card-border animate-fade-in">
     <div class="flex flex-col items-center text-center space-y-3">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 text-red-500 shrink-0">
         <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
