@@ -1,7 +1,7 @@
 import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, HostListener,ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceCheckResponse, RescheduleMeetingResponse, RecentActivity } from './meetings.service';
 import { DataTable } from '../../shared/components/Data-table/data-table';
@@ -119,6 +119,9 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   apiMeetings = signal<MeetingRow[]>([]);
   filterDateFrom: string = '';
   filterDateTo: string = '';
+  initialDateFrom = signal<string>('');
+  initialDateTo = signal<string>('');
+  initialFilters = signal<Record<string, any>>({});
 
   showCancelModal = signal(false);
 cancelMeetingRow = signal<MeetingRow | null>(null);
@@ -266,7 +269,6 @@ rescheduleDurationSelectOptions: SelectOption[] = [
         key: 'clientMail',
         label: 'Client Email',
         sortable: false,
-        hidden:true
       },
       {
         key: 'rowActions',
@@ -284,7 +286,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
       dataPath: 'data',
       totalPath: 'meta.total',
 
-      
+
 
       buildRequest: (ctx: RequestContext) => {
   const filters: Record<string, any> = {};
@@ -327,10 +329,10 @@ rescheduleDurationSelectOptions: SelectOption[] = [
   // never see other employees' meetings in this grid. Read fresh on every
   // request (rather than cached in a field) so a re-login/switch-user in
   // the same tab is picked up immediately.
-  const rawEmpId = localStorage.getItem('empId');
-  if (rawEmpId) {
-    filters['empId'] = Number(rawEmpId);
-  }
+  const empId = this.getScopedEmpId();
+if (empId) {
+  filters['empId'] = empId;
+}
 
   const body = {
     start: ctx.page * ctx.pageSize,
@@ -392,15 +394,19 @@ rescheduleDurationSelectOptions: SelectOption[] = [
 
     const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const menuWidth = 176; // matches w-44 below
+    const menuHeight = 160;
+
+    // If there is not enough room below the trigger, open above it
+    const fitsBelow = trigger.bottom + menuHeight + 8 <= window.innerHeight;
+    const top = fitsBelow
+      ? trigger.bottom + 6
+      : Math.max(8, trigger.top - menuHeight - 6);
+
+    const left = Math.max(8, Math.min(trigger.right - menuWidth, window.innerWidth - menuWidth - 8));
 
     this.actionMenuOpenRowId.set(row.id);
     this.actionMenuRow.set(row);
-    this.actionMenuPosition.set({
-      top: trigger.bottom + 6,
-      // Right-align the menu to the trigger so it doesn't run off-screen
-      // for the right-most "Meeting Detail"/"Client Email" columns.
-      left: Math.max(8, trigger.right - menuWidth),
-    });
+    this.actionMenuPosition.set({ top, left });
   }
 
   closeActionMenu(): void {
@@ -426,6 +432,21 @@ rescheduleDurationSelectOptions: SelectOption[] = [
       this.closeActionMenu();
     }
   }
+
+
+  /** '1' = admin/global view (see everyone's data). Anything else = scope to the logged-in employee. */
+private isAdminView(): boolean {
+  return localStorage.getItem('adminSts') === '1';
+}
+
+/** Returns the empId to filter by, or undefined if the user should see all data (admin). */
+private getScopedEmpId(): number | undefined {
+  if (this.isAdminView()) {
+    return undefined;
+  }
+  const raw = localStorage.getItem('empId');
+  return raw ? Number(raw) : undefined;
+}
 
   /**
    * `scroll` events don't bubble, so a plain (window:scroll) HostListener
@@ -873,7 +894,7 @@ confirmCancelMeeting(): void {
    * meeting that's already Cancelled or Completed — that error message is
    * shown as-is via the toast.
    */
- 
+
 
   /**
    * Opens the "Meeting Detail" modal for a row and checks attendance live
@@ -1064,12 +1085,52 @@ confirmCancelMeeting(): void {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private meetingService: MeetingService,
     private cdr: ChangeDetectorRef,
     private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      const from = params.get('from');
+      const to = params.get('to');
+      const status = params.get('status');
+
+      if (from && to) {
+        this.initialDateFrom.set(from);
+        this.initialDateTo.set(to);
+        this.filterDateFrom = from;
+        this.filterDateTo = to;
+      }
+
+      if (status) {
+        const s = status.toLowerCase();
+        let statusVal: string | null = null;
+        if (s === 'pending' || s === '3') statusVal = '3';
+        else if (s === 'scheduled' || s === '0') statusVal = '0';
+        else if (s === 'completed' || s === '1') statusVal = '1';
+        else if (s === 'rescheduled' || s === '2') statusVal = '2';
+        else if (s === 'cancelled' || s === '4') statusVal = '4';
+        else if (s === 'client_no_show' || s === '5') statusVal = '5';
+        else if (s === 'host_no_show' || s === '6') statusVal = '6';
+
+        if (statusVal !== null) {
+          this.initialFilters.set({ meetingStatus: [statusVal] });
+        }
+      }
+
+      if (status || (from && to)) {
+        this.activeView = 'table';
+        setTimeout(() => {
+          this.scrollToDataTable();
+        }, 150);
+        setTimeout(() => {
+          this.scrollToDataTable();
+        }, 400);
+      }
+    });
+
     this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
@@ -1077,13 +1138,20 @@ confirmCancelMeeting(): void {
     document.addEventListener('scroll', this.closeActionMenuOnScroll, true);
   }
 
+  scrollToDataTable(): void {
+    const el = document.getElementById('tableSection');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   fetchApiMeetings(): void {
     // Scope meetings fetch to the logged-in employee only
     const filters: Record<string, any> = {};
-    const rawEmpId = localStorage.getItem('empId');
-    if (rawEmpId) {
-      filters['empId'] = Number(rawEmpId);
-    }
+const empId = this.getScopedEmpId();
+if (empId) {
+  filters['empId'] = empId;
+}
 
     this.meetingService.fetchMeetings({
       start: 0,
@@ -1096,7 +1164,6 @@ confirmCancelMeeting(): void {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
-          const empId = rawEmpId ? Number(rawEmpId) : null;
           // Ensure client-side filtering for user-specific meetings
           const userMeetings = empId
             ? res.data.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId))
@@ -1173,8 +1240,7 @@ confirmCancelMeeting(): void {
     /** Pulls the dashboard KPI card numbers from GET /meetings/dashboard-stats. */
   fetchDashboardStats(): void {
     this.loadingDashboardStats = true;
-    const rawEmpId = localStorage.getItem('empId');
-    const empId = rawEmpId ? Number(rawEmpId) : undefined;
+    const empId = this.getScopedEmpId();
     this.meetingService.getDashboardStats(empId).subscribe({
       next: (stats) => {
         this.dashboardStats.set(stats);
@@ -1190,9 +1256,10 @@ confirmCancelMeeting(): void {
   /** Pulls the "Recent Activity" feed from GET /meetings/recent-activity. */
   fetchRecentActivity(): void {
     this.loadingRecentActivity = true;
-    const rawEmpId = localStorage.getItem('empId');
-    const empId = rawEmpId ? Number(rawEmpId) : undefined;
-    const currentUserName = (localStorage.getItem('userName') || '').trim().toLowerCase();
+    const empId = this.getScopedEmpId();
+const currentUserName = this.isAdminView()
+  ? ''
+  : (localStorage.getItem('userName') || '').trim().toLowerCase();
 
     this.meetingService.getRecentActivity(empId).subscribe({
       next: (activity) => {
@@ -1674,10 +1741,9 @@ confirmCancelMeeting(): void {
   }
 
   getFilteredApiMeetings(): MeetingRow[] {
-    const rawEmpId = localStorage.getItem('empId');
-    const empId = rawEmpId ? Number(rawEmpId) : null;
+    const empId = this.getScopedEmpId();
 
-    let result = [...this.apiMeetings()];
+let result = [...this.apiMeetings()];
     if (empId) {
       result = result.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId));
     }

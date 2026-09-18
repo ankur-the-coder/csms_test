@@ -407,6 +407,7 @@ export class Feedback {
 
   initialDateFrom = signal('');
   initialDateTo = signal('');
+  selectedRating = signal<number | null>(6);
 
   cardData = signal({
     ratingCounts: { 6: 0, 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>,
@@ -506,6 +507,10 @@ export class Feedback {
   }
 
   tableConfig = computed<SmartTableConfig<ClientRow>>(() => {
+    const from = this.initialDateFrom();
+    const to = this.initialDateTo();
+    const rating = this.selectedRating();
+
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: true },
@@ -524,9 +529,13 @@ export class Feedback {
 
         buildRequest: (ctx: RequestContext) => {
           const filterObj: Record<string, any> = { ...ctx.filters };
+          if (rating !== null && rating !== 6) {
+            filterObj['rating'] = rating.toString();
+          }
+
           const today = this.getTodayDateString();
-          const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
-          const toDate = ctx.dateTo ? ctx.dateTo : today;
+          const fromDate = from || today;
+          const toDate = to || today;
 
           const sortColMap: Record<string, string> = {
             name: 'client',
@@ -555,12 +564,11 @@ export class Feedback {
       showPagination: true,
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
-      exportFileName: 'client',
+      exportFileName: 'Feetdback Data',
       emptyMessage: 'No client records found.',
       clickable: true,
 
       toolbarButtons: [
-        { id: 'date', type: 'datePicker' as const, label: 'Date' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
@@ -570,6 +578,9 @@ export class Feedback {
 
   onDateApplied(from: string, to: string): void {
     const orgId = Utils.encode5t(this.authService.getOrgId().toString());
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.selectedRating.set(6);
     this.fetchDashboardCards(from, to, orgId);
   }
 
@@ -600,6 +611,6 @@ export class Feedback {
   }
 
   navigateToRating(stars: number) {
-    console.log('Navigate to rating:', stars);
+    this.selectedRating.set(stars);
   }
 }

@@ -15,22 +15,24 @@
 
     <!-- Right: Date range filter -->
     <div
-      class="flex items-center gap-0 rounded-xl border border-card-border bg-surface-50 shadow-xs">
-      <div class="flex items-center gap-2 px-3 py-2">
-        <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted">From</span>
+      class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 w-full sm:w-auto rounded-xl border border-card-border bg-surface-50 shadow-xs p-2 sm:p-0">
+      <div class="flex items-center gap-2 px-1 sm:px-3 py-1 sm:py-2 w-full sm:w-auto">
+        <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted shrink-0">From</span>
         <app-date-picker [ngModel]="fromDate()" (onSelectDate)="onFromDateChange($event)" [maxDate]="toDate()"
-          placeHolder="Start date">
+          placeHolder="Start date" addClass="min-w-0 flex-1 sm:w-36">
         </app-date-picker>
       </div>
-      <div class="h-4 w-px bg-card-border"></div>
-      <div class="flex items-center gap-2 px-3 py-2">
-        <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted">To</span>
+      <div class="hidden sm:block h-4 w-px bg-card-border"></div>
+      <div class="block sm:hidden h-px w-full bg-card-border"></div>
+      <div class="flex items-center gap-2 px-1 sm:px-3 py-1 sm:py-2 w-full sm:w-auto">
+        <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted shrink-0">To</span>
         <app-date-picker [ngModel]="toDate()" (onSelectDate)="onToDateChange($event)" [minDate]="fromDate()"
-          [maxDate]="today" placeHolder="End date">
+          [maxDate]="today" placeHolder="End date" addClass="min-w-0 flex-1 sm:w-36">
         </app-date-picker>
       </div>
-      <div class="h-4 w-px bg-card-border"></div>
-      <div class="px-2.5">
+      <div class="hidden sm:block h-4 w-px bg-card-border"></div>
+      <div class="block sm:hidden h-px w-full bg-card-border"></div>
+      <div class="px-1 sm:px-2.5 flex justify-end sm:block">
         <custom-button
           (btnClick)="loadDashboardData()"
           [disabled]="loading()"
@@ -236,7 +238,7 @@
                     <div class="h-1.5 w-1.5 -mt-1 rotate-45 border-b border-r border-card-border bg-card-bg"></div>
                   </div>
 
-                  <div class="w-full max-w-[18px] origin-bottom transition-all duration-300 cursor-pointer"
+                  <div class="w-full max-w-4.5 origin-bottom transition-all duration-300 cursor-pointer"
                     [ngClass]="item.count > 0 ? 'rounded-t-sm bg-emerald-400 hover:bg-emerald-500 hover:shadow-sm' : 'h-px bg-surface-200 rounded-full'"
                     [style.height.%]="item.count > 0 ? getVolumeHeight(item.count) : null">
                   </div>

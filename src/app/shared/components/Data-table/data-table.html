@@ -350,6 +350,8 @@
             class="st-th sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 group"
             [class.st-th--sortable]="col.sortable" [class.st-th--sorted]="sort().key === col.key"
             [class.st-th--right]="col.align === 'right'" [class.st-th--center]="col.align === 'center'"
+            [class.st-th--sticky-left]="isStickyLeft(col)"
+            [class.st-th--sticky-right]="isStickyRight(col)"
             [class.st-th--sticky]="col.sticky === true" [class.st-th--dragging]="dragSrcKey() === col.key.toString()"
             [class.st-th--drag-over]="dragOverKey() === col.key.toString()"
             [style.width.px]="colWidths()[col.key.toString()] ?? null"
@@ -454,6 +456,8 @@
           <td
             class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
+            [class.st-td--sticky-left]="isStickyLeft(col)"
+            [class.st-td--sticky-right]="isStickyRight(col)"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
             [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
             [style.overflow]="getColumnTemplate(col.key.toString()) ? 'visible' : 'hidden'">

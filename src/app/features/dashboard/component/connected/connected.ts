@@ -196,7 +196,7 @@ export class Connected {
 
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
-      exportFileName: 'client',
+      exportFileName: 'Connected Data',
       emptyMessage: 'No client records found.',
       clickable: true,
       toolbarButtons: [

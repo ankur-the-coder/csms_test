@@ -20,7 +20,7 @@ import {
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule, DatePipe, DecimalPipe, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of, catchError } from 'rxjs';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -78,6 +78,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   filterNames = input<string[]>([]);
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
+  initialFilters = input<Record<string, any>>({});
   permissions = input<{ canEdit?: boolean }>({ canEdit: true });
   excludePdfColumns = input<string[]>([]);
   excludeExportColumns = input<string[]>([]);
@@ -170,6 +171,17 @@ private applyInitialDatesEffect = effect(() => {
   }
 });
 
+private applyInitialFiltersEffect = effect(() => {
+  const init = this.initialFilters();
+  if (init && Object.keys(init).length > 0) {
+    untracked(() => {
+      this.activeFilters.update(f => ({ ...f, ...init }));
+      this.tempFilters.set({ ...init });
+      this.page.set(0);
+    });
+  }
+});
+
 
   // ── Filter options ─────────────────────────────────────────────────────────
   loadedFilters = signal<TableFilter[]>([]);
@@ -195,8 +207,24 @@ private applyInitialDatesEffect = effect(() => {
       return;
     }
     untracked(() => {
-      forkJoin(names.map(n => this.dataTableService.getFilterOptions(n)))
-        .subscribe(filters => this.loadedFilters.set(filters));
+      forkJoin(
+        names.map(n =>
+          this.dataTableService.getFilterOptions(n).pipe(
+            catchError(err => {
+              console.warn(`[DataTable] Failed to load filter options for "${n}":`, err);
+              return of({ key: n, label: n, options: [] } as TableFilter);
+            })
+          )
+        )
+      ).subscribe({
+        next: (filters) => {
+          this.loadedFilters.set(filters);
+        },
+        error: (err) => {
+          console.error('[DataTable] Error loading filters:', err);
+          this.loadedFilters.set([]);
+        }
+      });
     });
   });
 
@@ -1454,6 +1482,20 @@ private applyInitialDatesEffect = effect(() => {
   getColumnTemplate(key: string) { return this.templateMap().get(key); }
   getCellValue(row: T, key: any): any { return (row as any)?.[key]; }
 
+  isStickyRight(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    const keyStr = String(col.key).toLowerCase();
+    if (keyStr === 'rowactions' || keyStr === 'action' || keyStr === 'actions') return true;
+    const visCols = this.visibleColumns();
+    if (visCols.length > 0 && visCols[visCols.length - 1].key === col.key) return true;
+    return false;
+  }
+
+  isStickyLeft(col: SmartColumn<any>): boolean {
+    if (!col.sticky) return false;
+    return !this.isStickyRight(col);
+  }
+
   getSortIcon(key: keyof T): 'up' | 'down' | 'none' {
     const s = this.sort();
     if (s.key !== key) return 'none';
@@ -1703,7 +1745,7 @@ selectAllPdfColumns(): void {
   const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
   const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
   this.pdfSelectedColumns.set(keys);
-}
+} 
 
 clearPdfColumns(): void {
   this.pdfSelectedColumns.set([]);

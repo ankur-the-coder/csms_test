@@ -144,10 +144,14 @@ export class DashboardComponent implements OnInit {
       this.authService.getOrgId().toString(),
     );
 
-    this.fetchDashboardCards(from, to, orgId);
-    this.fetchFeedbackChart(from, to, orgId);
-    this.fetchConnectedChart(from, to, orgId);
-    this.fetchUsagesChart(from, to, orgId);
+    const userId = Utils.encode5t(
+      this.authService.getEmpId().toString(),
+    );
+
+    this.fetchDashboardCards(from, to, orgId, userId);
+    this.fetchFeedbackChart(from, to, orgId, userId);
+    // this.fetchConnectedChart(from, to, orgId, userId);
+    this.fetchUsagesChart(from, to, orgId, userId);
   }
 
   // ---------------------------------------------------------------------------
@@ -158,9 +162,10 @@ export class DashboardComponent implements OnInit {
     from: string,
     to: string,
     orgId: string,
+    userId: string
   ): void {
     this.dashboardService
-      .getDashboardCards(from, to, orgId)
+      .getDashboardCards(from, to, orgId, userId)
       .subscribe({
         next: (res: any) => {
           if (!res?.data) {
@@ -229,12 +234,13 @@ export class DashboardComponent implements OnInit {
     from: string,
     to: string,
     orgId: string,
+    userId: string
   ): void {
     this.isFeedbackLoading.set(true);
     this.feedbackHasError.set(false);
 
     this.dashboardService
-      .fetchDashBoardFeedbackChart(from, to, orgId)
+      .fetchDashBoardFeedbackChart(from, to, orgId, userId)
       .subscribe({
         next: (res: any) => {
           this.isFeedbackLoading.set(false);
@@ -293,12 +299,13 @@ export class DashboardComponent implements OnInit {
     from: string,
     to: string,
     orgId: string,
+    userId: string
   ): void {
     this.isConnectedLoading.set(true);
     this.connectedHasError.set(false);
 
     this.dashboardService
-      .fetchDashBoardConnectChart(from, to, orgId)
+      .fetchDashBoardConnectChart(from, to, orgId, userId)
       .subscribe({
         next: (res: any) => {
           this.isConnectedLoading.set(false);
@@ -357,12 +364,13 @@ export class DashboardComponent implements OnInit {
     from: string,
     to: string,
     orgId: string,
+    userId: string
   ): void {
     this.isUsagesLoading.set(true);
     this.usagesHasError.set(false);
 
     this.dashboardService
-      .fetchDashBoardUsageChart(from, to, orgId)
+      .fetchDashBoardUsageChart(from, to, orgId, userId)
       .subscribe({
         next: (res: any) => {
           this.isUsagesLoading.set(false);
@@ -459,15 +467,18 @@ export class DashboardComponent implements OnInit {
     );
 
     const rawOrgId = this.authService.getOrgId();
-
+    const rawUserId = this.authService.getEmpId();
     const orgId = Utils.encode5t(
       (rawOrgId || '101').toString(),
     );
-
+    const empId = Utils.encode5t(
+      (rawUserId).toString(),
+    );
     this.fetchCalendarEvents(
       from,
       to,
       orgId,
+      empId
     );
   }
 
@@ -475,12 +486,14 @@ export class DashboardComponent implements OnInit {
     from: string,
     to: string,
     orgId: string,
+    userId: string
   ): void {
     this.dashboardService
       .fetchDashBoardCalendar(
         from,
         to,
         orgId,
+        userId
       )
       .subscribe({
         next: (res: any) => {
@@ -809,7 +822,7 @@ export class DashboardComponent implements OnInit {
       { length: count },
       (_, index) =>
         palette[
-          index % palette.length
+        index % palette.length
         ],
     );
   }

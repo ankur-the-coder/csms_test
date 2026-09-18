@@ -1,20 +1,3 @@
-// export interface LoginRequest {
-//   userName: string;
-//   password: string;
-// }
-
-// export interface LoginResponseData {
-//   Id: number;
-//   empId: number;
-//   userName: string;
-// }
-
-// export interface LoginResponse {
-//   status: boolean;
-//   message: string;
-//   data: LoginResponseData;
-// }
-
 export interface LoginResponse {
   status: boolean;
   msg: string;
@@ -27,6 +10,9 @@ export interface Data {
   empId: string;
   designation: string
   orgId: string
+  adminSts: number,
+  email: string,
+  phone: string
 }
 export interface ProfileDetail {
   designation: string;
