@@ -55,7 +55,7 @@ export class Navbar implements OnInit, OnDestroy {
 
   /** '1' = admin/global view. Meeting notifications are for individual employees only. */
 private isAdminView(): boolean {
-  return localStorage.getItem('admisSts') === '1';
+  return localStorage.getItem('adminSts') === '1';
 }
 
   ngOnInit() {
@@ -70,7 +70,7 @@ private isAdminView(): boolean {
     this.authService.getDesignation()
   );
 
-  // Meeting notifications are per-employee only — admins (admisSts === '1')
+  // Meeting notifications are per-employee only — admins (adminSts === '1')
   // never see this widget, so don't even fetch or tick for it.
   if (!this.isAdminView()) {
 
@@ -107,7 +107,7 @@ private isAdminView(): boolean {
   }
 
   private checkRoute(url: string) {
-    this.isImplementationRoute = url.includes('implementation'); 
+    this.isImplementationRoute = url.includes('implementation');
   }
   getFirstLetter(): string {
     const name = this.adminName().trim();
