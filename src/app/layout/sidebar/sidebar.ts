@@ -18,7 +18,7 @@ export const csNavItems: NavItem[] = [
   { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   // // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
   { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-  { id: 'training', label: 'Training', icon: 'training', route: '/training' },
+  { id: 'helpguide', label: 'Help Guide', icon: 'training', route: '/help-guide' },
   { id: 'meetings', label: 'Meetings & Reviews', icon: 'meetings', route: '/meetings' },
   { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
