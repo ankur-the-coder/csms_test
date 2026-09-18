@@ -63,7 +63,7 @@ export class AuthService {
     localStorage.removeItem('email');
     localStorage.removeItem('phone');
 
-    localStorage.removeItem('admisSts');
+    localStorage.removeItem('adminSts');
     // localStorage.removeItem('ubi-theme');
     localStorage.removeItem('orgId');
     this.isLoggedIn.set(false);
@@ -84,8 +84,8 @@ export class AuthService {
   getOrgId(): string {
     return this.isBrowser ? (localStorage.getItem('orgId') ?? '') : '';
   }
-  admisSts(): string {
-    return this.isBrowser ? (localStorage.getItem('admisSts') ?? '') : '';
+  adminSts(): string {
+    return this.isBrowser ? (localStorage.getItem('adminSts') ?? '') : '';
   }
   password(): string {
     return this.isBrowser ? (localStorage.getItem('password') ?? '') : '';
@@ -104,7 +104,7 @@ export class AuthService {
     localStorage.setItem('userName', data.userName);
     localStorage.setItem('empId', Utils.decode5t(data.empId));
     localStorage.setItem('designation', data.designation);
-    localStorage.setItem('admisSts', data.admisSts.toString());
+    localStorage.setItem('adminSts', data.adminSts.toString());
     localStorage.setItem('orgId', Utils.decode5t(data.orgId));
     localStorage.setItem('password', Utils.decode5t(data.password));
     localStorage.setItem('email', Utils.decode5t(data.email));

@@ -412,7 +412,7 @@ export class WebRtcVoiceService {
       params.set('page', '1');
       params.set('limit', String(rowFetchLimit));
       params.set('direction', 'outbound');
-       const isAdmin = localStorage.getItem('admisSts') == '1';
+       const isAdmin = localStorage.getItem('adminSts') == '1';
   if (!isAdmin) {
     const empId = localStorage.getItem('empId');
     if (empId) params.set('userId', empId);
@@ -1622,7 +1622,7 @@ export class WebRtcVoiceService {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 
- 
+
   async fetchTelnyxBalance(): Promise<void> {
     if (this.telnyxBalanceLoading()) return; // prevent duplicate concurrent requests
     this.telnyxBalanceLoading.set(true);
