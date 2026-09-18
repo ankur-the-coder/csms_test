@@ -580,6 +580,7 @@ export class Feedback {
     const orgId = Utils.encode5t(this.authService.getOrgId().toString());
     this.initialDateFrom.set(from);
     this.initialDateTo.set(to);
+    this.selectedRating.set(6);
     this.fetchDashboardCards(from, to, orgId);
   }
 
