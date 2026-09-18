@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Clientdashboard } from '../services/client/clientdashboard/clientdashboard';
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
@@ -20,7 +21,7 @@ import { ClientImplementationData, ImplementationModule } from '../models/client
 
 @Component({
   selector: 'app-client-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './client-dashboard.html',
   styleUrl: './client-dashboard.css',
 })

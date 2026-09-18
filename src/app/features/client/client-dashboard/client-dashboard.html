@@ -887,14 +887,14 @@
 
         <div class="flex items-center gap-2.5">
           <select
-            [value]="ticketFilterDays()"
-            (change)="setTicketFilterDays(+$any($event.target).value)"
+            [ngModel]="ticketFilterDays()"
+            (ngModelChange)="setTicketFilterDays($event)"
             class="text-xs border border-slate-200 rounded-lg px-2.5 py-1 bg-white text-slate-600 font-semibold cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
           >
-            <option [value]="28">Last 28 days</option>
-            <option [value]="14">Last 14 days</option>
-            <option [value]="7">Last 7 days</option>
-            <option [value]="0">All Time</option>
+            <option [ngValue]="28">Last 28 days</option>
+            <option [ngValue]="14">Last 14 days</option>
+            <option [ngValue]="7">Last 7 days</option>
+            <option [ngValue]="0">All Time</option>
           </select>
 
           <a
