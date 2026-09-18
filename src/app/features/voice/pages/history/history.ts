@@ -11,11 +11,15 @@ import { environment } from '../../../../../environments/environment';
 export interface CallHistoryRow {
   id: number;
   direction: 'inbound' | 'outbound';
+  customerNumber: string;
+  fromNumber: string;
   toNumber: string;
+  receivedOnNumber: string;
   clientName: string;
   status: string;
   duration: string;
   createdAt: string;
+  userId?: string | number;
 }
 
 @Component({
@@ -34,6 +38,7 @@ export class History implements OnInit {
   // field initializer: field initializers run in the constructor, before
   // ViewChild resolution, so these templates would still be undefined then.
   @ViewChild('directionCell', { static: true }) directionCellTemplate!: TemplateRef<any>;
+  @ViewChild('didCell', { static: true }) didCellTemplate!: TemplateRef<any>;
   @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
   @ViewChild('dateCell', { static: true }) dateCellTemplate!: TemplateRef<any>;
   @ViewChild('durationCell', { static: true }) durationCellTemplate!: TemplateRef<any>;
@@ -46,10 +51,13 @@ export class History implements OnInit {
   historyTableConfig!: SmartTableConfig<CallHistoryRow>;
 
   callNumber(row: CallHistoryRow): void {
-    if (!row.toNumber) return;
+    const target = row.customerNumber && row.customerNumber !== '—'
+      ? row.customerNumber
+      : (row.direction === 'inbound' ? row.fromNumber : row.toNumber);
+    if (!target) return;
     this.router.navigate(['/voice/softphone'], {
       queryParams: {
-        number: row.toNumber,
+        number: target,
         name: row.clientName && row.clientName !== '—' ? row.clientName : '',
       },
     });
@@ -94,8 +102,9 @@ export class History implements OnInit {
     this.historyTableConfig = {
     columns: [
       { key: 'clientName', label: 'Name' },
-      { key: 'toNumber', label: 'Customer Number' },
+      { key: 'customerNumber', label: 'Customer Number' },
       { key: 'direction', label: 'Direction', type: 'template', cellTemplate: this.directionCellTemplate },
+      { key: 'receivedOnNumber', label: 'Line / DID', type: 'template', cellTemplate: this.didCellTemplate },
       { key: 'status', label: 'Status', type: 'template', cellTemplate: this.statusCellTemplate },
       { key: 'duration', label: 'Duration', type: 'template', cellTemplate: this.durationCellTemplate },
       { key: 'createdAt', label: 'Date', type: 'template', cellTemplate: this.dateCellTemplate },
@@ -164,11 +173,11 @@ export class History implements OnInit {
         const params = new URLSearchParams();
         params.set('page', String(ctx.page + 1));
         params.set('limit', String(ctx.pageSize));
-           const isAdmin = localStorage.getItem('admisSts') == '1';
-  if (!isAdmin) {
-    const empId = localStorage.getItem('empId');
-    if (empId) params.set('userId', empId);
-  }
+        const isAdmin = localStorage.getItem('admisSts') == '1';
+        if (!isAdmin) {
+          const empId = localStorage.getItem('empId');
+          if (empId) params.set('userId', empId);
+        }
         if (ctx.search) params.set('phoneNumber', ctx.search);
         if (ctx.filters['status']) params.set('status', ctx.filters['status']);
         if (ctx.filters['direction']) params.set('direction', ctx.filters['direction']);
@@ -177,14 +186,26 @@ export class History implements OnInit {
 
       transformRow: (raw: any): CallHistoryRow | null => {
         if (!raw) return null;
+        const isInbound = raw.direction === 'inbound';
+        const customerNum = isInbound
+          ? (raw.from_number || raw.to_number || '—')
+          : (raw.to_number || raw.from_number || '—');
+        const didNum = isInbound
+          ? (raw.to_number || '—')
+          : (raw.from_number || '—');
+
         return {
           id: raw.id,
           direction: raw.direction,
-          toNumber: raw.to_number,
-          clientName: raw.client_name || '—',
+          customerNumber: customerNum,
+          fromNumber: raw.from_number || '',
+          toNumber: raw.to_number || '',
+          receivedOnNumber: didNum,
+          clientName: raw.client_name || raw.customer_name || '—',
           status: raw.status,
           duration: this.voiceService.formatDuration(Number(raw.duration) || 0),
           createdAt: raw.created_at,
+          userId: raw.user_id || raw.employee_id,
         };
       },
     },

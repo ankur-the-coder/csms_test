@@ -102,7 +102,12 @@ export class WebRtcVoiceService {
 
   private eventSource: EventSource | null = null;
   private sseReconnectTimer: any = null;
-  private currentEmployeeId: string = '1';
+  get currentEmployeeId(): string {
+    if (this.isBrowser) {
+      return localStorage.getItem('empId') || '1';
+    }
+    return '1';
+  }
   private isIntentionallyClosed = false;
   private timerInterval: any = null;
   // Guards against stale SSE events (e.g. delayed call.answered webhook
@@ -656,7 +661,7 @@ export class WebRtcVoiceService {
     }
 
     // Step 5: SSE for call state signaling
-    this.initSSE('1');
+    this.initSSE(this.currentEmployeeId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1410,8 +1415,8 @@ export class WebRtcVoiceService {
   // SSE — Call State Signaling (unchanged responsibility)
   // ─────────────────────────────────────────────────────────────────────────
 
-  initSSE(employeeId: string = '1'): void {
-    this.currentEmployeeId = employeeId;
+  initSSE(employeeId?: string): void {
+    const targetEmpId = employeeId || this.currentEmployeeId;
     this.isIntentionallyClosed = false;
 
     if (this.eventSource) {
@@ -1419,14 +1424,14 @@ export class WebRtcVoiceService {
       this.closeSSE(false);
     }
 
-    if (!employeeId?.trim()) {
+    if (!targetEmpId?.trim()) {
       console.warn('[SSE] Invalid employee ID. SSE aborted.');
       return;
     }
 
     try {
-      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(employeeId)}`;
-      console.log(`[SSE] Establishing SSE for Employee [${employeeId}]`);
+      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
+      console.log(`[SSE] Establishing SSE for Employee [${targetEmpId}]`);
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {

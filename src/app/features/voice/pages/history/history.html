@@ -28,6 +28,13 @@
   </div>
 </ng-template>
 
+<!-- DID / Line cell: shows which DID / company line received or placed the call -->
+<ng-template #didCell let-row>
+  <span class="font-mono text-xs text-text-secondary" [title]="row.direction === 'inbound' ? 'Received on DID: ' + row.receivedOnNumber : 'Dialed from DID: ' + row.receivedOnNumber">
+    {{ row.receivedOnNumber || '—' }}
+  </span>
+</ng-template>
+
 <!-- Status cell: small colored dot + text, using the theme's existing
      subtle-color tokens (same family as badges elsewhere in the app) --
      not the old bright/saturated filled pill badges. -->
