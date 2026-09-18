@@ -23,6 +23,8 @@ import { ToastrService } from 'ngx-toastr';
 import { ScheduleMeetingService } from '../../meetings/schedule-meeting/schedule-meetings.service';
 import { FormsModule } from '@angular/forms';
 import { RichTextEditor } from '../../../shared/components/rich-text-editor/rich-text-editor';
+import { Clienttimeline } from '../services/client/clienttimeline';
+import { ClientTimelineData } from '../models/client/clienttimeline.model';
 
 export interface ClientRow {
   orgId: number;
@@ -65,6 +67,7 @@ export class Client implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
+  private clientTimelineApi = inject(Clienttimeline);
   statusFilter = signal<string>('all');
 
   initialDateFrom = signal('');
@@ -79,6 +82,8 @@ export class Client implements OnInit, OnDestroy {
   mailSubject = '';
   mailBody = '';
   mailSending = signal(false);
+  timelineLoading = signal(false);
+  timelineError = signal('');
 
   openMailModal(row: ClientRow): void {
     this.closeActionMenu();
@@ -284,49 +289,70 @@ export class Client implements OnInit, OnDestroy {
   timelineEvents = signal<TimelineEvent[]>([]);
 
   openClientTimeline(row: ClientRow): void {
-    console.log('opening timeline for', row);
     this.timelineDrawerRow.set(row);
-    this.timelineEvents.set(this.buildTimelineForRow(row));
     this.timelineDrawerOpen.set(true);
     this.closeActionMenu();
+    this.loadClientTimeline(row);
   }
 
   closeTimelineDrawer(): void {
     this.timelineDrawerOpen.set(false);
   }
 
-  private buildTimelineForRow(row: ClientRow): TimelineEvent[] {
-    return [
-      {
-        date: '10 Jan',
-        year: '2025',
-        title: 'Welcome Email Sent',
-        description: `Welcome email and portal access sent to ${row.contactPerson || row.name}.`,
-        status: 'success',
-      },
-      {
-        date: '11 Jan',
-        year: '2025',
-        title: 'Kickoff Meeting',
-        description: 'Initial kickoff meeting completed with the team.',
-        status: 'success',
-      },
-      {
-        date: '13 Jan',
-        year: '2025',
-        title: 'Setup',
-        description: `Company setup completed, including organization profile, HRMS configuration, and admin user creation for ${row.name}.`,
-        status: 'success',
-      },
-      {
-        date: '20 Jan',
-        year: '2025',
-        title: 'Go Live',
-        description: 'System is live and in production.',
-        status: 'success',
-      },
-    ];
-  }
+  private loadClientTimeline(row: ClientRow): void {
+  this.timelineLoading.set(true);
+  this.timelineError.set('');
+  this.timelineEvents.set([]);
+
+  this.clientTimelineApi.getClientTimeline({ orgId: String(row.orgId) }).subscribe({
+    next: (res) => {
+      this.timelineLoading.set(false);
+      if (res?.status) {
+        this.timelineEvents.set(this.buildTimelineFromApi(res.data, row));
+      } else {
+        this.timelineError.set(res?.msg || 'Failed to load timeline');
+      }
+    },
+    error: (err) => {
+      this.timelineLoading.set(false);
+      this.timelineError.set(err?.error?.msg || 'Failed to load timeline');
+    },
+  });
+}
+
+private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): TimelineEvent[] {
+  // Reversed order: Go Live -> Setup -> Kickoff Meeting -> Welcome Email Sent
+  return [
+    {
+      date: '',
+      year: '',
+      title: 'Go Live',
+      description: 'System is live and in production.',
+      status: data.goLive ? 'success' : 'warning',
+    },
+    {
+      date: '',
+      year: '',
+      title: 'Setup',
+      description: `Company setup completed, including organization profile, HRMS configuration, and admin user creation for ${row.name}.`,
+      status: data.setup ? 'success' : 'warning',
+    },
+    {
+      date: '',
+      year: '',
+      title: 'Kickoff Meeting',
+      description: 'Initial kickoff meeting completed with the team.',
+      status: data.kickoffMeeting ? 'success' : 'warning',
+    },
+    {
+      date: '',
+      year: '',
+      title: 'Welcome Email Sent',
+      description: `Welcome email and portal access sent to ${row.contactPerson || row.name}.`,
+      status: data.welcomeEmailSent ? 'success' : 'warning',
+    },
+  ];
+}
 
   onClientMenuAction(action: string, row: ClientRow): void {
     console.log(`${action}:`, row.orgId);
