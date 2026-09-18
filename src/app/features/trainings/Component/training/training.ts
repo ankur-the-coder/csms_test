@@ -44,6 +44,7 @@ export class Training implements OnInit {
   readonly categories = signal<CategoryRecord[]>([]);
 
   readonly isLoadingCategories = signal(false);
+  readonly loadError = signal(false);
 
   readonly isCategoryModalOpen = signal(false);
   readonly editingCategoryId = signal<string | null>(null);
@@ -75,6 +76,7 @@ export class Training implements OnInit {
   loadCategories(): void {
 
     this.isLoadingCategories.set(true);
+    this.loadError.set(false);
 
     this.trainingService.getCategories().subscribe({
 
@@ -93,12 +95,19 @@ export class Training implements OnInit {
             }))
           );
 
+        } else {
+          // API responded but indicated failure (e.g. status: false)
+          this.categories.set([]);
+          this.loadError.set(true);
+          this.toastr.error(res.msg || 'Failed to load categories.', 'Error');
         }
 
       },
 
       error: (err: any) => {
         this.isLoadingCategories.set(false);
+        this.categories.set([]);
+        this.loadError.set(true);
         this.toastr.error('Failed to load categories. Please try again.', 'Server Error');
         console.error('Failed to load categories:', err);
       }
