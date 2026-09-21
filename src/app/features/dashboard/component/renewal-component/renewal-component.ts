@@ -55,8 +55,34 @@ export class RenewalComponent {
 
 
 
+  private getFirstDayOfMonthString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  }
+
+  private getLastDayOfMonthString(): string {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(lastDay).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
 
   ngOnInit() {
+    const params = this.route.snapshot.queryParamMap;
+    const from = params.get('from');
+    const to = params.get('to');
+    if (from && to) {
+      this.initialDateFrom.set(from);
+      this.initialDateTo.set(to);
+    } else {
+      this.initialDateFrom.set(this.getFirstDayOfMonthString());
+      this.initialDateTo.set(this.getTodayDateString());
+    }
     this.route.queryParamMap.subscribe(params => {
       const from = params.get('from');
       const to = params.get('to');
