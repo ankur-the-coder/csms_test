@@ -127,6 +127,18 @@ export class ClientDashboard {
   // "View All" only see if meetings are more than 5
   hasMoreMeetings = computed(() => this.meetings().length > 5);
 
+  // Widget card mein sirf itne module-tabs dikhane hain, baaki "+N More" mein chale jayenge
+  private readonly MAX_VISIBLE_MODULE_TABS = 2;
+
+  visibleModuleTabs = computed(() => {
+  return this.implementationModules().slice(0, this.MAX_VISIBLE_MODULE_TABS);
+  });
+
+  hiddenModuleTabsCount = computed(() => {
+  const total = this.implementationModules().length;
+  return total > this.MAX_VISIBLE_MODULE_TABS ? total - this.MAX_VISIBLE_MODULE_TABS : 0;
+});
+
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       this.orgName = params.get('orgName') ?? '';
