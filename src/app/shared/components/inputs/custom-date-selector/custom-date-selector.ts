@@ -43,7 +43,7 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
   @Input() selectedDays: number = 0;
   @Input() showEmpty: boolean = false;
   @Input() defaultPreset:
-    'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' = 'today';
+    'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' | string = 'today';
   @Input() disableFutureDates: boolean = false;
   @Input() disablePastDates: boolean = false;
 
@@ -592,6 +592,17 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     return result;
   }
 
+  private parsePresetDays(preset: string | null): number | null {
+    const normalized = (preset ?? '').trim().toLowerCase().replace(/\s+/g, '');
+    if (!normalized) return null;
+
+    const match = normalized.match(/^(?:last)?(\d+)days?$/);
+    if (!match) return null;
+
+    const value = Number(match[1]);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+
   private formatDateToString(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -599,12 +610,12 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
     return `${year}-${month}-${day}`;
   }
 
-
   private computeShiftedRange(direction: number): { start: Date; end: Date } | null {
     if (!this.selectedStartDate || !this.selectedEndDate) return null;
 
     let newStart: Date;
     let newEnd: Date;
+    const numericPresetDays = this.parsePresetDays(this.selectedPreset);
 
     switch (this.selectedPreset) {
       case 'today':
@@ -647,6 +658,11 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
       }
 
       default:
+        if (numericPresetDays) {
+          newStart = this.addDays(this.selectedStartDate, numericPresetDays * direction);
+          newEnd = this.addDays(this.selectedEndDate, numericPresetDays * direction);
+          break;
+        }
         return null;
     }
 
@@ -727,33 +743,36 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
 
   selectPreset(preset: string): void {
     const today = this.normalizeDate(new Date());
+    const requestedPreset = String(preset ?? '').trim();
+    const normalizedPreset = requestedPreset.toLowerCase().replace(/\s+/g, '');
+    const numericPresetDays = this.parsePresetDays(normalizedPreset);
     let startDate: Date;
     let endDate: Date;
 
     if (this.selectedPreset && !this.previousPreset) {
       this.previousPreset = this.selectedPreset;
     }
-    this.selectedPreset = preset;
+    this.selectedPreset = requestedPreset || 'today';
     this.isSelectingRange = false;
 
-    switch (preset) {
+    switch (normalizedPreset) {
       case 'today':
         startDate = endDate = today;
         break;
       case 'yesterday':
         startDate = endDate = this.addDays(today, -1);
         break;
-      case 'lastWeek':
+      case 'lastweek':
         const currentDay = today.getDay();
         const daysSinceLastMonday = (currentDay + 6) % 7;
         startDate = this.addDays(today, -(daysSinceLastMonday + 7));
         endDate = this.addDays(startDate, 6);
         break;
-      case 'lastMonth':
+      case 'lastmonth':
         startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12, 0, 0, 0);
         endDate = new Date(today.getFullYear(), today.getMonth(), 0, 12, 0, 0, 0);
         break;
-      case 'currentMonth':
+      case 'currentmonth':
         startDate = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0, 0);
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
         endDate = new Date(today.getFullYear(), today.getMonth(), lastDay, 12, 0, 0, 0);
@@ -763,6 +782,11 @@ export class CustomDateSelector implements OnInit, AfterContentInit, OnDestroy, 
         endDate = today;
         break;
       default:
+        if (numericPresetDays) {
+          startDate = this.addDays(today, -(numericPresetDays - 1));
+          endDate = today;
+          break;
+        }
         return;
     }
 
