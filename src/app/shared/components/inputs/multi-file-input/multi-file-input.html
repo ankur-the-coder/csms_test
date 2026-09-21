@@ -85,7 +85,7 @@
 
         <div class="flex flex-col min-w-0 flex-1">
             <span class="text-[12px] min-[380px]:text-[13px] sm:text-[15px] font-bold text-inherit truncate">{{
-                getTotalFilesCount() }} {{ getTotalFilesCount() === 1 ? ('document') : ('documents')
+                getTotalFilesCount() }} {{ getTotalFilesCount() === 1 ? ('Document') : ('Documents')
                 }}</span>
             <span
                 class="text-[10px] min-[380px]:text-[11px] sm:text-[13px] text-inherit opacity-70 mt-1 truncate">{{'Uploaded'}}</span>
@@ -125,13 +125,13 @@
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
         </div>
-            <p class="text-[15px] text-text-secondary">
+        <p class="text-[15px] text-text-secondary">
             <span>{{"drop1"}} {{ fileLimit === 1 ? ('document1') : ('documents1') }}
                 {{'hereor'}}
             </span>
             <span class="text-brand-600 font-extrabold">{{"browse1"}}</span>
         </p>
-            <p class="text-[12px] text-text-muted mt-0.5">
+        <p class="text-[12px] text-text-muted mt-0.5">
             @if(getTotalFilesCount() === 0) {
             {{'max'}} {{ fileLimit }} {{ fileLimit === 1 ? ('file') : ('files') }} • {{
             getReadableFileSize(maxFileSize) }} {{'each'}}
@@ -142,7 +142,7 @@
         </p>
     </div>
     } @else {
-        <div class="flex flex-col items-center justify-center gap-3 w-full h-full">
+    <div class="flex flex-col items-center justify-center gap-3 w-full h-full">
         <div class="w-8 h-8 rounded-full border-2 border-surface-200 border-t-brand-600 animate-spin"></div>
         <span class="text-brand-600 font-bold text-[14px]">{{'Processing file'}}...</span>
     </div>
@@ -371,7 +371,7 @@
                     }
                 </div>
                 }
-               @else if(currentViewerItem.type === 'pdf') {
+                @else if(currentViewerItem.type === 'pdf') {
                 @if(isViewerLoading) {
                 <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-surface-50">
                     <div class="mfi-spinner"></div>
@@ -379,7 +379,8 @@
                 </div>
                 }
                 <!-- absolute fills the relative parent, scrollable container with centered PDF pages -->
-                <div id="viewer-pdf-canvas" class="absolute inset-0 overflow-y-auto  flex flex-col items-center justify-start"></div>
+                <div id="viewer-pdf-canvas"
+                    class="absolute inset-0 overflow-y-auto  flex flex-col items-center justify-start"></div>
                 }
                 @else if(currentViewerItem.type === 'text') {
                 <div class="w-full h-full bg-surface-50 flex flex-col items-center justify-center p-6 text-center">
@@ -393,7 +394,8 @@
                         </svg>
                     </div>
                     <p class="text-[0.875rem] text-text-secondary font-medium max-w-md">
-                        {{"This document cannot be viewed directly in the browser, please download it to view its contents"}}
+                        {{"This document cannot be viewed directly in the browser, please download it to view its
+                        contents"}}
                     </p>
                 </div>
                 } @else {
@@ -455,9 +457,9 @@
                         </svg>
                         <span class="hidden sm:inline">{{"Delete"}}</span>
                     </button>
-                }
+                    }
                 </div>
             </div>
         </div>
     </div>
-    }    
+    }

@@ -717,9 +717,9 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  navigateToPendingMeetings(): void {
+  navigateToPendingRenewal(): void {
     this.router.navigate(
-      ['/meetings'],
+      ['/pendingrenewal'],
       {
         queryParams: {
           ...this.dateQueryParams(),
@@ -729,9 +729,9 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  navigateToRenewable(): void {
+  navigateToRenewed(): void {
     this.router.navigate(
-      ['/client'],
+      ['/renewal'],
       {
         queryParams: {
           ...this.dateQueryParams(),
