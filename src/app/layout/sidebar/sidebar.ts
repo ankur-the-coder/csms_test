@@ -20,15 +20,15 @@ export const csNavItems: NavItem[] = [
 
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
 
-  { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-  { id: 'helpguide', label: 'Help Guide', icon: 'training', route: '/help-guide' },
-  { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
+  // { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
+  // { id: 'helpguide', label: 'Help Guide', icon: 'training', route: '/help-guide' },
+  // { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
   // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
 
-  { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
-  { id: 'pendingrenewal', label: 'Pending Renewed Clients', icon: 'pendingrenewal', route: '/pendingrenewal' },
+  // { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
+  // { id: 'pendingrenewal', label: 'Pending Renewed Clients', icon: 'pendingrenewal', route: '/pendingrenewal' },
 
 
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
