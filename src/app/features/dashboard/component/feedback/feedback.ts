@@ -27,7 +27,7 @@ export interface ClientRow {
   customerPhone: string;
   customerEmail: string;
   subject: string;
-  rating: number;
+  rating: number | string;
   ratingSubmittedAt: string;
   likedMost: string;
   improveFeedback: string;
@@ -134,6 +134,7 @@ export class Feedback {
       customerEmail: raw.customerEmail,
       subject: raw.subject,
       rating: raw.rating,
+      // rating: `${raw.rating} Star`,
       ratingSubmittedAt: raw.ratingSubmittedAt,
       likedMost: raw.likedMost,
       improveFeedback: raw.improveFeedback,
