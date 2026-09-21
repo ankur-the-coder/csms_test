@@ -6,7 +6,6 @@ import { Client } from './features/client/client/client';
 import { ScheduleMeeting } from './features/meetings/schedule-meeting/schedule-meeting';
 import { Implementation } from './features/implementations/component/implementation/implementation/implementation';
 import { Training } from './features/trainings/Component/training/training';
-import { MyTraining } from './features/trainings/Component/my-training/my-training';
 import { TrainingMaterials } from './features/trainings/Component/training-materials/training-materials';
 import { VoiceShell } from './features/voice/voice-shell/voice-shell.component';
 import { Softphone } from './features/voice/pages/softphone/softphone';
@@ -83,7 +82,6 @@ export const routes: Routes = [
         ],
       },
       { path: 'meetings/schedule', component: ScheduleMeeting },
-      { path: 'trainings/my-training', component: MyTraining },
       { path: 'trainings/materials', component: TrainingMaterials },
       { path: 'client/client-dashboard', component: ClientDashboard },
 
