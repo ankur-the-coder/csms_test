@@ -4,15 +4,19 @@
          MOBILE: Hamburger button (top-left)
          ─────────────────────────────────────────── -->
     @if (!isLargeScreen()) {
-    <button (click)="openDrawer()" aria-label="Open navigation menu"
-        class="fixed top-4 left-4 z-40 h-10 w-10 flex items-center justify-center
-               text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition-colors duration-200 focus:outline-none">
-        <!-- Hamburger icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-            aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-    </button>
+    <div class="fixed  z-40 h-17 w-full flex items-center justify-center
+           bg-white shadow-md border border-slate-200 
+            hover:bg-slate-100 transition-colors">
+        <button (click)="openDrawer()" aria-label="Open navigation menu" class="fixed top-4 left-4 z-40 h-10 w-10 flex items-center justify-center
+           bg-white shadow-sm border border-slate-200 rounded-lg
+           text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition-colors duration-200 focus:outline-none">
+            <!-- Hamburger icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+    </div>
     }
 
     <!-- ───────────────────────────────────────────

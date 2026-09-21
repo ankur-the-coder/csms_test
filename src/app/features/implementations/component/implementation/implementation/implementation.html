@@ -60,7 +60,7 @@
 </div>
   </div>
 
- 
+
   <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
    <div class="inline-flex flex-wrap items-center gap-1 bg-surface-100 p-1 rounded-2xl">
       @for (tab of filterTabs; track tab.id) {
@@ -80,7 +80,8 @@
       [config]="tableConfig()"
       [initialDateFrom]="initialDateFrom()"
       [initialDateTo]="initialDateTo()"
-      [filterNames]="['leadOwner', 'supportOwner','rating', 'country']">
+      [filterNames]="['leadOwner', 'supportOwner','rating', 'country']"
+      [defaultPreset]="'currentMonth'" [disableFutureDates]="true">
 
      <ng-template appCustomColumn="overallProgress" let-row>
         <div class="flex flex-col gap-1.5" style="min-width:180px">
@@ -104,7 +105,7 @@
       </ng-template>
 
       <!-- Custom modules cell template -->
-    
+
 <ng-template appCustomColumn="modules" let-row>
   <div class="inline-block">
     @if (getClientModules(row).length > 0) {
@@ -169,7 +170,7 @@
               [ngClass]="getHealthBadgeClasses(selectedClient()!.health)">
           {{ selectedClient()!.health }}
         </span>
-        <button (click)="closeClientDetails()" 
+        <button (click)="closeClientDetails()"
                 class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
                 type="button">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -196,7 +197,7 @@
     <!-- Module tab filter bar -->
     <div class="px-6 py-3 bg-white">
      <div class="p-1.5 pb-2.5 bg-slate-100 rounded-2xl flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
-        <button (click)="selectedModuleTab.set('all')" 
+        <button (click)="selectedModuleTab.set('all')"
                 type="button"
                 class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
                 [class.bg-white]="selectedModuleTab() === 'all'"
@@ -210,7 +211,7 @@
           All Modules
         </button>
         @for (mod of getClientModules(selectedClient()); track mod.key) {
-        <button (click)="selectedModuleTab.set(mod.key)"  
+        <button (click)="selectedModuleTab.set(mod.key)"
                 type="button"
                 class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
                 [class.bg-white]="selectedModuleTab() === mod.key"

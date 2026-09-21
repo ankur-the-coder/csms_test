@@ -1,12 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Clientdashboard } from '../services/client/clientdashboard/clientdashboard';
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
 import { Clientdashboardmeeting } from '../services/client/clientdashboard/clientdashboardmeeting';
 import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.model';
-import { Clientdashboardtracker } from '../services/client/clientdashboard/clientdashboardtracker';
-import { TrackerItem } from '../models/client/clientdashboardtracker.model';
 import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
 import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
@@ -15,10 +14,12 @@ import { AuthService } from '../../../core/services/auth-service';
 import { Utils } from '../../../shared/utils/utils';
 import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
 import { UsageData } from '../models/client/clientdashboardusage.model';
+import { Clientimplementation } from '../services/client/clientdashboard/clientimplementation';
+import {ClientImplementationData,ImplementationModule,} from '../models/client/clientimplementation.model';
 
 @Component({
   selector: 'app-client-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './client-dashboard.html',
   styleUrl: './client-dashboard.css',
 })
@@ -26,11 +27,10 @@ export class ClientDashboard {
   private authService = inject(AuthService);
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
-  private clientDashboardTrackerApi = inject(Clientdashboardtracker);
   private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
-   private clientDashboardUsageApi = inject(Clientdashboardusage);
-
+  private clientDashboardUsageApi = inject(Clientdashboardusage);
+  private clientImplementationApi = inject(Clientimplementation);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
   // 👇 UbiDesk base URL - constant
@@ -43,11 +43,72 @@ export class ClientDashboard {
   loading = signal(false);
   errorMsg = signal('');
 
-  // ---- Tracker state ----
-  tracker = signal<TrackerItem[]>([]);
-  trackerLoading = signal(false);
-  trackerError = signal('');
-  showAllTrackerModal = signal(false);
+  // ---- Implementation state ----
+  implementationData = signal<ClientImplementationData | null>(null);
+  implementationLoading = signal(false);
+  implementationError = signal('');
+  selectedModuleTab = signal<string>('all');
+  showAllTrackerDrawer = signal(false);
+
+  implementationModules = computed<ImplementationModule[]>(() => {
+    return this.implementationData()?.modules ?? [];
+  });
+
+  displayTrackerModules = computed<ImplementationModule[]>(() => {
+    const tab = this.selectedModuleTab();
+    const modules = this.implementationModules();
+    if (tab === 'all') {
+      return modules;
+    }
+    return modules.filter((m) => m.key === tab);
+  });
+
+  widgetTrackerModules = computed<ImplementationModule[]>(() => {
+    const tab = this.selectedModuleTab();
+    const allModules = this.implementationModules();
+    const filteredModules = tab === 'all' ? allModules : allModules.filter((m) => m.key === tab);
+
+    if (filteredModules.length === 0) {
+      return [];
+    }
+
+    if (filteredModules.length === 1) {
+      const mod = filteredModules[0];
+      return [
+        {
+          ...mod,
+          features: mod.features.slice(0, 2),
+        },
+      ];
+    }
+
+    return filteredModules.slice(0, 2).map((mod) => ({
+      ...mod,
+      features: mod.features.slice(0, 1),
+    }));
+  });
+
+  overallImplementationProgress = computed(() => {
+    return this.implementationData()?.overallProgress ?? { approved: 0, total: 0, percentage: 0 };
+  });
+
+  implementationHealth = computed(() => {
+    return this.implementationData()?.health ?? 'Neutral';
+  });
+
+  ringPercentage = computed(() => {
+    if (this.overallImplementationProgress().total > 0) {
+      return this.overallImplementationProgress().percentage;
+    }
+    return this.dashboardData()?.implementationProgress?.percentage ?? 0;
+  });
+
+  ringLabel = computed(() => {
+    if (this.overallImplementationProgress().total > 0) {
+      return `${this.overallImplementationProgress().approved} of ${this.overallImplementationProgress().total} completed`;
+    }
+    return this.dashboardData()?.implementationProgress?.label ?? '0 of 0 completed';
+  });
 
   // ---- Meetings state ----
   meetings = signal<MeetingDatum[]>([]);
@@ -66,35 +127,42 @@ export class ClientDashboard {
   ticketsLoading = signal(false);
   ticketsError = signal('');
   showAllTicketsModal = signal(false);
+  ticketFilterDays = signal<number>(28);
 
-    // ---- Usage state ----
+  // ---- Usage state ----
   usage = signal<UsageData | null>(null);
   usageLoading = signal(false);
   usageError = signal('');
 
-
-  // Widget me sirf top 5 dikhane ke liye
+  //In Widget only top 5 are comes
   topFiveTickets = computed(() => this.tickets().slice(0, 5));
 
-  // "View All" tabhi dikhega jab total tickets 5 se jyada hon
+  // "View All" only see if tickets are more than 5
   hasMoreTickets = computed(() => this.tickets().length > 5);
 
-  // Widget me sirf top 6 dikhane ke liye
+  // In Widget only top 6 are comes
   topSixAddons = computed(() => this.addons().slice(0, 6));
 
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+  // "View All" only see if addons are more than 6
   hasMoreAddons = computed(() => this.addons().length > 6);
 
-  // Widget me sirf top 6 dikhane ke liye
-  topSixTracker = computed(() => this.tracker().slice(0, 6));
-
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
-  hasMoreTracker = computed(() => this.tracker().length > 6);
-
-  // Widget me sirf top 5 dikhane ke liye
+  // In Widget only top 5 are comes
   topFiveMeetings = computed(() => this.meetings().slice(0, 5));
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+
+  // "View All" only see if meetings are more than 5
   hasMoreMeetings = computed(() => this.meetings().length > 5);
+
+  // Widget card mein sirf itne module-tabs dikhane hain, baaki "+N More" mein chale jayenge
+  private readonly MAX_VISIBLE_MODULE_TABS = 2;
+
+  visibleModuleTabs = computed(() => {
+  return this.implementationModules().slice(0, this.MAX_VISIBLE_MODULE_TABS);
+  });
+
+  hiddenModuleTabsCount = computed(() => {
+  const total = this.implementationModules().length;
+  return total > this.MAX_VISIBLE_MODULE_TABS ? total - this.MAX_VISIBLE_MODULE_TABS : 0;
+});
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -104,10 +172,10 @@ export class ClientDashboard {
       if (this.orgId) {
         this.loadDashboard(this.orgId);
         this.loadMeetings(this.orgId);
-        this.loadTracker(this.orgId);
         this.loadAddons(this.orgId);
         this.loadTickets(this.orgId);
         this.loadUsage(this.orgId);
+        this.loadImplementation(this.orgId);
       }
     });
   }
@@ -118,7 +186,7 @@ export class ClientDashboard {
     return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
   }
 
-  /** Ek particular ticket ka UbiDesk link */
+  /**Particular ticket to se in  UbiDesk link */
   getTicketUrl(ticketId: string | number): string {
     return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
   }
@@ -178,26 +246,6 @@ export class ClientDashboard {
     });
   }
 
-  private loadTracker(orgId: string): void {
-    this.trackerLoading.set(true);
-    this.trackerError.set('');
-
-    this.clientDashboardTrackerApi.getClientDashboard({ orgId }).subscribe({
-      next: (res) => {
-        this.trackerLoading.set(false);
-        if (res?.status) {
-          this.tracker.set(res.data ?? []);
-        } else {
-          this.trackerError.set(res?.msg || 'Failed to load tracker');
-        }
-      },
-      error: (err) => {
-        this.trackerLoading.set(false);
-        this.trackerError.set(err?.error?.msg || 'Failed to load tracker');
-      },
-    });
-  }
-
   private loadAddons(orgId: string): void {
     this.addonsLoading.set(true);
     this.addonsError.set('');
@@ -218,11 +266,11 @@ export class ClientDashboard {
     });
   }
 
-  private loadTickets(orgId: string): void {
+  private loadTickets(orgId: string, days: number = this.ticketFilterDays()): void {
     this.ticketsLoading.set(true);
     this.ticketsError.set('');
 
-    this.clientDashboardTicketsApi.getClientDashboard({ orgId }).subscribe({
+    this.clientDashboardTicketsApi.getClientDashboard({ orgId, days }).subscribe({
       next: (res) => {
         this.ticketsLoading.set(false);
         if (res?.status) {
@@ -236,6 +284,13 @@ export class ClientDashboard {
         this.ticketsError.set(err?.error?.msg || 'Failed to load tickets');
       },
     });
+  }
+
+  setTicketFilterDays(days: number): void {
+    this.ticketFilterDays.set(days);
+    if (this.orgId) {
+      this.loadTickets(this.orgId, days);
+    }
   }
 
   private loadUsage(orgId: string): void {
@@ -258,7 +313,6 @@ export class ClientDashboard {
     });
   }
 
-
   openAllTicketsModal(): void {
     this.showAllTicketsModal.set(true);
   }
@@ -273,14 +327,6 @@ export class ClientDashboard {
 
   closeAllAddonsModal(): void {
     this.showAllAddonsModal.set(false);
-  }
-
-  openAllTrackerModal(): void {
-    this.showAllTrackerModal.set(true);
-  }
-
-  closeAllTrackerModal(): void {
-    this.showAllTrackerModal.set(false);
   }
 
   openAllMeetingsModal(): void {
@@ -400,9 +446,68 @@ export class ClientDashboard {
     window.open(link, '_blank');
   }
 
-  // tab_sts === 1 has a green tick, otherwise gray circle
-  isModuleComplete(item: TrackerItem): boolean {
-    return item.tab_sts === 1;
+  private loadImplementation(orgId: string): void {
+    this.implementationLoading.set(true);
+    this.implementationError.set('');
+
+    this.clientImplementationApi.getOrgImplementation({ orgId }).subscribe({
+      next: (res) => {
+        this.implementationLoading.set(false);
+        if (res?.status && res?.data) {
+          this.implementationData.set(res.data);
+        } else {
+          this.implementationError.set(res?.msg || 'Failed to load implementation data');
+        }
+      },
+      error: (err) => {
+        this.implementationLoading.set(false);
+        this.implementationError.set(err?.error?.msg || 'Failed to load implementation data');
+      },
+    });
+  }
+
+  openAllTrackerDrawer(): void {
+    this.showAllTrackerDrawer.set(true);
+  }
+
+  closeAllTrackerDrawer(): void {
+    this.showAllTrackerDrawer.set(false);
+  }
+
+  selectModuleTab(tabKey: string): void {
+    this.selectedModuleTab.set(tabKey);
+  }
+
+  formatDate(isoDate: string | null | undefined): string {
+    if (!isoDate) return '-';
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return String(isoDate);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  getHealthBadgeClasses(health: string): string {
+    switch (health) {
+      case 'Good':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'Excellent':
+        return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'Neutral':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'Risk':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
+  }
+
+  getInitials(name: string): string {
+    if (!name) return 'MP';
+    return name
+      .split(' ')
+      .map((p) => p.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   goBack(): void {

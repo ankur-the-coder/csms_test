@@ -118,6 +118,9 @@ export interface ToolbarButton<T = any> {
   label?: string;
   icon?: string;
   color?: string;
+  defaultPreset?: 'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' | string;
+  disableFutureDates?: boolean;
+  disablePastDates?: boolean;
   hidden?: boolean | ((selected: T[]) => boolean);
   disabled?: boolean | ((selected: T[]) => boolean);
   onClick?: (selected: T[], all: T[]) => void;

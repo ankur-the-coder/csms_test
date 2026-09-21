@@ -81,6 +81,8 @@ export class WebRtcVoiceService {
   readonly missedCalls = signal<Array<{ id: string; number: string; name?: string; timestamp: Date; reason: string }>>([]);
 
   readonly missedCallsCount = signal<number>(0);
+  /** Total inbound calls today (all statuses), used for the Call History tab badge. */
+  readonly inboundCallsCount = signal<number>(0);
   /** Last number this session dialed out to, for the dialer's Redial button. Session-only (not persisted). */
   readonly lastDialedNumber = signal<{ number: string; name?: string } | null>(null);
   /** Last 5 outbound calls, fetched from call history for the dialer's quick-access strip. */
@@ -102,7 +104,12 @@ export class WebRtcVoiceService {
 
   private eventSource: EventSource | null = null;
   private sseReconnectTimer: any = null;
-  private currentEmployeeId: string = '1';
+  get currentEmployeeId(): string {
+    if (this.isBrowser) {
+      return localStorage.getItem('empId') || '1';
+    }
+    return '1';
+  }
   private isIntentionallyClosed = false;
   private timerInterval: any = null;
   // Guards against stale SSE events (e.g. delayed call.answered webhook
@@ -124,6 +131,7 @@ export class WebRtcVoiceService {
   private ringLoopTimer: any = null;
   private previousCallStatus: ActiveCallInfo['status'] | null = null;
   private previousCallDuration = 0;
+  private broadcastChannel: BroadcastChannel | null = null;
 
   constructor() {
     if (this.isBrowser) {
@@ -131,9 +139,60 @@ export class WebRtcVoiceService {
       this.fetchVoiceNumbers();
       this.requestNotificationPermission();
       this.fetchMissedCallsCount();
+      this.initCrossTabSync();
       effect(() => {
         this.announceCallStatusChange(this.activeCall());
       });
+    }
+  }
+
+  /** Cross-tab synchronization so all open browser tabs/windows immediately reflect answered or rejected calls. */
+  private initCrossTabSync(): void {
+    if (!this.isBrowser || typeof BroadcastChannel === 'undefined') return;
+    try {
+      this.broadcastChannel = new BroadcastChannel('csms_voice_cross_tab_sync');
+      this.broadcastChannel.onmessage = (event: MessageEvent) => {
+        this.handleCrossTabMessage(event.data);
+      };
+    } catch (err) {
+      console.warn('[Voice][CrossTab] BroadcastChannel initialization error:', err);
+    }
+  }
+
+  private broadcastCallAction(action: 'answered' | 'rejected' | 'ended', callLogId?: number, providerCallId?: string): void {
+    if (!this.broadcastChannel) return;
+    try {
+      this.broadcastChannel.postMessage({
+        type: 'VOICE_CALL_ACTION',
+        action,
+        callLogId: callLogId ?? this.activeCall()?.callLogId,
+        providerCallId: providerCallId ?? this.activeCall()?.providerCallId,
+        empId: this.currentEmployeeId,
+        timestamp: Date.now(),
+      });
+    } catch (err) {
+      console.warn('[Voice][CrossTab] Error broadcasting call action:', err);
+    }
+  }
+
+  private handleCrossTabMessage(data: any): void {
+    if (!data || data.type !== 'VOICE_CALL_ACTION') return;
+    const cur = this.activeCall();
+    if (!cur) return;
+
+    // If another tab answered or rejected or ended the call while this tab is showing an incoming ringing popup
+    if (cur.status === 'ringing') {
+      if (data.action === 'answered') {
+        console.log('[Voice][CrossTab] Call was answered in another tab — closing incoming call popup');
+        this.cleanupCallMedia();
+        this.endCallSession();
+        this.notify('Call answered in another tab', 'info');
+      } else if (data.action === 'rejected' || data.action === 'ended') {
+        console.log('[Voice][CrossTab] Call was declined/ended in another tab — closing incoming call popup');
+        if (data.callLogId) this.terminatedCallLogIds.add(data.callLogId);
+        this.cleanupCallMedia();
+        this.endCallSession();
+      }
     }
   }
 
@@ -452,6 +511,41 @@ export class WebRtcVoiceService {
     } catch (err: any) {
       console.warn('[Voice][MissedCalls] Failed to fetch missed calls count:', err.message);
     }
+    // Also refresh total inbound calls count for the badge
+    await this.fetchInboundCallsCount();
+  }
+
+  /** Fetch total inbound calls today (all statuses) for the Call History tab badge. */
+  async fetchInboundCallsCount(): Promise<void> {
+    try {
+      const params = new URLSearchParams();
+      params.set('page', '1');
+      params.set('limit', '1'); // we only need the total count from meta
+      params.set('direction', 'inbound');
+      // Scope to today
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      params.set('dateFrom', `${yyyy}-${mm}-${dd}`);
+      params.set('dateTo', `${yyyy}-${mm}-${dd}`);
+
+      const isAdmin = localStorage.getItem('adminSts') == '1';
+      if (!isAdmin) {
+        const empId = localStorage.getItem('empId');
+        if (empId) params.set('userId', empId);
+      }
+
+      const res = await fetch(`${this.API_BASE}/history?${params.toString()}`);
+      const json = await res.json();
+      if (json.status !== false) {
+        // If backend returns meta.total, use it; otherwise count data array length
+        const total = json.meta?.total ?? json.meta?.count ?? (json.data?.length || 0);
+        this.inboundCallsCount.set(Number(total) || 0);
+      }
+    } catch (err: any) {
+      console.warn('[Voice][InboundCount] Failed to fetch inbound calls count:', err.message);
+    }
   }
 
 
@@ -656,7 +750,7 @@ export class WebRtcVoiceService {
     }
 
     // Step 5: SSE for call state signaling
-    this.initSSE('1');
+    this.initSSE(this.currentEmployeeId);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1073,6 +1167,7 @@ export class WebRtcVoiceService {
       ?? (cur.status === 'active' || cur.status === 'held' ? 'completed' : 'no_answer');
 
     try {
+      const empId = this.currentEmployeeId || localStorage.getItem('empId');
       await fetch(`${this.API_BASE}/log-call-end`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1080,6 +1175,9 @@ export class WebRtcVoiceService {
           callLogId: cur.callLogId,
           status: finalStatus,
           durationSeconds: cur.durationSeconds,
+          userId: empId,
+          user_id: empId,
+          employeeId: empId,
         }),
       });
     } catch (err: any) {
@@ -1144,10 +1242,16 @@ export class WebRtcVoiceService {
 
   private async rejectBusyInboundCallOnBackend(callLogId: number): Promise<void> {
     try {
+      const empId = this.currentEmployeeId || localStorage.getItem('empId');
       const res = await fetch(`${this.API_BASE}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callLogId }),
+        body: JSON.stringify({
+          callLogId,
+          employeeId: empId,
+          userId: empId,
+          user_id: empId,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.status) {
@@ -1187,6 +1291,9 @@ export class WebRtcVoiceService {
   async answerCall(): Promise<void> {
     const current = this.activeCall();
     if (!current) return;
+
+    // Broadcast immediately so other open tabs close their ringing popups
+    this.broadcastCallAction('answered', current.callLogId, current.providerCallId);
 
     if (this.micPermission() === 'Blocked' || this.micPermission() === 'Denied') {
       this.errorMessage.set('Microphone is unavailable. Connect a microphone (or grant permission) before answering a call.');
@@ -1231,6 +1338,20 @@ export class WebRtcVoiceService {
         });
         console.log('[Voice][Call] Inbound call answered via TelnyxRTC SDK');
 
+        // Claim call on backend for this user
+        if (current.callLogId) {
+          fetch(`${this.API_BASE}/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              callLogId: current.callLogId,
+              employeeId: this.currentEmployeeId,
+              userId: this.currentEmployeeId,
+              user_id: this.currentEmployeeId,
+            }),
+          }).catch(() => {});
+        }
+
         // DEBUG: verify the mic track actually landed on the peer connection.
         this.diagnosePeerConnectionAudio('inbound-answer');
         return;
@@ -1248,7 +1369,12 @@ export class WebRtcVoiceService {
       const res = await fetch(`${this.API_BASE}/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callLogId: current.callLogId, employeeId: this.currentEmployeeId }),
+        body: JSON.stringify({
+          callLogId: current.callLogId,
+          employeeId: this.currentEmployeeId,
+          userId: this.currentEmployeeId,
+          user_id: this.currentEmployeeId,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.status) throw new Error(data.message || 'Answer failed');
@@ -1264,18 +1390,27 @@ export class WebRtcVoiceService {
   async rejectCall(): Promise<void> {
     const current = this.activeCall();
 
+    // Broadcast immediately so other open tabs close their ringing popups
+    this.broadcastCallAction('rejected', current?.callLogId, current?.providerCallId);
+
     // Same timing reasoning as hangupCall() above -- log before clearing.
     // 'rejected' since this is an explicit user decline, not a plain hangup.
     this.logCallEndToBackend('rejected');
     const isUnansweredInbound =
       current?.direction === 'inbound' && current.status !== 'active' && current.status !== 'held';
 
+    const empId = this.currentEmployeeId || localStorage.getItem('empId');
     if (isUnansweredInbound && current?.callLogId) {
       try {
         await fetch(`${this.API_BASE}/reject`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ callLogId: current.callLogId }),
+          body: JSON.stringify({
+            callLogId: current.callLogId,
+            employeeId: empId,
+            userId: empId,
+            user_id: empId,
+          }),
         });
       } catch (e) {
         console.warn('[Voice][Call] Reject network error:', e);
@@ -1287,13 +1422,17 @@ export class WebRtcVoiceService {
         await fetch(`${this.API_BASE}/reject`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ callLogId: current.callLogId }),
+          body: JSON.stringify({
+            callLogId: current.callLogId,
+            employeeId: empId,
+            userId: empId,
+            user_id: empId,
+          }),
         });
       } catch (e) {
         console.warn('[Voice][Call] Reject network error:', e);
       }
     }
-
 
     this.cleanupCallMedia();
     this.endCallSession();
@@ -1359,7 +1498,13 @@ export class WebRtcVoiceService {
 
   async hangupCall(): Promise<void> {
     const current = this.activeCall();
-    this.logCallEndToBackend();
+    const explicitStatus = (current?.status === 'ringing' && current?.direction === 'inbound')
+      ? 'rejected'
+      : (current?.status === 'active' || current?.status === 'held' ? 'completed' : 'no_answer');
+
+    this.broadcastCallAction('ended', current?.callLogId, current?.providerCallId);
+    this.logCallEndToBackend(explicitStatus);
+
     if (this.activeRTCCall && typeof this.activeRTCCall.hangup === 'function') {
       try {
         this.activeRTCCall.hangup();
@@ -1410,8 +1555,8 @@ export class WebRtcVoiceService {
   // SSE — Call State Signaling (unchanged responsibility)
   // ─────────────────────────────────────────────────────────────────────────
 
-  initSSE(employeeId: string = '1'): void {
-    this.currentEmployeeId = employeeId;
+  initSSE(employeeId?: string): void {
+    const targetEmpId = employeeId || this.currentEmployeeId;
     this.isIntentionallyClosed = false;
 
     if (this.eventSource) {
@@ -1419,14 +1564,14 @@ export class WebRtcVoiceService {
       this.closeSSE(false);
     }
 
-    if (!employeeId?.trim()) {
+    if (!targetEmpId?.trim()) {
       console.warn('[SSE] Invalid employee ID. SSE aborted.');
       return;
     }
 
     try {
-      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(employeeId)}`;
-      console.log(`[SSE] Establishing SSE for Employee [${employeeId}]`);
+      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
+      console.log(`[SSE] Establishing SSE for Employee [${targetEmpId}]`);
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {
@@ -1493,6 +1638,8 @@ export class WebRtcVoiceService {
         console.log('[SSE UI State] Incoming call from:', phoneNumber);
         this.receiveIncomingCall(callLogId, phoneNumber || 'Unknown', customerName);
         this.notify(`Incoming Call from ${phoneNumber || 'Unknown'}`, 'info');
+        // Refresh inbound count badge immediately when a new call arrives
+        this.fetchInboundCallsCount();
         break;
 
       case 'call_ringing': {
@@ -1505,11 +1652,26 @@ export class WebRtcVoiceService {
       case 'call_answered': {
         const cur = this.activeCall();
         if (cur) {
+          const isMeAnswering =
+            this.awaitingBridgeAnswer ||
+            (this.activeRTCCall && this.activeRTCCall.state === 'active') ||
+            (payload.employeeId && String(payload.employeeId) === String(this.currentEmployeeId)) ||
+            (payload.userId && String(payload.userId) === String(this.currentEmployeeId));
 
-          this.activeCall.set({ ...cur, status: 'active', callLogId });
-          this.startTimer();
-          this.notify('Call connected', 'success');
-          console.log('[Voice][Call] Call state changed → active (via SSE)');
+          if (isMeAnswering) {
+            this.activeCall.set({ ...cur, status: 'active', callLogId });
+            this.startTimer();
+            this.notify('Call connected', 'success');
+            console.log('[Voice][Call] Call state changed → active (via SSE)');
+          } else {
+            // Another agent or user ID answered the call — remove the ringing popup for this user immediately!
+            console.log('[Voice][Call] Call answered by another ID/agent — dismissing ringing popup');
+            if (callLogId) this.terminatedCallLogIds.add(callLogId);
+            this.cleanupCallMedia();
+            this.endCallSession();
+            this.notify('Call answered by another agent', 'info');
+            this.fetchInboundCallsCount();
+          }
         } else {
           console.warn('[SSE] call_answered received but no activeCall exists — ignoring (likely a stale/reordered webhook).');
         }
@@ -1531,30 +1693,38 @@ export class WebRtcVoiceService {
       }
 
       case 'call_completed':
+      case 'call_ended':
+      case 'call_hangup':
         console.log('[Voice][Call] Call state changed → ended (via SSE)');
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
         this.notify('Call completed', 'info');
+        this.fetchInboundCallsCount();
         break;
 
       case 'call_rejected':
+      case 'call_declined':
+      case 'call_canceled':
+      case 'call_cancelled':
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
         this.notify('Call rejected', 'warn');
         this.fetchMissedCallsCount();
+        this.fetchInboundCallsCount();
         break;
 
       case 'call_no_answer':
-        // Fired by the backend when call.machine.detection.ended has result != 'human',
-        // or when the call times out without the customer picking up.
-        console.log('[Voice][Call] Call state changed → no answer (via SSE)');
+      case 'call_missed':
+      case 'call_timeout':
+        // Fired when call is not answered by anyone before timeout or customer hangs up
+        console.log('[Voice][Call] Call state changed → missed (via SSE)');
         if (callLogId) this.terminatedCallLogIds.add(callLogId);
         this.cleanupCallMedia();
         this.endCallSession();
-        this.notify('No answer', 'warn');
-        this.fetchMissedCallsCount();
+        this.notify('Call missed', 'warn');
+        this.fetchMissedCallsCount(); // also calls fetchInboundCallsCount internally
         break;
 
       case 'call_failed':
