@@ -63,6 +63,31 @@ export class ClientDashboard {
     return modules.filter((m) => m.key === tab);
   });
 
+  widgetTrackerModules = computed<ImplementationModule[]>(() => {
+    const tab = this.selectedModuleTab();
+    const allModules = this.implementationModules();
+    const filteredModules = tab === 'all' ? allModules : allModules.filter((m) => m.key === tab);
+
+    if (filteredModules.length === 0) {
+      return [];
+    }
+
+    if (filteredModules.length === 1) {
+      const mod = filteredModules[0];
+      return [
+        {
+          ...mod,
+          features: mod.features.slice(0, 2),
+        },
+      ];
+    }
+
+    return filteredModules.slice(0, 2).map((mod) => ({
+      ...mod,
+      features: mod.features.slice(0, 1),
+    }));
+  });
+
   overallImplementationProgress = computed(() => {
     return this.implementationData()?.overallProgress ?? { approved: 0, total: 0, percentage: 0 };
   });
