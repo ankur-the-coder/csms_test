@@ -14,7 +14,7 @@ export interface NavItem {
 
 
 export const csNavItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+  // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
   // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
 
@@ -22,7 +22,7 @@ export const csNavItems: NavItem[] = [
   // { id: 'training', label: 'Training', icon: 'training', route: '/training' },
   // { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   // { id: 'connected', label: 'Connected', icon: 'connected', route: '/connected' },
-  { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+  // { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   // { id: 'usages', label: 'Usages', icon: 'usages', route: '/usages' },
 
   // { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
