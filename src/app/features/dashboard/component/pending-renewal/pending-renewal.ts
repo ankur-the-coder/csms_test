@@ -75,7 +75,7 @@ export class PendingRenewal {
       this.initialDateTo.set(to);
     } else {
       this.initialDateFrom.set(this.getFirstDayOfMonthString());
-      this.initialDateTo.set(this.getLastDayOfMonthString());
+      this.initialDateTo.set(this.getTodayDateString());
     }
 
     this.route.queryParamMap.subscribe(queryParams => {
