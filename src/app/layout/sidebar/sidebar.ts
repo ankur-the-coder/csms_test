@@ -15,8 +15,8 @@ export interface NavItem {
 
 export const csNavItems: NavItem[] = [
 
-  // { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-  // { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
+  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
+  { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
 
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },
 
