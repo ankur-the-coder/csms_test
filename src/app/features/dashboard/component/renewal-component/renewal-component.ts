@@ -165,6 +165,11 @@ export class RenewalComponent {
         // { key: 'renewId', label: 'Renew ID', sortable: true },
       ] as SmartColumn<ClientRow>[],
 
+
+
+
+
+
       apiConfig: {
         endpoint: this.tableEndpoint,
         dataPath: 'data',
