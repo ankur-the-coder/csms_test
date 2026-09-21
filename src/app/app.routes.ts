@@ -27,6 +27,7 @@ import { Connected } from './features/dashboard/component/connected/connected';
 import { Usages } from './features/dashboard/component/usages/usages';
 import { ClientDashboard } from './features/client/client-dashboard/client-dashboard';
 import { RenewalComponent } from './features/dashboard/component/renewal-component/renewal-component';
+import { PendingRenewal } from './features/dashboard/component/pending-renewal/pending-renewal';
 
 
 export const routes: Routes = [
@@ -67,6 +68,7 @@ export const routes: Routes = [
       // { path: 'connected', component: Connected },
       // { path: 'usages', component: Usages },
       { path: 'renewal', component: RenewalComponent },
+      { path: 'pendingrenewal', component: PendingRenewal },
       {
         path: 'voice',
         component: VoiceShell,
