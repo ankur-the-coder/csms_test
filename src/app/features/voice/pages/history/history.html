@@ -4,10 +4,7 @@
   </div>
 </div>
 
-<!-- Direction cell: small arrow icon (colored by direction only — green
-     outbound, blue inbound) beside a plain-colored label. Outcome color
-     lives on the Status cell instead, so direction and outcome aren't
-     both fighting for attention in the same place. -->
+
 <ng-template #directionCell let-row>
   <div class="flex items-center gap-1.5">
     <svg class="w-3.5 h-3.5 shrink-0" [ngClass]="row.direction === 'outbound' ? 'text-success' : 'text-info'"
@@ -35,9 +32,7 @@
   </span>
 </ng-template>
 
-<!-- Status cell: small colored dot + text, using the theme's existing
-     subtle-color tokens (same family as badges elsewhere in the app) --
-     not the old bright/saturated filled pill badges. -->
+
 <ng-template #statusCell let-row>
   <span class="inline-flex items-center gap-1.5" [ngClass]="getStatusTextClass(row.status)">
     <span class="w-1.5 h-1.5 rounded-full shrink-0" [ngClass]="getStatusDotClass(row.status)"></span>
@@ -45,21 +40,11 @@
   </span>
 </ng-template>
 
-<!-- Date cell: date + time together, scoped to this page only -- the
-     shared DataTable's built-in type:'date' formats date-only
-     ('dd MMM yyyy'), which is right for most tables but loses exactly the
-     info that matters most for a call log (what time did this call happen). -->
 <ng-template #dateCell let-row>
   <span class="font-mono text-xs tabular-nums">{{ row.createdAt | date:'dd MMM yyyy, h:mm a' }}</span>
 </ng-template>
 
-<!-- Duration cell: a 0-second call already shows as red/danger in the
-     Status column (no_answer/busy/failed) -- repeating '00:00' here in the
-     same weight as a real 27-second conversation makes every row look
-     equally significant at a glance. Fading zero-duration rows to a plain
-     dash and giving real durations slightly bolder, aligned monospace lets
-     the eye separate "calls that actually connected" from "calls that
-     didn't" without adding any new color. -->
+
 <ng-template #durationCell let-row>
   <span *ngIf="row.duration === '00:00'; else realDuration" class="font-mono text-xs text-text-muted">&mdash;</span>
   <ng-template #realDuration>
