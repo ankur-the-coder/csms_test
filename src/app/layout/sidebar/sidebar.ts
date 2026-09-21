@@ -111,3 +111,4 @@ export class Sidebar {
     return this.sanitizer.bypassSecurityTrustHtml(icons[type] || '');
   }
 }
+   
