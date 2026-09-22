@@ -11,7 +11,7 @@
   <div class="card p-0 overflow-hidden">
     <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [initialDateFrom]="initialDateFrom()"
       [initialDateTo]="initialDateTo()"
-
+[filterNames]="['leadOwner', 'supportOwner']"
 
       >
       <!-- <ng-template appCustomColumn="connectedSts" let-value="value" let-row="row">
