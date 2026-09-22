@@ -53,7 +53,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'voice', pathMatch: 'full' },
-      { path: 'help-guide', component: Training },
+      // { path: 'help-guide', component: Training },
 
 
 
@@ -78,8 +78,8 @@ export const routes: Routes = [
         ],
       },
       { path: 'meetings/schedule', component: ScheduleMeeting },
-      { path: 'trainings/materials', component: TrainingMaterials },
       { path: 'client/client-dashboard', component: ClientDashboard },
+      // { path: 'trainings/materials', component: TrainingMaterials },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },
       // { path: 'connected', component: Connected },
