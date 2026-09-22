@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { TableFilter } from './data-table.types';
+import { environment } from '../../../../environments/environment';
 
 interface OwnerApiRow {
   // Adjust these field names to match your actual API response
@@ -56,7 +57,7 @@ export interface Datum {
 
 @Injectable({ providedIn: 'root' })
 export class DataTableService {
-  private readonly baseUrl = 'http://127.0.0.1:5000';
+  private readonly baseUrl = 'environment.apiUrl';
 
   constructor(private http: HttpClient) {}
 
