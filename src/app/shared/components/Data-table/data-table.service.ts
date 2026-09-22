@@ -57,7 +57,7 @@ export interface Datum {
 
 @Injectable({ providedIn: 'root' })
 export class DataTableService {
-  private readonly baseUrl = 'environment.apiUrl';
+  private readonly baseUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
