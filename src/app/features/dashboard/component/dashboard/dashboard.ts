@@ -19,6 +19,7 @@ import {
 
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
+import { CountUpDirective } from './count-up.directive';
 
 interface DashboardCardData {
   premiumClients: number;
@@ -35,6 +36,7 @@ interface DashboardCardData {
     Calendar,
     ChartComponent,
     CustomDateSelector,
+    CountUpDirective,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
@@ -123,12 +125,36 @@ export class DashboardComponent implements OnInit {
   readonly appliedFrom = signal('');
   readonly appliedTo = signal('');
 
+  private getTodayDateString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private getFirstDayOfMonthString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  }
+
+  private getLastDayOfMonthString(): string {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(lastDay).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   ngOnInit(): void {
     const today = new Date();
+    const initialFrom = this.getFirstDayOfMonthString();
+    const initialTo = this.getTodayDateString();
 
-    const todayString = this.toDateString(today);
-
-    this.onDateApplied(todayString, todayString);
+    this.onDateApplied(initialFrom, initialTo);
     this.fetchCalendarForMonth(today);
   }
 

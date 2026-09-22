@@ -47,11 +47,12 @@ import { TimePickerComponent } from '../../shared/components/inputs/time-picker/
 
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../shared/components/inputs/charts/charts';
+import { CountUpDirective } from '../dashboard/component/dashboard/count-up.directive';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent,CountUpDirective],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {

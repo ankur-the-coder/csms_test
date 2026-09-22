@@ -50,16 +50,42 @@ export class PendingRenewal {
     return `${year}-${month}-${day}`;
   }
 
+  private getFirstDayOfMonthString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  }
+
+  private getLastDayOfMonthString(): string {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(lastDay).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   ngOnInit() {
-    this.route.queryParamMap.subscribe(params => {
-      const from = params.get('from');
-      const to = params.get('to');
-      if (from && to) {
-        this.initialDateFrom.set(from);
-        this.initialDateTo.set(to);
+    const params = this.route.snapshot.queryParamMap;
+    const from = params.get('from');
+    const to = params.get('to');
+    if (from && to) {
+      this.initialDateFrom.set(from);
+      this.initialDateTo.set(to);
+    } else {
+      this.initialDateFrom.set(this.getFirstDayOfMonthString());
+      this.initialDateTo.set(this.getTodayDateString());
+    }
+
+    this.route.queryParamMap.subscribe(queryParams => {
+      const qFrom = queryParams.get('from');
+      const qTo = queryParams.get('to');
+      if (qFrom && qTo) {
+        this.initialDateFrom.set(qFrom);
+        this.initialDateTo.set(qTo);
       }
     });
-
 
     this.loadData();
   }
@@ -143,15 +169,15 @@ export class PendingRenewal {
 
     return {
       columns: [
-        { key: 'client', label: 'Client', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true, hideable: false,},
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true },
+        { key: 'email', label: 'Email', sortable: true ,hideable: false,},
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
         { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' },
+        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
         // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },

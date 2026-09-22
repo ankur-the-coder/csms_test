@@ -1,67 +1,94 @@
 <div class="space-y-6 pb-12">
  <div class="card p-4 mb-4">
-    <h1 class="text-xl font-bold">Global Implementation Progress</h1>
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  <div>
+      <h1 class="text-xl font-bold">Implementation Progress</h1>
     <p class="mt-2 text-sm text-text-secondary">
-      Monitor implementation progress and module completion across all organizations.
-    </p>
+        Monitor implementation progress and module completion across all organizations.
+      </p>
+    </div>
+   <div class="w-full md:w-64 lg:w-64 md:ml-auto">
+      <app-custom-date-selector
+        [initialDates]="{
+          from: initialDateFrom(),
+          to: initialDateTo()
+        }"
+        [defaultPreset]="'currentMonth'"
+        [disableFutureDates]="true"
+        (onApplyDate)="onDateApplied($event.from, $event.to)">
+      </app-custom-date-selector>
+    </div>
+
   </div>
+</div>
+
+  
+  
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-    <!-- Total Accounts -->
-  <div class="card flex items-center justify-between gap-6 border border-cyan-300 bg-cyan-50 rounded-xl p-4 overflow-hidden">
-  <div class="min-w-0">
-    <div class="text-2xl font-bold  mt-1">{{ totalClients() }}</div>
-    <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Total Implementations</span>
-  </div>
-  <div class="stat-icon w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-    </svg>
-  </div>
-</div>
+    <!-- Total Implementations -->
+    <div (click)="setFilterStatus('all')"
+         class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
+         [ngClass]="statusFilter() === 'all' ? 'border-cyan-500 bg-cyan-100/70 ring-2 ring-cyan-400 shadow-sm' : 'border-cyan-300 bg-cyan-50'">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ totalClients() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Total Implementations</span>
+      </div>
+      <div class="stat-icon w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+    </div>
 
     <!-- Completed -->
-    <div class="card flex items-center justify-between gap-6 border border-brand-300 bg-brand-50 rounded-xl p-4 overflow-hidden">
-  <div class="min-w-0">
-    <div class="text-2xl font-bold  mt-1">{{ completedClientsCount() }}</div>
-    <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
-  </div>
-  <div class="stat-icon w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-    </svg>
-  </div>
-</div>
+    <div (click)="setFilterStatus('complete')"
+         class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
+         [ngClass]="statusFilter() === 'complete' ? 'border-emerald-500 bg-emerald-100/70 ring-2 ring-emerald-400 shadow-sm' : 'border-brand-300 bg-brand-50'">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ completedClientsCount() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
+      </div>
+      <div class="stat-icon w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+    </div>
 
-    <!-- In Progress -->
-<div class="card flex items-center justify-between gap-6 border border-warning bg-amber-50 rounded-xl p-4 overflow-hidden">
-  <div class="min-w-0">
-    <div class="text-2xl font-bold  mt-1">{{ inProgressClientsCount() }}</div>
-    <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending</span>
-  </div>
-  <div class="stat-icon  w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-    </svg>
-  </div>
-</div>
+    <!-- Pending / In Progress -->
+    <div (click)="setFilterStatus('in_progress')"
+         class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
+         [ngClass]="statusFilter() === 'in_progress' ? 'border-amber-500 bg-amber-100/70 ring-2 ring-amber-400 shadow-sm' : 'border-warning bg-amber-50'">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ inProgressClientsCount() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending</span>
+      </div>
+      <div class="stat-icon w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+    </div>
 
     <!-- Not Started -->
-   <div class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden">
-  <div class="min-w-0">
-    <div class="text-2xl font-bold mt-1">{{ pendingClientsCount() }}</div>
-    <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Not Started</span>
-  </div>
-  <div class="stat-icon  w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-    </svg>
-  </div>
-</div>
+    <div (click)="setFilterStatus('pending')"
+         class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
+         [ngClass]="statusFilter() === 'pending' ? 'border-rose-500 bg-rose-100/70 ring-2 ring-rose-400 shadow-sm' : 'border-red-300 bg-red-50'">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1">{{ pendingClientsCount() }}</div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Not Started</span>
+      </div>
+      <div class="stat-icon w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+    </div>
   </div>
 
 
-  <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <!-- <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
    <div class="inline-flex flex-wrap items-center gap-1 bg-surface-100 p-1 rounded-2xl">
       @for (tab of filterTabs; track tab.id) {
       <button
@@ -73,7 +100,7 @@
       </button>
       }
     </div>
-</div>
+</div> -->
 
 <div class="card p-0">
     <app-data-table
