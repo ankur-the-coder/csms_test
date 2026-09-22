@@ -22,7 +22,7 @@ export const csNavItems: NavItem[] = [
   { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
   { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
-  { id: 'pendingrenewal', label: 'Pending Renewed Clients', icon: 'pendingrenewal', route: '/pendingrenewal' },
+  { id: 'pendingrenewal', label: 'Pending Renewals', icon: 'pendingrenewal', route: '/pendingrenewal' },
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
 
   // { id: 'onboarding', label: 'Onboarding', icon: 'onboarding', route: '/onboarding' },

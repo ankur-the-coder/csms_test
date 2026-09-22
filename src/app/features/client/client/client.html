@@ -1,15 +1,15 @@
 <div class="space-y-6 pb-12">
   <div class="card p-4 mb-4">
     <h1 class="text-xl font-bold">Client</h1>
-    <p class="mt-2 text-sm text-text-muted">
+    <!-- <p class="mt-2 text-sm text-text-muted">
       Manage all client information, agreements, contacts, subscriptions in one place
-    </p>
+    </p> -->
   </div>
 
   <div class="card p-0 overflow-hidden">
     <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [filterNames]="['leadOwner', 'supportOwner']"
       [initialDateFrom]="initialDateFrom()" [initialDateTo]="initialDateTo()"
-[defaultPreset]="'currentMonth'" [disableFutureDates]="true"
+      [defaultPreset]="'currentMonth'" [disableFutureDates]="true"
       >
       <ng-template appCustomColumn="progress" let-value="value" let-row="row">
         <div class="flex flex-col gap-1.5 min-w-35">
@@ -88,7 +88,7 @@
   </div>
 
   @if (actionMenuOpenRowId() !== null && actionMenuRow(); as menuRow) {
-  <div class="fixed z-50 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5"
+  <div class="fixed z-50 w-50 bg-white rounded-xl border border-slate-200 shadow-lg py-1.5"
     [style.top.px]="actionMenuPosition()?.top" [style.left.px]="actionMenuPosition()?.left" role="menu"
     (click)="$event.stopPropagation()">
     <button type="button" role="menuitem" (click)="$event.stopPropagation(); onClientMenuAction('Send Mail', menuRow)"
@@ -112,7 +112,7 @@
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="m3 7 9 6 9-6" />
       </svg>
-      Send Mail
+      Send Onboarding Mail
       }
     </button>
 
@@ -251,7 +251,7 @@
           {{ mailModalRow()?.name?.charAt(0)?.toUpperCase() }}
         </div>
         <div>
-          <h2 class="text-[15px] font-semibold text-slate-900">Onboarding Email</h2>
+          <h2 class="text-[15px] font-semibold text-slate-900">Onboarding Mail</h2>
           <p class="text-xs text-slate-500">to {{ mailModalRow()?.name }}</p>
         </div>
       </div>
