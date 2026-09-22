@@ -78,6 +78,7 @@ export class Implementation implements OnInit, OnDestroy {
   private selectedDateFrom = signal<string | null>(null);
   private selectedDateTo   = signal<string | null>(null);
   cardData = signal<CardData>({ totalAccounts: 0, completed: 0, inProgress: 0, notStarted: 0 });
+  cardsLoading = signal<boolean>(true);
   statusFilter = signal<string>('all');
   selectedClient    = signal<Client | null>(null);
   selectedModuleTab = signal<string>('all');
@@ -297,6 +298,7 @@ export class Implementation implements OnInit, OnDestroy {
   fetchCards(from?: string, to?: string): void {
     const fromDate = from || this.selectedDateFrom() || this.getFirstDayOfMonthString();
     const toDate = to || this.selectedDateTo() || this.getTodayDateString();
+     this.cardsLoading.set(true);
     this.implService.fetchImpCardData({ fromDate, toDate }).pipe(
       catchError((err) => {
         console.error('Card data error:', err);
@@ -304,6 +306,7 @@ export class Implementation implements OnInit, OnDestroy {
       }),
       takeUntil(this.destroy$)
     ).subscribe((data) => {
+      this.cardsLoading.set(false);
       if (!data) return;
       this.cardData.set(data);
     });
