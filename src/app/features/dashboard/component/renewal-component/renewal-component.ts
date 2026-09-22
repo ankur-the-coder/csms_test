@@ -22,6 +22,9 @@ export interface ClientRow {
   renewDate: string;
   endDate: string;
   createdDate: string;
+  country: string;
+  leadOwner: string;
+  supportOwner: string;
 }
 
 
@@ -50,7 +53,36 @@ export class RenewalComponent {
     return `${year}-${month}-${day}`;
   }
 
+
+
+  private getFirstDayOfMonthString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  }
+
+  private getLastDayOfMonthString(): string {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(lastDay).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+
   ngOnInit() {
+    const params = this.route.snapshot.queryParamMap;
+    const from = params.get('from');
+    const to = params.get('to');
+    if (from && to) {
+      this.initialDateFrom.set(from);
+      this.initialDateTo.set(to);
+    } else {
+      this.initialDateFrom.set(this.getFirstDayOfMonthString());
+      this.initialDateTo.set(this.getTodayDateString());
+    }
     this.route.queryParamMap.subscribe(params => {
       const from = params.get('from');
       const to = params.get('to');
@@ -80,6 +112,10 @@ export class RenewalComponent {
       endDate: raw.endDate,
       phone: raw.phone,
       renewDate: raw.renewDate,
+      country: raw.country,
+      supportOwner: raw.supportOwner,
+      leadOwner: raw.leadOwner
+
     };
   }
 
@@ -142,15 +178,23 @@ export class RenewalComponent {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: true },
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
-        // { key: 'countryCode', label: 'Country Code', sortable: false },
-        { key: 'createdDate', label: 'Created Date', sortable: false },
         { key: 'email', label: 'Email', sortable: true },
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' },
-        // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'phone', label: 'Phone', sortable: false },
+        { key: 'country', label: 'Country', sortable: false },
+        { key: 'createdDate', label: 'Created Date', sortable: false },
+        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
+        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' },
+        { key: 'leadOwner', label: 'Lead Owner', sortable: false },
+        { key: 'supportOwner', label: 'Support Owner', sortable: false },
+        // { key: 'countryCode', label: 'Country Code', sortable: false },
+        // { key: 'orgId', label: 'Org ID', sortable: true },
         // { key: 'renewId', label: 'Renew ID', sortable: true },
       ] as SmartColumn<ClientRow>[],
+
+
+
+
+
 
       apiConfig: {
         endpoint: this.tableEndpoint,

@@ -30,11 +30,11 @@
         class="whitespace-nowrap inline-flex items-center gap-1.5"
       >
         {{ tab.label }}
-        <span *ngIf="tab.path === 'history' && voiceService.missedCallsCount() > 0"
+        <!-- <span *ngIf="tab.path === 'history' && voiceService.inboundCallsCount() > 0"
           class="inline-flex items-center justify-center min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-danger text-white text-[10px] font-bold leading-none"
-          [title]="voiceService.missedCallsCount() + ' missed call(s) today needing a callback'">
-          {{ voiceService.missedCallsCount() > 9 ? '9+' : voiceService.missedCallsCount() }}
-        </span>
+          [title]="voiceService.inboundCallsCount() + ' incoming call(s) today'">
+          {{ voiceService.inboundCallsCount() > 9 ? '9+' : voiceService.inboundCallsCount() }}
+        </span> -->
       </a>
     </div>
   </div>

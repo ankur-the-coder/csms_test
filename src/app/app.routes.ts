@@ -6,7 +6,6 @@ import { Client } from './features/client/client/client';
 import { ScheduleMeeting } from './features/meetings/schedule-meeting/schedule-meeting';
 import { Implementation } from './features/implementations/component/implementation/implementation/implementation';
 import { Training } from './features/trainings/Component/training/training';
-import { MyTraining } from './features/trainings/Component/my-training/my-training';
 import { TrainingMaterials } from './features/trainings/Component/training-materials/training-materials';
 import { VoiceShell } from './features/voice/voice-shell/voice-shell.component';
 import { Softphone } from './features/voice/pages/softphone/softphone';
@@ -27,6 +26,7 @@ import { Connected } from './features/dashboard/component/connected/connected';
 import { Usages } from './features/dashboard/component/usages/usages';
 import { ClientDashboard } from './features/client/client-dashboard/client-dashboard';
 import { RenewalComponent } from './features/dashboard/component/renewal-component/renewal-component';
+import { PendingRenewal } from './features/dashboard/component/pending-renewal/pending-renewal';
 
 
 export const routes: Routes = [
@@ -52,21 +52,22 @@ export const routes: Routes = [
     component: Layout,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'help-guide', component: Training },
+      { path: '', redirectTo: 'voice', pathMatch: 'full' },
+      // { path: 'help-guide', component: Training },
 
 
 
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'implementation', component: Implementation },
+      // { path: 'dashboard', component: DashboardComponent },
+      // { path: 'implementation', component: Implementation },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },
-      { path: 'meetings', component: MeetingsComponent },
-      { path: 'client', component: Client },
-      { path: 'feedback', component: Feedback },
+      // { path: 'meetings', component: MeetingsComponent },
+      // { path: 'client', component: Client },
+      // { path: 'feedback', component: Feedback },
       // { path: 'connected', component: Connected },
       // { path: 'usages', component: Usages },
-      { path: 'renewal', component: RenewalComponent },
+      // { path: 'renewal', component: RenewalComponent },
+      // { path: 'pendingrenewal', component: PendingRenewal },
       {
         path: 'voice',
         component: VoiceShell,
@@ -80,10 +81,9 @@ export const routes: Routes = [
           { path: 'clients', component: Clients },
         ],
       },
-      { path: 'meetings/schedule', component: ScheduleMeeting },
-      { path: 'trainings/my-training', component: MyTraining },
-      { path: 'trainings/materials', component: TrainingMaterials },
-      { path: 'client/client-dashboard', component: ClientDashboard },
+      // { path: 'meetings/schedule', component: ScheduleMeeting },
+      // { path: 'trainings/materials', component: TrainingMaterials },
+      // { path: 'client/client-dashboard', component: ClientDashboard },
 
     ],
   },

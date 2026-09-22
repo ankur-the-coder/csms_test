@@ -78,6 +78,9 @@ export class DataTable<T extends object> implements AfterContentInit {
   filterNames = input<string[]>([]);
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
+  defaultPreset = input<'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' | string>('today');
+  disableFutureDates = input<boolean>(false);
+  disablePastDates = input<boolean>(false);
   initialFilters = input<Record<string, any>>({});
   permissions = input<{ canEdit?: boolean }>({ canEdit: true });
   excludePdfColumns = input<string[]>([]);

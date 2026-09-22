@@ -6,8 +6,6 @@ import { Clientdashboard } from '../services/client/clientdashboard/clientdashbo
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
 import { Clientdashboardmeeting } from '../services/client/clientdashboard/clientdashboardmeeting';
 import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.model';
-import { Clientdashboardtracker } from '../services/client/clientdashboard/clientdashboardtracker';
-import { TrackerItem } from '../models/client/clientdashboardtracker.model';
 import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
 import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
@@ -17,7 +15,7 @@ import { Utils } from '../../../shared/utils/utils';
 import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
 import { UsageData } from '../models/client/clientdashboardusage.model';
 import { Clientimplementation } from '../services/client/clientdashboard/clientimplementation';
-import { ClientImplementationData, ImplementationModule } from '../models/client/clientimplementation.model';
+import {ClientImplementationData,ImplementationModule,} from '../models/client/clientimplementation.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -29,12 +27,10 @@ export class ClientDashboard {
   private authService = inject(AuthService);
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
-  private clientDashboardTrackerApi = inject(Clientdashboardtracker);
   private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
   private clientDashboardUsageApi = inject(Clientdashboardusage);
   private clientImplementationApi = inject(Clientimplementation);
-
   private location = inject(Location);
   private route = inject(ActivatedRoute);
   // 👇 UbiDesk base URL - constant
@@ -67,6 +63,31 @@ export class ClientDashboard {
     return modules.filter((m) => m.key === tab);
   });
 
+  widgetTrackerModules = computed<ImplementationModule[]>(() => {
+    const tab = this.selectedModuleTab();
+    const allModules = this.implementationModules();
+    const filteredModules = tab === 'all' ? allModules : allModules.filter((m) => m.key === tab);
+
+    if (filteredModules.length === 0) {
+      return [];
+    }
+
+    if (filteredModules.length === 1) {
+      const mod = filteredModules[0];
+      return [
+        {
+          ...mod,
+          features: mod.features.slice(0, 2),
+        },
+      ];
+    }
+
+    return filteredModules.slice(0, 2).map((mod) => ({
+      ...mod,
+      features: mod.features.slice(0, 1),
+    }));
+  });
+
   overallImplementationProgress = computed(() => {
     return this.implementationData()?.overallProgress ?? { approved: 0, total: 0, percentage: 0 };
   });
@@ -89,12 +110,6 @@ export class ClientDashboard {
     return this.dashboardData()?.implementationProgress?.label ?? '0 of 0 completed';
   });
 
-  // ---- Tracker state ----
-  tracker = signal<TrackerItem[]>([]);
-  trackerLoading = signal(false);
-  trackerError = signal('');
-  showAllTrackerModal = signal(false);
-
   // ---- Meetings state ----
   meetings = signal<MeetingDatum[]>([]);
   meetingsLoading = signal(false);
@@ -114,34 +129,40 @@ export class ClientDashboard {
   showAllTicketsModal = signal(false);
   ticketFilterDays = signal<number>(28);
 
-    // ---- Usage state ----
+  // ---- Usage state ----
   usage = signal<UsageData | null>(null);
   usageLoading = signal(false);
   usageError = signal('');
 
-
-  // Widget me sirf top 5 dikhane ke liye
+  //In Widget only top 5 are comes
   topFiveTickets = computed(() => this.tickets().slice(0, 5));
 
-  // "View All" tabhi dikhega jab total tickets 5 se jyada hon
+  // "View All" only see if tickets are more than 5
   hasMoreTickets = computed(() => this.tickets().length > 5);
 
-  // Widget me sirf top 6 dikhane ke liye
+  // In Widget only top 6 are comes
   topSixAddons = computed(() => this.addons().slice(0, 6));
 
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+  // "View All" only see if addons are more than 6
   hasMoreAddons = computed(() => this.addons().length > 6);
 
-  // Widget me sirf top 6 dikhane ke liye
-  topSixTracker = computed(() => this.tracker().slice(0, 6));
-
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
-  hasMoreTracker = computed(() => this.tracker().length > 6);
-
-  // Widget me sirf top 5 dikhane ke liye
+  // In Widget only top 5 are comes
   topFiveMeetings = computed(() => this.meetings().slice(0, 5));
-  // "View All" tabhi dikhega jab total addons 6 se jyada hon
+
+  // "View All" only see if meetings are more than 5
   hasMoreMeetings = computed(() => this.meetings().length > 5);
+
+  // Widget card mein sirf itne module-tabs dikhane hain, baaki "+N More" mein chale jayenge
+  private readonly MAX_VISIBLE_MODULE_TABS = 2;
+
+  visibleModuleTabs = computed(() => {
+  return this.implementationModules().slice(0, this.MAX_VISIBLE_MODULE_TABS);
+  });
+
+  hiddenModuleTabsCount = computed(() => {
+  const total = this.implementationModules().length;
+  return total > this.MAX_VISIBLE_MODULE_TABS ? total - this.MAX_VISIBLE_MODULE_TABS : 0;
+});
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -151,7 +172,6 @@ export class ClientDashboard {
       if (this.orgId) {
         this.loadDashboard(this.orgId);
         this.loadMeetings(this.orgId);
-        this.loadTracker(this.orgId);
         this.loadAddons(this.orgId);
         this.loadTickets(this.orgId);
         this.loadUsage(this.orgId);
@@ -166,7 +186,7 @@ export class ClientDashboard {
     return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
   }
 
-  /** Ek particular ticket ka UbiDesk link */
+  /**Particular ticket to se in  UbiDesk link */
   getTicketUrl(ticketId: string | number): string {
     return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
   }
@@ -222,26 +242,6 @@ export class ClientDashboard {
       error: (err) => {
         this.meetingsLoading.set(false);
         this.meetingsError.set(err?.error?.msg || 'Failed to load meetings');
-      },
-    });
-  }
-
-  private loadTracker(orgId: string): void {
-    this.trackerLoading.set(true);
-    this.trackerError.set('');
-
-    this.clientDashboardTrackerApi.getClientDashboard({ orgId }).subscribe({
-      next: (res) => {
-        this.trackerLoading.set(false);
-        if (res?.status) {
-          this.tracker.set(res.data ?? []);
-        } else {
-          this.trackerError.set(res?.msg || 'Failed to load tracker');
-        }
-      },
-      error: (err) => {
-        this.trackerLoading.set(false);
-        this.trackerError.set(err?.error?.msg || 'Failed to load tracker');
       },
     });
   }
@@ -313,7 +313,6 @@ export class ClientDashboard {
     });
   }
 
-
   openAllTicketsModal(): void {
     this.showAllTicketsModal.set(true);
   }
@@ -328,14 +327,6 @@ export class ClientDashboard {
 
   closeAllAddonsModal(): void {
     this.showAllAddonsModal.set(false);
-  }
-
-  openAllTrackerModal(): void {
-    this.showAllTrackerModal.set(true);
-  }
-
-  closeAllTrackerModal(): void {
-    this.showAllTrackerModal.set(false);
   }
 
   openAllMeetingsModal(): void {
@@ -455,11 +446,6 @@ export class ClientDashboard {
     window.open(link, '_blank');
   }
 
-  // tab_sts === 1 has a green tick, otherwise gray circle
-  isModuleComplete(item: TrackerItem): boolean {
-    return item.tab_sts === 1;
-  }
-
   private loadImplementation(orgId: string): void {
     this.implementationLoading.set(true);
     this.implementationError.set('');
@@ -516,7 +502,12 @@ export class ClientDashboard {
 
   getInitials(name: string): string {
     if (!name) return 'MP';
-    return name.split(' ').map((p) => p.charAt(0)).join('').slice(0, 2).toUpperCase();
+    return name
+      .split(' ')
+      .map((p) => p.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 
   goBack(): void {
