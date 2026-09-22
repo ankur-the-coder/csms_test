@@ -24,14 +24,26 @@
 
   
   
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-    <!-- Total Implementations -->
+  @if (cardsLoading()) {
+    <!-- Shimmer Skeleton (4 cards) -->
+    @for (i of [1,2,3,4]; track i) {
+      <div class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden animate-pulse">
+        <div class="min-w-0 flex-1 space-y-2">
+          <div class="h-7 w-16 bg-slate-200 rounded-md"></div>
+          <div class="h-4 w-32 bg-slate-200 rounded-md"></div>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-slate-200 shrink-0"></div>
+      </div>
+    }
+  } @else {
+    <!-- Actual Cards -->
     <div (click)="setFilterStatus('all')"
          class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
          [ngClass]="statusFilter() === 'all' ? 'border-cyan-500 bg-cyan-100/70 ring-2 ring-cyan-400 shadow-sm' : 'border-cyan-300 bg-cyan-50'">
       <div class="min-w-0">
-        <div class="text-2xl font-bold mt-1">{{ totalClients() }}</div>
+        <div class="text-2xl font-bold mt-1" [appCountUp]="totalClients()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Total Implementations</span>
       </div>
       <div class="stat-icon w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
@@ -46,7 +58,7 @@
          class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
          [ngClass]="statusFilter() === 'complete' ? 'border-emerald-500 bg-emerald-100/70 ring-2 ring-emerald-400 shadow-sm' : 'border-brand-300 bg-brand-50'">
       <div class="min-w-0">
-        <div class="text-2xl font-bold mt-1">{{ completedClientsCount() }}</div>
+        <div class="text-2xl font-bold mt-1" [appCountUp]="completedClientsCount()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
       </div>
       <div class="stat-icon w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
@@ -61,7 +73,7 @@
          class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
          [ngClass]="statusFilter() === 'in_progress' ? 'border-amber-500 bg-amber-100/70 ring-2 ring-amber-400 shadow-sm' : 'border-warning bg-amber-50'">
       <div class="min-w-0">
-        <div class="text-2xl font-bold mt-1">{{ inProgressClientsCount() }}</div>
+        <div class="text-2xl font-bold mt-1" [appCountUp]="inProgressClientsCount()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending</span>
       </div>
       <div class="stat-icon w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
@@ -76,7 +88,7 @@
          class="card flex items-center justify-between gap-6 border rounded-xl p-4 overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md select-none"
          [ngClass]="statusFilter() === 'pending' ? 'border-rose-500 bg-rose-100/70 ring-2 ring-rose-400 shadow-sm' : 'border-red-300 bg-red-50'">
       <div class="min-w-0">
-        <div class="text-2xl font-bold mt-1">{{ pendingClientsCount() }}</div>
+        <div class="text-2xl font-bold mt-1" [appCountUp]="pendingClientsCount()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Not Started</span>
       </div>
       <div class="stat-icon w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -85,7 +97,8 @@
         </svg>
       </div>
     </div>
-  </div>
+  }
+</div>
 
 
   <!-- <div class="card p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -170,6 +183,8 @@
     </app-data-table>
   </div>
   </div>
+
+
 
 <!--  Detail Drawer  -->
 @if (selectedClient()) {
