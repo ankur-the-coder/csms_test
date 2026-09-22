@@ -4,6 +4,11 @@ export interface ImplementationCardData {
   data: CardData;
 }
 
+export interface ImpCardPayload {
+  fromDate?: string;
+  toDate?: string;
+}
+
 export interface CardData {
   totalAccounts: number;
   completed: number;

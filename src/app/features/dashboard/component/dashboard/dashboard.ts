@@ -19,6 +19,7 @@ import {
 
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
+import { CountUpDirective } from './count-up.directive';
 
 interface DashboardCardData {
   premiumClients: number;
@@ -35,6 +36,7 @@ interface DashboardCardData {
     Calendar,
     ChartComponent,
     CustomDateSelector,
+    CountUpDirective,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',

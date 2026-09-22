@@ -16,6 +16,10 @@
       </p>
     </div>
 
+
+
+
+
     <div class="w-full md:w-64 lg:w-64">
       <app-custom-date-selector [initialDates]="{ from: appliedFrom(), to: appliedTo() }" [defaultPreset]="'currentMonth'" (onApplyDate)="onDateApplied($event.from, $event.to)"
         [disableFutureDates]="true">
@@ -44,9 +48,14 @@
             Premium Clients
           </p>
 
-          <p class="mt-2 text-3xl font-bold text-slate-900">
+          <!-- <p class="mt-2 text-3xl font-bold text-slate-900">
             {{ cardData().premiumClients }}
-          </p>
+          </p> -->
+
+         <p class="mt-2 text-3xl font-bold text-slate-900"
+   [appCountUp]="cardData().premiumClients">
+</p>
+
         </div>
 
         <div class="flex h-10 w-10 items-center justify-center rounded-xl
