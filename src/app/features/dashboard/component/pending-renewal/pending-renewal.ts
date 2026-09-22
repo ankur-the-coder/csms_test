@@ -169,15 +169,15 @@ export class PendingRenewal {
 
     return {
       columns: [
-        { key: 'client', label: 'Client', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true, hideable: false,},
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true },
+        { key: 'email', label: 'Email', sortable: true ,hideable: false,},
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
         { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' },
+        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
         // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
