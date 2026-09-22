@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
 import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
+import { CountUpDirective } from '../dashboard/count-up.directive';
 
 export interface ClientRow {
   orgId: string;
@@ -48,7 +49,7 @@ interface RatingCard {
 
 @Component({
   selector: 'app-feedback',
-  imports: [DataTable, CustomColumnDirective, CommonModule, CustomDateSelector],
+  imports: [DataTable, CustomColumnDirective, CommonModule, CustomDateSelector, CountUpDirective],
   templateUrl: './feedback.html',
   styleUrl: './feedback.css',
 })
