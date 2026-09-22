@@ -7,9 +7,10 @@ import {
 } from '../models/course.model';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 // ─── Config ─────────────────────────────────────────────────────────────────
-const SERVER_BASE = 'http://127.0.0.1:5000';
+const SERVER_BASE = environment.apiUrl; 
 const LEARNER_BASE = `${SERVER_BASE}/courses/learner`;
 
 // Every API response from this backend is wrapped: { status, message, data }

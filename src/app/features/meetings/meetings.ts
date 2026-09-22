@@ -8,6 +8,7 @@ import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
 
+
 interface Meeting {
   id: number;
   title: string;
@@ -48,6 +49,7 @@ import { TimePickerComponent } from '../../shared/components/inputs/time-picker/
 import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/calendar';
 import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 import { CountUpDirective } from '../dashboard/component/dashboard/count-up.directive';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-meetings',
@@ -158,7 +160,7 @@ inviteError = signal<string | null>(null);
   // ============ Recent Activity (from /meetings/recent-activity) ============
   recentActivities = signal<RecentActivity[]>([]);
   loadingRecentActivity = false;
-
+  private imp = environment.apiUrl
   // ============ Meeting Detail (Attendance) Modal ============
   showAttendanceModal = false;
   attendanceLoading = false;
@@ -200,7 +202,7 @@ rescheduleDurationSelectOptions: SelectOption[] = [
 ];
 
   // ============ Meetings DataTable Config ============
-  private readonly meetingsEndpoint = 'http://127.0.0.1:5000/meetings/fetchMeetings';
+  private readonly meetingsEndpoint = `${this.imp}/meetings/fetchMeetings`;
 
   tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
     columns: [
