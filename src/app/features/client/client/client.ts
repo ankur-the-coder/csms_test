@@ -31,6 +31,7 @@ export interface ClientRow {
   name: string;
   planStart: string;
   planEnd: string;
+  premiumDate: string;
   userLimit: number;
   modules: string;
   leadOwner: string;
@@ -457,6 +458,7 @@ private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): Timeline
       name: raw.client,
       planStart: String(raw.planStart),
       planEnd: String(raw.planEnd),
+      premiumDate: String(raw.premiumDate),
       userLimit: raw.userLimit,
       modules: raw.module,
       leadOwner: raw.leadOwner,
@@ -540,6 +542,7 @@ private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): Timeline
         { key: 'country', label: 'Country', sortable: false },
         { key: 'planStart', label: 'Plan Start', sortable: false, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
+        { key: 'premiumDate', label: 'Premium Date', sortable: false, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
