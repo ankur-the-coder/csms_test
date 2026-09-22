@@ -8,6 +8,7 @@ import { CustomColumnDirective } from '../../../../../shared/components/Data-tab
 import { ImplementationService } from '../../../services/implementation/implementation';
 import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
 import { ActivatedRoute } from '@angular/router';
+import { CustomDateSelector } from '../../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 
 export interface Feature {
   mod_id: number;
@@ -64,7 +65,7 @@ interface ClientStatus {
 
 @Component({
   selector: 'app-implementation',
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector],
   templateUrl: './implementation.html',
   styleUrl: './implementation.css',
   standalone: true,
@@ -82,7 +83,6 @@ export class Implementation implements OnInit, OnDestroy {
   drawerOpen        = signal<boolean>(false);
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
-  private fetchCardTrigger$ = new Subject<void>();
   private destroy$          = new Subject<void>();
     private route = inject(ActivatedRoute);
 
@@ -93,15 +93,15 @@ export class Implementation implements OnInit, OnDestroy {
   initialDateTo = signal('');
 
 
-  get filterTabs() {
-    const c = this.cardData();
-    return [
-      { id: 'all',         label: 'All Organisations', count: c.totalAccounts },
-      { id: 'in_progress', label: 'In Progress',       count: c.inProgress },
-      { id: 'complete',    label: 'Completed',         count: c.completed },
-      { id: 'pending',     label: 'Not Started',       count: c.notStarted },
-    ];
-  }
+  // get filterTabs() {
+  //   const c = this.cardData();
+  //   return [
+  //     { id: 'all',         label: 'All Organisations', count: c.totalAccounts },
+  //     { id: 'in_progress', label: 'pending',       count: c.inProgress },
+  //     { id: 'complete',    label: 'Completed',         count: c.completed },
+  //     { id: 'pending',     label: 'Not Started',       count: c.notStarted },
+  //   ];
+  // }
 
   totalClients           = computed(() => this.cardData().totalAccounts);
   completedClientsCount  = computed(() => this.cardData().completed);
@@ -122,20 +122,20 @@ export class Implementation implements OnInit, OnDestroy {
 
 
   private static readonly COLUMNS = [
-    { key: 'name',               label: 'Organisation',   sortable: true },
-    { key: 'cs_lead',            label: 'Lead Owner',     sortable: false },
-    { key: 'support_owner',      label: 'Support Owner',  sortable: false , hidden :true},
+    { key: 'name',               label: 'Organisation',   sortable: true ,hideable:false},
+    { key: 'cs_lead',            label: 'Lead Owner',     sortable: false ,hideable:false},
+    { key: 'support_owner',      label: 'Support Owner',  sortable: false , hideable :true},
     { key: 'country',            label: 'Country',        sortable: false , hidden : true},
     { key: 'rating',             label: 'Rating',         sortable: false, align: 'center' as const },
-    {
-      key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
-      badgeMap: {
-        'Good':      { label: 'Good' },
-        'Excellent': { label: 'Excellent' },
-        'Neutral':   { label: 'Neutral' },
-        'Risk':      { label: 'Risk' },
-      }
-    },
+    // {
+    //   key: 'health', label: 'Health', type: 'badge' as const, align: 'center' as const,
+    //   badgeMap: {
+    //     'Good':      { label: 'Good' },
+    //     'Excellent': { label: 'Excellent' },
+    //     'Neutral':   { label: 'Neutral' },
+    //     'Risk':      { label: 'Risk' },
+    //   }
+    // },
     { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
     { key: 'licence_start_date', label: 'Start Date',     sortable: false },
     { key: 'licence_end_date',   label: 'End Date',       sortable: false },
@@ -149,7 +149,7 @@ export class Implementation implements OnInit, OnDestroy {
   ];
 
   private static readonly TOOLBAR_BUTTONS = [
-    { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
+    // { id: 'date',    type: 'datePicker'   as const, label: 'Date' },
     { id: 'filter',  type: 'filter'       as const, label: 'Filter' },
     { id: 'export',  type: 'export'       as const, label: 'Export' },
     { id: 'refresh', type: 'refresh'      as const },
@@ -166,10 +166,27 @@ export class Implementation implements OnInit, OnDestroy {
     'orgId':           'orgId',
   };
 
+  private getTodayDateString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private getFirstDayOfMonthString(): string {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}-01`;
+  }
+
   // ── DataTable config — only apiConfig depends on statusFilter ─────────────
   tableConfig = computed<SmartTableConfig<Client>>(() => {
     const statusFilter = this.statusFilter();
     const tabSts = statusFilter === 'complete' ? 1 : statusFilter === 'in_progress' ? 2 : statusFilter === 'pending' ? 3 : 0;
+    const from = this.initialDateFrom();
+    const to = this.initialDateTo();
 
     return {
       columns: Implementation.COLUMNS,
@@ -180,39 +197,31 @@ export class Implementation implements OnInit, OnDestroy {
         totalPath: 'meta.total',
 
         buildRequest: (ctx: RequestContext) => {
-  // Jab bhi ctx se real date aaye (user ne date picker se select kiya),
-  // usko state me save kar lo.
-  if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
-  if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
+          if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
+          if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
 
-  const today = this.getTodayDateString();
-  const body: DataTablePayload = {
-    start:   ctx.page * ctx.pageSize,
-    length:  ctx.pageSize,
-    search:  ctx.search ?? '',
-    sorting: JSON.stringify({
-      require: 1,
-      col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
-      dir: ctx.sortDir ?? 'desc',
-    }),
-    filter:   JSON.stringify({ ...ctx.filters }),
-    tabSts,
+          const today = this.getTodayDateString();
+          const firstDay = this.getFirstDayOfMonthString();
+          const body: DataTablePayload = {
+            start:   ctx.page * ctx.pageSize,
+            length:  ctx.pageSize,
+            search:  ctx.search ?? '',
+            sorting: JSON.stringify({
+              require: 1,
+              col: ctx.sortKey ? (Implementation.SORT_COL_MAP[ctx.sortKey] ?? ctx.sortKey) : 'orgName',
+              dir: ctx.sortDir ?? 'desc',
+            }),
+            filter:   JSON.stringify({ ...ctx.filters }),
+            tabSts,
 
-    fromDate: this.selectedDateFrom() || today,
-    toDate:   this.selectedDateTo()   || today,
-  };
-  return { method: 'POST' as const, body };
-},
+            fromDate: ctx.dateFrom || this.selectedDateFrom() || from || firstDay,
+            toDate:   ctx.dateTo   || this.selectedDateTo()   || to   || today,
+          };
+          return { method: 'POST' as const, body };
+        },
 
         transformRow: (row: any): Client | null => {
-          const client = this.mapApiRowToClient(row as Datum);
-          if (statusFilter === 'all') return client;
-
-          const { isCompleted, isInProgress, isNotStarted } = this.getClientStatus(client);
-          if (statusFilter === 'complete'    && !isCompleted)  return null;
-          if (statusFilter === 'in_progress' && !isInProgress) return null;
-          if (statusFilter === 'pending'     && !isNotStarted) return null;
-          return client;
+          return this.mapApiRowToClient(row as Datum);
         },
       },
 
@@ -237,33 +246,44 @@ export class Implementation implements OnInit, OnDestroy {
     };
   });
 
-  private getTodayDateString(): string {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit() {
-    this.route.queryParamMap.subscribe(params => {
-      const from = params.get('from');
-      const to   = params.get('to');
-      const tab  = params.get('tab');
+    const params = this.route.snapshot.queryParamMap;
+    const fromParam = params.get('from');
+    const toParam   = params.get('to');
+    const tabParam  = params.get('tab');
 
-      if (from && to) {
-        this.initialDateFrom.set(from);
-        this.initialDateTo.set(to);
+    const initialFrom = fromParam || this.getFirstDayOfMonthString();
+    const initialTo   = toParam   || this.getTodayDateString();
+
+    this.initialDateFrom.set(initialFrom);
+    this.initialDateTo.set(initialTo);
+    this.selectedDateFrom.set(initialFrom);
+    this.selectedDateTo.set(initialTo);
+
+    if (tabParam) {
+      this.statusFilter.set(tabParam);
+    }
+
+    this.route.queryParamMap.subscribe(queryParams => {
+      const qFrom = queryParams.get('from');
+      const qTo   = queryParams.get('to');
+      const qTab  = queryParams.get('tab');
+
+      if (qFrom && qTo) {
+        this.initialDateFrom.set(qFrom);
+        this.initialDateTo.set(qTo);
+        this.selectedDateFrom.set(qFrom);
+        this.selectedDateTo.set(qTo);
+        this.fetchCards(qFrom, qTo);
       }
 
-      // Auto-select the tab when navigated from dashboard (e.g. "Pending Implementations" card)
-      if (tab) {
-        this.statusFilter.set(tab);
+      if (qTab) {
+        this.statusFilter.set(qTab);
       }
     });
-    this.setupCardFetchStream();
-    this.fetchCardTrigger$.next();
+
+    this.fetchCards(initialFrom, initialTo);
   }
 
   ngOnDestroy(): void {
@@ -273,23 +293,19 @@ export class Implementation implements OnInit, OnDestroy {
     if (this.openTimer)  clearTimeout(this.openTimer);
   }
 
-  private setupCardFetchStream() {
-    this.fetchCardTrigger$
-      .pipe(
-        switchMap(() =>
-          this.implService.fetchImpCardData().pipe(
-            catchError((err) => {
-              console.error('Card data error:', err);
-              return of(null);
-            })
-          )
-        ),
-        takeUntil(this.destroy$)
-      )
-      .subscribe((data) => {
-        if (!data) return;
-        this.cardData.set(data);
-      });
+  fetchCards(from?: string, to?: string): void {
+    const fromDate = from || this.selectedDateFrom() || this.getFirstDayOfMonthString();
+    const toDate = to || this.selectedDateTo() || this.getTodayDateString();
+    this.implService.fetchImpCardData({ fromDate, toDate }).pipe(
+      catchError((err) => {
+        console.error('Card data error:', err);
+        return of(null);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe((data) => {
+      if (!data) return;
+      this.cardData.set(data);
+    });
   }
 
 
@@ -550,11 +566,15 @@ export class Implementation implements OnInit, OnDestroy {
     };
     this.selectedClient.set(updated);
   }
- onDateApplied(from: string, to: string): void {
-    // this.dateFrom.set(from);
-    // this.dateTo.set(to);
-    // this.page.set(0);
+
+  onDateApplied(from: string, to: string): void {
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.selectedDateFrom.set(from);
+    this.selectedDateTo.set(to);
+    this.fetchCards(from, to);
   }
+
   getModulesTooltip(row: any): string {
     return this.getClientModules(row)
       .filter((mod: any) => this.getModuleTotalCount(row, mod) > 0)
