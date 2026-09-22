@@ -1,77 +1,72 @@
 <div class="space-y-6 pb-12">
-
   <!-- =========================================================
        DASHBOARD HEADER
        ========================================================= -->
 
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4
-           bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+  <div
+    class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs"
+  >
     <div>
-      <h1 class="text-xl font-bold text-text-primary">
-        Dashboard
-      </h1>
+      <h1 class="text-xl font-bold text-text-primary">Dashboard</h1>
 
       <p class="text-sm text-slate-500 mt-1">
         Overview of client activities, usages, meetings, and renewals.
       </p>
     </div>
 
-
-
-
-
     <div class="w-full md:w-64 lg:w-64">
-      <app-custom-date-selector [initialDates]="{ from: appliedFrom(), to: appliedTo() }" [defaultPreset]="'currentMonth'" (onApplyDate)="onDateApplied($event.from, $event.to)"
-        [disableFutureDates]="true">
+      <app-custom-date-selector
+        [initialDates]="{ from: appliedFrom(), to: appliedTo() }"
+        [defaultPreset]="'currentMonth'"
+        (onApplyDate)="onDateApplied($event.from, $event.to)"
+        [disableFutureDates]="true"
+      >
       </app-custom-date-selector>
     </div>
   </div>
-
 
   <!-- =========================================================
        SUMMARY CARDS
        ========================================================= -->
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
     <!-- Premium Clients -->
 
-    <div (click)="navigateToClient()" class="group cursor-pointer rounded-2xl border border-emerald-200
-             bg-gradient-to-br from-emerald-50 to-white p-5
-             transition-all duration-300
-             hover:-translate-y-1 hover:border-emerald-400
-             hover:shadow-lg hover:shadow-emerald-500/10">
+    <div
+      (click)="navigateToClient()"
+      class="group cursor-pointer rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10"
+    >
       <div class="flex items-start justify-between">
-
         <div>
-          <p class="text-sm font-medium text-slate-500">
-            Premium Clients
-          </p>
+          <p class="text-sm font-medium text-slate-500">Premium Clients</p>
 
           <!-- <p class="mt-2 text-3xl font-bold text-slate-900">
             {{ cardData().premiumClients }}
           </p> -->
 
-         <p class="mt-2 text-3xl font-bold text-slate-900"
-   [appCountUp]="cardData().premiumClients">
-</p>
-
+          <p
+            class="mt-2 text-3xl font-bold text-slate-900"
+            [appCountUp]="cardData().premiumClients"
+          ></p>
         </div>
 
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl
-                 bg-emerald-100 text-emerald-600
-                 transition-transform duration-300
-                 group-hover:scale-110">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110"
+        >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857
                  M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
                  M7 20H2v-2a3 3 0 015.356-1.857
                  M7 20v-2c0-.656.126-1.283.356-1.857
                  m0 0a5.002 5.002 0 019.288 0
-                 M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                 M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
         </div>
-
       </div>
 
       <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-emerald-600">
@@ -92,35 +87,32 @@
         </svg>
       </div> -->
     </div>
-    <div (click)="navigateToRenewed()" class="group cursor-pointer rounded-2xl border border-rose-200
-             bg-gradient-to-br from-rose-50 to-white p-5
-             transition-all duration-300
-             hover:-translate-y-1 hover:border-rose-400
-             hover:shadow-lg hover:shadow-rose-500/10">
+    <div
+      (click)="navigateToRenewed()"
+      class="group cursor-pointer rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-rose-400 hover:shadow-lg hover:shadow-rose-500/10"
+    >
       <div class="flex items-start justify-between">
-
         <div>
-          <p class="text-sm font-medium text-slate-500">
-            Renewed Clients
-          </p>
+          <p class="text-sm font-medium text-slate-500">Renewed Clients</p>
 
-          <p class="mt-2 text-3xl font-bold text-slate-900">
-            {{ cardData().renewable }}
-          </p>
+          <p class="mt-2 text-3xl font-bold text-slate-900" [appCountUp]="cardData().renewable"></p>
         </div>
 
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl
-                 bg-rose-100 text-rose-600
-                 transition-transform duration-300
-                 group-hover:scale-110">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 transition-transform duration-300 group-hover:scale-110"
+        >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v6h6
                  M20 20v-6h-6
                  M20 9a8 8 0 00-14.9-3
-                 M4 15a8 8 0 0014.9 3" />
+                 M4 15a8 8 0 0014.9 3"
+            />
           </svg>
         </div>
-
       </div>
 
       <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-rose-600">
@@ -143,37 +135,37 @@
     </div>
     <!-- Meeting Pending -->
 
-
-
-
     <!-- Usages -->
 
-    <div (click)="navigateToUsages()" class="group cursor-pointer rounded-2xl border border-blue-200
-             bg-gradient-to-br from-blue-50 to-white p-5
-             transition-all duration-300
-             hover:-translate-y-1 hover:border-blue-400
-             hover:shadow-lg hover:shadow-blue-500/10">
+    <div
+      (click)="navigateToUsages()"
+      class="group cursor-pointer rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
+    >
       <div class="flex items-start justify-between">
-
         <div>
-          <p class="text-sm font-medium text-slate-500">
-            Usage
-          </p>
+          <p class="text-sm font-medium text-slate-500">Usage</p>
 
-          <p class="mt-2 text-3xl font-bold text-slate-900">
-            {{ cardData().usages }} %
-          </p>
+          <!-- Usage (with % and decimals) -->
+          <p
+            class="mt-2 text-3xl font-bold text-slate-900"
+            [appCountUp]="cardData().usages"
+            [decimals]="2"
+            suffix=" %"
+          ></p>
         </div>
 
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl
-                 bg-blue-100 text-blue-600
-                 transition-transform duration-300
-                 group-hover:scale-110">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-transform duration-300 group-hover:scale-110"
+        >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h4l3-9 4 18 3-9h4" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 12h4l3-9 4 18 3-9h4"
+            />
           </svg>
         </div>
-
       </div>
 
       <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-blue-600">
@@ -194,52 +186,46 @@
         </svg>
       </div> -->
     </div>
-    <div (click)="navigateToPendingRenewal()" class="group cursor-pointer rounded-2xl border border-amber-200
-             bg-gradient-to-br from-amber-50 to-white p-5
-             transition-all duration-300
-             hover:-translate-y-1 hover:border-amber-400
-             hover:shadow-lg hover:shadow-amber-500/10">
+    <div
+      (click)="navigateToPendingRenewal()"
+      class="group cursor-pointer rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10"
+    >
       <div class="flex items-start justify-between">
         <!--  -->
         <div>
-          <p class="text-sm font-medium text-slate-500">
-            Pending Renewals </p>
+          <p class="text-sm font-medium text-slate-500">Pending Renewals</p>
 
-          <p class="mt-2 text-3xl font-bold text-slate-900">
-            {{ cardData().meetingPending }}
-          </p>
+          <!-- Pending Renewals -->
+          <p
+            class="mt-2 text-3xl font-bold text-slate-900"
+            [appCountUp]="cardData().meetingPending"
+          ></p>
         </div>
 
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl
-                 bg-amber-100 text-amber-600
-                 transition-transform duration-300
-                 group-hover:scale-110">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-transform duration-300 group-hover:scale-110"
+        >
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0
-                 9 9 0 0118 0z" />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0
+                 9 9 0 0118 0z"
+            />
           </svg>
         </div>
-
       </div>
-
-
     </div>
 
-
-
     <!-- Renewal -->
-
-
-
   </div>
-
 
   <!-- =========================================================
        DASHBOARD CHARTS
        ========================================================= -->
 
   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-
     <!-- Connected -->
 
     <!-- <div class="min-w-0">
@@ -250,39 +236,57 @@
       </app-charts>
     </div> -->
 
-
     <!-- Usages -->
 
     <div class="min-w-0">
-      <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
-        [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
-        [headingText]="'Usage'" [yAxisTitle]="'Usage Count'" [leaveChart]="true" [isLoading]="isUsagesLoading()"
-        [hasError]="usagesHasError()">
+      <app-charts
+        chartId="UsagesChart"
+        [chartType]="'groupedBar'"
+        [groupedData]="usagesGroupedData()"
+        [chartLabels]="usagesChartLabels()"
+        [groupLabels]="usagesGroupLabels()"
+        [groupColors]="usagesGroupColors()"
+        [headingText]="'Usage'"
+        [yAxisTitle]="'Usage Count'"
+        [leaveChart]="true"
+        [isLoading]="isUsagesLoading()"
+        [hasError]="usagesHasError()"
+      >
       </app-charts>
     </div>
-
 
     <!-- Feedback -->
 
     <div class="min-w-0">
-      <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
-        [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
-        [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isFeedbackLoading()" [hasError]="feedbackHasError()" [yAxisTitle]="'Feedback Count'">
+      <app-charts
+        chartId="FeedbackChart"
+        [chartType]="'area'"
+        [chartData]="feedbackDonutData()"
+        [chartLabels]="feedbackDonutLabels()"
+        [backgroundColors]="feedbackDonutColors()"
+        [headingText]="'Feedback'"
+        [hoverLabel]="'Feedbacks'"
+        [donutCenterText]="feedbackDonutCenterText()"
+        [leaveChart]="true"
+        [isLoading]="isFeedbackLoading()"
+        [hasError]="feedbackHasError()"
+        [yAxisTitle]="'Feedback Count'"
+      >
       </app-charts>
     </div>
-
   </div>
-
 
   <!-- =========================================================
        CALENDAR
        ========================================================= -->
 
   <div class="min-w-0">
-    <app-calendar [eventsByDay]="calendarEvents()" (eventClick)="onCalendarEventClick($event)"
-      (dateSelect)="onCalendarDateChange($event)" (viewModeChange)="onCalendarViewChange($event)">
+    <app-calendar
+      [eventsByDay]="calendarEvents()"
+      (eventClick)="onCalendarEventClick($event)"
+      (dateSelect)="onCalendarDateChange($event)"
+      (viewModeChange)="onCalendarViewChange($event)"
+    >
     </app-calendar>
   </div>
-
 </div>
