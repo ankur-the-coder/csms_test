@@ -9,6 +9,7 @@ import { ImplementationService } from '../../../services/implementation/implemen
 import { CardData, DataTablePayload, Datum } from '../../../models/implementation.model';
 import { ActivatedRoute } from '@angular/router';
 import { CustomDateSelector } from '../../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
+import { CountUpDirective } from '../../../../dashboard/component/dashboard/count-up.directive';
 
 export interface Feature {
   mod_id: number;
@@ -65,7 +66,7 @@ interface ClientStatus {
 
 @Component({
   selector: 'app-implementation',
-  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector],
+  imports: [CommonModule, FormsModule, DataTable, CustomColumnDirective, CustomDateSelector, CountUpDirective],
   templateUrl: './implementation.html',
   styleUrl: './implementation.css',
   standalone: true,
