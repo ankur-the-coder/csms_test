@@ -150,7 +150,6 @@ export class MeetingService {
 
   /**
    * Orgs for the "Schedule Meeting" dropdown.
-   * Hits http://127.0.0.1:5000/imp/fetchDataTable directly.
    */
   getOrganizations(): Observable<Organization[]> {
     const payload: DataTablePayload = {
@@ -170,13 +169,13 @@ export class MeetingService {
   }
 
   getLeadOwners(): Observable<string[]> {
-    return this.http.post<{status: boolean, data: {name: string}[]}>(`http://127.0.0.1:5000/meetings/fetchLeadOwners`, {}).pipe(
+    return this.http.post<{status: boolean, data: {name: string}[]}>(`${this.imp}/meetings/fetchLeadOwners`, {}).pipe(
       map(res => (res.data || []).map(row => row.name))
     );
   }
 
   getSupportOwners(): Observable<string[]> {
-    return this.http.post<{status: boolean, data: {name: string}[]}>(`http://127.0.0.1:5000/meetings/fetchSupportOwners`, {}).pipe(
+    return this.http.post<{status: boolean, data: {name: string}[]}>(`${this.imp}/meetings/fetchSupportOwners`, {}).pipe(
       map(res => (res.data || []).map(row => row.name))
     );
   }

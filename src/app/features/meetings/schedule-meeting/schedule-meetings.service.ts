@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError, shareReplay } from 'rxjs/operators';
+import { environment } from '../../../../environments/environment';
 
 export interface BookedMeeting {
   id: number;
@@ -136,7 +137,7 @@ interface MeetingTypeApiResponse {
   providedIn: 'root'
 })
 export class ScheduleMeetingService {
-  private readonly baseUrl = 'http://127.0.0.1:5000';
+  private readonly baseUrl = environment.apiUrl;
 
   private organizations$?: Observable<Organization[]>;
   private leadOwners$?: Observable<OwnerOption[]>;
