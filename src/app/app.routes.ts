@@ -53,21 +53,21 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'voice', pathMatch: 'full' },
-      // { path: 'help-guide', component: Training },
+      { path: 'help-guide', component: Training },
 
 
 
-      // { path: 'dashboard', component: DashboardComponent },
-      // { path: 'implementation', component: Implementation },
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'implementation', component: Implementation },
+      { path: 'meetings', component: MeetingsComponent },
+      { path: 'client', component: Client },
+      { path: 'feedback', component: Feedback },
+      { path: 'renewal', component: RenewalComponent },
+      { path: 'pendingrenewal', component: PendingRenewal },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },
-      // { path: 'meetings', component: MeetingsComponent },
-      // { path: 'client', component: Client },
-      // { path: 'feedback', component: Feedback },
       // { path: 'connected', component: Connected },
       // { path: 'usages', component: Usages },
-      // { path: 'renewal', component: RenewalComponent },
-      // { path: 'pendingrenewal', component: PendingRenewal },
       {
         path: 'voice',
         component: VoiceShell,
