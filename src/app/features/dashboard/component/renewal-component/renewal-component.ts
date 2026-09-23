@@ -25,6 +25,7 @@ export interface ClientRow {
   country: string;
   leadOwner: string;
   supportOwner: string;
+  PremiumDate: string;
 }
 
 
@@ -114,7 +115,8 @@ export class RenewalComponent {
       renewDate: raw.renewDate,
       country: raw.country,
       supportOwner: raw.supportOwner,
-      leadOwner: raw.leadOwner
+      leadOwner: raw.leadOwner,
+      PremiumDate: raw.PremiumDate
 
     };
   }
@@ -184,6 +186,7 @@ export class RenewalComponent {
         // { key: 'createdDate', label: 'Created Date', sortable: false,type: 'date'  },
         { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' ,hideable: false,},
         { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
+        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date' ,hideable: false,},
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
