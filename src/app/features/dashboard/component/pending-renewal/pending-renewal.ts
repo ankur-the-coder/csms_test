@@ -22,7 +22,10 @@ export interface ClientRow {
   renewDate: string;
   endDate: string;
   createdDate: string;
-  premiumDate: string;
+
+
+  PremiumDate: string;
+
   country: string;
   leadOwner: string;
   supportOwner: string;
@@ -104,14 +107,15 @@ export class PendingRenewal {
       contactPerson: raw.contactPerson,
       countryCode: raw.countryCode,
       createdDate: raw.createdDate,
-    premiumDate: raw.premiumDate,
+
       email: raw.email,
       endDate: raw.endDate,
       phone: raw.phone,
       renewDate: raw.renewDate,
       country: raw.country,
       supportOwner: raw.supportOwner,
-      leadOwner: raw.leadOwner
+      leadOwner: raw.leadOwner,
+      PremiumDate: raw.PremiumDate
     };
   }
 
@@ -180,8 +184,10 @@ export class PendingRenewal {
         // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
         { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
-        { key: 'premiumDate', label: 'Premium Date', sortable: false, hideable: false, type: 'date' },
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date', hideable: false, },
+
+        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
+        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date' ,hideable: false,},
+
         // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
