@@ -20,6 +20,11 @@
     </div>
   </div>
 
+
+
+
+
+
   <!-- =========================================================
        RATING CARDS (1–6 STARS) — flat style
        ========================================================= -->
@@ -27,6 +32,11 @@
     @for (rating of ratingCards(); track rating.stars; let first = $first) {
       <div
         (click)="navigateToRating(rating.stars)"
+  [ngClass]="
+    selectedRating() === rating.stars
+      ? 'border-3'
+      : 'border-1'
+  "
         class="group cursor-pointer rounded-2xl border bg-white p-4 sm:p-5 border-emerald-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
       >
         <div class="flex items-start justify-between gap-2">

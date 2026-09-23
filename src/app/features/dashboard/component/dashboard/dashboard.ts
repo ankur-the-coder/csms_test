@@ -173,7 +173,28 @@ export class DashboardComponent implements OnInit {
     const userId = Utils.encode5t(
       this.authService.getEmpId().toString(),
     );
+    this.cardData.set({
+      /*
+       * New API names:
+       * premiumClients
+       * usages
+       * meetingPending
+       * renewable
+       *
+       * Fallbacks are kept for your existing API response.
+       */
+      premiumClients: 0,
 
+
+      usages: 0,
+
+
+      meetingPending: 0,
+
+
+      renewable: 0
+
+    });
     this.fetchDashboardCards(from, to, orgId, userId);
     this.fetchFeedbackChart(from, to, orgId, userId);
     // this.fetchConnectedChart(from, to, orgId, userId);
