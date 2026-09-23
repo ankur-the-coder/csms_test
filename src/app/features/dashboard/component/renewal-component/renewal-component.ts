@@ -22,6 +22,7 @@ export interface ClientRow {
   renewDate: string;
   endDate: string;
   createdDate: string;
+  premiumDate: string;
   country: string;
   leadOwner: string;
   supportOwner: string;
@@ -108,6 +109,7 @@ export class RenewalComponent {
       contactPerson: raw.contactPerson,
       countryCode: raw.countryCode,
       createdDate: raw.createdDate,
+       premiumDate: String(raw.premiumDate),
       email: raw.email,
       endDate: raw.endDate,
       phone: raw.phone,
@@ -178,12 +180,13 @@ export class RenewalComponent {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true,hideable: false, },
+        { key: 'email', label: 'Email', sortable: true, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'createdDate', label: 'Created Date', sortable: false,type: 'date'  },
-        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' ,hideable: false,},
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
+        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date', hideable: false, },
+        { key: 'endDate', label: 'End Date', sortable: true, type: 'date', hideable: false, },
+        { key: 'premiumDate', label: 'PremiumDate', sortable: true, type: 'date', hideable: false, },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
@@ -248,7 +251,7 @@ export class RenewalComponent {
       clickable: true,
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },
-        // { id: 'filter', type: 'filter', label: 'Filter' },
+        { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },
