@@ -10,6 +10,7 @@ import { DatePicker as DatePickerService } from '../../../shared/service/date-pi
 import { TimePickerComponent } from '../../../shared/components/inputs/time-picker/time-picker';
 import { Subscription } from 'rxjs';
 import { Location } from '@angular/common';
+import { Utils } from '../../../shared/utils/utils';
 
 type EntryMode = 'select' | 'manual';
 
@@ -134,7 +135,7 @@ export class ScheduleMeeting implements OnInit {
         this.newMeeting.orgEmail = email;
       }
       if (orgId) {
-        const parsedId = Number(orgId);
+        const parsedId = Number(Utils.decode5t(orgId));
         if (!isNaN(parsedId)) {
           this.newMeeting.orgId = parsedId;
         }
