@@ -488,7 +488,7 @@
 
             @case ('date') {
             <span class="st-cell-mono font-mono text-[12px] font-variant-numeric-tabular-nums tracking-[0.01em]">{{
-              getCellValue(row, col.key) | date:'dd MMM yyyy' }}</span>
+              formatDateCell(getCellValue(row, col.key)) }}</span>
             }
 
             @case ('currency') {
