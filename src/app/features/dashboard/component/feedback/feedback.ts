@@ -33,6 +33,7 @@ export interface ClientRow {
   likedMost: string;
   improveFeedback: string;
   status: string;
+  source: string;
   priority: string;
   assignedAgent: string;
   createdAt: string;
@@ -162,6 +163,7 @@ export class Feedback {
       likedMost: raw.likedMost,
       improveFeedback: raw.improveFeedback,
       status: raw.status,
+      source: raw.source,
       priority: raw.priority,
       assignedAgent: raw.assignedAgent,
       createdAt: raw.createdAt,
