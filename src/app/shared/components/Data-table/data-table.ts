@@ -941,13 +941,7 @@ export class DataTable<T extends object> implements AfterContentInit {
 
     // Explicit date type
     if (col.type === 'date') {
-      try {
-        const d = new Date(rawVal as any);
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        }
-      } catch { }
-      return this.sanitizeCell(rawVal, '—');
+      return this.formatDateCell(rawVal);
     }
 
     // Automatic date/time detection for strings
@@ -957,9 +951,16 @@ export class DataTable<T extends object> implements AfterContentInit {
       const isIsoPattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
 
       if (isDateKey || isIsoPattern) {
+        if (/^0/.test(rawVal.trim())) {
+          return '-';
+        }
         try {
           const d = new Date(rawVal);
           if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            if (year < 1000 || String(year).startsWith('0') || year <= 0) {
+              return '-';
+            }
             const hasTime = rawVal.includes('T') || rawVal.includes(':') || d.getHours() > 0 || d.getMinutes() > 0;
             const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
             if (hasTime && isDateKey) {
@@ -1599,6 +1600,29 @@ export class DataTable<T extends object> implements AfterContentInit {
   isImage(value: any): boolean {
     return typeof value === 'string' && value.startsWith('http') &&
       /\.(png|jpg|jpeg|webp|gif)/i.test(value);
+  }
+
+  formatDateCell(value: any): string {
+    if (value === null || value === undefined || value === '' || value === '-' || value === '—') {
+      return '-';
+    }
+    const strVal = String(value).trim();
+    if (/^0/.test(strVal) || strVal === '0000-00-00') {
+      return '-';
+    }
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) {
+        return strVal;
+      }
+      const year = d.getFullYear();
+      if (year < 1000 || String(year).startsWith('0') || year <= 0) {
+        return '-';
+      }
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return strVal;
+    }
   }
 
   formatCellValue(value: any): string {
