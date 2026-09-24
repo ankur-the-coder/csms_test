@@ -488,7 +488,7 @@
 
             @case ('date') {
             <span class="st-cell-mono font-mono text-[12px] font-variant-numeric-tabular-nums tracking-[0.01em]">{{
-              getCellValue(row, col.key) | date:'dd MMM yyyy' }}</span>
+              formatDateCell(getCellValue(row, col.key)) }}</span>
             }
 
             @case ('currency') {
@@ -775,10 +775,10 @@
 <!-- ── Filter Modal ──────────────────────────────────────────────────────── -->
 @if (filterModalOpen()) {
 <div class="fixed inset-0 z-1500 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 "
-  (click)="closeFilterModal()">
+  (click)="$event.target === $event.currentTarget && closeFilterModal()">
   <div
     class=" bg-card-bg rounded-xl border border-card-border shadow-2xl w-full max-w-160 max-h-[85vh] flex flex-col overflow-hidden "
-    (click)="$event.stopPropagation()">
+    >
 
     <!-- Modal Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">

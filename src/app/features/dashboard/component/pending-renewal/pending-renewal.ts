@@ -9,7 +9,8 @@ import { CommonModule } from '@angular/common';
 import { CustomColumnDirective } from '../../../../shared/components/Data-table/custom-column.directive';
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
-import { Data } from '../../models/renewalModel';
+import { Data } from '../../models/pendingrenewal.model';
+
 export interface ClientRow {
   id: number;
   orgId: number;
@@ -21,6 +22,10 @@ export interface ClientRow {
   renewDate: string;
   endDate: string;
   createdDate: string;
+
+
+  PremiumDate: string;
+
   country: string;
   leadOwner: string;
   supportOwner: string;
@@ -102,13 +107,15 @@ export class PendingRenewal {
       contactPerson: raw.contactPerson,
       countryCode: raw.countryCode,
       createdDate: raw.createdDate,
+
       email: raw.email,
       endDate: raw.endDate,
       phone: raw.phone,
       renewDate: raw.renewDate,
       country: raw.country,
       supportOwner: raw.supportOwner,
-      leadOwner: raw.leadOwner
+      leadOwner: raw.leadOwner,
+      PremiumDate: raw.PremiumDate
     };
   }
 
@@ -169,15 +176,18 @@ export class PendingRenewal {
 
     return {
       columns: [
-        { key: 'client', label: 'Client', sortable: true, hideable: false,},
+        { key: 'client', label: 'Client', sortable: true, hideable: false, },
         { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true ,hideable: false,},
+        { key: 'email', label: 'Email', sortable: true, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
         { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
+
         { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
+        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date' ,hideable: false,},
+
         // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
@@ -217,7 +227,7 @@ export class PendingRenewal {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
-            orgId: Utils.encode5t(this.authService.getOrgId().toString()),
+            orgId: this.authService.getOrgId(),
           };
 
           return { method: 'POST' as const, body };
@@ -236,7 +246,7 @@ export class PendingRenewal {
       clickable: true,
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },
-        // { id: 'filter', type: 'filter', label: 'Filter' },
+        { id: 'filter', type: 'filter', label: 'Filter' },
         { id: 'export', type: 'export', label: 'Export' },
         { id: 'refresh', type: 'refresh' },
         { id: 'columns', type: 'columnPicker', label: 'Columns' },

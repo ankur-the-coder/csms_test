@@ -102,13 +102,13 @@ export class AuthService {
     }
 
     localStorage.setItem('userName', data.userName);
-    localStorage.setItem('empId', Utils.decode5t(data.empId));
+    localStorage.setItem('empId', data.empId);
     localStorage.setItem('designation', data.designation);
     localStorage.setItem('adminSts', data.adminSts.toString());
-    localStorage.setItem('orgId', Utils.decode5t(data.orgId));
-    localStorage.setItem('password', Utils.decode5t(data.password));
-    localStorage.setItem('email', Utils.decode5t(data.email));
-    localStorage.setItem('phone', Utils.decode5t(data.phone));
+    localStorage.setItem('orgId', data.orgId);
+    localStorage.setItem('password', data.password);
+    localStorage.setItem('email', data.email);
+    localStorage.setItem('phone', data.phone);
     localStorage.setItem('isLoggedIn', 'true');
     this.isLoggedIn.set(true);
   }

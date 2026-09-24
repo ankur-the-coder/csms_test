@@ -177,7 +177,7 @@ export class Usages {
             sorting: JSON.stringify({ require: ctx.sortKey ? 1 : 0, col: sortCol, dir: ctx.sortDir ?? 'asc' }),
             filter: JSON.stringify(filterObj),
             fromDate,
-            toDate, orgId: Utils.encode5t(this.authService.getOrgId().toString()),
+            toDate, orgId: this.authService.getOrgId(),
           };
 
           return { method: 'POST' as const, body };

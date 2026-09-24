@@ -166,14 +166,35 @@ export class DashboardComponent implements OnInit {
     this.appliedFrom.set(from);
     this.appliedTo.set(to);
 
-    const orgId = Utils.encode5t(
-      this.authService.getOrgId().toString(),
-    );
+    const orgId =
+      this.authService.getOrgId();
 
-    const userId = Utils.encode5t(
-      this.authService.getEmpId().toString(),
-    );
 
+    const userId =
+      this.authService.getEmpId();
+
+    this.cardData.set({
+      /*
+       * New API names:
+       * premiumClients
+       * usages
+       * meetingPending
+       * renewable
+       *
+       * Fallbacks are kept for your existing API response.
+       */
+      premiumClients: 0,
+
+
+      usages: 0,
+
+
+      meetingPending: 0,
+
+
+      renewable: 0
+
+    });
     this.fetchDashboardCards(from, to, orgId, userId);
     this.fetchFeedbackChart(from, to, orgId, userId);
     // this.fetchConnectedChart(from, to, orgId, userId);
@@ -494,12 +515,12 @@ export class DashboardComponent implements OnInit {
 
     const rawOrgId = this.authService.getOrgId();
     const rawUserId = this.authService.getEmpId();
-    const orgId = Utils.encode5t(
-      (rawOrgId || '101').toString(),
-    );
-    const empId = Utils.encode5t(
-      (rawUserId).toString(),
-    );
+    const orgId =
+      (rawOrgId || '101').toString();
+
+    const empId =
+      (rawUserId).toString();
+
     this.fetchCalendarEvents(
       from,
       to,

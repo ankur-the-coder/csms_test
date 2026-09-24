@@ -145,45 +145,45 @@ export class DataTable<T extends object> implements AfterContentInit {
   dateTo = signal('');
 
   // Feeds app-custom-date-selector's [initialDates] input. Wrapped in computed()
-// so it only produces a NEW object reference when the underlying primitives
-// actually change — an inline object literal in the template would create a
-// new reference every change-detection cycle and spam CustomDateSelector's
-// ngOnChanges.
-initialDatesForPicker = computed(() => ({
-  from: this.initialDateFrom(),
-  to: this.initialDateTo(),
-}));
+  // so it only produces a NEW object reference when the underlying primitives
+  // actually change — an inline object literal in the template would create a
+  // new reference every change-detection cycle and spam CustomDateSelector's
+  // ngOnChanges.
+  initialDatesForPicker = computed(() => ({
+    from: this.initialDateFrom(),
+    to: this.initialDateTo(),
+  }));
 
 
 
-// Seeds dateFrom/dateTo from the initialDateFrom/initialDateTo inputs
-// whenever they're set (e.g. navigated in from the dashboard with a
-// date range already applied). Runs as an effect (not just once in
-// ngAfterContentInit) so it also reacts if the same routed component
-// instance is reused with new query params.
+  // Seeds dateFrom/dateTo from the initialDateFrom/initialDateTo inputs
+  // whenever they're set (e.g. navigated in from the dashboard with a
+  // date range already applied). Runs as an effect (not just once in
+  // ngAfterContentInit) so it also reacts if the same routed component
+  // instance is reused with new query params.
 
-private applyInitialDatesEffect = effect(() => {
-  const from = this.initialDateFrom();
-  const to = this.initialDateTo();
-  if (from && to) {
-    untracked(() => {
-      this.dateFrom.set(from);
-      this.dateTo.set(to);
-      this.page.set(0);
-    });
-  }
-});
+  private applyInitialDatesEffect = effect(() => {
+    const from = this.initialDateFrom();
+    const to = this.initialDateTo();
+    if (from && to) {
+      untracked(() => {
+        this.dateFrom.set(from);
+        this.dateTo.set(to);
+        this.page.set(0);
+      });
+    }
+  });
 
-private applyInitialFiltersEffect = effect(() => {
-  const init = this.initialFilters();
-  if (init && Object.keys(init).length > 0) {
-    untracked(() => {
-      this.activeFilters.update(f => ({ ...f, ...init }));
-      this.tempFilters.set({ ...init });
-      this.page.set(0);
-    });
-  }
-});
+  private applyInitialFiltersEffect = effect(() => {
+    const init = this.initialFilters();
+    if (init && Object.keys(init).length > 0) {
+      untracked(() => {
+        this.activeFilters.update(f => ({ ...f, ...init }));
+        this.tempFilters.set({ ...init });
+        this.page.set(0);
+      });
+    }
+  });
 
 
   // ── Filter options ─────────────────────────────────────────────────────────
@@ -263,32 +263,32 @@ private applyInitialFiltersEffect = effect(() => {
   });
 
   pageButtons = computed<number[]>(() => {
-  if (this.config().showPagination === false) return [0];
-  const tp = this.totalPages(), cur = this.page();
-  if (tp <= 0) return [0];
+    if (this.config().showPagination === false) return [0];
+    const tp = this.totalPages(), cur = this.page();
+    if (tp <= 0) return [0];
 
-  const maxVisible = 5; // Number of visible numeric buttons
-  let start = cur - 2;
-  let end = cur + 2;
+    const maxVisible = 5; // Number of visible numeric buttons
+    let start = cur - 2;
+    let end = cur + 2;
 
-  // Adjust bounds when near the start
-  if (start < 0) {
-    start = 0;
-    end = Math.min(maxVisible - 1, tp - 1);
-  }
+    // Adjust bounds when near the start
+    if (start < 0) {
+      start = 0;
+      end = Math.min(maxVisible - 1, tp - 1);
+    }
 
-  // Adjust bounds when near the end
-  if (end >= tp) {
-    end = tp - 1;
-    start = Math.max(0, tp - maxVisible);
-  }
+    // Adjust bounds when near the end
+    if (end >= tp) {
+      end = tp - 1;
+      start = Math.max(0, tp - maxVisible);
+    }
 
-  const btns: number[] = [];
-  for (let i = start; i <= end; i++) {
-    btns.push(i);
-  }
-  return btns;
-});
+    const btns: number[] = [];
+    for (let i = start; i <= end; i++) {
+      btns.push(i);
+    }
+    return btns;
+  });
 
   // Client-side mode
   private clientRows = computed<T[]>(() => {
@@ -396,8 +396,8 @@ private applyInitialFiltersEffect = effect(() => {
       this.totalCount.set(this.clientRows().length);
     }
   },
-  // { allowSignalWrites: true }
-);
+    // { allowSignalWrites: true }
+  );
 
   displayRows = computed<any[]>(() =>
     this.config().apiConfig ? this.rows() : this.clientPagedRows()
@@ -673,13 +673,55 @@ private applyInitialFiltersEffect = effect(() => {
     }));
   }
 
+  resetDateOnClear = input<boolean>(false);
+
   clearFilters(): void {
     this.searchRaw.set('');
     this.activeFilters.set({ search: '' });
     this.tempFilters.set({});
-    this.dateFrom.set('');
-    this.dateTo.set('');
+    if (this.resetDateOnClear()) {
+      const { from, to } = this.getDefaultDateRange();
+      this.dateFrom.set(from);
+      this.dateTo.set(to);
+    }
     this.page.set(0);
+  }
+
+  private getDefaultDateRange(): { from: string; to: string } {
+    const preset = this.defaultPreset(); // input already available: 'today' | 'currentMonth' | ...
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    const today = new Date();
+
+    switch (preset) {
+      case 'currentMonth': {
+        const from = new Date(today.getFullYear(), today.getMonth(), 1);
+        const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return { from: fmt(from), to: fmt(to) };
+      }
+      case 'lastWeek': {
+        const to = new Date(today);
+        const from = new Date(today);
+        from.setDate(from.getDate() - 7);
+        return { from: fmt(from), to: fmt(to) };
+      }
+      case 'last90days': {
+        const to = new Date(today);
+        const from = new Date(today);
+        from.setDate(from.getDate() - 90);
+        return { from: fmt(from), to: fmt(to) };
+      }
+      case 'yesterday': {
+        const y = new Date(today);
+        y.setDate(y.getDate() - 1);
+        return { from: fmt(y), to: fmt(y) };
+      }
+      case 'today':
+      default:
+        return { from: fmt(today), to: fmt(today) };
+    }
+
   }
 
   removeChipFilter(key: string): void {
@@ -816,15 +858,24 @@ private applyInitialFiltersEffect = effect(() => {
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
     this.exportMenuOpen.set(false);
     this.pageSizePopoverOpen.set(false);
     // Close any open filter dropdowns when clicking outside
-    if (this.activeDropdownKey() !== null) {
+    // if (this.activeDropdownKey() !== null) {
+    //   this.closeAllDropdowns();
+    // }
+
+    // Close any open filter dropdown, unless the click was inside its own
+    // trigger/popover (which live under .st-custom-select).
+    const target = event.target as HTMLElement;
+    if (this.activeDropdownKey() !== null && !target.closest('.st-custom-select')) {
       this.closeAllDropdowns();
     }
   }
+
+
 
   toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
   closeExportMenu(): void { this.exportMenuOpen.set(false); }
@@ -899,13 +950,7 @@ private applyInitialFiltersEffect = effect(() => {
 
     // Explicit date type
     if (col.type === 'date') {
-      try {
-        const d = new Date(rawVal as any);
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        }
-      } catch {}
-      return this.sanitizeCell(rawVal, '—');
+      return this.formatDateCell(rawVal);
     }
 
     // Automatic date/time detection for strings
@@ -915,9 +960,16 @@ private applyInitialFiltersEffect = effect(() => {
       const isIsoPattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
 
       if (isDateKey || isIsoPattern) {
+        if (/^0/.test(rawVal.trim())) {
+          return '-';
+        }
         try {
           const d = new Date(rawVal);
           if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            if (year < 1000 || String(year).startsWith('0') || year <= 0) {
+              return '-';
+            }
             const hasTime = rawVal.includes('T') || rawVal.includes(':') || d.getHours() > 0 || d.getMinutes() > 0;
             const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
             if (hasTime && isDateKey) {
@@ -926,7 +978,7 @@ private applyInitialFiltersEffect = effect(() => {
             }
             return dateStr;
           }
-        } catch {}
+        } catch { }
       }
     }
 
@@ -1000,8 +1052,8 @@ private applyInitialFiltersEffect = effect(() => {
 
     const fetchSize =
       rowLimit === 'current' ? this.pageSize() :
-      rowLimit === undefined || rowLimit === 'all' ? currentTotal :
-      Math.min(rowLimit, currentTotal);
+        rowLimit === undefined || rowLimit === 'all' ? currentTotal :
+          Math.min(rowLimit, currentTotal);
 
     const ctx = {
       page: 0,
@@ -1559,6 +1611,29 @@ private applyInitialFiltersEffect = effect(() => {
       /\.(png|jpg|jpeg|webp|gif)/i.test(value);
   }
 
+  formatDateCell(value: any): string {
+    if (value === null || value === undefined || value === '' || value === '-' || value === '—') {
+      return '-';
+    }
+    const strVal = String(value).trim();
+    if (/^0/.test(strVal) || strVal === '0000-00-00') {
+      return '-';
+    }
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) {
+        return strVal;
+      }
+      const year = d.getFullYear();
+      if (year < 1000 || String(year).startsWith('0') || year <= 0) {
+        return '-';
+      }
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return strVal;
+    }
+  }
+
   formatCellValue(value: any): string {
     if (value === null || value === undefined) return '—';
     if (Array.isArray(value)) return value.join(', ');
@@ -1680,77 +1755,77 @@ private applyInitialFiltersEffect = effect(() => {
     this.singleInputComponents?.forEach(comp => comp.closeDropdown());
   }
 
-hasSelections(key: string): boolean {
-  const values = this.tempFilters()[key];
-  return Array.isArray(values) && values.length > 0;
-}
-
-/**
- * Generates space-efficient label displays like "Hot, VIP +3 more"
- */
-getMultiSelectDisplay(key: string): string {
-  const selectedValues = this.tempFilters()[key];
-  if (!Array.isArray(selectedValues) || selectedValues.length === 0) {
-    return '';
+  hasSelections(key: string): boolean {
+    const values = this.tempFilters()[key];
+    return Array.isArray(values) && values.length > 0;
   }
 
-  const filterDef = this.allFilters().find(f => f.key === key);
-  if (!filterDef || !filterDef.options) {
-    return `${selectedValues.length} selected`;
+  /**
+   * Generates space-efficient label displays like "Hot, VIP +3 more"
+   */
+  getMultiSelectDisplay(key: string): string {
+    const selectedValues = this.tempFilters()[key];
+    if (!Array.isArray(selectedValues) || selectedValues.length === 0) {
+      return '';
+    }
+
+    const filterDef = this.allFilters().find(f => f.key === key);
+    if (!filterDef || !filterDef.options) {
+      return `${selectedValues.length} selected`;
+    }
+
+    const selectedLabels = selectedValues.map(val => {
+      const option = filterDef.options!.find(o => o.value === val);
+      return option ? option.label : val;
+    });
+
+    if (selectedLabels.length <= 2) {
+      return selectedLabels.join(', ');
+    }
+
+    return `${selectedLabels.slice(0, 2).join(', ')} +${selectedLabels.length - 2} more`;
   }
 
-  const selectedLabels = selectedValues.map(val => {
-    const option = filterDef.options!.find(o => o.value === val);
-    return option ? option.label : val;
-  });
-
-  if (selectedLabels.length <= 2) {
-    return selectedLabels.join(', ');
+  /**
+   * Placeholder for future server-side / client-side search filtering
+   */
+  onDropdownSearch(filterKey: string, searchTerm: string): void {
+    // Logic to emit an event or filter filter.options dynamically
+    console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
   }
 
-  return `${selectedLabels.slice(0, 2).join(', ')} +${selectedLabels.length - 2} more`;
-}
+  // ── Star rating filter helpers ───────────────────────────
+  starArray(value: number | string | null | undefined, max = 5): boolean[] {
+    const n = Number(value) || 0;
+    return Array.from({ length: max }, (_, i) => i < n);
+  }
 
-/**
- * Placeholder for future server-side / client-side search filtering
- */
-onDropdownSearch(filterKey: string, searchTerm: string): void {
-  // Logic to emit an event or filter filter.options dynamically
-  console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
-}
+  selectedStarValue(key: string): number {
+    return Number(this.tempFilters()[key]) || 0;
+  }
 
-// ── Star rating filter helpers ───────────────────────────
-starArray(value: number | string | null | undefined, max = 5): boolean[] {
-  const n = Number(value) || 0;
-  return Array.from({ length: max }, (_, i) => i < n);
-}
+  isStarSelected(key: string, value: any): boolean {
+    return String(this.tempFilters()[key] ?? '') === String(value);
+  }
 
-selectedStarValue(key: string): number {
-  return Number(this.tempFilters()[key]) || 0;
-}
+  selectStarRating(key: string, value: any): void {
+    const current = this.tempFilters()[key];
+    const next = String(current ?? '') === String(value) ? '' : value;
+    this.updateTempFilter(key, next);
+    this.activeDropdownKey.set(null);
+    this.dropdownPosition.set(null);
+  }
+  pdfExportableColumns = computed(() =>
+    this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, true))
+  );
 
-isStarSelected(key: string, value: any): boolean {
-  return String(this.tempFilters()[key] ?? '') === String(value);
-}
+  selectAllPdfColumns(): void {
+    const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
+    const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
+    this.pdfSelectedColumns.set(keys);
+  }
 
-selectStarRating(key: string, value: any): void {
-  const current = this.tempFilters()[key];
-  const next = String(current ?? '') === String(value) ? '' : value;
-  this.updateTempFilter(key, next);
-  this.activeDropdownKey.set(null);
-  this.dropdownPosition.set(null);
-}
-pdfExportableColumns = computed(() =>
-  this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, true))
-);
-
-selectAllPdfColumns(): void {
-  const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
-  const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
-  this.pdfSelectedColumns.set(keys);
-} 
-
-clearPdfColumns(): void {
-  this.pdfSelectedColumns.set([]);
-}
+  clearPdfColumns(): void {
+    this.pdfSelectedColumns.set([]);
+  }
 }

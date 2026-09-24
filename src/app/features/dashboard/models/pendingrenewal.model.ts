@@ -16,9 +16,11 @@ export interface Data {
   renewDate: string;
   endDate: string;
   createdDate: string;
+
   country: string;
   leadOwner: string;
   supportOwner: string;
+  PremiumDate: string;
 }
 
 // export enum ContactPerson {

@@ -10,6 +10,7 @@ export interface Datum {
     client:         string;
     planStart:      Date;
     planEnd:        Date;
+    premiumDate:     Date;
     userLimit:      number;
     module:         Module;
     leadOwner:      string;

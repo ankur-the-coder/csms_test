@@ -181,8 +181,8 @@ export class ClientDashboard {
   }
 
   private buildUbiDeskBase(): string {
-    const u = Utils.encode5t(this.authService.email());
-    const p = Utils.encode5t(this.authService.password());
+    const u = this.authService.email();
+    const p = this.authService.password();
     return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
   }
 
