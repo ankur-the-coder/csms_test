@@ -858,15 +858,24 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
-  @HostListener('document:click')
-  onDocumentClick(): void {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
     this.exportMenuOpen.set(false);
     this.pageSizePopoverOpen.set(false);
     // Close any open filter dropdowns when clicking outside
-    if (this.activeDropdownKey() !== null) {
+    // if (this.activeDropdownKey() !== null) {
+    //   this.closeAllDropdowns();
+    // }
+
+    // Close any open filter dropdown, unless the click was inside its own
+    // trigger/popover (which live under .st-custom-select).
+    const target = event.target as HTMLElement;
+    if (this.activeDropdownKey() !== null && !target.closest('.st-custom-select')) {
       this.closeAllDropdowns();
     }
   }
+
+
 
   toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
   closeExportMenu(): void { this.exportMenuOpen.set(false); }
