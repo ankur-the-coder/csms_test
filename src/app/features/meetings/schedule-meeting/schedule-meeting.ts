@@ -180,45 +180,30 @@ export class ScheduleMeeting implements OnInit {
   }
 
   /**
-   * Fetches the logged-in user's email/name and uses it as the meeting host,
-   * so the meeting is created on behalf of whoever is currently logged in.
-   *
-   * The logged-in user's id is read from localStorage('empId') below.
+   * Reads the logged-in user's email and name from localStorage, decodes
+   * them with Utils.decode5t, and uses them as the meeting host.
+   * No API call needed — email, empId, userName are already in localStorage.
    */
   loadHostDetails(): void {
-    const employeeId = this.getCurrentEmployeeId();
+    const rawEmail = localStorage.getItem('email') || '';
+    const rawName = localStorage.getItem('userName') || '';
+    const rawEmpId = localStorage.getItem('empId') || '';
 
-    if (!employeeId) {
-      console.error('No employeeId available for the current session — cannot auto-fill host.');
+    const email = Utils.decode5t(rawEmail);
+    const name = rawName;
+
+    if (email) {
+      this.newMeeting.hostEmail = email;
+      this.newMeeting.hostName = name || 'Host';
+      this.newMeeting.hostId = rawEmpId; // keep encoded
+      this.newMeeting.hostMode = 'select';
+      this.hostDetailsLoading = false;
+      this.hostDetailsError = false;
+    } else {
       this.hostDetailsLoading = false;
       this.hostDetailsError = true;
       this.newMeeting.hostMode = 'manual';
-      return;
     }
-
-    this.hostDetailsLoading = true;
-    this.hostDetailsError = false;
-
-    this.scheduleMeetingService.getEmployeeDetails(employeeId).subscribe({
-      next: (details: EmployeeDetails) => {
-        this.ngZone.run(() => {
-          this.newMeeting.hostEmail = details.currentMail;
-          this.newMeeting.hostName = details.name;
-          this.newMeeting.hostId = String(details.companyId ?? employeeId);
-          this.newMeeting.hostMode = 'select';
-          this.hostDetailsLoading = false;
-          this.hostDetailsError = false;
-        });
-      },
-      error: (err) => {
-        console.error('Failed to fetch current user (host) details:', err.status, err.error ?? err.message);
-        this.ngZone.run(() => {
-          this.hostDetailsLoading = false;
-          this.hostDetailsError = true;
-          this.newMeeting.hostMode = 'manual';
-        });
-      }
-    });
   }
 
   /**
@@ -226,11 +211,10 @@ export class ScheduleMeeting implements OnInit {
    * localStorage always returns a string — the backend expects a numeric
    * employeeId (as sent from Postman), so this coerces it to a number.
    */
-  private getCurrentEmployeeId(): number | null {
+  private getCurrentEmployeeId(): string | null {
     const raw = localStorage.getItem('empId');
     if (!raw) return null;
-    const parsed = Number(raw);
-    return isNaN(parsed) ? null : parsed;
+    return raw;
   }
 
   retryHostFetch(): void {
@@ -379,12 +363,13 @@ cancelOrgEmailEdit(): void {
         // organizationId/organizationName here means the backend never
         // receives them, and OrgId/OrgName silently fail validation or
         // insert as null/empty.
-        orgId: this.newMeeting.orgId,
+        orgId: localStorage.getItem('orgId') || this.newMeeting.orgId,
         orgName: this.newMeeting.orgName,
 
         hostId: this.newMeeting.hostId,
         hostName: this.newMeeting.hostName,
-        empId: localStorage.getItem('empId') || ''
+        empId: localStorage.getItem('empId') || '',
+        email: localStorage.getItem('email') || ''
 
     };
 

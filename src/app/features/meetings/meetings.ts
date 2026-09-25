@@ -7,6 +7,7 @@ import { MeetingService, MeetingRow, Organization, DashboardStats, AttendanceChe
 import { DataTable } from '../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../shared/components/Data-table/custom-column.directive';
 import { SmartTableConfig, RequestContext, BadgeMapEntry } from '../../shared/components/Data-table/data-table.types';
+import { Utils } from '../../shared/utils/utils';
 
 
 interface Meeting {
@@ -352,7 +353,12 @@ if (empId) {
     body
   };
 },
-      transformRow: (raw: any): MeetingRow => raw as MeetingRow,
+      transformRow: (raw: any): MeetingRow => {
+        return {
+          ...raw,
+          clientMail: this.decodeEmail(raw?.clientMail)
+        };
+      },
     },
 
     rowIdKey: 'id',
@@ -437,18 +443,27 @@ if (empId) {
   }
 
 
+  decodeEmail(email?: string): string {
+    if (!email) return '';
+    try {
+      return Utils.decode5t(email) || email;
+    } catch {
+      return email;
+    }
+  }
+
   /** '1' = admin/global view (see everyone's data). Anything else = scope to the logged-in employee. */
 private isAdminView(): boolean {
   return localStorage.getItem('adminSts') === '1';
 }
 
 /** Returns the empId to filter by, or undefined if the user should see all data (admin). */
-private getScopedEmpId(): number | undefined {
+private getScopedEmpId(): string | undefined {
   if (this.isAdminView()) {
     return undefined;
   }
   const raw = localStorage.getItem('empId');
-  return raw ? Number(raw) : undefined;
+  return raw || undefined;
 }
 
   /**
@@ -1167,10 +1182,14 @@ if (empId) {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
+          const decodedMeetings = (res.data || []).map(m => ({
+            ...m,
+            clientMail: this.decodeEmail(m.clientMail)
+          }));
           // Ensure client-side filtering for user-specific meetings
           const userMeetings = empId
-            ? res.data.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId))
-            : res.data;
+            ? decodedMeetings.filter(m => !m.empId || String(m.empId) === String(empId) || (m.createdById && String(m.createdById) === String(empId)))
+            : decodedMeetings;
           this.apiMeetings.set(userMeetings);
           if (userMeetings.length > 0 && userMeetings[0].startTime) {
             const firstDate = new Date(userMeetings[0].startTime);
@@ -1279,7 +1298,7 @@ const currentUserName = this.isAdminView()
           recent = recent.filter(item => {
             const itemEmpId = (item as any).empId ?? (item as any).userId ?? (item as any).createdById;
             if (empId && itemEmpId !== undefined && itemEmpId !== null) {
-              return Number(itemEmpId) === empId;
+              return String(itemEmpId) === String(empId);
             }
             if (currentUserName && item.user) {
               const u = item.user.trim().toLowerCase();
@@ -1756,7 +1775,7 @@ const currentUserName = this.isAdminView()
 
 let result = [...this.apiMeetings()];
     if (empId) {
-      result = result.filter(m => !m.empId || Number(m.empId) === empId || (m.createdById && Number(m.createdById) === empId));
+      result = result.filter(m => !m.empId || String(m.empId) === String(empId) || (m.createdById && String(m.createdById) === String(empId)));
     }
     if (this.searchTerm) {
       const q = this.searchTerm.toLowerCase();

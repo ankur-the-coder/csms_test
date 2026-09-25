@@ -19,7 +19,7 @@ export interface DayEvent {
   status?: number | string;      // 0 = Scheduled, 1 = Completed, 2 = Rescheduled, etc.
   statusLabel?: string;
   statusClass?: string;
-  orgId?: number;
+  orgId?: number | string;
   raw?: any;
 }
 

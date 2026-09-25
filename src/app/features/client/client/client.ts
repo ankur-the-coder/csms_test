@@ -168,7 +168,7 @@ export class Client implements OnInit, OnDestroy {
             message: this.mailBody,
             companyName: row.name,
             orgId: row.orgId,
-            empId: Number(empId),
+            empId: empId,
             attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
               name,
               contentType,

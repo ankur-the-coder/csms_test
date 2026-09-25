@@ -99,13 +99,17 @@ export interface CreateTeamsMeetingRequest {
   // reads data.orgId / data.orgName directly. Using
   // organizationId/organizationName here means the backend never
   // receives them.
-  orgId?: number | null;
+  orgId?: number | string | null;
 
   orgName?: string;
 
   hostId?: string;
 
   hostName?: string;
+
+  empId?: string;
+
+  email?: string;
 
 }
 
@@ -228,7 +232,7 @@ export class ScheduleMeetingService {
    */
   getBookedTimes(empId: number | string, date: string): Observable<BookedMeeting[]> {
     return this.http
-      .post<BookedMeeting[]>(`${this.baseUrl}/meetings/booked-times`, { empId: Number(empId), date })
+      .post<BookedMeeting[]>(`${this.baseUrl}/meetings/booked-times`, { empId:empId, date })
       .pipe(
         catchError(() => of([]))
       );
