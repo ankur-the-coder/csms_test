@@ -33,7 +33,7 @@ export interface SendCustomMailPayload {
   message: string;
   companyName?: string;
   orgId?: number;
-  empId?: number;
+  empId?: number|string;
   attachments?: {
     name: string;
     contentType: string;
