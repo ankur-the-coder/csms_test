@@ -1186,19 +1186,15 @@ if (empId) {
             ...m,
             clientMail: this.decodeEmail(m.clientMail)
           }));
-          // Ensure client-side filtering for user-specific meetings
-          const userMeetings = empId
-            ? decodedMeetings.filter(m => !m.empId || String(m.empId) === String(empId) || (m.createdById && String(m.createdById) === String(empId)))
-            : decodedMeetings;
-          this.apiMeetings.set(userMeetings);
-          if (userMeetings.length > 0 && userMeetings[0].startTime) {
-            const firstDate = new Date(userMeetings[0].startTime);
+          this.apiMeetings.set(decodedMeetings);
+          if (decodedMeetings.length > 0 && decodedMeetings[0].startTime) {
+            const firstDate = new Date(decodedMeetings[0].startTime);
             if (!isNaN(firstDate.getTime())) {
               this.calendarMonth.set(firstDate.getMonth());
               this.calendarYear.set(firstDate.getFullYear());
             }
           }
-          this.updateMeetingTypesChartFromApi(userMeetings, res.meta?.total || userMeetings.length);
+          this.updateMeetingTypesChartFromApi(decodedMeetings, res.meta?.total || decodedMeetings.length);
         }
       },
       error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
@@ -1293,21 +1289,6 @@ const currentUserName = this.isAdminView()
           return !isNaN(activityDate.getTime()) && activityDate >= sevenDaysAgo;
         });
 
-        // Filter user-wise: if empId or user name is present in activity item
-        if (empId || currentUserName) {
-          recent = recent.filter(item => {
-            const itemEmpId = (item as any).empId ?? (item as any).userId ?? (item as any).createdById;
-            if (empId && itemEmpId !== undefined && itemEmpId !== null) {
-              return String(itemEmpId) === String(empId);
-            }
-            if (currentUserName && item.user) {
-              const u = item.user.trim().toLowerCase();
-              return u.includes(currentUserName) || currentUserName.includes(u);
-            }
-            return true;
-          });
-        }
-
         this.recentActivities.set(recent);
         this.loadingRecentActivity = false;
       },
@@ -1392,8 +1373,6 @@ const currentUserName = this.isAdminView()
     this.newMeeting.orgId = org ? org.orgId : null;
     this.newMeeting.customer = org ? org.name : '';
 
-    // For the time being: just console log the selected orgId
-    console.log('Selected Organization orgId:', this.newMeeting.orgId);
   }
 
   // ============ Mock Data ============
@@ -1771,12 +1750,7 @@ const currentUserName = this.isAdminView()
   }
 
   getFilteredApiMeetings(): MeetingRow[] {
-    const empId = this.getScopedEmpId();
-
-let result = [...this.apiMeetings()];
-    if (empId) {
-      result = result.filter(m => !m.empId || String(m.empId) === String(empId) || (m.createdById && String(m.createdById) === String(empId)));
-    }
+    let result = [...this.apiMeetings()];
     if (this.searchTerm) {
       const q = this.searchTerm.toLowerCase();
       result = result.filter(m =>
@@ -2086,22 +2060,6 @@ let result = [...this.apiMeetings()];
       iconBg: 'bg-indigo-100',
       iconText: 'text-indigo-600'
     });
-
-    // Log to console
-    console.log('📅 New Meeting Scheduled:');
-    console.table({
-      Title: this.newMeeting.title,
-      Customer: this.newMeeting.customer,
-      Type: this.newMeeting.type,
-      Date: this.newMeeting.date,
-      Time: this.newMeeting.time,
-      Duration: this.newMeeting.duration,
-      Priority: this.newMeeting.priority,
-      Host: this.newMeeting.host,
-      Link: this.newMeeting.link || 'Not provided',
-      Description: this.newMeeting.description || 'None'
-    });
-    console.log('📋 Full meeting object:', newMeeting);
 
     this.showToastMessage(`✅ Meeting "${this.newMeeting.title}" scheduled successfully!`);
     this.closeScheduleModal();
