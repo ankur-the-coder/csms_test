@@ -1728,7 +1728,15 @@ const currentUserName = this.isAdminView()
         startMinutes: startHrs * 60 + startMins,
         endMinutes: startHrs * 60 + startMins + 60,
         chipClass: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-        accentClass: 'border-indigo-500'
+        accentClass: 'border-indigo-500',
+        purpose: m.purpose,
+        meetingType: m.meetingType,
+        duration: this.formatDuration(m.duration),
+        status: m.status,
+        statusLabel: this.getStatusLabel(m.status),
+        statusClass: this.getStatusClass(m.status),
+        orgId: m.orgId ?? undefined,
+        raw: m
       };
 
       if (!map[dateKey]) map[dateKey] = [];
