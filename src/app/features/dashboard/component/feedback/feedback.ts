@@ -134,7 +134,7 @@ export class Feedback {
       }
     });
 
-    const orgId = Utils.encode5t(this.authService.getOrgId().toString());
+    const orgId = this.authService.getOrgId();
     this.fetchDashboardCards(initialFrom, initialTo, orgId);
     this.loadData();
   }
@@ -232,7 +232,7 @@ export class Feedback {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
-            orgId: Utils.encode5t(this.authService.getOrgId().toString()),
+            orgId: this.authService.getOrgId(),
           };
 
           return { method: 'POST' as const, body };
@@ -259,7 +259,7 @@ export class Feedback {
   });
 
   onDateApplied(from: string, to: string): void {
-    const orgId = Utils.encode5t(this.authService.getOrgId().toString());
+    const orgId = this.authService.getOrgId();
     this.initialDateFrom.set(from);
     this.initialDateTo.set(to);
     this.selectedRating.set(6);

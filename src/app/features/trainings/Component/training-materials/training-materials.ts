@@ -328,7 +328,7 @@ export class TrainingMaterials implements OnInit {
 
 
   loadCourseDetails(courseId: number): void {
-     this.trainingService.getCourseDetails(courseId, Utils.encode5t(this.authService.getEmpId())).subscribe({
+     this.trainingService.getCourseDetails(courseId, this.authService.getEmpId()).subscribe({
       next: (res) => {
         if (res.status && res.data) {
           // Map backend modules to local models
@@ -349,7 +349,7 @@ export class TrainingMaterials implements OnInit {
 
               return {
                 id: mat.id.toString(),
-                name: fileNameFromPath, 
+                name: fileNameFromPath,
                 size: 'Unknown Size',
                 date: mat.created_at ? mat.created_at.split('T')[0] : '',
                 type: matType,
@@ -522,7 +522,7 @@ export class TrainingMaterials implements OnInit {
     formData.append('file', this.selectedFile);
     formData.append('title', this.materialTitle.trim());
     formData.append('course_id', courseId.toString());
-    formData.append('uploaded_by', Utils.encode5t(this.authService.getEmpId()));
+    formData.append('uploaded_by', this.authService.getEmpId());
     if (this.targetModuleId) {
       formData.append('module_id', this.targetModuleId);
     }
@@ -637,8 +637,8 @@ export class TrainingMaterials implements OnInit {
     this.isSavingModule.set(true);
 
     const empId = this.authService.getEmpId();
-    const encodedUser = Utils.encode5t(empId);
-    const encodedOrgId = Utils.encode5t(this.authService.getOrgId());
+    const encodedUser = empId;
+    const encodedOrgId = this.authService.getOrgId();
 
     const formData = new FormData();
     formData.append('title', this.newModuleTitle.trim());

@@ -236,7 +236,7 @@ export class RenewalComponent {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
-            orgId: Utils.encode5t(this.authService.getOrgId().toString()),
+            orgId: this.authService.getOrgId(),
           };
 
           return { method: 'POST' as const, body };

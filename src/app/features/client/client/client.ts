@@ -303,59 +303,59 @@ export class Client implements OnInit, OnDestroy {
   }
 
   private loadClientTimeline(row: ClientRow): void {
-  this.timelineLoading.set(true);
-  this.timelineError.set('');
-  this.timelineEvents.set([]);
+    this.timelineLoading.set(true);
+    this.timelineError.set('');
+    this.timelineEvents.set([]);
 
-  this.clientTimelineApi.getClientTimeline({ orgId: String(row.orgId) }).subscribe({
-    next: (res) => {
-      this.timelineLoading.set(false);
-      if (res?.status) {
-        this.timelineEvents.set(this.buildTimelineFromApi(res.data, row));
-      } else {
-        this.timelineError.set(res?.msg || 'Failed to load timeline');
-      }
-    },
-    error: (err) => {
-      this.timelineLoading.set(false);
-      this.timelineError.set(err?.error?.msg || 'Failed to load timeline');
-    },
-  });
-}
+    this.clientTimelineApi.getClientTimeline({ orgId: String(row.orgId) }).subscribe({
+      next: (res) => {
+        this.timelineLoading.set(false);
+        if (res?.status) {
+          this.timelineEvents.set(this.buildTimelineFromApi(res.data, row));
+        } else {
+          this.timelineError.set(res?.msg || 'Failed to load timeline');
+        }
+      },
+      error: (err) => {
+        this.timelineLoading.set(false);
+        this.timelineError.set(err?.error?.msg || 'Failed to load timeline');
+      },
+    });
+  }
 
-private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): TimelineEvent[] {
-  // Reversed order: Go Live -> Setup -> Kickoff Meeting -> Welcome Email Sent
-  return [
-    {
-      date: '',
-      year: '',
-      title: 'Go Live',
-      description: 'System is live and in production.',
-      status: data.goLive ? 'success' : 'warning',
-    },
-    {
-      date: '',
-      year: '',
-      title: 'Setup',
-      description: `Company setup completed, including organization profile, HRMS configuration, and admin user creation for ${row.name}.`,
-      status: data.setup ? 'success' : 'warning',
-    },
-    {
-      date: '',
-      year: '',
-      title: 'Kickoff Meeting',
-      description: 'Initial kickoff meeting completed with the team.',
-      status: data.kickoffMeeting ? 'success' : 'warning',
-    },
-    {
-      date: '',
-      year: '',
-      title: 'Welcome Email Sent',
-      description: `Welcome email and portal access sent to ${row.contactPerson || row.name}.`,
-      status: data.welcomeEmailSent ? 'success' : 'warning',
-    },
-  ];
-}
+  private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): TimelineEvent[] {
+    // Reversed order: Go Live -> Setup -> Kickoff Meeting -> Welcome Email Sent
+    return [
+      {
+        date: '',
+        year: '',
+        title: 'Go Live',
+        description: 'System is live and in production.',
+        status: data.goLive ? 'success' : 'warning',
+      },
+      {
+        date: '',
+        year: '',
+        title: 'Setup',
+        description: `Company setup completed, including organization profile, HRMS configuration, and admin user creation for ${row.name}.`,
+        status: data.setup ? 'success' : 'warning',
+      },
+      {
+        date: '',
+        year: '',
+        title: 'Kickoff Meeting',
+        description: 'Initial kickoff meeting completed with the team.',
+        status: data.kickoffMeeting ? 'success' : 'warning',
+      },
+      {
+        date: '',
+        year: '',
+        title: 'Welcome Email Sent',
+        description: `Welcome email and portal access sent to ${row.contactPerson || row.name}.`,
+        status: data.welcomeEmailSent ? 'success' : 'warning',
+      },
+    ];
+  }
 
   onClientMenuAction(action: string, row: ClientRow): void {
     console.log(`${action}:`, row.orgId);
@@ -536,13 +536,13 @@ private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): Timeline
     return {
       columns: [
         { key: 'name', label: 'Client', sortable: true, hideable: true },
-        { key: 'contactPerson', label: 'Contact Name', sortable: false },
+        { key: 'contactPerson', label: 'Contact Name', sortable: true },
         { key: 'email', label: 'Email', sortable: false },
         { key: 'phoneNumber', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
-        { key: 'planStart', label: 'Plan Start', sortable: false, hideable: false, type: 'date' },
-        { key: 'planEnd', label: 'Plan End', sortable: false, hideable: false, type: 'date' },
-        { key: 'premiumDate', label: 'Premium Date', sortable: false, hideable: false, type: 'date' },
+        { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
+        { key: 'planEnd', label: 'Plan End', sortable: true, hideable: false, type: 'date' },
+        { key: 'premiumDate', label: 'Premium Date', sortable: true, hideable: false, type: 'date' },
         { key: 'userLimit', label: 'User Limit', sortable: true },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
@@ -572,6 +572,8 @@ private buildTimelineFromApi(data: ClientTimelineData, row: ClientRow): Timeline
             modules: 'module',
             leadOwner: 'leadOwner',
             supportOwner: 'suppOwner',
+            contactPerson: 'contactPerson',
+            premiumDate: 'premiumDate',
           };
           const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'client';
 
