@@ -297,9 +297,10 @@
             </span>
             }
             <input type="text" name="mail-recipient-field" autocomplete="new-password" autocorrect="off"
-              spellcheck="false" data-lpignore="true" data-form-type="other" [(ngModel)]="mailRecipientInput"
-              (keydown.enter)="addRecipient($event)" (keydown.,)="addRecipient($event)"
-              placeholder="{{ mailRecipients().length === 0 ? 'Add email and press enter' : 'Add another' }}"
+              spellcheck="false" data-lpignore="true" data-form-type="other" [ngModel]="mailRecipientInput"
+              (ngModelChange)="onRecipientInputChange($event)" (keydown)="onRecipientKeyDown($event)"
+              (blur)="onRecipientBlur()" (paste)="onRecipientPaste($event)"
+              placeholder="{{ mailRecipients().length === 0 ? 'Enter email address' : 'Add another' }}"
               class="flex-1 min-w-[140px] text-sm outline-none border-none bg-transparent placeholder:text-slate-400"
               style="outline: none; border: none; box-shadow: none; background: transparent;" />
           </div>

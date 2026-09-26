@@ -104,32 +104,120 @@ export class Client implements OnInit, OnDestroy {
     this.mailBody = html;
   }
 
+  recipientInputInvalid = signal(false);
+  private emailAutoCommitTimer: any = null;
+  private readonly emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+
   closeMailModal(): void {
+    if (this.emailAutoCommitTimer) {
+      clearTimeout(this.emailAutoCommitTimer);
+      this.emailAutoCommitTimer = null;
+    }
     this.mailModalOpen.set(false);
     this.mailRecipientInput = '';
     this.mailAttachments.set([]);
     this.attachmentError.set('');
+    this.recipientInputInvalid.set(false);
   }
 
-  recipientInputInvalid = signal(false);
+  commitRecipientInput(raw?: string): boolean {
+    if (this.emailAutoCommitTimer) {
+      clearTimeout(this.emailAutoCommitTimer);
+      this.emailAutoCommitTimer = null;
+    }
 
-  addRecipient(event: Event): void {
-    event.preventDefault();
-    const value = this.mailRecipientInput.trim().replace(/,$/, '');
-    if (!value) {
+    const text = (raw !== undefined ? raw : this.mailRecipientInput).trim();
+    if (!text) {
       this.recipientInputInvalid.set(false);
-      return;
+      return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
+
+    const candidates = text.split(/[,;\s\n]+/).filter(Boolean);
+    const current = this.mailRecipients();
+    const toAdd: string[] = [];
+    let hasInvalid = false;
+
+    for (const email of candidates) {
+      const clean = email.trim().replace(/[,;]$/, '');
+      if (!this.emailRegex.test(clean)) {
+        hasInvalid = true;
+        continue;
+      }
+      if (!current.includes(clean) && !toAdd.includes(clean)) {
+        toAdd.push(clean);
+      }
+    }
+
+    if (toAdd.length > 0) {
+      this.mailRecipients.update((list) => [...list, ...toAdd]);
+      this.mailRecipientInput = '';
+      this.recipientInputInvalid.set(false);
+      return true;
+    }
+
+    if (hasInvalid && candidates.length > 0) {
       this.recipientInputInvalid.set(true);
-      return;
+      return false;
     }
-    if (!this.mailRecipients().includes(value)) {
-      this.mailRecipients.update((list) => [...list, value]);
-    }
+
     this.mailRecipientInput = '';
     this.recipientInputInvalid.set(false);
+    return false;
+  }
+
+  onRecipientInputChange(value: string): void {
+    this.mailRecipientInput = value;
+    this.recipientInputInvalid.set(false);
+
+    if (this.emailAutoCommitTimer) {
+      clearTimeout(this.emailAutoCommitTimer);
+      this.emailAutoCommitTimer = null;
+    }
+
+    // If input contains delimiters (comma, semicolon, space, newline), commit immediately
+    if (/[,;\s\n]/.test(value)) {
+      this.commitRecipientInput(value);
+      return;
+    }
+
+    const trimmed = value.trim();
+    // If it's a complete valid email (e.g. name@domain.com), auto-commit after a brief pause
+    if (this.emailRegex.test(trimmed)) {
+      this.emailAutoCommitTimer = setTimeout(() => {
+        if (this.emailRegex.test(this.mailRecipientInput.trim())) {
+          this.commitRecipientInput(this.mailRecipientInput);
+        }
+      }, 600);
+    }
+  }
+
+  onRecipientKeyDown(event: KeyboardEvent): void {
+    if (['Enter', 'Tab', ',', ';', ' '].includes(event.key)) {
+      const val = this.mailRecipientInput.trim();
+      if (val) {
+        event.preventDefault();
+        this.commitRecipientInput(val);
+      }
+    }
+  }
+
+  onRecipientPaste(event: ClipboardEvent): void {
+    const text = event.clipboardData?.getData('text');
+    if (text && (text.includes('@') || /[,;\s\n]/.test(text))) {
+      event.preventDefault();
+      this.commitRecipientInput(text);
+    }
+  }
+
+  onRecipientBlur(): void {
+    if (this.mailRecipientInput.trim()) {
+      this.commitRecipientInput();
+    }
+  }
+
+  addRecipient(event?: Event): void {
+    if (event) event.preventDefault();
+    this.commitRecipientInput();
   }
 
   removeRecipient(email: string): void {
@@ -139,6 +227,12 @@ export class Client implements OnInit, OnDestroy {
   sendCustomMail(): void {
     const row = this.mailModalRow();
     if (!row) return;
+
+    // Auto-commit any valid email in the input before sending
+    if (this.mailRecipientInput.trim()) {
+      this.commitRecipientInput();
+    }
+
     if (this.mailRecipients().length === 0) {
       this.toastr.warning('Add at least one recipient.', 'Warning');
       return;
