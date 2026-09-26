@@ -4,10 +4,8 @@
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <!-- <i class="fas fa-calendar-check text-indigo-500"></i> -->
           Meetings
         </h1>
-        <!-- <p class="text-slate-500 mt-1">Plan, manage, and track customer meetings across your portfolio.</p> -->
       </div>
       <div class="flex flex-wrap gap-3">
         <button (click)="openScheduleModal()"
@@ -38,7 +36,7 @@
 
     <!-- Upcoming Meetings -->
     <div
-      class="card flex items-center justify-between gap-6 border border-brand-300 bg-brand-50 rounded-xl p-4 overflow-hidden">
+      class="card flex items-center justify-between gap-6 border border-success-300 bg-success-100 rounded-xl p-4 overflow-hidden">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getUpcomingMeetings()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Upcoming</span>
@@ -70,7 +68,7 @@
     <div
       class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden">
       <div class="min-w-0">
-        <div class="text-2xl font-bold mt-1" [appCountUp]="getPendingFollowUps()" ></div>
+        <div class="text-2xl font-bold mt-1" [appCountUp]="getPendingFollowUps()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending Follow-ups</span>
       </div>
       <div class="stat-icon w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -85,7 +83,7 @@
 
   <!-- Charts Section -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-    <!-- Recent Activity (moved here from below) -->
+    <!-- Recent Activity -->
     <div class="bg-white rounded-xl border border-slate-200 col-span-2 shadow-sm">
       <div class="p-6 border-b border-slate-200 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -94,10 +92,6 @@
           <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{{ recentActivities().length
             }}</span>
         </div>
-        <!-- <button (click)="viewAllActivities()"
-          class="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 transition">
-          View all <i class="fas fa-arrow-right text-xs"></i>
-        </button> -->
       </div>
       <div class="divide-y divide-slate-100 max-h-72 overflow-y-auto">
         @if (loadingRecentActivity) {
@@ -125,9 +119,6 @@
               <span class="text-xs text-slate-500">{{ activity.user }}</span>
             </div>
           </div>
-          <!-- <button class="opacity-0 group-hover:opacity-100 transition text-slate-400 hover:text-slate-600">
-            <i class="fas fa-ellipsis-v"></i>
-          </button> -->
         </div>
         }
       </div>
@@ -152,9 +143,6 @@
             class="px-3 py-1.5 cursor-pointer text-sm font-medium rounded-md flex items-center gap-2 transition"
             [class.text-slate-900]="activeView === 'table'" [class.text-slate-600]="activeView !== 'table'">
             <i class="fas fa-table"></i> Table
-            <!-- <span
-              class="bg-indigo-100 text-indigo-700 text-xs px-1.5 py-0.5 rounded-full">{{ getFilteredMeetings().length
-              }}</span> -->
           </button>
           <button (click)="setActiveView('timeline')" [class.bg-white]="activeView === 'timeline'"
             [class.shadow-sm]="activeView === 'timeline'"
@@ -307,7 +295,6 @@
         <span class="text-dark-600">Cancel Meeting</span>
       </button>
 
-      <!-- NEW: Invite -->
       <button type="button" (click)="onMenuInvite(menuRow)"
         class="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm  hover:bg-indigo-50 transition">
         <svg class="w-4 h-4 text-indigo-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -436,10 +423,6 @@
     </div>
     }
 
-
-
-
-
     <!-- Timeline View -->
     <div *ngIf="activeView === 'timeline'" class="p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
       @if (getFilteredApiMeetings().length === 0) {
@@ -504,240 +487,6 @@
       <app-calendar [eventsByDay]="calendarEventsByDay" (dateSelect)="onCalendarDateSelect($event)"></app-calendar>
     </div>
 
-
-  </div>
-
-
-
-  <!-- Quick Actions -->
-  <!-- <div class="mb-6">
-    <div class="flex items-center gap-2 mb-4">
-      <i class="fas fa-bolt text-amber-500"></i>
-      <h2 class="font-semibold text-slate-900">Quick Actions</h2>
-    </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-      <div (click)="openScheduleModal()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-indigo-300">
-        <div
-          class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-calendar-plus"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Schedule</h3>
-        <p class="text-xs text-slate-500">Create meeting</p>
-      </div>
-      <div (click)="inviteAttendees()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-emerald-300">
-        <div
-          class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-user-plus"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Invite</h3>
-        <p class="text-xs text-slate-500">Add attendees</p>
-      </div>
-      <div (click)="createAgenda()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-purple-300">
-        <div
-          class="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-list-ul"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Agenda</h3>
-        <p class="text-xs text-slate-500">Plan topics</p>
-      </div>
-      <div (click)="uploadNotes()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-amber-300">
-        <div
-          class="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-file-upload"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Notes</h3>
-        <p class="text-xs text-slate-500">Upload MOM</p>
-      </div>
-      <div (click)="createFollowUp()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-blue-300">
-        <div
-          class="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-tasks"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Follow-up</h3>
-        <p class="text-xs text-slate-500">Track actions</p>
-      </div>
-      <div (click)="sendReminder()"
-        class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition cursor-pointer group text-center hover:border-rose-300">
-        <div
-          class="w-12 h-12 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition">
-          <i class="fas fa-bell"></i>
-        </div>
-        <h3 class="font-medium text-sm text-slate-900">Reminder</h3>
-        <p class="text-xs text-slate-500">Notify participants</p>
-      </div>
-    </div>
-  </div> -->
-
-
-
-  <!-- Detail Drawer -->
-  <div *ngIf="showDetailDrawer" class="fixed inset-0 bg-black/50 z-50 flex justify-end" (click)="closeDetailDrawer()">
-    <div class="bg-white w-full max-w-md h-full overflow-y-auto shadow-xl transform transition-transform"
-      (click)="$event.stopPropagation()">
-      <!-- Drawer Header -->
-      <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">{{ selectedMeeting?.title }}</h2>
-          <p class="text-sm text-slate-600 mt-1">{{ selectedMeeting?.subtitle }} · {{ selectedMeeting?.customer }}</p>
-        </div>
-        <button (click)="closeDetailDrawer()"
-          class="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-lg transition">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <!-- Drawer Body -->
-      <div class="p-6" *ngIf="selectedMeeting">
-        <!-- Status Badge -->
-        <div class="flex items-center gap-2 mb-6">
-          <span class="inline-flex px-3 py-1 rounded-full text-sm font-medium"
-            [class]="getStatusBadgeClass(selectedMeeting.status)">
-            {{ getStatusDisplay(selectedMeeting.status) }}
-          </span>
-          <span class="text-xs text-slate-500">Meeting ID: #{{ selectedMeeting.id }}</span>
-        </div>
-
-        <!-- Details -->
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <i class="fas fa-info-circle text-indigo-500"></i> Details
-          </h3>
-          <div class="space-y-3 bg-slate-50 p-4 rounded-lg">
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Date</span>
-              <span class="font-medium text-slate-900">{{ selectedMeeting.date }}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Time</span>
-              <span class="font-medium text-slate-900">{{ selectedMeeting.time }} - {{ getEndTime(selectedMeeting.time)
-                }}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Duration</span>
-              <span class="font-medium text-slate-900">1 hour</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Type</span>
-              <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium"
-                [class]="getTypeBadgeClass(selectedMeeting.type)">
-                {{ selectedMeeting.type }}
-              </span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Priority</span>
-              <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium"
-                [class]="getPriorityBadgeClass(selectedMeeting.priority)">
-                {{ selectedMeeting.priority }}
-              </span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Owner</span>
-              <span class="font-medium text-slate-900">{{ selectedMeeting.owner }}</span>
-            </div>
-            <div class="flex justify-between text-sm">
-              <span class="text-slate-500">Location</span>
-              <span class="font-medium text-indigo-600 cursor-pointer hover:underline">
-                <i class="fas fa-video mr-1"></i> Zoom Meeting
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Agenda -->
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <i class="fas fa-list-check text-indigo-500"></i> Agenda (3/5 completed)
-          </h3>
-          <div class="space-y-2">
-            <div *ngFor="let item of agendaItems"
-              class="flex items-start gap-3 p-2 hover:bg-slate-50 rounded transition">
-              <button (click)="toggleAgendaItem(item)" class="mt-0.5 flex-shrink-0">
-                <i *ngIf="item.completed" class="fas fa-check-circle text-emerald-500"></i>
-                <div *ngIf="!item.completed"
-                  class="w-5 h-5 border-2 border-slate-300 rounded hover:border-indigo-400 transition"></div>
-              </button>
-              <span class="text-sm" [class.line-through]="item.completed" [class.text-slate-500]="item.completed"
-                [class.text-slate-700]="!item.completed">
-                {{ item.text }}
-              </span>
-            </div>
-            <button class="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 mt-2">
-              <i class="fas fa-plus"></i> Add agenda item
-            </button>
-          </div>
-        </div>
-
-        <!-- Notes -->
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <i class="fas fa-sticky-note text-indigo-500"></i> Notes
-          </h3>
-          <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Initial kickoff for the implementation project. Key stakeholders from both sides will be present.
-              Focus on aligning expectations and establishing communication protocols.
-            </p>
-            <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-200">
-              <button class="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
-                <i class="fas fa-edit"></i> Edit
-              </button>
-              <span class="text-slate-300">|</span>
-              <button class="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                <i class="fas fa-download"></i> Download
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Attendees -->
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <i class="fas fa-users text-indigo-500"></i> Attendees ({{ getAttendees().length }})
-          </h3>
-          <div class="flex flex-wrap gap-2">
-            <span *ngFor="let attendee of getAttendees()"
-              class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full text-sm text-slate-700 border border-slate-200">
-              <div
-                class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-medium">
-                {{ attendee[0] }}
-              </div>
-              {{ attendee }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Drawer Footer -->
-      <div class="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex items-center justify-end gap-3">
-        <button (click)="deleteMeeting(selectedMeeting!)"
-          class="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition flex items-center gap-2">
-          <i class="fas fa-trash-alt"></i> Cancel Meeting
-        </button>
-        <button
-          class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition flex items-center gap-2">
-          <i class="fas fa-share-alt"></i> Share
-        </button>
-        <button
-          class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-semibold hover:bg-brand-700 transition shadow-sm flex items-center gap-2">
-          <i class="fas fa-video"></i> Join Meeting
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div *ngIf="showToast"
-    class="fixed bottom-4 right-4 bg-slate-900 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-up z-50">
-    <i class="fas fa-check-circle text-emerald-400"></i>
-    <span>{{ toastMessage }}</span>
-    <button (click)="hideToast()" class="text-slate-400 hover:text-white transition">
-      <i class="fas fa-times"></i>
-    </button>
   </div>
 </div>
 

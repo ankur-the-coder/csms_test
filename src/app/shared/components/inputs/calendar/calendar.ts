@@ -16,8 +16,12 @@ export interface DayEvent {
   purpose?: string;
   meetingType?: string;
   duration?: string;    // human-readable, e.g. "1h 0m"
-  status?: number | string;      // 1 = Active, etc.
-  orgId?: number;
+  status?: number | string;      // 0 = Scheduled, 1 = Completed, 2 = Rescheduled, etc.
+  statusLabel?: string;
+  statusClass?: string;
+  orgId?: number | string;
+  raw?: any;
+
 }
 
 export interface TimeSlot {
@@ -285,5 +289,63 @@ export class Calendar {
 
   onEventClicked(ev: DayEvent) {
     this.eventClick.emit(ev);
+  }
+
+  getStatusLabel(ev: DayEvent): string {
+    if (ev.statusLabel) return ev.statusLabel;
+    if (ev.status === undefined || ev.status === null || ev.status === '') return 'Scheduled';
+    const s = ev.status;
+    const numericMap: Record<number, string> = {
+      0: 'Scheduled',
+      1: 'Completed',
+      2: 'Rescheduled',
+      3: 'Pending',
+      4: 'Cancelled',
+      5: 'Client No-Show',
+      6: 'Host No-Show'
+    };
+    if (typeof s === 'number' && numericMap[s] !== undefined) return numericMap[s];
+    const stringMap: Record<string, string> = {
+      '0': 'Scheduled',
+      '1': 'Completed',
+      '2': 'Rescheduled',
+      '3': 'Pending',
+      '4': 'Cancelled',
+      '5': 'Client No-Show',
+      '6': 'Host No-Show',
+      'scheduled': 'Scheduled',
+      'completed': 'Completed',
+      'rescheduled': 'Rescheduled',
+      'pending': 'Pending',
+      'inprogress': 'In Progress',
+      'cancelled': 'Cancelled',
+      'client_no_show': 'Client No-Show',
+      'host_no_show': 'Host No-Show'
+    };
+    const key = String(s).trim().toLowerCase();
+    return stringMap[key] || String(s);
+  }
+
+  getStatusClass(ev: DayEvent): string {
+    if (ev.statusClass) return ev.statusClass;
+    const s = Number(ev.status);
+    const map: Record<number, string> = {
+      0: 'bg-blue-50 text-blue-700 border border-blue-200',
+      1: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      2: 'bg-purple-50 text-purple-700 border border-purple-200',
+      3: 'bg-amber-50 text-amber-700 border border-amber-200',
+      4: 'bg-rose-50 text-rose-700 border border-rose-200',
+      5: 'bg-amber-50 text-amber-700 border border-amber-200',
+      6: 'bg-rose-50 text-rose-700 border border-rose-200',
+    };
+    if (!isNaN(s) && map[s]) return map[s];
+
+    const label = this.getStatusLabel(ev).toLowerCase();
+    if (label === 'completed') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    if (label === 'rescheduled') return 'bg-purple-50 text-purple-700 border border-purple-200';
+    if (label === 'pending' || label === 'client no-show') return 'bg-amber-50 text-amber-700 border border-amber-200';
+    if (label === 'cancelled' || label === 'host no-show') return 'bg-rose-50 text-rose-700 border border-rose-200';
+    if (label === 'in progress') return 'bg-sky-50 text-sky-700 border border-sky-200';
+    return 'bg-blue-50 text-blue-700 border border-blue-200';
   }
 }
