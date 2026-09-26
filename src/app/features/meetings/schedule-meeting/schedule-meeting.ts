@@ -299,7 +299,6 @@ cancelOrgEmailEdit(): void {
   }
 
   saveAsDraft(): void {
-    console.log('Saved as draft', this.newMeeting);
     this.goBack();
   }
 
@@ -330,8 +329,7 @@ cancelOrgEmailEdit(): void {
       return;
     }
 
-    // Full form state, useful for debugging
-    console.log('Full meeting form data', this.newMeeting);
+   
 
     const payload = {
 
@@ -373,7 +371,6 @@ cancelOrgEmailEdit(): void {
 
     };
 
-    console.log("Teams Payload", payload);
 
     this.scheduleMeetingService
         .createTeamsMeeting(payload)
@@ -381,7 +378,6 @@ cancelOrgEmailEdit(): void {
 
             next: (res) => {
 
-                console.log("Teams Response", res);
 
                 this.createdMeetingLink = res.meetingLink || null;
                 this.saving = false;
