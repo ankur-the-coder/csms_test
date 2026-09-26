@@ -39,7 +39,7 @@ import {
   TableFilter,
 } from './data-table.types';
 
-import { DatePicker } from "../inputs/date-picker/date-picker";
+import { DatePicker } from '../inputs/date-picker/date-picker';
 import { CustomColumnDirective } from './custom-column.directive';
 import { DataTableService } from './data-table.service';
 import { CustomDateSelector } from '../inputs/custom-date-selector/custom-date-selector';
@@ -50,13 +50,20 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-data-table',
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, CurrencyPipe, CustomDateSelector, SingleInput],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DatePipe,
+    DecimalPipe,
+    CurrencyPipe,
+    CustomDateSelector,
+    SingleInput,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.html',
   styleUrl: './data-table.css',
 })
 export class DataTable<T extends object> implements AfterContentInit {
-
   @ViewChild('filterModal') filterModalRef!: ElementRef<HTMLDialogElement>;
   @ViewChild('colPickerModal') colPickerModalRef!: ElementRef<HTMLDialogElement>;
   @ViewChild('bulkActionModal') bulkActionModalRef!: ElementRef<HTMLDialogElement>;
@@ -71,14 +78,15 @@ export class DataTable<T extends object> implements AfterContentInit {
   private dataTableService = inject(DataTableService);
   private _lastFetchKey = '';
 
-
   // ── Inputs ────────────────────────────────────────────────────────────────
   config = input.required<SmartTableConfig<T>>();
   actions = input<RowAction<any>[]>([]);
   filterNames = input<string[]>([]);
   initialDateFrom = input<string>('');
   initialDateTo = input<string>('');
-  defaultPreset = input<'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' | string>('today');
+  defaultPreset = input<
+    'today' | 'currentMonth' | 'lastWeek' | 'last90days' | 'yesterday' | 'custom' | string
+  >('today');
   disableFutureDates = input<boolean>(false);
   disablePastDates = input<boolean>(false);
   initialFilters = input<Record<string, any>>({});
@@ -137,7 +145,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   pdfSelectedColumns = signal<string[]>([]);
   private pdfCancelRequested = false;
   readonly PAGE_SIZE_LIMITS: Record<string, number> = {
-    A4: 10, A3: 15, A2: 20, A1: 30,
+    A4: 10,
+    A3: 15,
+    A2: 20,
+    A1: 30,
   };
 
   // ── Date range ────────────────────────────────────────────────────────────
@@ -153,8 +164,6 @@ export class DataTable<T extends object> implements AfterContentInit {
     from: this.initialDateFrom(),
     to: this.initialDateTo(),
   }));
-
-
 
   // Seeds dateFrom/dateTo from the initialDateFrom/initialDateTo inputs
   // whenever they're set (e.g. navigated in from the dashboard with a
@@ -178,24 +187,24 @@ export class DataTable<T extends object> implements AfterContentInit {
     const init = this.initialFilters();
     if (init && Object.keys(init).length > 0) {
       untracked(() => {
-        this.activeFilters.update(f => ({ ...f, ...init }));
+        this.activeFilters.update((f) => ({ ...f, ...init }));
         this.tempFilters.set({ ...init });
         this.page.set(0);
       });
     }
   });
 
-
   // ── Filter options ─────────────────────────────────────────────────────────
   loadedFilters = signal<TableFilter[]>([]);
+  private filtersFetched = false; // true once at least one filter has been successfully loaded from the API
 
   allFilters = computed(() => {
     const cfgFilters = this.config().filters ?? [];
     const loaded = this.loadedFilters();
     const map = new Map<string, TableFilter>();
     // loaded (from filterNames → DataTableService) first, then config.filters override
-    loaded.forEach(f => map.set(f.key, f));
-    cfgFilters.forEach(f => map.set(f.key, f));
+    loaded.forEach((f) => map.set(f.key, f));
+    cfgFilters.forEach((f) => map.set(f.key, f));
     return Array.from(map.values());
   });
 
@@ -203,33 +212,38 @@ export class DataTable<T extends object> implements AfterContentInit {
   // DataTableService.getFilterOptions(name), which returns the full TableFilter
   // (label + options) for that name — static or API-backed. Runs whenever the
   // parent changes the filterNames input.
-  private loadFiltersEffect = effect(() => {
+
+  private loadFilterOptionsIfNeeded(): void {
     const names = this.filterNames();
-    if (!names.length) {
-      untracked(() => this.loadedFilters.set([]));
-      return;
-    }
-    untracked(() => {
-      forkJoin(
-        names.map(n =>
-          this.dataTableService.getFilterOptions(n).pipe(
-            catchError(err => {
-              console.warn(`[DataTable] Failed to load filter options for "${n}":`, err);
-              return of({ key: n, label: n, options: [] } as TableFilter);
-            })
-          )
-        )
-      ).subscribe({
-        next: (filters) => {
-          this.loadedFilters.set(filters);
-        },
-        error: (err) => {
-          console.error('[DataTable] Error loading filters:', err);
-          this.loadedFilters.set([]);
-        }
-      });
+    if (!names.length || this.filtersFetched) return;
+
+    forkJoin(
+      names.map((n) =>
+        this.dataTableService.getFilterOptions(n).pipe(
+          catchError((err) => {
+            console.warn(`[DataTable] Failed to load filter options for "${n}":`, err);
+            return of({ key: n, label: n, options: [] } as TableFilter);
+          }),
+        ),
+      ),
+    ).subscribe({
+      next: (filters) => {
+        this.loadedFilters.set(filters);
+
+        // Mark it as "fetched" only if at least one filter has real options.
+        // If all filters are empty (fail/empty case),
+        // keep the flag false so that it can be tried again the next time
+        // the modal is opened.
+        const gotRealData = filters.some((f) => (f.options?.length ?? 0) > 0);
+        this.filtersFetched = gotRealData;
+      },
+      error: (err) => {
+        console.error('[DataTable] Error loading filters:', err);
+        this.loadedFilters.set([]);
+        this.filtersFetched = false; // fail hua to retry allow karo
+      },
     });
-  });
+  }
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -237,11 +251,11 @@ export class DataTable<T extends object> implements AfterContentInit {
     const order = this.colOrder();
     const vis = this.colVisibility();
     const cols = this.config().columns;
-    const colMap = new Map(cols.map(c => [String(c.key), c]));
+    const colMap = new Map(cols.map((c) => [String(c.key), c]));
     const ordered = order.length
-      ? order.map(k => colMap.get(k)).filter((c): c is SmartColumn<any> => !!c)
+      ? order.map((k) => colMap.get(k)).filter((c): c is SmartColumn<any> => !!c)
       : cols;
-    return ordered.filter(col => {
+    return ordered.filter((col) => {
       if (col.hideable === false) return true; // always shown, can't be hidden
       const override = vis[col.key as string];
       return override !== undefined ? override : !col.hidden;
@@ -264,7 +278,8 @@ export class DataTable<T extends object> implements AfterContentInit {
 
   pageButtons = computed<number[]>(() => {
     if (this.config().showPagination === false) return [0];
-    const tp = this.totalPages(), cur = this.page();
+    const tp = this.totalPages(),
+      cur = this.page();
     if (tp <= 0) return [0];
 
     const maxVisible = 5; // Number of visible numeric buttons
@@ -299,8 +314,12 @@ export class DataTable<T extends object> implements AfterContentInit {
 
     if (f.search) {
       const q = (f.search as string).toLowerCase();
-      data = data.filter(row =>
-        Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q))
+      data = data.filter((row) =>
+        Object.values(row).some((v) =>
+          String(v ?? '')
+            .toLowerCase()
+            .includes(q),
+        ),
       );
     }
 
@@ -308,10 +327,14 @@ export class DataTable<T extends object> implements AfterContentInit {
     // against `filter.key + '_min'/'_max'` for range, array for multiSelect, else
     // a plain equality match).
     const rangeKeys = new Set(
-      this.allFilters().filter(fl => fl.type === 'range').map(fl => fl.key)
+      this.allFilters()
+        .filter((fl) => fl.type === 'range')
+        .map((fl) => fl.key),
     );
     const dateRangeKeys = new Set(
-      this.allFilters().filter(fl => fl.type === 'daterange').map(fl => fl.key)
+      this.allFilters()
+        .filter((fl) => fl.type === 'daterange')
+        .map((fl) => fl.key),
     );
     Object.entries(f).forEach(([key, value]) => {
       if (key === 'search') return;
@@ -319,12 +342,12 @@ export class DataTable<T extends object> implements AfterContentInit {
       if (Array.isArray(value) && value.length === 0) return;
 
       if (rangeKeys.has(key)) return; // handled separately below via _min/_max
-      if ([...dateRangeKeys].some(k => key === `${k}_from` || key === `${k}_to`)) return;
+      if ([...dateRangeKeys].some((k) => key === `${k}_from` || key === `${k}_to`)) return;
 
       if (key.endsWith('_min') || key.endsWith('_max')) {
         const baseKey = key.replace(/_(min|max)$/, '');
         const isMin = key.endsWith('_min');
-        data = data.filter(row => {
+        data = data.filter((row) => {
           const rowVal = Number((row as any)[baseKey]);
           if (Number.isNaN(rowVal)) return false;
           return isMin ? rowVal >= Number(value) : rowVal <= Number(value);
@@ -335,7 +358,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       if (key.endsWith('_from') || key.endsWith('_to')) {
         const baseKey = key.replace(/_(from|to)$/, '');
         const isFrom = key.endsWith('_from');
-        data = data.filter(row => {
+        data = data.filter((row) => {
           const raw = (row as any)[baseKey];
           if (!raw) return false;
           const t = new Date(raw).getTime();
@@ -347,10 +370,10 @@ export class DataTable<T extends object> implements AfterContentInit {
       }
 
       if (Array.isArray(value)) {
-        const set = new Set(value.map(v => String(v)));
-        data = data.filter(row => set.has(String((row as any)[key])));
+        const set = new Set(value.map((v) => String(v)));
+        data = data.filter((row) => set.has(String((row as any)[key])));
       } else {
-        data = data.filter(row => String((row as any)[key]) === String(value));
+        data = data.filter((row) => String((row as any)[key]) === String(value));
       }
     });
 
@@ -359,7 +382,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     const to = this.dateTo();
     if ((from || to) && cfg.dateRangeKey) {
       const key = cfg.dateRangeKey;
-      data = data.filter(row => {
+      data = data.filter((row) => {
         const raw = (row as any)[key];
         if (!raw) return false;
         const t = new Date(raw).getTime();
@@ -373,7 +396,8 @@ export class DataTable<T extends object> implements AfterContentInit {
     const { key, dir } = this.sort();
     if (key) {
       data = [...data].sort((a, b) => {
-        const av = (a as any)[key], bv = (b as any)[key];
+        const av = (a as any)[key],
+          bv = (b as any)[key];
         if (typeof av === 'number' && typeof bv === 'number')
           return dir === 'asc' ? av - bv : bv - av;
         return dir === 'asc'
@@ -391,27 +415,28 @@ export class DataTable<T extends object> implements AfterContentInit {
     return data.slice(start, start + this.pageSize());
   });
 
-  private _clientTotalSync = effect(() => {
-    if (!this.config().apiConfig) {
-      this.totalCount.set(this.clientRows().length);
-    }
-  },
+  private _clientTotalSync = effect(
+    () => {
+      if (!this.config().apiConfig) {
+        this.totalCount.set(this.clientRows().length);
+      }
+    },
     // { allowSignalWrites: true }
   );
 
   displayRows = computed<any[]>(() =>
-    this.config().apiConfig ? this.rows() : this.clientPagedRows()
+    this.config().apiConfig ? this.rows() : this.clientPagedRows(),
   );
 
   allSelected = computed<boolean>(() => {
-    const rows = this.displayRows().filter(r => !r.__isGroupHeader);
+    const rows = this.displayRows().filter((r) => !r.__isGroupHeader);
     if (!rows.length) return false;
     const ids = this.selectedIds();
     const idKey = (this.config().rowIdKey ?? 'id') as string;
     const selectableWhen = this.config().selectableWhen;
-    const selectableRows = selectableWhen ? rows.filter(r => selectableWhen(r)) : rows;
+    const selectableRows = selectableWhen ? rows.filter((r) => selectableWhen(r)) : rows;
     if (!selectableRows.length) return false;
-    return selectableRows.every(r => ids.has(String((r as any)[idKey])));
+    return selectableRows.every((r) => ids.has(String((r as any)[idKey])));
   });
 
   selectedCount = computed(() => this.selectedIds().size);
@@ -425,14 +450,12 @@ export class DataTable<T extends object> implements AfterContentInit {
     });
   });
 
-  allRows = computed<T[]>(() =>
-    this.config().apiConfig ? this.rows() : this.clientRows()
-  );
+  allRows = computed<T[]>(() => (this.config().apiConfig ? this.rows() : this.clientRows()));
 
   selectedRows = computed<T[]>(() => {
     const idKey = (this.config().rowIdKey ?? 'id') as string;
     const ids = this.selectedIds();
-    return this.allRows().filter(r => ids.has(String((r as any)[idKey])));
+    return this.allRows().filter((r) => ids.has(String((r as any)[idKey])));
   });
 
   isInitialLoading = computed(() => {
@@ -440,28 +463,26 @@ export class DataTable<T extends object> implements AfterContentInit {
     return this.loadState() === 'loading' && !this.initialLoadDone();
   });
 
-  isRefreshing = computed(() =>
-    this.loadState() === 'loading' && this.initialLoadDone()
-  );
+  isRefreshing = computed(() => this.loadState() === 'loading' && this.initialLoadDone());
 
   // Any load in progress that should block the table body with a loader —
   // used to fully hide stale rows instead of dimming them underneath.
-  showTableLoader = computed(() => this.isInitialLoading() || this.isRefreshing() || this.isSpinning());
+  showTableLoader = computed(
+    () => this.isInitialLoading() || this.isRefreshing() || this.isSpinning(),
+  );
 
   templateMap = signal<Map<string, TemplateRef<any>>>(new Map());
 
   private buildTemplateMap(): void {
     const map = new Map<string, TemplateRef<any>>();
-    this.customTemplates?.forEach(t => map.set(t.columnName, t.template));
+    this.customTemplates?.forEach((t) => map.set(t.columnName, t.template));
     this.templateMap.set(map);
   }
 
   hasData = computed(() => this.displayRows().length > 0);
   pageSizeOptions = computed(() => this.config().pageSizeOptions ?? [10, 25, 50, 100]);
   startRow = computed(() => this.page() * this.pageSize() + 1);
-  endRow = computed(() =>
-    Math.min((this.page() + 1) * this.pageSize(), this.totalCount())
-  );
+  endRow = computed(() => Math.min((this.page() + 1) * this.pageSize(), this.totalCount()));
 
   groupedRows = computed<any[]>(() => {
     const cfg = this.config();
@@ -505,9 +526,7 @@ export class DataTable<T extends object> implements AfterContentInit {
         sortKey: currentSort.key ? String(currentSort.key) : null,
         sortDir: currentSort.dir,
         search: (currentFilters.search as string) ?? '',
-        filters: Object.fromEntries(
-          Object.entries(currentFilters).filter(([k]) => k !== 'search')
-        ),
+        filters: Object.fromEntries(Object.entries(currentFilters).filter(([k]) => k !== 'search')),
         dateFrom: currentFrom,
         dateTo: currentTo,
         refresh: () => this.refresh(),
@@ -528,7 +547,7 @@ export class DataTable<T extends object> implements AfterContentInit {
         currentFrom,
         currentTo,
         currentTrigger,
-        JSON.stringify(req?.body ?? ''),   // ← captures external filter changes
+        JSON.stringify(req?.body ?? ''), // ← captures external filter changes
       ].join('|');
 
       if (fetchKey === this._lastFetchKey) return;
@@ -547,7 +566,9 @@ export class DataTable<T extends object> implements AfterContentInit {
           const url = req.query ? `${endpoint}?${req.query}` : endpoint;
           request$ = this.http.get<unknown>(url, { headers: req.headers ?? {} });
         } else {
-          request$ = this.http.post<unknown>(endpoint, req.body ?? '', { headers: req.headers ?? {} });
+          request$ = this.http.post<unknown>(endpoint, req.body ?? '', {
+            headers: req.headers ?? {},
+          });
         }
       } else {
         const pm = cfg.apiConfig!.paramMap ?? {};
@@ -564,7 +585,7 @@ export class DataTable<T extends object> implements AfterContentInit {
         }
         request$ = this.http.get<unknown>(endpoint, {
           params: httpParams,
-          headers: cfg.apiConfig!.headers ?? {}
+          headers: cfg.apiConfig!.headers ?? {},
         });
       }
 
@@ -572,10 +593,10 @@ export class DataTable<T extends object> implements AfterContentInit {
       const sub = request$.subscribe({
         next: (res) => {
           if (stale) return;
-          const rawData = getByPath(res, dp) as any[] ?? [];
-          const mapped = transformRow ? rawData.map(transformRow) : rawData as T[];
+          const rawData = (getByPath(res, dp) as any[]) ?? [];
+          const mapped = transformRow ? rawData.map(transformRow) : (rawData as T[]);
           const data = mapped.filter((r): r is T => r !== null && r !== undefined);
-          const total = getByPath(res, tp) as number ?? data.length;
+          const total = (getByPath(res, tp) as number) ?? data.length;
           this.rows.set(data);
           this.selectedIds.set(new Set());
           this.totalCount.set(total);
@@ -606,11 +627,14 @@ export class DataTable<T extends object> implements AfterContentInit {
   private searchEffect = effect(() => {
     const raw = this.searchRaw();
     const debounce = this.config().searchDebounce ?? 300;
-    if (!this.searchInitDone) { this.searchInitDone = true; return; }
+    if (!this.searchInitDone) {
+      this.searchInitDone = true;
+      return;
+    }
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => {
       this.page.set(0);
-      this.activeFilters.update(f => ({ ...f, search: raw }));
+      this.activeFilters.update((f) => ({ ...f, search: raw }));
     }, debounce);
   });
 
@@ -623,12 +647,12 @@ export class DataTable<T extends object> implements AfterContentInit {
         this.pageSize.set(targetSize);
       }
       const vis: Record<string, boolean> = {};
-      cfg.columns.forEach(c => {
+      cfg.columns.forEach((c) => {
         // Non-hideable columns must always start visible, regardless of `hidden`.
         vis[c.key as string] = c.hideable === false ? true : !c.hidden;
       });
       this.colVisibility.set(vis);
-      this.colOrder.set(cfg.columns.map(c => String(c.key)));
+      this.colOrder.set(cfg.columns.map((c) => String(c.key)));
     });
 
     // Build template map from projected ng-template[appCustomColumn] directives
@@ -648,28 +672,33 @@ export class DataTable<T extends object> implements AfterContentInit {
   openFilterModal(): void {
     const { search, ...current } = this.activeFilters();
     this.tempFilters.set({ ...current });
+    this.loadFilterOptionsIfNeeded();
     this.filterModalOpen.set(true);
   }
-  closeFilterModal(): void { this.filterModalOpen.set(false); }
+  closeFilterModal(): void {
+    this.filterModalOpen.set(false);
+  }
 
   applyFilters(): void {
     const applied = Object.fromEntries(
-      Object.entries(this.tempFilters()).filter(([_, v]) =>
-        v !== null && v !== undefined && v !== '' &&
-        !(Array.isArray(v) && v.length === 0)
-      )
+      Object.entries(this.tempFilters()).filter(
+        ([_, v]) =>
+          v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0),
+      ),
     );
     this.activeFilters.set({ search: this.searchRaw(), ...applied });
     this.page.set(0);
     this.closeFilterModal();
   }
 
-  clearModalFilters(): void { this.tempFilters.set({}); }
+  clearModalFilters(): void {
+    this.tempFilters.set({});
+  }
 
   getFilterSelectOptions(filter: TableFilter): SelectOption[] {
-    return (filter.options || []).map(opt => ({
+    return (filter.options || []).map((opt) => ({
       label: String(opt.label),
-      value: opt.value
+      value: opt.value,
     }));
   }
 
@@ -721,43 +750,55 @@ export class DataTable<T extends object> implements AfterContentInit {
       default:
         return { from: fmt(today), to: fmt(today) };
     }
-
   }
 
   removeChipFilter(key: string): void {
-    const filter = this.allFilters().find(f => f.key === key);
-    this.activeFilters.update(f => {
+    const filter = this.allFilters().find((f) => f.key === key);
+    this.activeFilters.update((f) => {
       const u = { ...f };
       delete u[key];
-      if (filter?.type === 'range') { delete u[key + '_min']; delete u[key + '_max']; }
-      if (filter?.type === 'daterange') { delete u[key + '_from']; delete u[key + '_to']; }
+      if (filter?.type === 'range') {
+        delete u[key + '_min'];
+        delete u[key + '_max'];
+      }
+      if (filter?.type === 'daterange') {
+        delete u[key + '_from'];
+        delete u[key + '_to'];
+      }
       return u;
     });
-    this.tempFilters.update(f => {
+    this.tempFilters.update((f) => {
       const u = { ...f };
       delete u[key];
-      if (filter?.type === 'range') { delete u[key + '_min']; delete u[key + '_max']; }
-      if (filter?.type === 'daterange') { delete u[key + '_from']; delete u[key + '_to']; }
+      if (filter?.type === 'range') {
+        delete u[key + '_min'];
+        delete u[key + '_max'];
+      }
+      if (filter?.type === 'daterange') {
+        delete u[key + '_from'];
+        delete u[key + '_to'];
+      }
       return u;
     });
     this.page.set(0);
   }
 
   updateTempFilter(key: string, value: any): void {
-    this.tempFilters.update(f => ({ ...f, [key]: value }));
+    this.tempFilters.update((f) => ({ ...f, [key]: value }));
   }
 
   // ── Multi-select filter support (filter.multiSelect === true) ─────────────
   isTempFilterValueChecked(key: string, value: any): boolean {
     const v = this.tempFilters()[key];
-    return Array.isArray(v) && v.some(x => String(x) === String(value));
+    return Array.isArray(v) && v.some((x) => String(x) === String(value));
   }
 
   toggleTempMultiValue(key: string, value: any): void {
-    this.tempFilters.update(f => {
+    this.tempFilters.update((f) => {
       const current: any[] = Array.isArray(f[key]) ? [...f[key]] : [];
-      const idx = current.findIndex(x => String(x) === String(value));
-      if (idx > -1) current.splice(idx, 1); else current.push(value);
+      const idx = current.findIndex((x) => String(x) === String(value));
+      if (idx > -1) current.splice(idx, 1);
+      else current.push(value);
       return { ...f, [key]: current };
     });
   }
@@ -795,48 +836,56 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (!value) return '';
     if (Array.isArray(value)) {
       if (value.length === 0) return '';
-      const labels = value.map(v => {
-        const opt = (filter.options ?? []).find(o => String(o.value) === String(v));
+      const labels = value.map((v) => {
+        const opt = (filter.options ?? []).find((o) => String(o.value) === String(v));
         return opt?.label ?? String(v);
       });
       return labels.length === 1 ? labels[0] : `${labels.length} selected`;
     }
-    const opt = (filter.options ?? []).find(o => String(o.value) === String(value));
+    const opt = (filter.options ?? []).find((o) => String(o.value) === String(value));
     return opt?.label ?? String(value);
   }
 
   // ── Bulk action modal ─────────────────────────────────────────────────────
-  openBulkActionModal(): void { this.bulkActionModalOpen.set(true); }
-  closeBulkActionModal(): void { this.bulkActionModalOpen.set(false); }
+  openBulkActionModal(): void {
+    this.bulkActionModalOpen.set(true);
+  }
+  closeBulkActionModal(): void {
+    this.bulkActionModalOpen.set(false);
+  }
 
   // ── Column picker ─────────────────────────────────────────────────────────
-  toggleColPicker(): void { this.colPickerModalOpen.set(true); }
-  closeColPicker(): void { this.colPickerModalOpen.set(false); }
+  toggleColPicker(): void {
+    this.colPickerModalOpen.set(true);
+  }
+  closeColPicker(): void {
+    this.colPickerModalOpen.set(false);
+  }
   toggleColVisibility(key: string, visible: boolean): void {
-    const col = this.config().columns.find(c => String(c.key) === key);
+    const col = this.config().columns.find((c) => String(c.key) === key);
     if (col?.hideable === false) return; // locked column, ignore attempts to hide it
-    this.colVisibility.update(v => ({ ...v, [key]: visible }));
+    this.colVisibility.update((v) => ({ ...v, [key]: visible }));
   }
 
   isColVisible(key: string): boolean {
-    const col = this.config().columns.find(c => String(c.key) === key);
+    const col = this.config().columns.find((c) => String(c.key) === key);
     if (col && col.hideable === false) return true;
     const override = this.colVisibility()[key];
-    return override !== undefined ? override : !(col?.hidden);
+    return override !== undefined ? override : !col?.hidden;
   }
 
   // ── Sort ──────────────────────────────────────────────────────────────────
   onSort(key: keyof T): void {
     if (this.wasDragging()) return;
-    this.sort.update(s =>
-      s.key === key
-        ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' }
-        : { key, dir: 'asc' }
+    this.sort.update((s) =>
+      s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' },
     );
     this.page.set(0);
   }
 
-  onSearch(value: string): void { this.searchRaw.set(value); }
+  onSearch(value: string): void {
+    this.searchRaw.set(value);
+  }
 
   // ── Pagination ────────────────────────────────────────────────────────────
   onPageChange(p: number): void {
@@ -852,7 +901,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   // ── Refresh ───────────────────────────────────────────────────────────────
   refresh(): void {
     this.isSpinning.set(true);
-    this.refreshTrigger.update(v => v + 1);
+    this.refreshTrigger.update((v) => v + 1);
     this.selectedIds.set(new Set());
     this.onRefresh.emit();
   }
@@ -875,10 +924,12 @@ export class DataTable<T extends object> implements AfterContentInit {
     }
   }
 
-
-
-  toggleExportMenu(): void { this.exportMenuOpen.update(v => !v); }
-  closeExportMenu(): void { this.exportMenuOpen.set(false); }
+  toggleExportMenu(): void {
+    this.exportMenuOpen.update((v) => !v);
+  }
+  closeExportMenu(): void {
+    this.exportMenuOpen.set(false);
+  }
 
   // Shared cell sanitizer — strips tags, decodes common entities, trims.
   private sanitizeCell(value: unknown, emptyPlaceholder = ''): string {
@@ -902,10 +953,16 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (col.excludeFromExport) return true;
     if (isPdf && col.excludeFromPdf) return true;
 
-    const inputPdfExcludes = (this.excludePdfColumns() || []).map(k => String(k).toLowerCase());
-    const inputExportExcludes = (this.excludeExportColumns() || []).map(k => String(k).toLowerCase());
-    const cfgPdfExcludes = (this.config().excludePdfColumns || []).map(k => String(k).toLowerCase());
-    const cfgExportExcludes = (this.config().excludeExportColumns || []).map(k => String(k).toLowerCase());
+    const inputPdfExcludes = (this.excludePdfColumns() || []).map((k) => String(k).toLowerCase());
+    const inputExportExcludes = (this.excludeExportColumns() || []).map((k) =>
+      String(k).toLowerCase(),
+    );
+    const cfgPdfExcludes = (this.config().excludePdfColumns || []).map((k) =>
+      String(k).toLowerCase(),
+    );
+    const cfgExportExcludes = (this.config().excludeExportColumns || []).map((k) =>
+      String(k).toLowerCase(),
+    );
 
     if (inputExportExcludes.includes(key) || cfgExportExcludes.includes(key)) return true;
     if (isPdf && (inputPdfExcludes.includes(key) || cfgPdfExcludes.includes(key))) return true;
@@ -914,7 +971,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   private exportableColumns(): SmartColumn<any>[] {
-    return this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, false));
+    return this.config().columns.filter((c) => !this.isColumnExcludedFromExport(c, false));
   }
 
   /** Formats a cell value according to its column type, badgeMap, dates, booleans, numbers, or custom formatter. */
@@ -948,51 +1005,26 @@ export class DataTable<T extends object> implements AfterContentInit {
       return rawVal ? 'Yes' : 'No';
     }
 
-    // Explicit date type
-    if (col.type === 'date') {
-      return this.formatDateCell(rawVal);
-    }
-
-    // Automatic date/time detection for strings
-    if (typeof rawVal === 'string') {
-      const colKeyLower = col.key.toString().toLowerCase();
-      const isDateKey = colKeyLower.includes('time') || colKeyLower.includes('date') || colKeyLower.includes('at');
-      const isIsoPattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
-
-      if (isDateKey || isIsoPattern) {
-        if (/^0/.test(rawVal.trim())) {
-          return '-';
-        }
-        try {
-          const d = new Date(rawVal);
-          if (!isNaN(d.getTime())) {
-            const year = d.getFullYear();
-            if (year < 1000 || String(year).startsWith('0') || year <= 0) {
-              return '-';
-            }
-            const hasTime = rawVal.includes('T') || rawVal.includes(':') || d.getHours() > 0 || d.getMinutes() > 0;
-            const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            if (hasTime && isDateKey) {
-              const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-              return `${dateStr}, ${timeStr}`;
-            }
-            return dateStr;
-          }
-        } catch { }
-      }
-    }
-
-    // Duration formatting (e.g. '01:00:00.000000' -> '1 hour' or '45 mins' or '1 hour 30 mins')
-    if (col.key.toString().toLowerCase() === 'duration') {
+    // Duration formatting (e.g. '01:00:00.000000', '00:30:00', or 60)
+    const colKeyLower = col.key.toString().toLowerCase();
+    if (
+      colKeyLower === 'duration' ||
+      colKeyLower.includes('duration') ||
+      (col.type as string) === 'duration'
+    ) {
       const dStr = String(rawVal).trim();
+      if (!dStr || dStr === '0' || dStr === '00:00:00' || dStr === '00:00:00.000000')
+        return '0 mins';
       if (/hour|min|sec/i.test(dStr)) return dStr;
       if (dStr.includes(':')) {
         const parts = dStr.split('.')[0].split(':');
         const h = parseInt(parts[0], 10) || 0;
         const m = parseInt(parts[1], 10) || 0;
+        const s = parseInt(parts[2], 10) || 0;
         const res: string[] = [];
         if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
         if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
+        if (h === 0 && m === 0 && s > 0) res.push(`${s} ${s === 1 ? 'sec' : 'secs'}`);
         return res.join(' ') || '0 mins';
       }
       const num = Number(dStr);
@@ -1003,6 +1035,58 @@ export class DataTable<T extends object> implements AfterContentInit {
         if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
         if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
         return res.join(' ') || `${num} mins`;
+      }
+      return dStr;
+    }
+
+    // Explicit date type
+    if (col.type === 'date') {
+      return this.formatDateCell(rawVal);
+    }
+
+    // Automatic date/time detection for strings
+    if (typeof rawVal === 'string') {
+      const isDateKey =
+        colKeyLower.includes('time') ||
+        colKeyLower.includes('date') ||
+        colKeyLower.endsWith('_at') ||
+        colKeyLower === 'at' ||
+        /[a-z]At$/.test(col.key.toString());
+      const isIsoPattern =
+        /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
+
+      if (isDateKey || isIsoPattern) {
+        if (/^0000-00-00/.test(rawVal.trim()) || rawVal.trim() === '0') {
+          return '-';
+        }
+        try {
+          const d = new Date(rawVal);
+          if (!isNaN(d.getTime())) {
+            const year = d.getFullYear();
+            if (year < 1000 || String(year).startsWith('0') || year <= 0) {
+              return '-';
+            }
+            const hasTime =
+              rawVal.includes('T') ||
+              rawVal.includes(':') ||
+              d.getHours() > 0 ||
+              d.getMinutes() > 0;
+            const dateStr = d.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            });
+            if (hasTime && isDateKey) {
+              const timeStr = d.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              });
+              return `${dateStr}, ${timeStr}`;
+            }
+            return dateStr;
+          }
+        } catch {}
       }
     }
 
@@ -1028,7 +1112,11 @@ export class DataTable<T extends object> implements AfterContentInit {
   private timestampForDisplay(): string {
     const d = new Date();
     return d.toLocaleString(undefined, {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
@@ -1051,9 +1139,11 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (currentTotal === 0) return [];
 
     const fetchSize =
-      rowLimit === 'current' ? this.pageSize() :
-        rowLimit === undefined || rowLimit === 'all' ? currentTotal :
-          Math.min(rowLimit, currentTotal);
+      rowLimit === 'current'
+        ? this.pageSize()
+        : rowLimit === undefined || rowLimit === 'all'
+          ? currentTotal
+          : Math.min(rowLimit, currentTotal);
 
     const ctx = {
       page: 0,
@@ -1061,7 +1151,9 @@ export class DataTable<T extends object> implements AfterContentInit {
       sortKey: this.sort().key ? String(this.sort().key) : null,
       sortDir: this.sort().dir,
       search: (this.activeFilters().search as string) ?? '',
-      filters: Object.fromEntries(Object.entries(this.activeFilters()).filter(([k]) => k !== 'search')),
+      filters: Object.fromEntries(
+        Object.entries(this.activeFilters()).filter(([k]) => k !== 'search'),
+      ),
       dateFrom: this.dateFrom(),
       dateTo: this.dateTo(),
       refresh: () => this.refresh(),
@@ -1076,7 +1168,9 @@ export class DataTable<T extends object> implements AfterContentInit {
         const url = req.query ? `${endpoint}?${req.query}` : endpoint;
         request$ = this.http.get<unknown>(url, { headers: req.headers ?? {} });
       } else {
-        request$ = this.http.post<unknown>(endpoint, req.body ?? '', { headers: req.headers ?? {} });
+        request$ = this.http.post<unknown>(endpoint, req.body ?? '', {
+          headers: req.headers ?? {},
+        });
       }
     } else {
       const pm = cfg.apiConfig.paramMap ?? {};
@@ -1084,7 +1178,9 @@ export class DataTable<T extends object> implements AfterContentInit {
         .set(pm.page ?? 'page', '1')
         .set(pm.pageSize ?? 'pageSize', String(fetchSize));
       if (ctx.sortKey) {
-        params = params.set(pm.sortKey ?? 'sort', ctx.sortKey).set(pm.sortDir ?? 'dir', ctx.sortDir);
+        params = params
+          .set(pm.sortKey ?? 'sort', ctx.sortKey)
+          .set(pm.sortDir ?? 'dir', ctx.sortDir);
       }
       if (ctx.search) params = params.set(pm.search ?? 'q', ctx.search);
       request$ = this.http.get<unknown>(endpoint, { params, headers: cfg.apiConfig.headers ?? {} });
@@ -1092,7 +1188,9 @@ export class DataTable<T extends object> implements AfterContentInit {
 
     const response = await request$.toPromise().catch(() => null);
     const rawData = (getByPath(response, dataPath ?? 'data') as any[]) ?? [];
-    return transformRow ? rawData.map(transformRow).filter((r: T | null): r is T => r != null) : (rawData as T[]);
+    return transformRow
+      ? rawData.map(transformRow).filter((r: T | null): r is T => r != null)
+      : (rawData as T[]);
   }
 
   // ── CSV ───────────────────────────────────────────────────────────────────
@@ -1103,7 +1201,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.pdfProgress.set(1);
     const progressInterval = setInterval(() => {
       if (this.pdfCancelRequested) return;
-      this.pdfProgress.update(p => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
+      this.pdfProgress.update((p) => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
     }, 100);
 
     try {
@@ -1112,8 +1210,10 @@ export class DataTable<T extends object> implements AfterContentInit {
 
       const cols = this.exportableColumns();
       const sanitize = (v: unknown) => `"${this.sanitizeCell(v).replace(/"/g, '""')}"`;
-      const header = ['S.No', ...cols.map(c => c.label)].map(sanitize).join(',');
-      const body = data.map((row, i) => [i + 1, ...cols.map(c => sanitize(this.formatExportCell(row, c)))].join(','));
+      const header = ['S.No', ...cols.map((c) => c.label)].map(sanitize).join(',');
+      const body = data.map((row, i) =>
+        [i + 1, ...cols.map((c) => sanitize(this.formatExportCell(row, c)))].join(','),
+      );
 
       this.pdfProgress.set(100);
       const csv = '\ufeff' + [header, ...body].join('\r\n');
@@ -1128,7 +1228,10 @@ export class DataTable<T extends object> implements AfterContentInit {
       console.error('exportCSV:', err);
     } finally {
       clearInterval(progressInterval);
-      setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+      setTimeout(() => {
+        this.pdfExporting.set(false);
+        this.pdfProgress.set(0);
+      }, 800);
     }
   }
 
@@ -1140,7 +1243,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.pdfProgress.set(1);
     const progressInterval = setInterval(() => {
       if (this.pdfCancelRequested) return;
-      this.pdfProgress.update(p => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
+      this.pdfProgress.update((p) => Math.min(p + Math.floor(Math.random() * 3) + 1, 90));
     }, 100);
 
     try {
@@ -1150,7 +1253,9 @@ export class DataTable<T extends object> implements AfterContentInit {
       const cols = this.exportableColumns();
       const worksheetData = data.map((row, idx) => {
         const obj: any = { 'S.No': idx + 1 };
-        cols.forEach(col => { obj[col.label] = this.formatExportCell(row, col); });
+        cols.forEach((col) => {
+          obj[col.label] = this.formatExportCell(row, col);
+        });
         return obj;
       });
 
@@ -1158,13 +1263,19 @@ export class DataTable<T extends object> implements AfterContentInit {
       const ws = XLSX.utils.json_to_sheet(worksheetData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Data');
-      XLSX.writeFile(wb, `${this.config().exportFileName ?? 'table-data'}_${this.timestampForFilename()}.xlsx`);
+      XLSX.writeFile(
+        wb,
+        `${this.config().exportFileName ?? 'table-data'}_${this.timestampForFilename()}.xlsx`,
+      );
     } catch (err) {
       this.errorMessage.set('Failed to export Excel.');
       console.error('exportExcel:', err);
     } finally {
       clearInterval(progressInterval);
-      setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+      setTimeout(() => {
+        this.pdfExporting.set(false);
+        this.pdfProgress.set(0);
+      }, 800);
     }
   }
 
@@ -1176,20 +1287,22 @@ export class DataTable<T extends object> implements AfterContentInit {
     const limit = this.PAGE_SIZE_LIMITS['A4'];
     const exportable = this.pdfExportableColumns();
     const visibleKeys = this.visibleColumns()
-      .filter(c => exportable.some(ec => ec.key === c.key))
-      .map(c => c.key as string)
+      .filter((c) => exportable.some((ec) => ec.key === c.key))
+      .map((c) => c.key as string)
       .slice(0, limit);
     this.pdfSelectedColumns.set(visibleKeys);
     this.pdfColumnModalOpen.set(true);
   }
 
-  closePdfColumnSelector(): void { this.pdfColumnModalOpen.set(false); }
+  closePdfColumnSelector(): void {
+    this.pdfColumnModalOpen.set(false);
+  }
 
   togglePdfColumn(key: string): void {
     const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
     const current = this.pdfSelectedColumns();
     if (current.includes(key)) {
-      this.pdfSelectedColumns.set(current.filter(k => k !== key));
+      this.pdfSelectedColumns.set(current.filter((k) => k !== key));
     } else {
       if (current.length >= limit) return;
       this.pdfSelectedColumns.set([...current, key]);
@@ -1203,7 +1316,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   onPdfPageSizeChange(size: 'A4' | 'A3' | 'A2' | 'A1'): void {
     this.pdfPageSize.set(size);
     const limit = this.PAGE_SIZE_LIMITS[size];
-    this.pdfSelectedColumns.update(cols => cols.slice(0, limit));
+    this.pdfSelectedColumns.update((cols) => cols.slice(0, limit));
   }
 
   cancelPdfExport(): void {
@@ -1212,10 +1325,16 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.pdfProgress.set(0);
   }
 
-  private reportLogoPromise: Promise<{ original: HTMLImageElement; watermarkDataUrl: string } | null> | null = null;
+  private reportLogoPromise: Promise<{
+    original: HTMLImageElement;
+    watermarkDataUrl: string;
+  } | null> | null = null;
 
   /** Loads the ubiclient logo (from /onlyLogo.png) and creates a faded watermark data URL. */
-  private getReportLogo(): Promise<{ original: HTMLImageElement; watermarkDataUrl: string } | null> {
+  private getReportLogo(): Promise<{
+    original: HTMLImageElement;
+    watermarkDataUrl: string;
+  } | null> {
     if (!this.reportLogoPromise) {
       this.reportLogoPromise = new Promise((resolve) => {
         const candidates = ['/onlyLogo.png', 'onlyLogo.png', '/logo.png', 'logo.png'];
@@ -1261,9 +1380,12 @@ export class DataTable<T extends object> implements AfterContentInit {
     rows: any[],
     exportColumns: SmartColumn<any>[],
     baseFileName: string,
-    logoInfo: { original: HTMLImageElement; watermarkDataUrl: string } | null
+    logoInfo: { original: HTMLImageElement; watermarkDataUrl: string } | null,
   ): void {
-    const doc = new jsPDF({ orientation: 'landscape', format: this.pdfPageSize().toLowerCase() as any });
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      format: this.pdfPageSize().toLowerCase() as any,
+    });
     const generatedOn = this.timestampForDisplay();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -1272,7 +1394,8 @@ export class DataTable<T extends object> implements AfterContentInit {
     const drawWatermark = () => {
       if (logoInfo?.watermarkDataUrl) {
         const watermarkSize = Math.min(pageWidth, pageHeight) * 0.55;
-        const aspect = (logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1);
+        const aspect =
+          (logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1);
         const wWidth = watermarkSize;
         const wHeight = watermarkSize * aspect;
         const wx = (pageWidth - wWidth) / 2;
@@ -1284,7 +1407,9 @@ export class DataTable<T extends object> implements AfterContentInit {
     const drawHeader = () => {
       if (logoInfo?.original) {
         const logoWidth = 20;
-        const logoHeight = ((logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1)) * logoWidth;
+        const logoHeight =
+          ((logoInfo.original.naturalHeight || 1) / (logoInfo.original.naturalWidth || 1)) *
+          logoWidth;
         doc.addImage(logoInfo.original, 'PNG', 10, 5, logoWidth, logoHeight);
       }
 
@@ -1296,12 +1421,17 @@ export class DataTable<T extends object> implements AfterContentInit {
       doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 110, 120);
-      doc.text(`Generated on: ${generatedOn}  •  Rows: ${rows.length}`, centerX, 19, { align: 'center' });
+      doc.text(`Generated on: ${generatedOn}  •  Rows: ${rows.length}`, centerX, 19, {
+        align: 'center',
+      });
     };
 
     autoTable(doc, {
-      head: [['S.No', ...exportColumns.map(c => c.label)]],
-      body: rows.map((row, idx) => [idx + 1, ...exportColumns.map(col => this.formatExportCell(row, col))]),
+      head: [['S.No', ...exportColumns.map((c) => c.label)]],
+      body: rows.map((row, idx) => [
+        idx + 1,
+        ...exportColumns.map((col) => this.formatExportCell(row, col)),
+      ]),
       startY: 26,
       theme: 'grid',
       styles: {
@@ -1331,7 +1461,9 @@ export class DataTable<T extends object> implements AfterContentInit {
       },
     });
 
-    const totalPages = (doc as any).internal.getNumberOfPages ? (doc as any).internal.getNumberOfPages() : doc.getNumberOfPages();
+    const totalPages = (doc as any).internal.getNumberOfPages
+      ? (doc as any).internal.getNumberOfPages()
+      : doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(7.5);
@@ -1351,7 +1483,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       return;
     }
 
-    const exportColumns = cfg.columns.filter(c => selectedKeys.includes(c.key as string));
+    const exportColumns = cfg.columns.filter((c) => selectedKeys.includes(c.key as string));
     const baseFileName = cfg.exportFileName ?? 'table-data';
     const logo = await this.getReportLogo();
 
@@ -1371,7 +1503,10 @@ export class DataTable<T extends object> implements AfterContentInit {
       console.error('exportPDFWithColumns:', err);
     } finally {
       if (!this.pdfCancelRequested) {
-        setTimeout(() => { this.pdfExporting.set(false); this.pdfProgress.set(0); }, 800);
+        setTimeout(() => {
+          this.pdfExporting.set(false);
+          this.pdfProgress.set(0);
+        }, 800);
       }
     }
   }
@@ -1382,10 +1517,13 @@ export class DataTable<T extends object> implements AfterContentInit {
     const rows = await this.getAllDataForExport('all');
     const title = this.config().exportFileName ?? 'Table Data';
     const generatedOn = this.timestampForDisplay();
-    const headHtml = cols.map(c => `<th>${this.escapeHtml(c.label)}</th>`).join('');
-    const bodyHtml = rows.map((row, idx) =>
-      `<tr><td>${idx + 1}</td>${cols.map(col => `<td>${this.escapeHtml(this.formatExportCell(row, col))}</td>`).join('')}</tr>`
-    ).join('');
+    const headHtml = cols.map((c) => `<th>${this.escapeHtml(c.label)}</th>`).join('');
+    const bodyHtml = rows
+      .map(
+        (row, idx) =>
+          `<tr><td>${idx + 1}</td>${cols.map((col) => `<td>${this.escapeHtml(this.formatExportCell(row, col))}</td>`).join('')}</tr>`,
+      )
+      .join('');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
       <style>
         @page{size:A4 landscape;margin:14mm}
@@ -1410,9 +1548,17 @@ export class DataTable<T extends object> implements AfterContentInit {
       <table><thead><tr><th>S.No</th>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>
     </body></html>`;
     const w = window.open('', '_blank', 'width=1200,height=800');
-    if (!w) { console.warn('Print popup was blocked by the browser.'); return; }
-    w.document.open(); w.document.write(html); w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 300);
+    if (!w) {
+      console.warn('Print popup was blocked by the browser.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => {
+      w.focus();
+      w.print();
+    }, 300);
     w.addEventListener('afterprint', () => w.close());
   }
 
@@ -1431,19 +1577,22 @@ export class DataTable<T extends object> implements AfterContentInit {
       .replace(/'/g, '&#39;');
   }
 
-  togglePageSizePopover(): void { this.pageSizePopoverOpen.update(v => !v); }
+  togglePageSizePopover(): void {
+    this.pageSizePopoverOpen.update((v) => !v);
+  }
 
   // ── Selection ─────────────────────────────────────────────────────────────
   toggleSelectAll(): void {
-    const rows = this.displayRows().filter(r => !r.__isGroupHeader);
+    const rows = this.displayRows().filter((r) => !r.__isGroupHeader);
     const idKey = (this.config().rowIdKey ?? 'id') as string;
     const selectableWhen = this.config().selectableWhen;
-    const selectableRows = selectableWhen ? rows.filter(r => selectableWhen(r)) : rows;
-    const allSel = selectableRows.length > 0 &&
-      selectableRows.every(r => this.selectedIds().has(String((r as any)[idKey])));
-    this.selectedIds.update(set => {
+    const selectableRows = selectableWhen ? rows.filter((r) => selectableWhen(r)) : rows;
+    const allSel =
+      selectableRows.length > 0 &&
+      selectableRows.every((r) => this.selectedIds().has(String((r as any)[idKey])));
+    this.selectedIds.update((set) => {
       const next = new Set(set);
-      selectableRows.forEach(r => {
+      selectableRows.forEach((r) => {
         const id = String((r as any)[idKey]);
         allSel ? next.delete(id) : next.add(id);
       });
@@ -1455,7 +1604,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   toggleRow(row: T): void {
     const idKey = (this.config().rowIdKey ?? 'id') as string;
     const id = String((row as any)[idKey]);
-    this.selectedIds.update(set => {
+    this.selectedIds.update((set) => {
       const next = new Set(set);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -1464,15 +1613,13 @@ export class DataTable<T extends object> implements AfterContentInit {
   }
 
   isRowSelected(row: T): boolean {
-    return this.selectedIds().has(
-      String((row as any)[(this.config().rowIdKey ?? 'id') as string])
-    );
+    return this.selectedIds().has(String((row as any)[(this.config().rowIdKey ?? 'id') as string]));
   }
 
   private emitSelection(): void {
     const idKey = (this.config().rowIdKey ?? 'id') as string;
     this.selectionChange.emit(
-      this.displayRows().filter(r => this.selectedIds().has(String((r as any)[idKey])))
+      this.displayRows().filter((r) => this.selectedIds().has(String((r as any)[idKey]))),
     );
   }
 
@@ -1493,7 +1640,9 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (this.isToolbarButtonDisabled(button)) return;
     button.onClick?.(this.selectedRows(), this.allRows());
     this.toolbarButtonClick.emit({
-      buttonId: button.id, selectedRows: this.selectedRows(), allRows: this.allRows(),
+      buttonId: button.id,
+      selectedRows: this.selectedRows(),
+      allRows: this.allRows(),
     });
   }
 
@@ -1534,8 +1683,12 @@ export class DataTable<T extends object> implements AfterContentInit {
     return action.hidden ? action.hidden(row) : false;
   }
 
-  getColumnTemplate(key: string) { return this.templateMap().get(key); }
-  getCellValue(row: T, key: any): any { return (row as any)?.[key]; }
+  getColumnTemplate(key: string) {
+    return this.templateMap().get(key);
+  }
+  getCellValue(row: T, key: any): any {
+    return (row as any)?.[key];
+  }
 
   isStickyRight(col: SmartColumn<any>): boolean {
     if (!col.sticky) return false;
@@ -1583,17 +1736,28 @@ export class DataTable<T extends object> implements AfterContentInit {
     }
 
     switch (raw.toLowerCase()) {
-      case 'pending': return 'badge-pending';
-      case 'selected': return 'badge-selected';
-      case 'shortlist': return 'badge-shortlist';
-      case 'interview': return 'badge-interview';
-      case 'rejected': return 'badge-rejected';
-      case 'good': return 'badge-good';
-      case 'excellent': return 'badge-excellent';
-      case 'neutral': return 'badge-neutral';
-      case 'risk': return 'badge-risk';
-      case 'premium': return 'badge-premium';
-      default: return 'badge-default';
+      case 'pending':
+        return 'badge-pending';
+      case 'selected':
+        return 'badge-selected';
+      case 'shortlist':
+        return 'badge-shortlist';
+      case 'interview':
+        return 'badge-interview';
+      case 'rejected':
+        return 'badge-rejected';
+      case 'good':
+        return 'badge-good';
+      case 'excellent':
+        return 'badge-excellent';
+      case 'neutral':
+        return 'badge-neutral';
+      case 'risk':
+        return 'badge-risk';
+      case 'premium':
+        return 'badge-premium';
+      default:
+        return 'badge-default';
     }
   }
 
@@ -1603,12 +1767,15 @@ export class DataTable<T extends object> implements AfterContentInit {
     return map[String(value)]?.label ?? String(value ?? '');
   }
 
-  getButtonColorClass = (c?: string) => c && c !== 'default' ? `st-btn--${c}` : '';
-  getActionColorClass = (c?: string) => c && c !== 'default' ? `st-action-btn--${c}` : '';
+  getButtonColorClass = (c?: string) => (c && c !== 'default' ? `st-btn--${c}` : '');
+  getActionColorClass = (c?: string) => (c && c !== 'default' ? `st-action-btn--${c}` : '');
 
   isImage(value: any): boolean {
-    return typeof value === 'string' && value.startsWith('http') &&
-      /\.(png|jpg|jpeg|webp|gif)/i.test(value);
+    return (
+      typeof value === 'string' &&
+      value.startsWith('http') &&
+      /\.(png|jpg|jpeg|webp|gif)/i.test(value)
+    );
   }
 
   formatDateCell(value: any): string {
@@ -1638,7 +1805,9 @@ export class DataTable<T extends object> implements AfterContentInit {
     if (value === null || value === undefined) return '—';
     if (Array.isArray(value)) return value.join(', ');
     if (typeof value === 'object')
-      return Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(', ');
+      return Object.entries(value)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ');
     return String(value);
   }
 
@@ -1665,7 +1834,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     const startW = th.offsetWidth;
     const onMove = (e: MouseEvent) => {
       const newW = Math.max(60, startW + (e.clientX - startX));
-      this.colWidths.update(w => ({ ...w, [key]: newW }));
+      this.colWidths.update((w) => ({ ...w, [key]: newW }));
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
@@ -1704,7 +1873,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     event.preventDefault();
     const src = this.dragSrcKey();
     if (!src || src === targetKey) return;
-    this.colOrder.update(order => {
+    this.colOrder.update((order) => {
       const next = [...order];
       const from = next.indexOf(src);
       const to = next.indexOf(targetKey);
@@ -1720,12 +1889,16 @@ export class DataTable<T extends object> implements AfterContentInit {
     const opening = this.activeDropdownKey() !== key;
 
     // Close all SingleInput components
-    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
+    this.singleInputComponents?.forEach((comp) => comp.closeDropdown());
 
     if (opening && event) {
       const trigger = (event.currentTarget as HTMLElement).getBoundingClientRect();
       this.activeDropdownKey.set(key);
-      this.dropdownPosition.set({ top: trigger.bottom + 6, left: trigger.left, width: trigger.width });
+      this.dropdownPosition.set({
+        top: trigger.bottom + 6,
+        left: trigger.left,
+        width: trigger.width,
+      });
     } else {
       this.activeDropdownKey.set(null);
       this.dropdownPosition.set(null);
@@ -1738,7 +1911,7 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dropdownPosition.set(null);
 
     // Close all OTHER SingleInput components
-    this.singleInputComponents?.forEach(comp => {
+    this.singleInputComponents?.forEach((comp) => {
       if (comp !== openedComp) {
         comp.closeDropdown();
       }
@@ -1752,7 +1925,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   closeAllDropdowns(): void {
     this.activeDropdownKey.set(null);
     this.dropdownPosition.set(null);
-    this.singleInputComponents?.forEach(comp => comp.closeDropdown());
+    this.singleInputComponents?.forEach((comp) => comp.closeDropdown());
   }
 
   hasSelections(key: string): boolean {
@@ -1769,13 +1942,13 @@ export class DataTable<T extends object> implements AfterContentInit {
       return '';
     }
 
-    const filterDef = this.allFilters().find(f => f.key === key);
+    const filterDef = this.allFilters().find((f) => f.key === key);
     if (!filterDef || !filterDef.options) {
       return `${selectedValues.length} selected`;
     }
 
-    const selectedLabels = selectedValues.map(val => {
-      const option = filterDef.options!.find(o => o.value === val);
+    const selectedLabels = selectedValues.map((val) => {
+      const option = filterDef.options!.find((o) => o.value === val);
       return option ? option.label : val;
     });
 
@@ -1816,12 +1989,14 @@ export class DataTable<T extends object> implements AfterContentInit {
     this.dropdownPosition.set(null);
   }
   pdfExportableColumns = computed(() =>
-    this.config().columns.filter(c => !this.isColumnExcludedFromExport(c, true))
+    this.config().columns.filter((c) => !this.isColumnExcludedFromExport(c, true)),
   );
 
   selectAllPdfColumns(): void {
     const limit = this.PAGE_SIZE_LIMITS[this.pdfPageSize()];
-    const keys = this.pdfExportableColumns().map(c => c.key as string).slice(0, limit);
+    const keys = this.pdfExportableColumns()
+      .map((c) => c.key as string)
+      .slice(0, limit);
     this.pdfSelectedColumns.set(keys);
   }
 
