@@ -25,6 +25,7 @@ import { FormsModule } from '@angular/forms';
 import { RichTextEditor } from '../../../shared/components/rich-text-editor/rich-text-editor';
 import { Clienttimeline } from '../services/client/clienttimeline';
 import { ClientTimelineData } from '../models/client/clienttimeline.model';
+import { AuthService } from '../../../core/services/auth-service';
 
 export interface ClientRow {
   orgId: number;
@@ -62,6 +63,7 @@ export interface TimelineEvent {
   styleUrl: './client.css',
 })
 export class Client implements OnInit, OnDestroy {
+  private readonly authService = inject(AuthService);
   private clientApi = inject(ClientService);
   private scheduleMeetingService = inject(ScheduleMeetingService);
   private toastr = inject(ToastrService);
@@ -589,6 +591,10 @@ export class Client implements OnInit, OnDestroy {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
+           orgId: this.authService.getOrgId(),
+            userId: this.authService.getEmpId(),
+            adminSts: Number(this.authService.adminSts())
+
           };
 
           return { method: 'POST' as const, body };
