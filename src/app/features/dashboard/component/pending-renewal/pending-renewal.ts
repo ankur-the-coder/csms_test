@@ -228,6 +228,8 @@ export class PendingRenewal {
             fromDate,
             toDate,
             orgId: this.authService.getOrgId(),
+userId: this.authService.getEmpId(),
+ adminSts: Number(this.authService.adminSts())
           };
 
           return { method: 'POST' as const, body };

@@ -16,7 +16,7 @@ export interface DayEvent {
   purpose?: string;
   meetingType?: string;
   duration?: string;    // human-readable, e.g. "1h 0m"
-  status?: number;      // 1 = Active, etc.
+  status?: number | string;      // 1 = Active, etc.
   orgId?: number;
 }
 
@@ -252,15 +252,24 @@ export class Calendar {
     this.scheduleDrawerOpen.set(false);
   }
 
+  // readonly scheduleDrawerDateLabel = computed(() => {
+  //   const d = this.scheduleDrawerDate();
+  //   if (!d) return '';
+  //   const y = d.getFullYear();
+  //   const m = String(d.getMonth() + 1).padStart(2, '0');
+  //   const day = String(d.getDate()).padStart(2, '0');
+  //   return `${y}-${m}-${day}`;
+  // });
   readonly scheduleDrawerDateLabel = computed(() => {
     const d = this.scheduleDrawerDate();
     if (!d) return '';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  });
 
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  });
   readonly scheduleDrawerEvents = computed<DayEvent[]>(() => {
     const d = this.scheduleDrawerDate();
     if (!d) return [];

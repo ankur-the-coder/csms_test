@@ -135,7 +135,8 @@ export class Feedback {
     });
 
     const orgId = this.authService.getOrgId();
-    this.fetchDashboardCards(initialFrom, initialTo, orgId);
+    const empId = this.authService.getEmpId();
+    this.fetchDashboardCards(initialFrom, initialTo, orgId, empId);
     this.loadData();
   }
 
@@ -233,6 +234,8 @@ export class Feedback {
             fromDate,
             toDate,
             orgId: this.authService.getOrgId(),
+            userId: this.authService.getEmpId(),
+            adminSts: Number(this.authService.adminSts())
           };
 
           return { method: 'POST' as const, body };
@@ -260,14 +263,15 @@ export class Feedback {
 
   onDateApplied(from: string, to: string): void {
     const orgId = this.authService.getOrgId();
+    const empId = this.authService.getEmpId();
     this.initialDateFrom.set(from);
     this.initialDateTo.set(to);
     this.selectedRating.set(6);
-    this.fetchDashboardCards(from, to, orgId);
+    this.fetchDashboardCards(from, to, orgId, empId);
   }
 
-  private fetchDashboardCards(from: string, to: string, orgId: string): void {
-    this.clientApi.fetchFeedbackCards(from, to, orgId).subscribe({
+  private fetchDashboardCards(from: string, to: string, orgId: string,empId:string): void {
+    this.clientApi.fetchFeedbackCards(from, to, orgId,empId).subscribe({
       next: (res: any) => {
         if (!res?.data) {
           return;
