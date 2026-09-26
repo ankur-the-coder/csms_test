@@ -7,7 +7,7 @@
   </div>
 
   <div class="card p-0 overflow-hidden">
-    <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [filterNames]="['leadOwner', 'supportOwner']"
+    <app-data-table [config]="tableConfig()" (onRefresh)="loadData()" [filterNames]="clientFilterNames"
       [initialDateFrom]="initialDateFrom()" [initialDateTo]="initialDateTo()"
       [defaultPreset]="'currentMonth'" [disableFutureDates]="true"
       >
