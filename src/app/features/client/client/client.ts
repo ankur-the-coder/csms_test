@@ -69,6 +69,7 @@ export class Client implements OnInit, OnDestroy {
   private router = inject(Router);
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   private clientTimelineApi = inject(Clienttimeline);
+  readonly clientFilterNames = ['leadOwner', 'supportOwner'];
   statusFilter = signal<string>('all');
 
   initialDateFrom = signal('');
