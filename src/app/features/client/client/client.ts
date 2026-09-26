@@ -695,6 +695,9 @@ export class Client implements OnInit, OnDestroy {
           return { method: 'POST' as const, body };
         },
 
+
+
+
         transformRow: (raw: Datum): ClientRow | null => this.mapDatumToClientRow(raw),
       },
 
