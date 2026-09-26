@@ -948,6 +948,35 @@ export class DataTable<T extends object> implements AfterContentInit {
       return rawVal ? 'Yes' : 'No';
     }
 
+    // Duration formatting (e.g. '01:00:00.000000', '00:30:00', or 60)
+    const colKeyLower = col.key.toString().toLowerCase();
+    if (colKeyLower === 'duration' || colKeyLower.includes('duration') || (col.type as string) === 'duration') {
+      const dStr = String(rawVal).trim();
+      if (!dStr || dStr === '0' || dStr === '00:00:00' || dStr === '00:00:00.000000') return '0 mins';
+      if (/hour|min|sec/i.test(dStr)) return dStr;
+      if (dStr.includes(':')) {
+        const parts = dStr.split('.')[0].split(':');
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+        const s = parseInt(parts[2], 10) || 0;
+        const res: string[] = [];
+        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
+        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
+        if (h === 0 && m === 0 && s > 0) res.push(`${s} ${s === 1 ? 'sec' : 'secs'}`);
+        return res.join(' ') || '0 mins';
+      }
+      const num = Number(dStr);
+      if (!isNaN(num) && num > 0) {
+        const h = Math.floor(num / 60);
+        const m = num % 60;
+        const res: string[] = [];
+        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
+        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
+        return res.join(' ') || `${num} mins`;
+      }
+      return dStr;
+    }
+
     // Explicit date type
     if (col.type === 'date') {
       return this.formatDateCell(rawVal);
@@ -955,12 +984,11 @@ export class DataTable<T extends object> implements AfterContentInit {
 
     // Automatic date/time detection for strings
     if (typeof rawVal === 'string') {
-      const colKeyLower = col.key.toString().toLowerCase();
-      const isDateKey = colKeyLower.includes('time') || colKeyLower.includes('date') || colKeyLower.includes('at');
+      const isDateKey = colKeyLower.includes('time') || colKeyLower.includes('date') || colKeyLower.endsWith('_at') || colKeyLower === 'at' || /[a-z]At$/.test(col.key.toString());
       const isIsoPattern = /^\d{4}-\d{2}-\d{2}(T|\s)\d{2}:\d{2}/.test(rawVal) || /^\d{4}-\d{2}-\d{2}$/.test(rawVal);
 
       if (isDateKey || isIsoPattern) {
-        if (/^0/.test(rawVal.trim())) {
+        if (/^0000-00-00/.test(rawVal.trim()) || rawVal.trim() === '0') {
           return '-';
         }
         try {
@@ -979,30 +1007,6 @@ export class DataTable<T extends object> implements AfterContentInit {
             return dateStr;
           }
         } catch { }
-      }
-    }
-
-    // Duration formatting (e.g. '01:00:00.000000' -> '1 hour' or '45 mins' or '1 hour 30 mins')
-    if (col.key.toString().toLowerCase() === 'duration') {
-      const dStr = String(rawVal).trim();
-      if (/hour|min|sec/i.test(dStr)) return dStr;
-      if (dStr.includes(':')) {
-        const parts = dStr.split('.')[0].split(':');
-        const h = parseInt(parts[0], 10) || 0;
-        const m = parseInt(parts[1], 10) || 0;
-        const res: string[] = [];
-        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
-        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
-        return res.join(' ') || '0 mins';
-      }
-      const num = Number(dStr);
-      if (!isNaN(num) && num > 0) {
-        const h = Math.floor(num / 60);
-        const m = num % 60;
-        const res: string[] = [];
-        if (h > 0) res.push(`${h} ${h === 1 ? 'hour' : 'hours'}`);
-        if (m > 0) res.push(`${m} ${m === 1 ? 'min' : 'mins'}`);
-        return res.join(' ') || `${num} mins`;
       }
     }
 
