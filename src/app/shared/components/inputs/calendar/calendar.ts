@@ -21,6 +21,7 @@ export interface DayEvent {
   statusClass?: string;
   orgId?: number | string;
   raw?: any;
+
 }
 
 export interface TimeSlot {
@@ -255,15 +256,24 @@ export class Calendar {
     this.scheduleDrawerOpen.set(false);
   }
 
+  // readonly scheduleDrawerDateLabel = computed(() => {
+  //   const d = this.scheduleDrawerDate();
+  //   if (!d) return '';
+  //   const y = d.getFullYear();
+  //   const m = String(d.getMonth() + 1).padStart(2, '0');
+  //   const day = String(d.getDate()).padStart(2, '0');
+  //   return `${y}-${m}-${day}`;
+  // });
   readonly scheduleDrawerDateLabel = computed(() => {
     const d = this.scheduleDrawerDate();
     if (!d) return '';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  });
 
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  });
   readonly scheduleDrawerEvents = computed<DayEvent[]>(() => {
     const d = this.scheduleDrawerDate();
     if (!d) return [];

@@ -181,15 +181,15 @@ export class RenewalComponent {
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
-        { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true, hideable: false, },
+        { key: 'contactPerson', label: 'Contact Person', sortable: true },
+        { key: 'email', label: 'Email', sortable: false, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'createdDate', label: 'Created Date', sortable: false,type: 'date'  },
 
-        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' ,hideable: false,},
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
-        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date' ,hideable: false,},
+        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date', hideable: false, },
+        { key: 'endDate', label: 'End Date', sortable: false, type: 'date', hideable: false, },
+        { key: 'PremiumDate', label: 'Premium Date', sortable: true, type: 'date', hideable: false, },
 
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
@@ -237,6 +237,9 @@ export class RenewalComponent {
             fromDate,
             toDate,
             orgId: this.authService.getOrgId(),
+            userId: this.authService.getEmpId(),
+            adminSts: Number(this.authService.adminSts())
+
           };
 
           return { method: 'POST' as const, body };
