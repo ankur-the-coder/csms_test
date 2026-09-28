@@ -644,9 +644,9 @@ export class Client implements OnInit, OnDestroy {
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
+        { key: 'action', label: 'Action', sortable: false, sticky: true , hideable: false },
         // { key: 'progress', label: 'Implementation', sortable: false },
         // { key: 'trainingStatus', label: 'Training', sortable: false },
-        { key: 'action', label: 'Action', sortable: false, sticky: true },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
