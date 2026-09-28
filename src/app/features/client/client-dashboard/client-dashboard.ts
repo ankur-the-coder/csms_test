@@ -15,7 +15,10 @@ import { Utils } from '../../../shared/utils/utils';
 import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
 import { UsageData } from '../models/client/clientdashboardusage.model';
 import { Clientimplementation } from '../services/client/clientdashboard/clientimplementation';
-import {ClientImplementationData,ImplementationModule,} from '../models/client/clientimplementation.model';
+import {
+  ClientImplementationData,
+  ImplementationModule,
+} from '../models/client/clientimplementation.model';
 
 @Component({
   selector: 'app-client-dashboard',
@@ -33,6 +36,7 @@ export class ClientDashboard {
   private clientImplementationApi = inject(Clientimplementation);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
+
   // 👇 UbiDesk base URL - constant
   private readonly UBIDESK_BASE_URL = 'https://ubidesk.ubitechsolutions.com';
 
@@ -66,7 +70,8 @@ export class ClientDashboard {
   widgetTrackerModules = computed<ImplementationModule[]>(() => {
     const tab = this.selectedModuleTab();
     const allModules = this.implementationModules();
-    const filteredModules = tab === 'all' ? allModules : allModules.filter((m) => m.key === tab);
+    const filteredModules =
+      tab === 'all' ? allModules : allModules.filter((m) => m.key === tab);
 
     if (filteredModules.length === 0) {
       return [];
@@ -89,7 +94,13 @@ export class ClientDashboard {
   });
 
   overallImplementationProgress = computed(() => {
-    return this.implementationData()?.overallProgress ?? { approved: 0, total: 0, percentage: 0 };
+    return (
+      this.implementationData()?.overallProgress ?? {
+        approved: 0,
+        total: 0,
+        percentage: 0,
+      }
+    );
   });
 
   implementationHealth = computed(() => {
@@ -134,7 +145,21 @@ export class ClientDashboard {
   usageLoading = signal(false);
   usageError = signal('');
 
-  //In Widget only top 5 are comes
+  // ---- Usage visualization helpers ----
+  selectedUsageMetric = signal<{ label: string; value: number } | null>(null);
+
+  ringColors = [
+    '#8b5cf6',
+    '#22b07d',
+    '#3b82f6',
+    '#f59e0b',
+    '#ec4899',
+    '#06b6d4',
+    '#a855f7',
+    '#14b8a6',
+  ];
+
+  // In Widget only top 5 are comes
   topFiveTickets = computed(() => this.tickets().slice(0, 5));
 
   // "View All" only see if tickets are more than 5
@@ -152,17 +177,19 @@ export class ClientDashboard {
   // "View All" only see if meetings are more than 5
   hasMoreMeetings = computed(() => this.meetings().length > 5);
 
-  // Widget card mein sirf itne module-tabs dikhane hain, baaki "+N More" mein chale jayenge
+  // Widget card mein sirf itne module-tabs dikhane hain
   private readonly MAX_VISIBLE_MODULE_TABS = 2;
 
   visibleModuleTabs = computed(() => {
-  return this.implementationModules().slice(0, this.MAX_VISIBLE_MODULE_TABS);
+    return this.implementationModules().slice(0, this.MAX_VISIBLE_MODULE_TABS);
   });
 
   hiddenModuleTabsCount = computed(() => {
-  const total = this.implementationModules().length;
-  return total > this.MAX_VISIBLE_MODULE_TABS ? total - this.MAX_VISIBLE_MODULE_TABS : 0;
-});
+    const total = this.implementationModules().length;
+    return total > this.MAX_VISIBLE_MODULE_TABS
+      ? total - this.MAX_VISIBLE_MODULE_TABS
+      : 0;
+  });
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -186,7 +213,7 @@ export class ClientDashboard {
     return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
   }
 
-  /**Particular ticket to se in  UbiDesk link */
+  /** Particular ticket to see in UbiDesk link */
   getTicketUrl(ticketId: string | number): string {
     return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
   }
@@ -270,20 +297,22 @@ export class ClientDashboard {
     this.ticketsLoading.set(true);
     this.ticketsError.set('');
 
-    this.clientDashboardTicketsApi.getClientDashboard({ orgId, days }).subscribe({
-      next: (res) => {
-        this.ticketsLoading.set(false);
-        if (res?.status) {
-          this.tickets.set(res.data ?? []);
-        } else {
-          this.ticketsError.set(res?.msg || 'Failed to load tickets');
-        }
-      },
-      error: (err) => {
-        this.ticketsLoading.set(false);
-        this.ticketsError.set(err?.error?.msg || 'Failed to load tickets');
-      },
-    });
+    this.clientDashboardTicketsApi
+      .getClientDashboard({ orgId, days })
+      .subscribe({
+        next: (res) => {
+          this.ticketsLoading.set(false);
+          if (res?.status) {
+            this.tickets.set(res.data ?? []);
+          } else {
+            this.ticketsError.set(res?.msg || 'Failed to load tickets');
+          }
+        },
+        error: (err) => {
+          this.ticketsLoading.set(false);
+          this.ticketsError.set(err?.error?.msg || 'Failed to load tickets');
+        },
+      });
   }
 
   setTicketFilterDays(days: number): void {
@@ -456,12 +485,16 @@ export class ClientDashboard {
         if (res?.status && res?.data) {
           this.implementationData.set(res.data);
         } else {
-          this.implementationError.set(res?.msg || 'Failed to load implementation data');
+          this.implementationError.set(
+            res?.msg || 'Failed to load implementation data'
+          );
         }
       },
       error: (err) => {
         this.implementationLoading.set(false);
-        this.implementationError.set(err?.error?.msg || 'Failed to load implementation data');
+        this.implementationError.set(
+          err?.error?.msg || 'Failed to load implementation data'
+        );
       },
     });
   }
@@ -482,7 +515,11 @@ export class ClientDashboard {
     if (!isoDate) return '-';
     const d = new Date(isoDate);
     if (isNaN(d.getTime())) return String(isoDate);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   getHealthBadgeClasses(health: string): string {
@@ -508,6 +545,31 @@ export class ClientDashboard {
       .join('')
       .slice(0, 2)
       .toUpperCase();
+  }
+
+  // ---- Usage metrics (for Modules & Purchased Features card) ----
+  usageMetrics(u: UsageData) {
+    return [
+      { label: 'Employee', value: u.employee ?? 0 },
+      { label: 'Leave', value: u.employeeLeave ?? 0 },
+      { label: 'Attendance', value: u.attendance ?? 0 },
+      { label: 'Salary', value: (u as any).salary ?? 0 },
+      { label: 'Payroll', value: (u as any).payroll ?? 0 },
+      { label: 'Organisation', value: (u as any).organisation ?? 0 },
+      { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
+      { label: 'Performance', value: (u as any).performance ?? 0 },
+    ];
+  }
+
+  getAddonIconKey(name: string): string {
+    const n = (name || '').toLowerCase();
+    if (n.includes('face')) return 'face';
+    if (n.includes('shift')) return 'calendar';
+    if (n.includes('timesheet')) return 'clock';
+    if (n.includes('geofence')) return 'pin';
+    if (n.includes('tracking')) return 'map';
+    if (n.includes('client')) return 'people';
+    return 'default';
   }
 
   goBack(): void {
