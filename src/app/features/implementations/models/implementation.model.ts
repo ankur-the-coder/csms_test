@@ -7,6 +7,9 @@ export interface ImplementationCardData {
 export interface ImpCardPayload {
   fromDate?: string;
   toDate?: string;
+   orgId?: string;
+   userId?:string;
+   adminSts?: number;
 }
 
 export interface CardData {
@@ -18,14 +21,17 @@ export interface CardData {
 
 
 export interface DataTablePayload {
-  start: number; 
-  length: number; 
-  search: string; 
-  sorting: string; 
-  filter: string; 
+  start: number;
+  length: number;
+  search: string;
+  sorting: string;
+  filter: string;
   tabSts: number;
   fromDate?: string;
   toDate?: string;
+  orgId?: string;
+  userId?: string;
+  adminSts?: number;
 }
 
 

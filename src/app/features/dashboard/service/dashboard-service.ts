@@ -35,40 +35,40 @@ export class DashboardService {
 
   constructor(private http: HttpClient) { }
 
-  getDashboardCards(from: string, to: string, orgId: string, userId: string): Observable<DashboardCardCount> {
+  getDashboardCards(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
-      orgId, userId
+      orgId, userId, adminSts: Number(adminSts)
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
   }
-  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string, userId: string): Observable<DashboardChartdata> {
+  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId
+      toDate: to, orgId, userId, adminSts: Number(adminSts)
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
-  fetchDashBoardConnectChart(from: string, to: string, orgId: string, userId: string): Observable<DashboardChartdata> {
+  fetchDashBoardConnectChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId
+      toDate: to, orgId, userId, adminSts: Number(adminSts)
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
   }
-  fetchDashBoardUsageChart(from: string, to: string, orgId: string, userId: string): Observable<DashboardChartdata> {
+  fetchDashBoardUsageChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId
+      toDate: to, orgId, userId, adminSts: Number(adminSts)
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
-  dashboardImplementProgressChart(from: string, to: string, orgId: string): Observable<DashboardChartdata> {
+  dashboardImplementProgressChart(from: string, to: string, orgId: string,): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
       toDate: to, orgId
@@ -109,11 +109,11 @@ export class DashboardService {
 
   }
 
-  fetchFeedbackCards(from: string, to: string, orgId: string): Observable<DashboardCardCount> {
+  fetchFeedbackCards(from: string, to: string, orgId: string,empId:string): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
-      orgId
+      orgId,userId:empId
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchFeedbackCards`, data);

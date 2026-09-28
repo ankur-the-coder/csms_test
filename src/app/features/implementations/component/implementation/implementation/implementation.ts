@@ -10,6 +10,8 @@ import { CardData, DataTablePayload, Datum } from '../../../models/implementatio
 import { ActivatedRoute } from '@angular/router';
 import { CustomDateSelector } from '../../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { CountUpDirective } from '../../../../dashboard/component/dashboard/count-up.directive';
+import { AuthService } from '../../../../../core/services/auth-service';
+import { Utils } from '../../../../../shared/utils/utils';
 
 export interface Feature {
   mod_id: number;
@@ -87,10 +89,9 @@ export class Implementation implements OnInit, OnDestroy {
   private openTimer:  ReturnType<typeof setTimeout> | null = null;
   private destroy$          = new Subject<void>();
     private route = inject(ActivatedRoute);
+     private readonly authService = inject(AuthService);
 
-    // Populated from ?from=...&to=... query params when navigated in from
-  // the dashboard (e.g. clicking "Live Clients"). Empty by default, in
-  // which case DataTable falls back to its own default ('today').
+
   initialDateFrom = signal('');
   initialDateTo = signal('');
 
@@ -215,7 +216,9 @@ export class Implementation implements OnInit, OnDestroy {
             }),
             filter:   JSON.stringify({ ...ctx.filters }),
             tabSts,
-
+            orgId: this.authService.getOrgId(),
+            userId: this.authService.getEmpId(),
+            adminSts: Number(this.authService.adminSts()),
             fromDate: ctx.dateFrom || this.selectedDateFrom() || from || firstDay,
             toDate:   ctx.dateTo   || this.selectedDateTo()   || to   || today,
           };
@@ -285,8 +288,15 @@ export class Implementation implements OnInit, OnDestroy {
       }
     });
 
-    this.fetchCards(initialFrom, initialTo);
+    const orgId = this.authService.getOrgId();
+    const userId = this.authService.getEmpId();
+    const adminSts =  Number(this.authService.adminSts());
+    this.fetchCards(initialFrom, initialTo, orgId, userId , adminSts);
   }
+
+
+
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -295,11 +305,11 @@ export class Implementation implements OnInit, OnDestroy {
     if (this.openTimer)  clearTimeout(this.openTimer);
   }
 
-  fetchCards(from?: string, to?: string): void {
+  fetchCards(from?: string, to?: string ,  orgId?: string,userId?:string ,adminSts?: number): void {
     const fromDate = from || this.selectedDateFrom() || this.getFirstDayOfMonthString();
     const toDate = to || this.selectedDateTo() || this.getTodayDateString();
      this.cardsLoading.set(true);
-    this.implService.fetchImpCardData({ fromDate, toDate }).pipe(
+    this.implService.fetchImpCardData({ fromDate, toDate, orgId, userId, adminSts }).pipe(
       catchError((err) => {
         console.error('Card data error:', err);
         return of(null);
@@ -572,11 +582,13 @@ export class Implementation implements OnInit, OnDestroy {
   }
 
   onDateApplied(from: string, to: string): void {
+     const orgId = this.authService.getOrgId();
+    const empId = this.authService.getEmpId();
     this.initialDateFrom.set(from);
     this.initialDateTo.set(to);
     this.selectedDateFrom.set(from);
     this.selectedDateTo.set(to);
-    this.fetchCards(from, to);
+    this.fetchCards(from, to ,orgId, empId);
   }
 
   getModulesTooltip(row: any): string {

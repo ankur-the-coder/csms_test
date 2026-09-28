@@ -177,16 +177,16 @@ export class PendingRenewal {
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
-        { key: 'contactPerson', label: 'Contact Person', sortable: false },
-        { key: 'email', label: 'Email', sortable: true, hideable: false, },
+        { key: 'contactPerson', label: 'Contact Person', sortable: true },
+        { key: 'email', label: 'Email', sortable: false, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
-        { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
+        { key: 'createdDate', label: 'Created Date', sortable: true, type: 'date' },
 
-        { key: 'endDate', label: 'End Date', sortable: true, type: 'date' ,hideable: false,},
-        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date' ,hideable: false,},
+        { key: 'endDate', label: 'End Date', sortable: false, type: 'date' ,hideable: false,},
+        { key: 'PremiumDate', label: 'Premium Date', sortable: true, type: 'date' ,hideable: false,},
 
         // { key: 'orgId', label: 'Org ID', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
@@ -228,6 +228,8 @@ export class PendingRenewal {
             fromDate,
             toDate,
             orgId: this.authService.getOrgId(),
+userId: this.authService.getEmpId(),
+ adminSts: Number(this.authService.adminSts())
           };
 
           return { method: 'POST' as const, body };
