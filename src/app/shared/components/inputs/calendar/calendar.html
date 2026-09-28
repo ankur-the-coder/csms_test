@@ -256,7 +256,8 @@
         'bg-emerald-50 text-emerald-700 border-emerald-200': ev.status === 'Completed',
         'bg-amber-50 text-amber-700 border-amber-200': ev.status === 'Pending',
         'bg-red-50 text-red-700 border-red-200': ev.status === 'Cancelled',
-        'bg-blue-50 text-blue-700 border-blue-200': ev.status === undefined
+        'bg-red-100 text-red-500 border-red-500': ev.status === 'ReScheduled',
+        'bg-blue-50 text-blue-500 border-blue-200': ev.status === undefined
       }"
     >
       {{
@@ -264,6 +265,7 @@
         ev.status === 'Completed' ? 'Completed' :
         ev.status === 'Pending' ? 'Pending' :
         ev.status === 'Cancelled' ? 'Cancelled' :
+        ev.status === 'ReScheduled' ? 'ReScheduled' :
         'Scheduled'
       }}
     </span>

@@ -212,7 +212,7 @@ export class DashboardComponent implements OnInit {
     userId: string
   ): void {
     this.dashboardService
-      .getDashboardCards(from, to, orgId, userId,this.authService.adminSts())
+      .getDashboardCards(from, to, orgId, userId, this.authService.adminSts())
       .subscribe({
         next: (res: any) => {
           if (!res?.data) {
@@ -352,7 +352,7 @@ export class DashboardComponent implements OnInit {
     this.connectedHasError.set(false);
 
     this.dashboardService
-      .fetchDashBoardConnectChart(from, to, orgId, userId,  this.authService.adminSts())
+      .fetchDashBoardConnectChart(from, to, orgId, userId, this.authService.adminSts())
       .subscribe({
         next: (res: any) => {
           this.isConnectedLoading.set(false);
@@ -417,7 +417,7 @@ export class DashboardComponent implements OnInit {
     this.usagesHasError.set(false);
 
     this.dashboardService
-      .fetchDashBoardUsageChart(from, to, orgId, userId,  this.authService.adminSts())
+      .fetchDashBoardUsageChart(from, to, orgId, userId, this.authService.adminSts())
       .subscribe({
         next: (res: any) => {
           this.isUsagesLoading.set(false);
@@ -744,108 +744,112 @@ export class DashboardComponent implements OnInit {
   // Navigation
   // ---------------------------------------------------------------------------
 
-private createCalendarEvent(
-  meeting: CalendarMeeting,
-): { dateKey: string; dayEvent: DayEvent } | null {
+  private createCalendarEvent(
+    meeting: CalendarMeeting,
+  ): { dateKey: string; dayEvent: DayEvent } | null {
 
-  const rawDate =
-    meeting.EndTime ||
-    (meeting as any).Date ||
-    (meeting as any).date ||
-    (meeting as any).MeetingDate ||
-    meeting.StartTime ||
-    '';
+    const rawDate =
+      meeting.EndTime ||
+      (meeting as any).Date ||
+      (meeting as any).date ||
+      (meeting as any).MeetingDate ||
+      meeting.StartTime ||
+      '';
 
-  const dateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
+    const dateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
 
-  if (!dateKey) return null;
+    if (!dateKey) return null;
 
-  const startTime = meeting.StartTime || '09:00';
-  const startParts = startTime.split(':').map(Number);
+    const startTime = meeting.StartTime || '09:00';
+    const startParts = startTime.split(':').map(Number);
 
-  const startHour = Number.isNaN(startParts[0]) ? 9 : startParts[0];
-  const startMinute = Number.isNaN(startParts[1]) ? 0 : startParts[1];
-  const startMinutes = startHour * 60 + startMinute;
+    const startHour = Number.isNaN(startParts[0]) ? 9 : startParts[0];
+    const startMinute = Number.isNaN(startParts[1]) ? 0 : startParts[1];
+    const startMinutes = startHour * 60 + startMinute;
 
-  const duration = meeting.Duration || '01:00:00';
-  const durationParts = duration.split(':');
+    const duration = meeting.Duration || '01:00:00';
+    const durationParts = duration.split(':');
 
-  const durationHours = Number(durationParts[0]) || 0;
-  const durationMinutes = Number(durationParts[1]) || 0;
+    const durationHours = Number(durationParts[0]) || 0;
+    const durationMinutes = Number(durationParts[1]) || 0;
 
-  const totalDuration =
-    durationHours * 60 + durationMinutes || 60;
+    const totalDuration =
+      durationHours * 60 + durationMinutes || 60;
 
-  const endMinutes = startMinutes + totalDuration;
-  const endHour = Math.floor(endMinutes / 60) % 24;
-  const endMinute = endMinutes % 60;
+    const endMinutes = startMinutes + totalDuration;
+    const endHour = Math.floor(endMinutes / 60) % 24;
+    const endMinute = endMinutes % 60;
 
-  const startLabel = this.formatTime(startHour, startMinute);
-  const endLabel = this.formatTime(endHour, endMinute);
+    const startLabel = this.formatTime(startHour, startMinute);
+    const endLabel = this.formatTime(endHour, endMinute);
 
-  const durationLabel =
-    durationHours > 0
-      ? `${durationHours}h ${durationMinutes}m`
-      : `${durationMinutes || 60}m`;
+    const durationLabel =
+      durationHours > 0
+        ? `${durationHours}h ${durationMinutes}m`
+        : `${durationMinutes || 60}m`;
 
-  const status = String(meeting.Status || '').toLowerCase().trim();
+    const status = String(meeting.Status || '').toLowerCase().trim();
 
-  const statusStyle: Record<string, {
-    chipClass: string;
-    accentClass: string;
-  }> = {
-    pending: {
-      chipClass: 'bg-amber-50 text-amber-700 border border-amber-200',
-      accentClass: 'border-amber-500',
-    },
-    completed: {
-      chipClass: 'bg-green-50 text-green-700 border border-green-200',
-      accentClass: 'border-green-500',
-    },
-    cancel: {
-      chipClass: 'bg-red-50 text-red-700 border border-red-200',
-      accentClass: 'border-red-500',
-    },
-    cancelled: {
-      chipClass: 'bg-red-50 text-red-700 border border-red-200',
-      accentClass: 'border-red-500',
-    },
-    scheduled: {
-      chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
-      accentClass: 'border-blue-500',
-    },
-  };
+    const statusStyle: Record<string, {
+      chipClass: string;
+      accentClass: string;
+    }> = {
+      pending: {
+        chipClass: 'bg-amber-50 text-amber-700 border border-amber-200',
+        accentClass: 'border-amber-500',
+      },
+      completed: {
+        chipClass: 'bg-green-50 text-green-700 border border-green-200',
+        accentClass: 'border-green-500',
+      },
+      cancel: {
+        chipClass: 'bg-red-50 text-red-700 border border-red-200',
+        accentClass: 'border-red-500',
+      },
+      cancelled: {
+        chipClass: 'bg-red-50 text-red-700 border border-red-200',
+        accentClass: 'border-red-500',
+      },
+      scheduled: {
+        chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+        accentClass: 'border-blue-500',
+      },
+      rescheduled: {
+        chipClass: 'bg-red-50 text-red-700 border border-red-200',
+        accentClass: 'border-red-500',
+      },
+    };
 
-  const style = statusStyle[status] || {
-    chipClass: 'bg-slate-50 text-slate-700 border border-slate-200',
-    accentClass: 'border-slate-400',
-  };
+    const style = statusStyle[status] || {
+      chipClass: 'bg-slate-50 text-slate-700 border border-slate-200',
+      accentClass: 'border-slate-400',
+    };
 
-  const dayEvent: DayEvent = {
-    title: meeting.Title || meeting.OrgName || 'Meeting',
-    client: meeting.OrgName || 'Client',
+    const dayEvent: DayEvent = {
+      title: meeting.Title || meeting.OrgName || 'Meeting',
+      client: meeting.OrgName || 'Client',
 
-    timeLabel: `${startLabel} - ${endLabel}`,
-    startTime: startLabel,
-    startMinutes,
-    endMinutes,
+      timeLabel: `${startLabel} - ${endLabel}`,
+      startTime: startLabel,
+      startMinutes,
+      endMinutes,
 
-    chipClass: style.chipClass,
-    accentClass: style.accentClass,
+      chipClass: style.chipClass,
+      accentClass: style.accentClass,
 
-    icon: '🤝',
-    purpose: meeting.Purpose,
-    meetingType: meeting.MeetingType,
-    duration: durationLabel,
-    status: meeting.Status,
-    orgId: meeting.OrgId,
-  };
+      icon: '🤝',
+      purpose: meeting.Purpose,
+      meetingType: meeting.MeetingType,
+      duration: durationLabel,
+      status: meeting.Status,
+      orgId: meeting.OrgId,
+    };
 
-  return {
-    dateKey,
-    dayEvent,
-  };
-}
+    return {
+      dateKey,
+      dayEvent,
+    };
+  }
   navigateToClient(): void {
     this.router.navigate(
       ['/client'],

@@ -91,7 +91,7 @@ export class Implementation implements OnInit, OnDestroy {
     private route = inject(ActivatedRoute);
      private readonly authService = inject(AuthService);
 
-  
+
   initialDateFrom = signal('');
   initialDateTo = signal('');
 
@@ -216,8 +216,8 @@ export class Implementation implements OnInit, OnDestroy {
             }),
             filter:   JSON.stringify({ ...ctx.filters }),
             tabSts,
-            orgId: Utils.encode5t(this.authService.getOrgId()),
-            userId: Utils.encode5t(this.authService.getEmpId()),
+            orgId: this.authService.getOrgId(),
+            userId: this.authService.getEmpId(),
             adminSts: Number(this.authService.adminSts()),
             fromDate: ctx.dateFrom || this.selectedDateFrom() || from || firstDay,
             toDate:   ctx.dateTo   || this.selectedDateTo()   || to   || today,
@@ -288,11 +288,15 @@ export class Implementation implements OnInit, OnDestroy {
       }
     });
 
-    const orgId = Utils.encode5t(this.authService.getOrgId());
-    const empId = Utils.encode5t(this.authService.getEmpId());
+    const orgId = this.authService.getOrgId();
+    const userId = this.authService.getEmpId();
     const adminSts =  Number(this.authService.adminSts());
-    this.fetchCards(initialFrom, initialTo, orgId, empId , adminSts);
+    this.fetchCards(initialFrom, initialTo, orgId, userId , adminSts);
   }
+
+
+
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -301,11 +305,11 @@ export class Implementation implements OnInit, OnDestroy {
     if (this.openTimer)  clearTimeout(this.openTimer);
   }
 
-  fetchCards(from?: string, to?: string ,  orgId?: string,empId?:string ,adminSts?: number): void {
+  fetchCards(from?: string, to?: string ,  orgId?: string,userId?:string ,adminSts?: number): void {
     const fromDate = from || this.selectedDateFrom() || this.getFirstDayOfMonthString();
     const toDate = to || this.selectedDateTo() || this.getTodayDateString();
      this.cardsLoading.set(true);
-    this.implService.fetchImpCardData({ fromDate, toDate, orgId, empId, adminSts }).pipe(
+    this.implService.fetchImpCardData({ fromDate, toDate, orgId, userId, adminSts }).pipe(
       catchError((err) => {
         console.error('Card data error:', err);
         return of(null);
