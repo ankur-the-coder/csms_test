@@ -41,6 +41,7 @@ interface DataTablePayload {
   search: string;
   sorting: string;
   filter: string;
+  userId: any;
 }
 
 interface OrgApiRow {
@@ -151,7 +152,7 @@ export class ScheduleMeetingService {
 
   getOrganizations(): Observable<Organization[]> {
     if (!this.organizations$) {
-      const payload: DataTablePayload = { start: 0, length: 10, search: '', sorting: '', filter: '' };
+      const payload: DataTablePayload = { start: 0, length: 10, search: '', sorting: '', filter: '' ,userId: localStorage.getItem('empId')  };
 
       this.organizations$ = this.http
         .post<DataTableApiResponse>(`${this.baseUrl}/meetings/fetchOrganizations`, payload)
