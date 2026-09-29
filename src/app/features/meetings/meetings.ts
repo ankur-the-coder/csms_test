@@ -704,6 +704,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.meetingService
       .rescheduleMeeting(
         meeting.id,
+        localStorage.getItem('email') || '',
         dateTime.start,
         dateTime.end
       )
@@ -793,7 +794,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
     this.cancelSubmitting.set(true);
 
-    this.meetingService.cancelMeeting(row.id).subscribe({
+    this.meetingService.cancelMeeting(row.id,localStorage.getItem('email') || '').subscribe({
       next: () => {
         this.cancelSubmitting.set(false);
         this.showCancelModal.set(false);
@@ -842,7 +843,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     // Make Angular render the modal + loader immediately
     this.cdr.detectChanges();
 
-    this.meetingService.checkAttendance(row.id).subscribe({
+    this.meetingService.checkAttendance(row.id,localStorage.getItem('email') || '').subscribe({
       next: (res) => {
         // API response has arrived
         this.attendanceResult = res;
@@ -1450,6 +1451,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
     const row = this.inviteMeetingRow();
     const emails = this.inviteEmails();
+    const hostmail = localStorage.getItem('email') || '';
 
     if (!row || this.inviteSubmitting()) return;
 
@@ -1461,7 +1463,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.inviteSubmitting.set(true);
     this.inviteError.set(null);
 
-    this.meetingService.inviteAttendees(row.id, emails).subscribe({
+    this.meetingService.inviteAttendees(row.id, emails,hostmail).subscribe({
       next: (res) => {
         this.inviteSubmitting.set(false);
         this.showInviteModal.set(false);

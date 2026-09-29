@@ -192,8 +192,8 @@ export class MeetingService {
    * and may not exist yet if the meeting hasn't finished/report hasn't
    * generated.
    */
-  checkAttendance(meetingId: number): Observable<AttendanceCheckResponse> {
-    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId });
+  checkAttendance(meetingId: number,hostmail:string): Observable<AttendanceCheckResponse> {
+    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId,hostmail });
   }
 
   /**
@@ -202,10 +202,10 @@ export class MeetingService {
    * already Cancelled or Completed — that error message passes through
    * as-is for the component to show.
    */
-  cancelMeeting(meetingId: number, comment?: string): Observable<{ status: boolean; message: string; meetingId: number }> {
+  cancelMeeting(meetingId: number, hostmail:string): Observable<{ status: boolean; message: string; meetingId: number }> {
     return this.http.post<{ status: boolean; message: string; meetingId: number }>(
       `${this.imp}/meetings/cancel`,
-      { meetingId, comment }
+      { meetingId, hostmail }
     );
   }
 
@@ -259,6 +259,7 @@ export class MeetingService {
 
   rescheduleMeeting(
   meetingId: number,
+  hostmail:string,
   start: string,
   end: string
 ): Observable<RescheduleMeetingResponse> {
@@ -267,6 +268,7 @@ export class MeetingService {
     `${this.imp}/meetings/reschedule`,
     {
       meetingId,
+      hostmail,
       start,
       end
     }
@@ -274,11 +276,11 @@ export class MeetingService {
 }
 
 // inside MeetingService class:
-inviteAttendees(meetingId: number, emails: string[], message?: string): Observable<InviteAttendeesResponse> {
+inviteAttendees(meetingId: number, emails: string[], hostmail:string): Observable<InviteAttendeesResponse> {
   return this.http.post<InviteAttendeesResponse>(`${this.imp}/meetings/invite`, {
     meetingId,
     emails,
-    message
+    hostmail
   });
 }
 
