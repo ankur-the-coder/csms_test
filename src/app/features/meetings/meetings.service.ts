@@ -49,6 +49,7 @@ export interface FetchMeetingsPayload {
   filter: string;
   fromDate: string;
   toDate: string;
+  userId?: number | string;
 }
 
 export interface FetchMeetingsResponse {
@@ -213,9 +214,7 @@ export class MeetingService {
   getUpcomingMeetings(): Observable<MeetingRow[]> {
   const rawEmpId = localStorage.getItem('empId');
   const filters: Record<string, any> = {};
-  if (rawEmpId) {
-    filters['empId'] = rawEmpId;
-  }
+
 
   return this.http
     .post<FetchMeetingsResponse>(
@@ -239,8 +238,8 @@ export class MeetingService {
    * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
    * this month / follow-ups pending). Not cached — always fetch fresh.
    */
-  getDashboardStats(empId?: number | string): Observable<DashboardStats> {
-    const query = empId ? `?empId=${empId}` : '';
+  getDashboardStats(userId?: number | string): Observable<DashboardStats> {
+    const query = userId ? `?userId=${userId}` : '';
     return this.http
       .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats${query}`)
       .pipe(map(res => res.data));
@@ -250,8 +249,8 @@ export class MeetingService {
    * Recent activity feed for the dashboard's "Recent Activity" panel.
    * Not cached — always fetch fresh.
    */
-  getRecentActivity(empId?: number | string): Observable<RecentActivity[]> {
-  const query = empId ? `?empId=${empId}` : '';
+  getRecentActivity(userId?: number | string): Observable<RecentActivity[]> {
+  const query = userId ? `?userId=${userId}` : '';
   return this.http
     .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
     .pipe(map(res => res.data || []));

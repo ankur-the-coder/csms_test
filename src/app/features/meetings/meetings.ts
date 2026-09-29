@@ -262,9 +262,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         // request (rather than cached in a field) so a re-login/switch-user in
         // the same tab is picked up immediately.
         const empId = this.getScopedEmpId();
-        if (empId) {
-          filters['empId'] = empId;
-        }
 
         const body = {
           start: ctx.page * ctx.pageSize,
@@ -274,6 +271,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
           filter: JSON.stringify(filters),
           fromDate: ctx.dateFrom ?? '',
           toDate: ctx.dateTo ?? '',
+          userId: empId,
         };
 
         return {
@@ -381,7 +379,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   /** '1' = admin/global view (see everyone's data). Anything else = scope to the logged-in employee. */
   private isAdminView(): boolean {
-    return localStorage.getItem('adminSts') === '1';
+    return false;
   }
 
   /** Returns the empId to filter by, or undefined if the user should see all data (admin). */
@@ -1074,9 +1072,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     // Scope meetings fetch to the logged-in employee only
     const filters: Record<string, any> = {};
     const empId = this.getScopedEmpId();
-    if (empId) {
-      filters['empId'] = empId;
-    }
 
     this.meetingService.fetchMeetings({
       start: 0,
@@ -1085,7 +1080,8 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       sorting: 'startTime,desc',
       filter: JSON.stringify(filters),
       fromDate: this.filterDateFrom || '',
-      toDate: this.filterDateTo || ''
+      toDate: this.filterDateTo || '',
+      userId: empId
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
