@@ -49,6 +49,7 @@ export interface FetchMeetingsPayload {
   filter: string;
   fromDate: string;
   toDate: string;
+  userId?: number | string;
 }
 
 export interface FetchMeetingsResponse {
@@ -192,8 +193,8 @@ export class MeetingService {
    * and may not exist yet if the meeting hasn't finished/report hasn't
    * generated.
    */
-  checkAttendance(meetingId: number): Observable<AttendanceCheckResponse> {
-    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId });
+  checkAttendance(meetingId: number,hostmail:string): Observable<AttendanceCheckResponse> {
+    return this.http.post<AttendanceCheckResponse>(`${this.imp}/meetings/check-attendance`, { meetingId,hostmail });
   }
 
   /**
@@ -202,10 +203,10 @@ export class MeetingService {
    * already Cancelled or Completed — that error message passes through
    * as-is for the component to show.
    */
-  cancelMeeting(meetingId: number, comment?: string): Observable<{ status: boolean; message: string; meetingId: number }> {
+  cancelMeeting(meetingId: number, hostmail:string): Observable<{ status: boolean; message: string; meetingId: number }> {
     return this.http.post<{ status: boolean; message: string; meetingId: number }>(
       `${this.imp}/meetings/cancel`,
-      { meetingId, comment }
+      { meetingId, hostmail }
     );
   }
 
@@ -213,9 +214,7 @@ export class MeetingService {
   getUpcomingMeetings(): Observable<MeetingRow[]> {
   const rawEmpId = localStorage.getItem('empId');
   const filters: Record<string, any> = {};
-  if (rawEmpId) {
-    filters['empId'] = rawEmpId;
-  }
+
 
   return this.http
     .post<FetchMeetingsResponse>(
@@ -239,8 +238,8 @@ export class MeetingService {
    * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
    * this month / follow-ups pending). Not cached — always fetch fresh.
    */
-  getDashboardStats(empId?: number | string): Observable<DashboardStats> {
-    const query = empId ? `?empId=${empId}` : '';
+  getDashboardStats(userId?: number | string): Observable<DashboardStats> {
+    const query = userId ? `?userId=${userId}` : '';
     return this.http
       .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats${query}`)
       .pipe(map(res => res.data));
@@ -250,8 +249,8 @@ export class MeetingService {
    * Recent activity feed for the dashboard's "Recent Activity" panel.
    * Not cached — always fetch fresh.
    */
-  getRecentActivity(empId?: number | string): Observable<RecentActivity[]> {
-  const query = empId ? `?empId=${empId}` : '';
+  getRecentActivity(userId?: number | string): Observable<RecentActivity[]> {
+  const query = userId ? `?userId=${userId}` : '';
   return this.http
     .get<RecentActivityApiResponse>(`${this.imp}/meetings/recent-activity${query}`)
     .pipe(map(res => res.data || []));
@@ -259,6 +258,7 @@ export class MeetingService {
 
   rescheduleMeeting(
   meetingId: number,
+  hostmail:string,
   start: string,
   end: string
 ): Observable<RescheduleMeetingResponse> {
@@ -267,6 +267,7 @@ export class MeetingService {
     `${this.imp}/meetings/reschedule`,
     {
       meetingId,
+      hostmail,
       start,
       end
     }
@@ -274,11 +275,11 @@ export class MeetingService {
 }
 
 // inside MeetingService class:
-inviteAttendees(meetingId: number, emails: string[], message?: string): Observable<InviteAttendeesResponse> {
+inviteAttendees(meetingId: number, emails: string[], hostmail:string): Observable<InviteAttendeesResponse> {
   return this.http.post<InviteAttendeesResponse>(`${this.imp}/meetings/invite`, {
     meetingId,
     emails,
-    message
+    hostmail
   });
 }
 

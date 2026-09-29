@@ -262,9 +262,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         // request (rather than cached in a field) so a re-login/switch-user in
         // the same tab is picked up immediately.
         const empId = this.getScopedEmpId();
-        if (empId) {
-          filters['empId'] = empId;
-        }
 
         const body = {
           start: ctx.page * ctx.pageSize,
@@ -274,6 +271,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
           filter: JSON.stringify(filters),
           fromDate: ctx.dateFrom ?? '',
           toDate: ctx.dateTo ?? '',
+          userId: empId,
         };
 
         return {
@@ -381,7 +379,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   /** '1' = admin/global view (see everyone's data). Anything else = scope to the logged-in employee. */
   private isAdminView(): boolean {
-    return localStorage.getItem('adminSts') === '1';
+    return false;
   }
 
   /** Returns the empId to filter by, or undefined if the user should see all data (admin). */
@@ -704,6 +702,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.meetingService
       .rescheduleMeeting(
         meeting.id,
+        localStorage.getItem('email') || '',
         dateTime.start,
         dateTime.end
       )
@@ -793,7 +792,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
     this.cancelSubmitting.set(true);
 
-    this.meetingService.cancelMeeting(row.id).subscribe({
+    this.meetingService.cancelMeeting(row.id,localStorage.getItem('email') || '').subscribe({
       next: () => {
         this.cancelSubmitting.set(false);
         this.showCancelModal.set(false);
@@ -842,7 +841,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     // Make Angular render the modal + loader immediately
     this.cdr.detectChanges();
 
-    this.meetingService.checkAttendance(row.id).subscribe({
+    this.meetingService.checkAttendance(row.id,localStorage.getItem('email') || '').subscribe({
       next: (res) => {
         // API response has arrived
         this.attendanceResult = res;
@@ -1073,9 +1072,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     // Scope meetings fetch to the logged-in employee only
     const filters: Record<string, any> = {};
     const empId = this.getScopedEmpId();
-    if (empId) {
-      filters['empId'] = empId;
-    }
 
     this.meetingService.fetchMeetings({
       start: 0,
@@ -1084,7 +1080,8 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       sorting: 'startTime,desc',
       filter: JSON.stringify(filters),
       fromDate: this.filterDateFrom || '',
-      toDate: this.filterDateTo || ''
+      toDate: this.filterDateTo || '',
+      userId: empId
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
@@ -1450,6 +1447,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
     const row = this.inviteMeetingRow();
     const emails = this.inviteEmails();
+    const hostmail = localStorage.getItem('email') || '';
 
     if (!row || this.inviteSubmitting()) return;
 
@@ -1461,7 +1459,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.inviteSubmitting.set(true);
     this.inviteError.set(null);
 
-    this.meetingService.inviteAttendees(row.id, emails).subscribe({
+    this.meetingService.inviteAttendees(row.id, emails,hostmail).subscribe({
       next: (res) => {
         this.inviteSubmitting.set(false);
         this.showInviteModal.set(false);
