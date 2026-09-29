@@ -20,7 +20,7 @@ import { Datum } from '../models/client/client.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { ToastrService } from 'ngx-toastr';
-import { ScheduleMeetingService } from '../../meetings/schedule-meeting/schedule-meetings.service';
+import { Utils } from '../../../shared/utils/utils';
 import { FormsModule } from '@angular/forms';
 import { RichTextEditor } from '../../../shared/components/rich-text-editor/rich-text-editor';
 import { Clienttimeline } from '../services/client/clienttimeline';
@@ -65,7 +65,6 @@ export interface TimelineEvent {
 export class Client implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private clientApi = inject(ClientService);
-  private scheduleMeetingService = inject(ScheduleMeetingService);
   private toastr = inject(ToastrService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -240,59 +239,56 @@ export class Client implements OnInit, OnDestroy {
       return;
     }
 
-    const empId = localStorage.getItem('empId');
-    if (!empId) {
-      this.toastr.error('Host employee ID not found. Please log in again.', 'Error');
+    const hostEmail = this.getHostEmail();
+    if (!hostEmail) {
+      this.toastr.error('Host email not found. Please log in again.', 'Error');
       return;
     }
 
+    const empId = localStorage.getItem('empId') || '';
+
     this.mailSending.set(true);
 
-    this.scheduleMeetingService.getEmployeeDetails(empId).subscribe({
-      next: (details) => {
-        const hostEmail = details?.currentMail;
-        if (!hostEmail) {
+    this.clientApi
+      .sendCustomMail({
+        hostEmail,
+        toEmails: this.mailRecipients(),
+        subject: this.mailSubject,
+        message: this.mailBody,
+        companyName: row.name,
+        orgId: row.orgId,
+        empId: empId,
+        attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
+          name,
+          contentType,
+          contentBytes,
+        })),
+      })
+      .subscribe({
+        next: (res) => {
           this.mailSending.set(false);
-          this.toastr.error('Host email not found for the logged-in user.', 'Error');
-          return;
-        }
+          if (res?.status) {
+            this.toastr.success(res.message || 'Email sent!', 'Success');
+            this.closeMailModal();
+          } else {
+            this.toastr.error(res?.message || 'Failed to send email.', 'Error');
+          }
+        },
+        error: (err) => {
+          this.mailSending.set(false);
+          this.toastr.error(err?.error?.message || 'Failed to send email.', 'Error');
+        },
+      });
+  }
 
-        this.clientApi
-          .sendCustomMail({
-            hostEmail,
-            toEmails: this.mailRecipients(),
-            subject: this.mailSubject,
-            message: this.mailBody,
-            companyName: row.name,
-            orgId: row.orgId,
-            empId: empId,
-            attachments: this.mailAttachments().map(({ name, contentType, contentBytes }) => ({
-              name,
-              contentType,
-              contentBytes,
-            })),
-          })
-          .subscribe({
-            next: (res) => {
-              this.mailSending.set(false);
-              if (res?.status) {
-                this.toastr.success(res.message || 'Email sent!', 'Success');
-                this.closeMailModal();
-              } else {
-                this.toastr.error(res?.message || 'Failed to send email.', 'Error');
-              }
-            },
-            error: (err) => {
-              this.mailSending.set(false);
-              this.toastr.error(err?.error?.message || 'Failed to send email.', 'Error');
-            },
-          });
-      },
-      error: () => {
-        this.mailSending.set(false);
-        this.toastr.error('Failed to fetch host details.', 'Error');
-      },
-    });
+  private getHostEmail(): string {
+    const rawEmail = localStorage.getItem('email') || '';
+    if (!rawEmail) return '';
+    try {
+      return Utils.decode5t(rawEmail) || rawEmail;
+    } catch {
+      return rawEmail;
+    }
   }
 
   private getTodayDateString(): string {
@@ -490,9 +486,9 @@ export class Client implements OnInit, OnDestroy {
       return;
     }
 
-    const empId = localStorage.getItem('empId');
-    if (!empId) {
-      this.toastr.error('Host employee ID not found. Please log in again.', 'Error');
+    const hostEmail = this.getHostEmail();
+    if (!hostEmail) {
+      this.toastr.error('Host email not found. Please log in again.', 'Error');
       this.closeActionMenu();
       return;
     }
@@ -500,49 +496,31 @@ export class Client implements OnInit, OnDestroy {
     this.sendingMailRowId.set(row.orgId);
     this.mailSuccessRowId.set(null);
 
-    this.scheduleMeetingService.getEmployeeDetails(empId).subscribe({
-      next: (details) => {
-        const hostEmail = details?.currentMail;
-        if (!hostEmail) {
-          this.sendingMailRowId.set(null);
-          this.toastr.error('Host email not found for the logged-in user.', 'Error');
-          this.closeActionMenu();
-          return;
-        }
+    const payload: SendWelcomeMailPayload = {
+      hostEmail: hostEmail,
+      toEmail: row.email.trim(),
+      companyName: row.name || '',
+      contactName: row.contactPerson || row.name || '',
+    };
 
-        const payload: SendWelcomeMailPayload = {
-          hostEmail: hostEmail,
-          toEmail: row.email.trim(),
-          companyName: row.name || '',
-          contactName: row.contactPerson || row.name || '',
-        };
-
-        this.clientApi.sendWelcomeMail(payload).subscribe({
-          next: (res) => {
-            this.sendingMailRowId.set(null);
-            if (res?.status) {
-              this.mailSuccessRowId.set(row.orgId);
-              this.toastr.success(res.message || 'Welcome email sent successfully!', 'Success');
-              setTimeout(() => {
-                this.mailSuccessRowId.set(null);
-                this.closeActionMenu();
-              }, 2000);
-            } else {
-              this.toastr.error(res?.message || 'Failed to send welcome email.', 'Error');
-              this.closeActionMenu();
-            }
-          },
-          error: (err) => {
-            this.sendingMailRowId.set(null);
-            const errMsg = err?.error?.message || err?.message || 'Failed to send welcome email.';
-            this.toastr.error(errMsg, 'Error');
+    this.clientApi.sendWelcomeMail(payload).subscribe({
+      next: (res) => {
+        this.sendingMailRowId.set(null);
+        if (res?.status) {
+          this.mailSuccessRowId.set(row.orgId);
+          this.toastr.success(res.message || 'Welcome email sent successfully!', 'Success');
+          setTimeout(() => {
+            this.mailSuccessRowId.set(null);
             this.closeActionMenu();
-          },
-        });
+          }, 2000);
+        } else {
+          this.toastr.error(res?.message || 'Failed to send welcome email.', 'Error');
+          this.closeActionMenu();
+        }
       },
       error: (err) => {
         this.sendingMailRowId.set(null);
-        const errMsg = err?.error?.message || err?.message || 'Failed to fetch host details.';
+        const errMsg = err?.error?.message || err?.message || 'Failed to send welcome email.';
         this.toastr.error(errMsg, 'Error');
         this.closeActionMenu();
       },
