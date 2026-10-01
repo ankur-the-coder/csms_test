@@ -1552,10 +1552,29 @@ export class WebRtcVoiceService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SSE — Call State Signaling (unchanged responsibility)
+  // SSE — Call State Signaling (authenticated via signed stream ticket)
   // ─────────────────────────────────────────────────────────────────────────
 
-  initSSE(employeeId?: string): void {
+  private async fetchStreamTicket(): Promise<string | null> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('session_token') : null;
+    if (!token) return null;
+    try {
+      const res = await fetch(`${environment.apiUrl}/auth/stream-ticket`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.status && data?.ticket ? data.ticket : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async initSSE(employeeId?: string): Promise<void> {
     const targetEmpId = employeeId || this.currentEmployeeId;
     this.isIntentionallyClosed = false;
 
@@ -1564,14 +1583,20 @@ export class WebRtcVoiceService {
       this.closeSSE(false);
     }
 
-    if (!targetEmpId?.trim()) {
-      console.warn('[SSE] Invalid employee ID. SSE aborted.');
-      return;
-    }
-
     try {
-      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
-      console.log(`[SSE] Establishing SSE for Employee [${targetEmpId}]`);
+      const ticket = await this.fetchStreamTicket();
+      let url: string;
+      if (ticket) {
+        url = `${this.API_BASE}/events?st=${encodeURIComponent(ticket)}`;
+        console.log('[SSE] Establishing SSE with signed stream ticket');
+      } else {
+        if (!targetEmpId?.trim()) {
+          console.warn('[SSE] Invalid employee ID and no stream ticket. SSE aborted.');
+          return;
+        }
+        url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
+        console.log(`[SSE] Establishing legacy SSE for Employee [${targetEmpId}]`);
+      }
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {
