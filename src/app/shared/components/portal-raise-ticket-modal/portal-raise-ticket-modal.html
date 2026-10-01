@@ -1,0 +1,75 @@
+@if (state.raiseTicketModalOpen()) {
+  <div class="scrim" (click)="close()">
+    <div class="dialog md" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="rt-title">
+
+      <header class="ui-head">
+        <span class="ui-badge"><p-icon name="ticket" [size]="22" /></span>
+        <div class="ui-titles">
+          <h2 id="rt-title">Raise Support Ticket</h2>
+          <p>Submit a request directly to our customer support engineering team</p>
+        </div>
+        <button class="ui-x" type="button" (click)="close()" aria-label="Close dialog"><p-icon name="close" [size]="18" /></button>
+      </header>
+
+      <div class="ui-body">
+        @if (errorMessage()) {
+          <div class="notice err"><p-icon name="alert" [size]="18" /><span>{{ errorMessage() }}</span></div>
+        }
+
+        <div class="field">
+          <label for="ticket-subject">Subject <span class="req">*</span></label>
+          <input id="ticket-subject" type="text" class="input" placeholder="Brief summary of the issue or question"
+            [ngModel]="subject()" (ngModelChange)="subject.set($event)" maxlength="200" [disabled]="isSubmitting()" />
+        </div>
+
+        <div class="field">
+          <label for="ticket-priority">Priority</label>
+          <select id="ticket-priority" class="input" [ngModel]="priority()" (ngModelChange)="priority.set($event)" [disabled]="isSubmitting()">
+            <option value="low">Low — General inquiry</option>
+            <option value="normal">Normal — Standard request</option>
+            <option value="high">High — System impacted</option>
+            <option value="urgent">Urgent — Critical blocker</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ticket-desc">Description <span class="req">*</span></label>
+          <textarea id="ticket-desc" rows="5" class="input" placeholder="Please detail what you are experiencing, relevant steps to reproduce, or requirements..."
+            [ngModel]="description()" (ngModelChange)="description.set($event)" [disabled]="isSubmitting()"></textarea>
+        </div>
+
+        <div class="field last">
+          <label>Attachments <span class="hint">(Optional — max 15 MB)</span></label>
+
+          @if (attachments().length > 0) {
+            <ul class="files">
+              @for (att of attachments(); track att.storagePath; let i = $index) {
+                <li>
+                  <span class="f-ico"><p-icon name="attach" [size]="15" /></span>
+                  <span class="f-name">{{ att.fileName }}</span>
+                  <button type="button" class="f-del" (click)="removeAttachment(i)" [disabled]="isSubmitting()" aria-label="Remove attachment"><p-icon name="trash" [size]="15" /></button>
+                </li>
+              }
+            </ul>
+          }
+
+          <div class="upload-row">
+            <label class="upload" [class.disabled]="isUploading() || isSubmitting()">
+              <p-icon name="plus" [size]="15" />
+              <span>{{ isUploading() ? 'Uploading...' : 'Add File' }}</span>
+              <input type="file" (change)="onFileSelected($event)" [disabled]="isUploading() || isSubmitting()" hidden />
+            </label>
+            @if (isUploading()) { <span class="hint">Uploading attachment to secure storage...</span> }
+          </div>
+        </div>
+      </div>
+
+      <footer class="ui-foot">
+        <button class="btn-ghost" type="button" (click)="close()" [disabled]="isSubmitting()">Cancel</button>
+        <button class="btn-solid" type="button" (click)="submit()" [disabled]="isSubmitting() || isUploading()">
+          {{ isSubmitting() ? 'Submitting...' : 'Submit Ticket' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

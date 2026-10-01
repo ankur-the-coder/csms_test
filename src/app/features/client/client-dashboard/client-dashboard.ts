@@ -11,6 +11,7 @@ import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
 import { TicketItem } from '../models/client/clientdashboardtickets';
 import { AuthService } from '../../../core/services/auth-service';
+import { UbiDeskHandoffService } from '../../../core/services/ubidesk-handoff.service';
 import { Utils } from '../../../shared/utils/utils';
 import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
 import { UsageData } from '../models/client/clientdashboardusage.model';
@@ -207,30 +208,26 @@ export class ClientDashboard {
     });
   }
 
-  private buildUbiDeskBase(): string {
-    const u = this.authService.email();
-    const p = this.authService.password();
-    return `${this.UBIDESK_BASE_URL}/client/${u}/${p}`;
-  }
-
-  /** Particular ticket to see in UbiDesk link */
-  getTicketUrl(ticketId: string | number): string {
-    return `${this.buildUbiDeskBase()}/ticket/${ticketId}`;
-  }
-
-  getOrgTicketsUrl(): string {
-    if (!this.orgId) {
-      return '#';
-    }
-    return `${this.buildUbiDeskBase()}/org/${this.orgId}`;
-  }
+  private readonly handoff = inject(UbiDeskHandoffService);
 
   openTicketInUbiDesk(ticketId: string | number): void {
-    window.open(this.getTicketUrl(ticketId), '_blank');
+    if (ticketId) {
+      this.handoff.openTicket(String(ticketId));
+    }
   }
 
   openOrgTicketsInUbiDesk(): void {
-    window.open(this.getOrgTicketsUrl(), '_blank');
+    let orgIdNum = 0;
+    try {
+      orgIdNum = Number(Utils.decode5t(this.orgId || '') || this.orgId);
+    } catch {
+      orgIdNum = Number(this.orgId) || 0;
+    }
+    if (orgIdNum > 0) {
+      this.handoff.openOrg(orgIdNum);
+    } else {
+      this.handoff.openHome();
+    }
   }
 
   private loadDashboard(orgId: string): void {
