@@ -42,6 +42,9 @@ export class ClientDashboard {
 
   orgName = '';
   orgId: string | null = null;
+  orgCountry = signal<string>('');
+  isIndianOrg = computed(() => this.orgCountry().trim().toLowerCase() === 'india');
+
 
   dashboardData = signal<ClientDashboardData | null>(null);
   loading = signal(false);
@@ -195,6 +198,7 @@ export class ClientDashboard {
     this.route.queryParamMap.subscribe((params) => {
       this.orgName = params.get('orgName') ?? '';
       this.orgId = params.get('orgId');
+      this.orgCountry.set(params.get('country') ?? '');
 
       if (this.orgId) {
         this.loadDashboard(this.orgId);
@@ -548,18 +552,41 @@ export class ClientDashboard {
   }
 
   // ---- Usage metrics (for Modules & Purchased Features card) ----
+  // usageMetrics(u: UsageData) {
+  //   return [
+  //     { label: 'Employee', value: u.employee ?? 0 },
+  //     { label: 'Leave', value: u.employeeLeave ?? 0 },
+  //     { label: 'Attendance', value: u.attendance ?? 0 },
+  //     { label: 'Salary', value: (u as any).salary ?? 0 },
+  //     { label: 'Payroll', value: (u as any).payroll ?? 0 },
+  //     { label: 'Organisation', value: (u as any).organisation ?? 0 },
+  //     { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
+  //     { label: 'Performance', value: (u as any).performance ?? 0 },
+  //   ];
+  // }
+
   usageMetrics(u: UsageData) {
-    return [
-      { label: 'Employee', value: u.employee ?? 0 },
-      { label: 'Leave', value: u.employeeLeave ?? 0 },
-      { label: 'Attendance', value: u.attendance ?? 0 },
-      { label: 'Salary', value: (u as any).salary ?? 0 },
-      { label: 'Payroll', value: (u as any).payroll ?? 0 },
-      { label: 'Organisation', value: (u as any).organisation ?? 0 },
-      { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
-      { label: 'Performance', value: (u as any).performance ?? 0 },
-    ];
+  const metrics: { label: string; value: number }[] = [
+    { label: 'Employee', value: u.employee ?? 0 },
+    { label: 'Leave', value: u.employeeLeave ?? 0 },
+    { label: 'Attendance', value: u.attendance ?? 0 },
+  ];
+
+  // India -> Payroll, baaki sab International -> Salary
+  if (this.isIndianOrg()) {
+    metrics.push({ label: 'Payroll', value: (u as any).payroll ?? 0 });
+  } else {
+    metrics.push({ label: 'Salary', value: (u as any).salary ?? 0 });
   }
+
+  metrics.push(
+    { label: 'Organisation', value: (u as any).organisation ?? 0 },
+    { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
+    { label: 'Performance', value: (u as any).performance ?? 0 },
+  );
+
+  return metrics;
+}
 
   getAddonIconKey(name: string): string {
     const n = (name || '').toLowerCase();

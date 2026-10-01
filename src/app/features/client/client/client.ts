@@ -472,6 +472,7 @@ export class Client implements OnInit, OnDestroy {
         queryParams: {
           orgId: row.orgId,
           orgName: row.name,
+          country: row.country,
         },
       });
     } else if (action === 'Send Mail') {
