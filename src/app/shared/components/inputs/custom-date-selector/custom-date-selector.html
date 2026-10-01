@@ -30,7 +30,7 @@
         <!-- Date Range Text -->
         <span class="text-[12px] font-medium px-1 whitespace-nowrap leading-tight"
             [ngClass]="(!submittedStartDate && !submittedEndDate) ? 'text-text-muted' : 'text-text-secondary'">
-            {{ getFormattedDateRange() }}
+            {{ getFormattedDateRange() || placeholder || 'Select Date Range' }}
         </span>
 
         <!-- Right Shift -->

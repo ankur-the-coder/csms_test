@@ -20,8 +20,9 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
     <!-- Today's Meetings -->
-    <div
-      class="card flex items-center justify-between gap-6 border border-cyan-300 bg-cyan-50 rounded-xl p-4 overflow-hidden">
+    <div (click)="filterByToday()" (keydown.enter)="filterByToday()" (keydown.space)="filterByToday()" role="button"
+      tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-cyan-300 bg-cyan-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getTodayMeetings()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Today's Meetings</span>
@@ -35,8 +36,9 @@
     </div>
 
     <!-- Upcoming Meetings -->
-    <div
-      class="card flex items-center justify-between gap-6 border border-success-300 bg-success-100 rounded-xl p-4 overflow-hidden">
+    <div (click)="filterByUpcoming()" (keydown.enter)="filterByUpcoming()" (keydown.space)="filterByUpcoming()"
+      role="button" tabindex="0"
+      class="card flex items-center justify-between  gap-6 border border-success-300  bg-success-100 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getUpcomingMeetings()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Upcoming</span>
@@ -50,8 +52,9 @@
     </div>
 
     <!-- Completed Meetings -->
-    <div
-      class="card flex items-center justify-between gap-6 border border-emerald-300 bg-emerald-50 rounded-xl p-4 overflow-hidden">
+    <div (click)="filterByCompleted()" (keydown.enter)="filterByCompleted()" (keydown.space)="filterByCompleted()"
+      role="button" tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-emerald-300 bg-emerald-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getCompletedCount()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
@@ -65,8 +68,9 @@
     </div>
 
     <!-- Pending Follow-ups -->
-    <div
-      class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden">
+    <div (click)="filterByPendingFollowUps()" (keydown.enter)="filterByPendingFollowUps()"
+      (keydown.space)="filterByPendingFollowUps()" role="button" tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getPendingFollowUps()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Pending Follow-ups</span>
@@ -352,13 +356,22 @@
           <!-- Result -->
           @if (!attendanceLoading && !attendanceError && attendanceResult) {
 
-          <!-- Outcome badge: Not Held / Client No-Show / Held -->
-          <div class="flex items-center gap-2 mb-5">
+          <!-- Outcome badge & Organizer -->
+          <div class="flex items-center justify-between gap-3 mb-5 flex-wrap">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold border rounded-full"
               [ngClass]="getAttendanceOutcome(attendanceResult).badgeClass">
               <i class="fas" [ngClass]="getAttendanceOutcome(attendanceResult).icon"></i>
               {{ getAttendanceOutcome(attendanceResult).label }}
             </span>
+
+            @if (attendanceResult.hostName) {
+            <div
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-slate-50 border border-slate-200 rounded-full text-slate-600">
+              <i class="fas fa-user-tie text-indigo-500 text-xs"></i>
+              <span class="text-slate-400">Organizer:</span>
+              <span class="font-semibold text-slate-700">{{ attendanceResult.hostName }}</span>
+            </div>
+            }
           </div>
 
           <!-- Meeting-level stats -->

@@ -208,6 +208,15 @@ export class DataTable<T extends object> implements AfterContentInit {
     return Array.from(map.values());
   });
 
+  private loadFiltersEffect = effect(() => {
+    const names = this.filterNames();
+    if (names && names.length) {
+      untracked(() => {
+        this.loadFilterOptionsIfNeeded();
+      });
+    }
+  });
+
   // Resolves each name in `filterNames` (e.g. ['gender', 'qualification']) via
   // DataTableService.getFilterOptions(name), which returns the full TableFilter
   // (label + options) for that name — static or API-backed. Runs whenever the
@@ -659,6 +668,8 @@ export class DataTable<T extends object> implements AfterContentInit {
     // and keep it in sync if templates are added/removed dynamically.
     this.buildTemplateMap();
     this.customTemplates.changes.subscribe(() => this.buildTemplateMap());
+
+    this.loadFilterOptionsIfNeeded();
   }
 
   // ── Date filter ────────────────────────────────────────────────────────────

@@ -1054,7 +1054,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.fetchOrganizations();
     this.fetchApiMeetings();
     this.fetchDashboardStats();
     this.fetchRecentActivity();
@@ -1280,11 +1279,118 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     return this.dashboardStats().followUpsPending;
   }
 
+  // ============ KPI Card Click Handlers ============
+
+  private formatLocalDate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  filterByToday(): void {
+    const today = this.formatLocalDate(new Date());
+    this.initialDateFrom.set(today);
+    this.initialDateTo.set(today);
+    this.filterDateFrom = today;
+    this.filterDateTo = today;
+    this.initialFilters.set({ meetingStatus: [] });
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set(today);
+      this.meetingsTable.dateTo.set(today);
+      this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
+      this.meetingsTable.tempFilters.set({ meetingStatus: [] });
+      this.meetingsTable.page.set(0);
+    }
+
+    this.activeView = 'table';
+    setTimeout(() => this.scrollToDataTable(), 100);
+    setTimeout(() => this.scrollToDataTable(), 350);
+  }
+
+  filterByUpcoming(): void {
+    const now = new Date();
+    const next7 = new Date();
+    next7.setDate(now.getDate() + 7);
+    const from = this.formatLocalDate(now);
+    const to = this.formatLocalDate(next7);
+
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
+    this.initialFilters.set({ meetingStatus: [] });
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
+      this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
+      this.meetingsTable.tempFilters.set({ meetingStatus: [] });
+      this.meetingsTable.page.set(0);
+    }
+
+    this.activeView = 'table';
+    setTimeout(() => this.scrollToDataTable(), 100);
+    setTimeout(() => this.scrollToDataTable(), 350);
+  }
+
+  filterByCompleted(): void {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const from = this.formatLocalDate(firstDay);
+    const to = this.formatLocalDate(lastDay);
+
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
+    this.initialFilters.set({ meetingStatus: ['1'] });
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
+      this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['1'] });
+      this.meetingsTable.tempFilters.set({ meetingStatus: ['1'] });
+      this.meetingsTable.page.set(0);
+    }
+
+    this.activeView = 'table';
+    setTimeout(() => this.scrollToDataTable(), 100);
+    setTimeout(() => this.scrollToDataTable(), 350);
+  }
+
+  filterByPendingFollowUps(): void {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const from = this.formatLocalDate(firstDay);
+    const to = this.formatLocalDate(lastDay);
+
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
+    this.initialFilters.set({ meetingStatus: ['3'] });
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
+      this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
+      this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
+      this.meetingsTable.page.set(0);
+    }
+
+    this.activeView = 'table';
+    setTimeout(() => this.scrollToDataTable(), 100);
+    setTimeout(() => this.scrollToDataTable(), 350);
+  }
+
   // ============ View Toggles ============
 
   setActiveView(view: string): void {
     this.activeView = view;
-    this.showToastMessage(`Switched to ${view} view`);
   }
 
   // ============ Calendar & Timeline API Helper Methods ============
