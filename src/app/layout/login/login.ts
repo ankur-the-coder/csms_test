@@ -7,6 +7,20 @@ import { SocketService } from '../../core/services/socket.service';
 import { LoginResponse, SessionDevice } from '../../core/models/login.model';
 import { ToastrService } from 'ngx-toastr';
 
+/**
+ * Friendly, user-safe reasons for each failure the backend can report.
+ * Raw server text / status codes / stack traces are never shown on the login panel.
+ */
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  INVALID_CREDENTIALS: 'Incorrect username or password. Please check your details and try again.',
+  ACCOUNT_DISABLED: 'Your account is currently disabled. Please contact your administrator.',
+  NO_ORGANIZATION: 'Your account is not linked to any organization yet. Please contact support.',
+  VALIDATION_FAILED: 'Please enter both your username and password.',
+  SERVER_ERROR: 'We could not sign you in right now because of a temporary problem. Please try again in a few minutes.',
+};
+
+const GENERIC_LOGIN_ERROR = 'We could not sign you in. Please check your details and try again.';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -91,30 +105,65 @@ export class Login implements OnInit {
           this.conflictDevices.set(res.devices || []);
           this.showConflictModal.set(true);
         } else if (res.code === 'RATE_LIMITED') {
-          this.errorMessage.set(res.msg || 'Too many login attempts. Please try again later.');
-          this.toastr.warning(this.errorMessage(), 'Rate Limited');
+          const msg = this.rateLimitMessage(res.retryAfterSeconds);
+          this.errorMessage.set(msg);
+          this.toastr.warning(msg, 'Too Many Attempts');
         } else {
-          this.toastr.error(res.msg || 'Failed to login.', 'Error');
-          this.errorMessage.set(res.msg || 'Invalid username or password. Please try again.');
+          this.errorMessage.set(this.resolveErrorMessage(res.code));
         }
       },
       error: (err) => {
         this.isLoading.set(false);
         const errBody = err?.error;
-        if (err.status === 409 || errBody?.code === 'SESSION_LIMIT') {
+        if (err?.status === 409 || errBody?.code === 'SESSION_LIMIT') {
           this.conflictDevices.set(errBody?.devices || []);
           this.showConflictModal.set(true);
-        } else if (err.status === 429 || errBody?.code === 'RATE_LIMITED') {
-          const msg = errBody?.msg || 'Too many login attempts. Please try again later.';
+        } else if (err?.status === 429 || errBody?.code === 'RATE_LIMITED') {
+          const msg = this.rateLimitMessage(errBody?.retryAfterSeconds);
           this.errorMessage.set(msg);
-          this.toastr.warning(msg, 'Rate Limited');
+          this.toastr.warning(msg, 'Too Many Attempts');
         } else {
-          this.errorMessage.set(
-            errBody?.msg || errBody?.message || 'Something went wrong. Please try again.'
-          );
+          this.errorMessage.set(this.resolveHttpErrorMessage(err?.status, errBody?.code));
         }
       },
     });
+  }
+
+  /** Maps a backend reason code to a safe, readable message. */
+  private resolveErrorMessage(code?: string): string {
+    return (code && LOGIN_ERROR_MESSAGES[code]) || GENERIC_LOGIN_ERROR;
+  }
+
+  /** Maps an HTTP failure (network down, 5xx, etc.) to a safe, readable message. */
+  private resolveHttpErrorMessage(status?: number, code?: string): string {
+    if (code && LOGIN_ERROR_MESSAGES[code]) {
+      return LOGIN_ERROR_MESSAGES[code];
+    }
+    if (!status) {
+      return 'Unable to reach the server. Please check your internet connection and try again.';
+    }
+    if (status === 422 || status === 400) {
+      return LOGIN_ERROR_MESSAGES['VALIDATION_FAILED'];
+    }
+    if (status === 401 || status === 403) {
+      return LOGIN_ERROR_MESSAGES['INVALID_CREDENTIALS'];
+    }
+    if (status === 404 || status === 502 || status === 503 || status === 504) {
+      return 'The sign-in service is currently unavailable. Please try again in a few minutes.';
+    }
+    if (status >= 500) {
+      return LOGIN_ERROR_MESSAGES['SERVER_ERROR'];
+    }
+    return GENERIC_LOGIN_ERROR;
+  }
+
+  private rateLimitMessage(retryAfterSeconds?: number): string {
+    const secs = Number(retryAfterSeconds);
+    if (!secs || secs <= 0) {
+      return 'Too many unsuccessful attempts. Please wait a few minutes before trying again.';
+    }
+    const mins = Math.ceil(secs / 60);
+    return `Too many unsuccessful attempts. Please try again in about ${mins} minute${mins === 1 ? '' : 's'}.`;
   }
 
   confirmLogoutOthers(): void {
