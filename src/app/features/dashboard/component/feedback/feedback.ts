@@ -2,7 +2,7 @@
 
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-
+import { finalize } from 'rxjs';
 import { BulkAction, RequestContext, SmartColumn, SmartTableConfig } from '../../../../shared/components/Data-table/data-table.types';
 import { DataTable } from "../../../../shared/components/Data-table/data-table";
 import { DashboardService } from '../../service/dashboard-service';
@@ -60,6 +60,9 @@ export class Feedback {
   private route = inject(ActivatedRoute);
   private readonly apiUrl = environment.apiUrl;
   private readonly tableEndpoint = `${this.apiUrl}/fetchFeedbackDataTable`;
+  
+  isCardsLoading = signal(true);
+  readonly skeletonCards = Array.from({ length: 6 });
 
   statusFilter = signal<string>('all');
 
@@ -271,7 +274,10 @@ export class Feedback {
   }
 
   private fetchDashboardCards(from: string, to: string, orgId: string,empId:string): void {
-    this.clientApi.fetchFeedbackCards(from, to, orgId,empId).subscribe({
+    this.isCardsLoading.set(true);
+    this.clientApi.fetchFeedbackCards(from, to, orgId,empId)
+     .pipe(finalize(() => this.isCardsLoading.set(false)))
+     .subscribe({
       next: (res: any) => {
         if (!res?.data) {
           return;

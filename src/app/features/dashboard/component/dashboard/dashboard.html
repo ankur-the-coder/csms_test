@@ -2,13 +2,11 @@
   <!-- =========================================================
        DASHBOARD HEADER
        ========================================================= -->
-
   <div
     class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs"
   >
     <div>
       <h1 class="text-xl font-bold text-text-primary">Dashboard</h1>
-
       <p class="text-sm text-slate-500 mt-1">
         Overview of client activities, usages, meetings, and renewals.
       </p>
@@ -28,217 +26,167 @@
   <!-- =========================================================
        SUMMARY CARDS
        ========================================================= -->
-
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- Premium Clients -->
-
-    <div
-      (click)="navigateToClient()"
-      class="group cursor-pointer rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10"
-    >
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">Premium Clients</p>
-
-          <!-- <p class="mt-2 text-3xl font-bold text-slate-900">
-            {{ cardData().premiumClients }}
-          </p> -->
-
-          <p
-            class="mt-2 text-3xl font-bold text-slate-900"
-            [appCountUp]="cardData().premiumClients"
-          ></p>
+    @if (isCardsLoading()) {
+      @for (i of skeletonCards; track $index) {
+        <div class="rounded-2xl border border-slate-200 bg-white p-5">
+          <div class="flex items-start justify-between">
+            <div class="space-y-3">
+              <div class="shimmer h-4 w-28 rounded-md"></div>
+              <div class="shimmer h-8 w-20 rounded-md"></div>
+            </div>
+            <div class="shimmer h-10 w-10 rounded-xl"></div>
+          </div>
         </div>
+      }
+    } @else {
+      <!-- Premium Clients -->
+      <div
+        (click)="navigateToClient()"
+        class="group cursor-pointer rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-500/10"
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Premium Clients</p>
+            <p
+              class="mt-2 text-3xl font-bold text-slate-900"
+              [appCountUp]="cardData().premiumClients"
+            ></p>
+          </div>
 
-        <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857
-                 M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
-                 M7 20H2v-2a3 3 0 015.356-1.857
-                 M7 20v-2c0-.656.126-1.283.356-1.857
-                 m0 0a5.002 5.002 0 019.288 0
-                 M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-        </div>
-      </div>
-
-      <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-emerald-600">
-        <span>View clients</span>
-
-        <svg
-          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div> -->
-    </div>
-    <div
-      (click)="navigateToRenewed()"
-      class="group cursor-pointer rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-rose-400 hover:shadow-lg hover:shadow-rose-500/10"
-    >
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">Renewed Clients</p>
-
-          <p class="mt-2 text-3xl font-bold text-slate-900" [appCountUp]="cardData().renewable"></p>
-        </div>
-
-        <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 transition-transform duration-300 group-hover:scale-110"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v6h6
-                 M20 20v-6h-6
-                 M20 9a8 8 0 00-14.9-3
-                 M4 15a8 8 0 0014.9 3"
-            />
-          </svg>
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857
+                   M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
+                   M7 20H2v-2a3 3 0 015.356-1.857
+                   M7 20v-2c0-.656.126-1.283.356-1.857
+                   m0 0a5.002 5.002 0 019.288 0
+                   M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 
-      <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-rose-600">
-        <span>View renewals</span>
+      <!-- Renewed Clients -->
+      <div
+        (click)="navigateToRenewed()"
+        class="group cursor-pointer rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-rose-400 hover:shadow-lg hover:shadow-rose-500/10"
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Renewed Clients</p>
+            <p
+              class="mt-2 text-3xl font-bold text-slate-900"
+              [appCountUp]="cardData().renewable"
+            ></p>
+          </div>
 
-        <svg
-          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div> -->
-    </div>
-    <!-- Meeting Pending -->
-
-    <!-- Usages -->
-
-    <div
-      (click)="navigateToUsages()"
-      class="group cursor-pointer rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
-    >
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-sm font-medium text-slate-500">Usage</p>
-
-          <!-- Usage (with % and decimals) -->
-          <p
-            class="mt-2 text-3xl font-bold text-slate-900"
-            [appCountUp]="cardData().usages"
-            [decimals]="0"
-            suffix=" %"
-          ></p>
-        </div>
-
-        <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-transform duration-300 group-hover:scale-110"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 12h4l3-9 4 18 3-9h4"
-            />
-          </svg>
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 transition-transform duration-300 group-hover:scale-110"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v6h6
+                   M20 20v-6h-6
+                   M20 9a8 8 0 00-14.9-3
+                   M4 15a8 8 0 0014.9 3"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 
-      <!-- <div class="mt-4 flex items-center gap-1 text-xs font-medium text-blue-600">
-        <span>View usages</span>
+      <!-- Usage -->
+      <div
+        (click)="navigateToUsages()"
+        class="group cursor-pointer rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10"
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Usage</p>
+            <p
+              class="mt-2 text-3xl font-bold text-slate-900"
+              [appCountUp]="cardData().usages"
+              [decimals]="0"
+              suffix=" %"
+            ></p>
+          </div>
 
-        <svg
-          class="h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div> -->
-    </div>
-    <div
-      (click)="navigateToPendingRenewal()"
-      class="group cursor-pointer rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10"
-    >
-      <div class="flex items-start justify-between">
-        <!--  -->
-        <div>
-          <p class="text-sm font-medium text-slate-500">Pending Renewals</p>
-
-          <!-- Pending Renewals -->
-          <p
-            class="mt-2 text-3xl font-bold text-slate-900"
-            [appCountUp]="cardData().meetingPending"
-          ></p>
-        </div>
-
-        <div
-          class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-transform duration-300 group-hover:scale-110"
-        >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0
-                 9 9 0 0118 0z"
-            />
-          </svg>
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-transform duration-300 group-hover:scale-110"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 12h4l3-9 4 18 3-9h4"
+              />
+            </svg>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Renewal -->
+      <!-- Pending Renewals -->
+      <div
+        (click)="navigateToPendingRenewal()"
+        class="group cursor-pointer rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/10"
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500">Pending Renewals</p>
+            <p
+              class="mt-2 text-3xl font-bold text-slate-900"
+              [appCountUp]="cardData().meetingPending"
+            ></p>
+          </div>
+
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition-transform duration-300 group-hover:scale-110"
+          >
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0
+                   9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- =========================================================
        DASHBOARD CHARTS
        ========================================================= -->
-
-  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-    <!-- Connected -->
-
-    <!-- <div class="min-w-0">
-      <app-charts chartId="ConnectedChart" [chartType]="'line'" [chartData]="connectedDonutData()"
-        [chartLabels]="connectedDonutLabels()" [backgroundColors]="connectedDonutColors()" [headingText]="'Connected'"
-        [hoverLabel]="'Connected'" [donutCenterText]="connectedDonutCenterText()" [leaveChart]="true"
-        [isLoading]="isConnectedLoading()" [hasError]="connectedHasError()" [yAxisTitle]="'Connected Count'">
-      </app-charts>
-    </div> -->
-
-    <!-- Usages -->
-
-    <div class="min-w-0">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+  <!-- Usages -->
+  <div class="min-w-0">
+    @if (isChartsLoading()) {
+      <div class="rounded-2xl border border-slate-200 bg-white p-6">
+        <div class="shimmer h-5 w-32 rounded-md mb-6"></div>
+        <div class="flex items-end gap-3 h-64">
+          <div class="shimmer w-full rounded-md h-1/2"></div>
+          <div class="shimmer w-full rounded-md h-3/4"></div>
+          <div class="shimmer w-full rounded-md h-2/3"></div>
+          <div class="shimmer w-full rounded-md h-full"></div>
+          <div class="shimmer w-full rounded-md h-1/3"></div>
+        </div>
+      </div>
+    } @else {
       <app-charts
         chartId="UsagesChart"
         [chartType]="'groupedBar'"
@@ -249,15 +197,21 @@
         [headingText]="'Usage'"
         [yAxisTitle]="'Usage Count'"
         [leaveChart]="true"
-        [isLoading]="isUsagesLoading()"
+        [isLoading]="false"
         [hasError]="usagesHasError()"
       >
       </app-charts>
-    </div>
+    }
+  </div>
 
-    <!-- Feedback -->
-
-    <div class="min-w-0">
+  <!-- Feedback -->
+  <div class="min-w-0">
+    @if (isChartsLoading()) {
+      <div class="rounded-2xl border border-slate-200 bg-white p-6">
+        <div class="shimmer h-5 w-32 rounded-md mb-6"></div>
+        <div class="shimmer h-64 w-full rounded-xl"></div>
+      </div>
+    } @else {
       <app-charts
         chartId="FeedbackChart"
         [chartType]="'area'"
@@ -268,19 +222,19 @@
         [hoverLabel]="'Feedbacks'"
         [donutCenterText]="feedbackDonutCenterText()"
         [leaveChart]="true"
-        [isLoading]="isFeedbackLoading()"
+        [isLoading]="false"
         [hasError]="feedbackHasError()"
         [yAxisTitle]="'Feedback Count'"
       >
       </app-charts>
-    </div>
+    }
   </div>
+</div>
 
   <!-- =========================================================
        CALENDAR
        ========================================================= -->
-
-  <div class="min-w-0">
+  <div class="min-w-0 relative">
     <app-calendar
       [eventsByDay]="calendarEvents()"
       (eventClick)="onCalendarEventClick($event)"
@@ -288,5 +242,19 @@
       (viewModeChange)="onCalendarViewChange($event)"
     >
     </app-calendar>
+
+    @if (isCalendarLoading()) {
+      <div class="absolute inset-0 z-10 rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="shimmer h-6 w-40 rounded-md"></div>
+          <div class="shimmer h-8 w-32 rounded-md"></div>
+        </div>
+        <div class="grid grid-cols-7 gap-2">
+          @for (c of skeletonCalendarCells; track $index) {
+            <div class="shimmer h-20 rounded-lg"></div>
+          }
+        </div>
+      </div>
+    }
   </div>
 </div>

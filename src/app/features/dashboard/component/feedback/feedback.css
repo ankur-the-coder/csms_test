@@ -1,3 +1,30 @@
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #e2e8f0;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.65) 50%, transparent 100%);
+  animation: shimmer-slide 1.4s infinite;
+}
+
+@keyframes shimmer-slide {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+
+
+
+
+
+
 /* <div class="space-y-6 pb-12">
   <!-- <div class="card p-4 mb-4">
     <h1 class="text-xl font-bold">Feedback</h1>
