@@ -178,6 +178,9 @@ export class RenewalComponent {
   tableConfig = computed<SmartTableConfig<ClientRow>>(() => {
     const statusFilter = this.statusFilter();
 
+
+
+
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
