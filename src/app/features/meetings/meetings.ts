@@ -18,6 +18,7 @@ import { Calendar, DayEvent } from '../../shared/components/inputs/calendar/cale
 import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 import { CountUpDirective } from '../dashboard/component/dashboard/count-up.directive';
 import { environment } from '../../../environments/environment';
+import { utils } from 'xlsx';
 
 @Component({
   selector: 'app-meetings',
@@ -476,6 +477,14 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     ];
 
     return RESCHEDULE_ALLOWED_STATUSES.includes(row.status);
+  }
+
+  verifyUser(row: MeetingRow): boolean {
+    const loggedEmpId = Utils.decode5t(localStorage.getItem('empId'));
+    if (!loggedEmpId || !row || row.createdById === undefined || row.createdById === null) {
+      return false;
+    }
+    return String(row.createdById) === String(loggedEmpId);
   }
 
   openRescheduleModal(row: MeetingRow): void {
@@ -1311,6 +1320,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   filterByUpcoming(): void {
     const now = new Date();
+    now.setDate(now.getDate());
     const next7 = new Date();
     next7.setDate(now.getDate() + 7);
     const from = this.formatLocalDate(now);
@@ -1337,8 +1347,8 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   filterByCompleted(): void {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1 - 7);
+    const lastDay = new Date(now.getFullYear(), now.getMonth(),1);
     const from = this.formatLocalDate(firstDay);
     const to = this.formatLocalDate(lastDay);
 
@@ -1363,20 +1373,17 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   filterByPendingFollowUps(): void {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const from = this.formatLocalDate(firstDay);
-    const to = this.formatLocalDate(lastDay);
 
-    this.initialDateFrom.set(from);
-    this.initialDateTo.set(to);
-    this.filterDateFrom = from;
-    this.filterDateTo = to;
+
+    this.initialDateFrom.set("");
+    this.initialDateTo.set("");
+    this.filterDateFrom = "";
+    this.filterDateTo = "";
     this.initialFilters.set({ meetingStatus: ['3'] });
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(from);
-      this.meetingsTable.dateTo.set(to);
+      this.meetingsTable.dateFrom.set("");
+      this.meetingsTable.dateTo.set("");
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
       this.meetingsTable.page.set(0);
