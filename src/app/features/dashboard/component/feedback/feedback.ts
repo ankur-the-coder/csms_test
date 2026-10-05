@@ -60,7 +60,7 @@ export class Feedback {
   private route = inject(ActivatedRoute);
   private readonly apiUrl = environment.apiUrl;
   private readonly tableEndpoint = `${this.apiUrl}/fetchFeedbackDataTable`;
-  
+
   isCardsLoading = signal(true);
   readonly skeletonCards = Array.from({ length: 6 });
 
@@ -199,13 +199,13 @@ export class Feedback {
 
     return {
       columns: [
-        { key: 'client', label: 'Client', sortable: true, hideable: true },
-        { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true,  hideable: false,},
+        { key: 'contactPerson', label: 'Contact Person', sortable: true,  hideable: false, },
         { key: 'customerName', label: 'Customer Name', sortable: true, hideable: true },
         { key: 'phone', label: 'Customer Phone', sortable: true, hideable: true },
-        { key: 'customerEmail', label: 'Customer Email', sortable: true, hideable: true },
+        { key: 'customerEmail', label: 'Customer Email', sortable: true,  hideable: false,},
         { key: 'subject', label: 'Subject', sortable: true, hideable: true },
-        { key: 'rating', label: 'Rating', sortable: true, hideable: true },
+        { key: 'rating', label: 'Rating', sortable: true,  hideable: false, },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {

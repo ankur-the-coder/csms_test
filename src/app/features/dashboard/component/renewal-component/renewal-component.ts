@@ -181,7 +181,7 @@ export class RenewalComponent {
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
-        { key: 'contactPerson', label: 'Contact Person', sortable: true },
+        { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: false, },
         { key: 'email', label: 'Email', sortable: false, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },

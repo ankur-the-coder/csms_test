@@ -611,9 +611,9 @@ export class Client implements OnInit, OnDestroy {
 
     return {
       columns: [
-        { key: 'name', label: 'Client', sortable: true, hideable: true },
-        { key: 'contactPerson', label: 'Contact Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: false },
+        { key: 'name', label: 'Client', sortable: true,  hideable: false, },
+        { key: 'contactPerson', label: 'Contact Name',  hideable: false, },
+        { key: 'email', label: 'Email', sortable: false , hideable: false, },
         { key: 'phoneNumber', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
