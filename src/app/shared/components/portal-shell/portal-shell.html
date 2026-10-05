@@ -1,0 +1,47 @@
+<div class="frame">
+  <portal-sidebar [open]="drawer()" [orgName]="state.orgName()" [orgLogo]="state.orgLogo()" (closed)="drawer.set(false)" (helpClicked)="raiseTicket()" />
+
+  <div class="main">
+    <header class="top">
+      <button class="burger" type="button" (click)="drawer.set(true)" aria-label="Open menu"><p-icon name="menu" [size]="22" /></button>
+
+      <label class="search">
+        <p-icon name="search" [size]="18" />
+        <input type="text" placeholder="Search anything... (ticket, add-on, meeting)" aria-label="Search" />
+        <kbd>Ctrl K</kbd>
+      </label>
+
+      <div class="actions">
+        <button class="icon-btn" type="button" aria-label="Notifications">
+          <p-icon name="bell" [size]="20" />
+          @if (state.unread() > 0) { <span class="dot">{{ state.unread() }}</span> }
+        </button>
+
+        <button class="cta" type="button" (click)="raiseTicket()">
+          <p-icon name="ticket" [size]="18" /> <span>Raise Ticket</span>
+        </button>
+
+        <div class="profile">
+          <button class="who" type="button" (click)="toggleProfile($event)" [attr.aria-expanded]="profileOpen()">
+            <span class="avatar">{{ initial }}</span>
+            <span class="who-text"><strong>{{ userName }}</strong><small>{{ designation || 'Client' }}</small></span>
+            <span class="chev" [class.up]="profileOpen()"><p-icon name="chevron" [size]="16" /></span>
+          </button>
+          @if (profileOpen()) {
+            <div class="menu" (click)="$event.stopPropagation()">
+              <div class="menu-head"><span class="avatar big">{{ initial }}</span><div><strong>{{ userName }}</strong><small>{{ state.orgName() }}</small></div></div>
+              <button type="button" (click)="logout()"><p-icon name="logout" [size]="17" /> Sign out</button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <main class="page"><router-outlet /></main>
+  </div>
+
+  <app-portal-tickets-modal />
+  <app-portal-ticket-detail-modal />
+  <app-portal-raise-ticket-modal />
+  <app-portal-quick-actions />
+</div>

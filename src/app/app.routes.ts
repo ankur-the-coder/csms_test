@@ -35,6 +35,12 @@ export const routes: Routes = [
     path: 'login', component: Login,
     canActivate: [checkGuard]
   },
+  // Client-side portal (customers who log in via UserMaster). Own shell, own guard.
+  {
+    path: 'client-portal',
+    loadChildren: () =>
+      import('./features/client-portal/client-portal.routes').then(m => m.CLIENT_PORTAL_ROUTES),
+  },
   // User-facing learning pages — no login required, wrapped in UserShell with its own sidebar
   {
     path: 'user/courses',
