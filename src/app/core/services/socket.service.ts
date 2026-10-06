@@ -54,10 +54,9 @@ export class SocketService {
     });
 
     this.socket.on('connect_error', (err: any) => {
+      console.warn('[Socket] Connection error:', err?.message || err);
       if (err?.message === 'unauthorized') {
-        console.warn('[Socket] Unauthorized socket connection, disconnecting');
         this.disconnect();
-        this.auth.logout('expired');
       }
     });
   }

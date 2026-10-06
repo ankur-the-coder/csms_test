@@ -1,70 +1,68 @@
-<!-- Ambient Background (same as ubiDesk) -->
-<div class="ambient-environment">
-  <div class="blueprint-grid"></div>
-  <div class="studio-lens lens-a"></div>
-  <div class="studio-lens lens-b"></div>
-  <div class="blueprint-frame">
-    <div class="blueprint-corner c-tl"></div>
-    <div class="blueprint-corner c-tr"></div>
-    <div class="blueprint-corner c-bl"></div>
-    <div class="blueprint-corner c-br"></div>
+<!-- Ambient Background -->
+<div class="pointer-events-none absolute inset-0 z-0 overflow-hidden [background:radial-gradient(circle_at_30%_40%,#ffffff_0%,#edf2f7_100%)]">
+  <div class="absolute inset-0 opacity-80 [background-image:linear-gradient(rgba(15,23,42,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.015)_1px,transparent_1px)] [background-size:50px_50px]"></div>
+  <div class="absolute -bottom-[15%] -left-[10%] size-[700px] rounded-full opacity-55 blur-[120px] [background:radial-gradient(circle,rgba(0,200,83,0.09)_0%,rgba(0,200,83,0)_70%)]"></div>
+  <div class="absolute -top-[10%] right-[5%] size-[800px] rounded-full opacity-55 blur-[120px] [background:radial-gradient(circle,rgba(14,165,233,0.07)_0%,rgba(14,165,233,0)_70%)]"></div>
+  <div class="pointer-events-none absolute inset-10 border border-[rgba(15,23,42,0.03)] max-[920px]:inset-[15px]">
+    <div class="absolute -top-0.5 -left-0.5 size-3 border-2 border-r-0 border-b-0 border-[rgba(15,23,42,0.15)]"></div>
+    <div class="absolute -top-0.5 -right-0.5 size-3 border-2 border-b-0 border-l-0 border-[rgba(15,23,42,0.15)]"></div>
+    <div class="absolute -bottom-0.5 -left-0.5 size-3 border-2 border-t-0 border-r-0 border-[rgba(15,23,42,0.15)]"></div>
+    <div class="absolute -right-0.5 -bottom-0.5 size-3 border-2 border-t-0 border-l-0 border-[rgba(15,23,42,0.15)]"></div>
   </div>
 </div>
 
-<div class="viewport-wrapper">
+<div class="relative z-[1] mx-auto flex h-full w-full max-w-[1200px]">
 
   <!-- LEFT: Auth Form -->
-  <div class="auth-view-pane">
-    <div class="industrial-auth-slate">
+  <div class="relative flex h-full flex-[0.85] items-center justify-center p-[60px] max-[920px]:flex-1 max-[920px]:p-5">
+    <div class="relative z-[2] w-full max-w-[405px] rounded-md px-2.5 py-5 max-[920px]:border max-[920px]:border-[#e2eaf1] max-[920px]:bg-white max-[920px]:px-[38px] max-[920px]:py-11 max-[920px]:shadow-[0_25px_55px_-10px_rgba(15,23,42,0.08),0_4px_16px_-3px_rgba(15,23,42,0.03)]">
 
       @if (kickedOutMsg()) {
-        <div class="kicked-out-banner">
-          <span class="kicked-out-icon">⚠️</span>
-          <p>{{ kickedOutMsg() }}</p>
+        <div class="mb-4 flex items-start gap-2 rounded-[10px] border border-[#fecaca] bg-[#fef2f2] px-3.5 py-2.5">
+          <span class="mt-px shrink-0 text-[1rem]">⚠️</span>
+          <p class="text-[0.78rem] leading-normal text-[#b91c1c]">{{ kickedOutMsg() }}</p>
         </div>
       }
 
       <!-- Brand Row -->
-      <div class="brand-integration-row">
-        <div class="inline-logo-wrapper">
-          <img src="assets/logo/ubi.svg" alt="UBITECH Logo" class="brand-logo" />
+      <div class="mb-2 flex h-11 items-center gap-2.5">
+        <div class="flex size-11 shrink-0 items-center justify-center">
+          <img src="assets/logo/ubi.svg" alt="UBITECH Logo" class="size-full object-contain" />
         </div>
-        <h1 class="brand-title">
-          <span class="text-green-600">ubi</span><span class="brand-dark">Client</span>
+        <h1 class="text-[28px] leading-none font-extrabold tracking-[-0.8px] text-[#0f172a] select-none">
+          <span class="text-green-600">ubi</span><span class="text-[#0f172a]">Client</span>
         </h1>
       </div>
 
-      <p class="auth-subtitle">Sign in to your Client Portal</p>
+      <p class="mb-9 text-[13px] font-normal tracking-[0.2px] text-[#5c6b7f]">Sign in to your Client Portal</p>
 
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
         <!-- Username -->
-        <div class="input-group">
-          <label>Enter Id // Username</label>
+        <div class="relative mb-6">
+          <label class="mb-2 block [font-family:'SF_Mono','Courier_New',monospace] text-[10.5px] font-semibold tracking-[1px] text-[#5c6b7f] uppercase">Enter Id // Username</label>
           <input
             type="text"
-            class="glass-input-field text-sm"
+            class="w-full rounded-sm border border-[#cbd5e1] bg-[#f8fafc] px-4 py-3.5 text-[0.9rem] leading-[1.43] font-medium text-[#090d14] outline-none transition-all duration-200 placeholder:text-[0.85rem] placeholder:text-[#94a3b8] hover:border-[#94a3b8] hover:bg-[#f1f5f9] focus:border-[#00b046] focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,176,70,0.08)]"
             placeholder="UID // e.g. user@gmail.com"
             formControlName="username"
-            (keydown.enter)="onSubmit()"
             autocomplete="username" />
           @if (username.invalid && username.touched) {
-            <span class="field-error">Username is required.</span>
+            <span class="mt-[5px] block [font-family:'SF_Mono','Courier_New',monospace] text-[11px] tracking-[0.3px] text-[#ef4444]">Username is required.</span>
           }
         </div>
 
         <!-- Password -->
-        <div class="input-group">
-          <label>Enter Password</label>
+        <div class="relative mb-6">
+          <label class="mb-2 block [font-family:'SF_Mono','Courier_New',monospace] text-[10.5px] font-semibold tracking-[1px] text-[#5c6b7f] uppercase">Enter Password</label>
           <div class="relative">
             <input
               [type]="showPassword() ? 'text' : 'password'"
-              class="glass-input-field"
+              class="w-full rounded-sm border border-[#cbd5e1] bg-[#f8fafc] px-4 py-3.5 text-[0.9rem] leading-[1.43] font-medium text-[#090d14] outline-none transition-all duration-200 placeholder:text-[0.85rem] placeholder:text-[#94a3b8] hover:border-[#94a3b8] hover:bg-[#f1f5f9] focus:border-[#00b046] focus:bg-white focus:shadow-[0_0_0_3px_rgba(0,176,70,0.08)] pr-11"
               placeholder="•••••••••••••"
               formControlName="password"
-              (keydown.enter)="onSubmit()"
               autocomplete="current-password" />
-            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" tabindex="-1">
+            <button type="button" class="absolute top-1/2 right-3 flex -translate-y-1/2 cursor-pointer items-center border-none bg-transparent p-0 text-[#5c6b7f] transition-colors duration-150 hover:text-[#00b046]" (click)="togglePasswordVisibility()" tabindex="-1">
               @if (showPassword()) {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -79,21 +77,21 @@
             </button>
           </div>
           @if (password.invalid && password.touched) {
-            <span class="field-error">Password is required.</span>
+            <span class="mt-[5px] block [font-family:'SF_Mono','Courier_New',monospace] text-[11px] tracking-[0.3px] text-[#ef4444]">Password is required.</span>
           }
         </div>
 
         @if (errorMessage()) {
-          <p class="error-msg">⚠ {{ errorMessage() }}</p>
+          <p role="alert" class="mb-3 [font-family:'SF_Mono','Courier_New',monospace] text-[12px] tracking-[0.5px] text-[#ef4444]">⚠ {{ errorMessage() }}</p>
         }
 
-        <div class="utility-row">
-          <a href="#" class="forgot-password-trigger">Reset Security Token</a>
+        <div class="-mt-3 mb-[30px] flex justify-end">
+          <a href="#" class="[font-family:'SF_Mono','Courier_New',monospace] text-[11px] text-[#5c6b7f] no-underline transition-colors duration-150 hover:text-[#00b046]">Reset Security Token</a>
         </div>
 
-        <button class="premium-submit-action" type="submit" [disabled]="isLoading()">
+        <button class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-sm border-none bg-[#0f172a] p-4 [font-family:'SF_Mono','Courier_New',monospace] text-[12px] font-bold tracking-[2px] text-white uppercase shadow-[0_4px_12px_rgba(15,23,42,0.15)] outline-none transition-all duration-200 hover:bg-[#00b046] hover:shadow-[0_6px_20px_rgba(0,176,70,0.3)] disabled:cursor-not-allowed disabled:opacity-60" type="submit" [disabled]="isLoading()">
           @if (isLoading()) {
-            <span class="spinner"></span>
+            <span class="inline-block size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white align-middle"></span>
           } @else {
             Login
           }
@@ -101,27 +99,28 @@
 
       </form>
 
-      <div class="system-meta-footer">
+      <div class="mt-9 flex items-center justify-between border-t border-dashed border-[#e2eaf1] pt-6 [font-family:'SF_Mono','Courier_New',monospace] text-[10.5px] tracking-[0.5px] text-[#5c6b7f] uppercase">
         <!-- <a href="#">Request Gateway Access</a> -->
-        <div class="version-tag">V1.0.0</div>
+        <div class="rounded-[3px] bg-[#e2e8f0] px-1.5 py-0.5 text-[9.5px] font-bold text-[#0f172a]">V1.0.0</div>
       </div>
 
     </div>
   </div>
 
   <!-- RIGHT: Lottie Animation -->
-  <div class="hero-view-pane">
-    <div class="lottie-wrapper">
+  <div class="relative flex h-full flex-[1.15] flex-col items-center justify-center p-10 max-[920px]:hidden">
+    <div class="flex h-auto min-h-[400px] w-full max-w-[520px] items-center justify-center">
       <lottie-player
-        src="/customer-service.json"
+        class="min-h-[400px] w-full"
+        src="/customer-service-2.json"
         background="transparent"
         speed="1"
         loop
         autoplay>
       </lottie-player>
     </div>
-    <div class="hero-tagline">
-      <p class="hero-tagline-text">Customer Success, Simplified.</p>
+    <div class="mt-6 text-center">
+      <p class="[font-family:'SF_Mono','Courier_New',monospace] text-[13px] font-semibold tracking-[2px] text-[#5c6b7f] uppercase opacity-70">Customer Success, Simplified.</p>
     </div>
   </div>
 

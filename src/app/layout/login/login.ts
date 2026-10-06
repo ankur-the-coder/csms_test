@@ -28,6 +28,10 @@ const GENERIC_LOGIN_ERROR = 'We could not sign you in. Please check your details
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './login.html',
   styleUrl: './login.css',
+  host: {
+    class:
+      `relative block h-screen w-full overflow-hidden antialiased [font-family:'SF_Pro_Display',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif]`,
+  },
 })
 export class Login implements OnInit {
   private readonly toastr = inject(ToastrService);
@@ -79,6 +83,9 @@ export class Login implements OnInit {
   }
 
   onSubmit(logoutOthers: boolean = false): void {
+    if (this.isLoading()) {
+      return;
+    }
     this.errorMessage.set('');
 
     if (this.loginForm.invalid) {
