@@ -250,19 +250,22 @@
     </span>
 
     <span
-      class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
-      [ngClass]="{
-        'bg-blue-50 text-blue-700 border-blue-200': ev.status === 0,
-        'bg-emerald-50 text-emerald-700 border-emerald-200': ev.status === 1,
-        'bg-purple-50 text-purple-700 border-purple-200': ev.status === 2,
-        'bg-amber-50 text-amber-700 border-amber-200': ev.status === 3,
-        'bg-red-50 text-red-700 border-red-200': ev.status === 4,
-        'bg-amber-100 text-amber-600 border-amber-300': ev.status === 5,
-        'bg-red-100 text-red-500 border-red-300': ev.status === 6
-      }"
-    >
-      {{ ev.statusLabel || 'Scheduled' }}
-    </span>
+  class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 border"
+  [ngClass]="{
+    'bg-blue-50 text-blue-700 border-blue-200': ev.status === 0,
+    'bg-emerald-50 text-emerald-700 border-emerald-200': ev.status === 1,
+    'bg-amber-50 text-amber-700 border-amber-200': ev.status === 3,
+    'bg-red-50 text-red-700 border-red-200': ev.status === 4
+  }"
+>
+  {{
+    ev.status === 0 ? 'Scheduled' :
+    ev.status === 1 ? 'Completed' :
+    ev.status === 3 ? 'Pending' :
+    ev.status === 4 ? 'Cancelled' :
+    'Scheduled'
+  }}
+</span>
   </div>
 </div>
 
