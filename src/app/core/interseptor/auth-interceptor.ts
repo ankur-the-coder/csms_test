@@ -25,7 +25,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       // Don't intercept 401 on /login
       if (error.status === 401 && !req.url.includes('/login')) {
-        if (typeof window !== 'undefined') {
+        // Only trigger full application logout if the session itself was explicitly revoked/expired by the backend,
+        // or if /auth/me rejected the session.
+        // Do NOT log out on incidental or auxiliary API 401s (e.g. voice tokens, stream tickets, third-party calls).
+        const isSessionDeath = error.error?.code === 'SESSION_REVOKED' ||
+          error.error?.code === 'SESSION_EXPIRED' ||
+          (error.error?.code === 'UNAUTHORIZED' && req.url.includes('/auth/me'));
+
+        if (isSessionDeath && typeof window !== 'undefined') {
           const reason = error.error?.code === 'SESSION_REVOKED'
             ? 'signed_in_elsewhere'
             : 'expired';

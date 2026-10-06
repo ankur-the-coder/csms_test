@@ -95,12 +95,18 @@ export class AuthService {
           this.isLoggedIn.set(true);
           return true;
         }
-        this.logout('expired');
         return false;
       }),
-      catchError(() => {
-        this.logout('expired');
-        return of(false);
+      catchError((err) => {
+        // If backend explicitly rejected the session as dead/revoked, log out
+        if (err?.status === 401 && (err?.error?.code === 'SESSION_REVOKED' || err?.error?.code === 'SESSION_EXPIRED')) {
+          this.logout('expired');
+          return of(false);
+        }
+        // For temporary network glitches, server restarts, or timeouts:
+        // Do NOT destroy the user's session! Preserve local logged-in state.
+        console.warn('[AuthService] /auth/me temporary issue, preserving local session:', err?.message || err);
+        return of(this.isAuthenticated());
       })
     );
   }
