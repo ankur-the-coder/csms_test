@@ -55,7 +55,7 @@ readonly skeletonCalendarCells = Array.from({ length: 35 });
 
 readonly isChartsLoading = computed(
   () => this.isUsagesLoading() || this.isFeedbackLoading(),
-);  
+);
 
   // ---------------------------------------------------------------------------
   // Dashboard Cards
@@ -812,30 +812,30 @@ readonly isChartsLoading = computed(
       chipClass: string;
       accentClass: string;
     }> = {
-      pending: {
+      3: {
         chipClass: 'bg-amber-50 text-amber-700 border border-amber-200',
         accentClass: 'border-amber-500',
       },
-      completed: {
+      1: {
         chipClass: 'bg-green-50 text-green-700 border border-green-200',
         accentClass: 'border-green-500',
       },
-      cancel: {
+      // cancel: {
+      //   chipClass: 'bg-red-50 text-red-700 border border-red-200',
+      //   accentClass: 'border-red-500',
+      // },
+      4: {
         chipClass: 'bg-red-50 text-red-700 border border-red-200',
         accentClass: 'border-red-500',
       },
-      cancelled: {
-        chipClass: 'bg-red-50 text-red-700 border border-red-200',
-        accentClass: 'border-red-500',
-      },
-      scheduled: {
+      0: {
         chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
         accentClass: 'border-blue-500',
       },
-      rescheduled: {
-        chipClass: 'bg-red-50 text-red-700 border border-red-200',
-        accentClass: 'border-red-500',
-      },
+      // rescheduled: {
+      //   chipClass: 'bg-red-50 text-red-700 border border-red-200',
+      //   accentClass: 'border-red-500',
+      // },
     };
 
     const style = statusStyle[status] || {
