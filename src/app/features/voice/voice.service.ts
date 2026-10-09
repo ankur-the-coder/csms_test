@@ -1176,8 +1176,8 @@ export class WebRtcVoiceService {
           status: finalStatus,
           durationSeconds: cur.durationSeconds,
           userId: empId,
-          user_id: empId,
-          employeeId: empId,
+          // user_id: empId,
+          // employeeId: empId,
         }),
       });
     } catch (err: any) {
@@ -1248,9 +1248,9 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callLogId,
-          employeeId: empId,
+          // employeeId: empId,
           userId: empId,
-          user_id: empId,
+          // user_id: empId,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1345,9 +1345,9 @@ export class WebRtcVoiceService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               callLogId: current.callLogId,
-              employeeId: this.currentEmployeeId,
+              // employeeId: this.currentEmployeeId,
               userId: this.currentEmployeeId,
-              user_id: this.currentEmployeeId,
+              // user_id: this.currentEmployeeId,
             }),
           }).catch(() => {});
         }
@@ -1371,9 +1371,9 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callLogId: current.callLogId,
-          employeeId: this.currentEmployeeId,
+          // employeeId: this.currentEmployeeId,
           userId: this.currentEmployeeId,
-          user_id: this.currentEmployeeId,
+          // user_id: this.currentEmployeeId,
         }),
       });
       const data = await res.json();
@@ -1407,9 +1407,9 @@ export class WebRtcVoiceService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             callLogId: current.callLogId,
-            employeeId: empId,
+            // employeeId: empId,
             userId: empId,
-            user_id: empId,
+            // user_id: empId,
           }),
         });
       } catch (e) {
@@ -1424,9 +1424,9 @@ export class WebRtcVoiceService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             callLogId: current.callLogId,
-            employeeId: empId,
+            // employeeId: empId,
             userId: empId,
-            user_id: empId,
+            // user_id: empId,
           }),
         });
       } catch (e) {
