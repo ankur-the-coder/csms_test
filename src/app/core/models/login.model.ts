@@ -38,6 +38,7 @@ export interface Data {
   adminSts: number;
   email: string | null;
   phone: string | null;
+  usermasterEmpId: string ;
   profile?: string;
   /** 'agent' = support_agents login, 'client' = UserMaster (customer) login */
   userType?: 'agent' | 'client';

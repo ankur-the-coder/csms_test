@@ -90,6 +90,7 @@ export class AuthService {
           if (d.orgId) window.localStorage.setItem('orgId', d.orgId);
           if (d.email) window.localStorage.setItem('email', d.email);
           if (d.phone) window.localStorage.setItem('phone', d.phone);
+          if (d.usermasterEmpId) window.localStorage.setItem('usermasterEmpId', d.usermasterEmpId);
           if (d.userType) window.localStorage.setItem('userType', d.userType);
           window.localStorage.setItem('isLoggedIn', 'true');
           this.isLoggedIn.set(true);
@@ -145,6 +146,7 @@ export class AuthService {
     window.localStorage.removeItem('password'); // never stored anymore
     window.localStorage.removeItem('email');
     window.localStorage.removeItem('phone');
+    window.localStorage.removeItem('usermasterEmpId');
     window.localStorage.removeItem('userType');
     window.localStorage.removeItem('adminSts');
     window.localStorage.removeItem('orgId');
@@ -186,6 +188,9 @@ export class AuthService {
   phone(): string {
     return this.isBrowser ? (window.localStorage.getItem('phone') ?? '') : '';
   }
+  usermasterEmpId(): string {
+    return this.isBrowser ? (window.localStorage.getItem('usermasterEmpId') ?? '') : '';
+  }
 
   private persistSession(data: Data): void {
     if (!this.isBrowser) {
@@ -202,6 +207,7 @@ export class AuthService {
     if (data.orgId) window.localStorage.setItem('orgId', data.orgId);
     if (data.email) window.localStorage.setItem('email', data.email);
     if (data.phone) window.localStorage.setItem('phone', data.phone);
+    if (data.usermasterEmpId) window.localStorage.setItem('usermasterEmpId', data.usermasterEmpId);
     window.localStorage.setItem('userType', data.userType === 'client' ? 'client' : 'agent');
     window.localStorage.setItem('isLoggedIn', 'true');
     // Ensure legacy password is purged

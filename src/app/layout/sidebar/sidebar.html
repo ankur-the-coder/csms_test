@@ -3,20 +3,20 @@
 <aside class="h-screen bg-white text-slate-600 flex flex-col transition-all
   duration-300 select-none shrink-0 fixed inset-y-0 left-0 z-50 lg:relative lg:z-auto lg:translate-x-0" [ngClass]="{
     'w-56': !collapsed,
-    'w-20': collapsed,
+    'w-56 lg:w-20': collapsed,
     'translate-x-0': mobileOpen,
     '-translate-x-full': !mobileOpen
   }">
 
   <div class="px-3  pb-2 bg-white transition-all flex items-center justify-between gap-2">
     <div class="flex items-center gap-2.5 overflow-hidden  flex-1 min-w-0"
-      [ngClass]="{'px-3 py-2.5': !collapsed, 'p-2 justify-center': collapsed}" (click)="selectNav('dashboard')"
+      [ngClass]="{'px-3 py-2.5': !collapsed, 'px-3 py-2.5 lg:p-2 lg:justify-center': collapsed}" (click)="selectNav('dashboard')"
       [title]="collapsed ? 'UBITECH CSMS Platform' : ''">
       <div class="h-15 w-15 rounded-lg flex items-center justify-center
        font-extrabold text-lg shrink-0">
         <img src="onlyLogo.png" alt="logo" />
       </div>
-      <div *ngIf="!collapsed" class="flex flex-col ">
+      <div class="flex flex-col" [ngClass]="collapsed ? 'lg:hidden' : ''">
         <span class="font-extrabold   text-x ">ubi<span class="font-bold text-emerald-600">Client</span></span>
       </div>
     </div>
@@ -32,10 +32,10 @@
   </div>
 
 
-  <div class="flex-1 py-4 px-2" [ngClass]="{'overflow-y-auto no-scrollbar': !collapsed, 'overflow-hidden': collapsed}">
+  <div class="flex-1 py-4 px-2" [ngClass]="{'overflow-y-auto no-scrollbar': !collapsed, 'overflow-y-auto no-scrollbar lg:overflow-hidden': collapsed}">
 
     <div>
-      <div *ngIf="!collapsed" class="px-3 text-[10px] font-bold text-text-primary mb-2">
+      <div class="px-3 text-[10px] font-bold text-text-primary mb-2" [ngClass]="collapsed ? 'lg:hidden' : ''">
         Main Menu
       </div>
       <nav class="space-y-1">
@@ -47,18 +47,19 @@
             'bg-emerald-50 text-emerald-700 font-bold border-emerald-600': activeNav === item.id,
             'text-text-secondary border-transparent hover:text-slate-900 hover:bg-slate-50': activeNav !== item.id,
             'items-center px-3 py-2.5 gap-3 justify-start': !collapsed,
-            'flex-col items-center justify-center gap-1 py-3 px-1': collapsed
+            'lg:flex-col items-center justify-center gap-1 py-3 px-1': collapsed
           }">
           <div class="w-5 h-5 flex items-center justify-center shrink-0"
             [ngClass]="activeNav === item.id ? 'text-emerald-600' : 'text-text-secondary'"
             [innerHTML]="getSvgIcon(item.icon)"></div>
 
           <span class="truncate text-left"
-            [ngClass]="collapsed ? 'text-[9px] font-semibold text-center leading-tight max-w-full px-0.5' : 'flex-1'">{{
+            [ngClass]="collapsed ? 'flex-1 lg:text-[9px] lg:font-semibold lg:text-center lg:leading-tight lg:max-w-full lg:px-0.5' : 'flex-1'">{{
             item.label }}</span>
 
-          <span *ngIf="item.badge && !collapsed"
-            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+          <span *ngIf="item.badge"
+            class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200"
+            [ngClass]="collapsed ? 'lg:hidden' : ''">
             {{ item.badge }}
           </span>
         </button>
