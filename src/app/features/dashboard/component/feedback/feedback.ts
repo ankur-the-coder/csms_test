@@ -252,8 +252,8 @@ export class Feedback {
       showPagination: true,
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
-      exportFileName: 'Feetdback Data',
-      emptyMessage: 'No client records found.',
+      exportFileName: 'Feedback Data',
+      emptyMessage: 'No Feedback records found.',
       clickable: true,
 
       toolbarButtons: [

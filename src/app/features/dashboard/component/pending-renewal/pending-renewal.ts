@@ -244,7 +244,7 @@ userId: this.authService.getEmpId(),
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
       exportFileName: 'Pending Renewal Clients',
-      emptyMessage: 'No client records found.',
+      emptyMessage: 'No pending renewal records found.',
       clickable: true,
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },

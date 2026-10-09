@@ -832,10 +832,10 @@ readonly isChartsLoading = computed(
         chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
         accentClass: 'border-blue-500',
       },
-      // rescheduled: {
-      //   chipClass: 'bg-red-50 text-red-700 border border-red-200',
-      //   accentClass: 'border-red-500',
-      // },
+      2: {
+        chipClass: 'bg-red-50 text-red-700 border border-red-200',
+        accentClass: 'border-red-500',
+      },
     };
 
     const style = statusStyle[status] || {
