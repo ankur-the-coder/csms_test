@@ -32,7 +32,7 @@ export interface ClientRow {
 
 @Component({
   selector: 'app-renewal-component',
-  imports: [DataTable, CustomColumnDirective, CommonModule],
+  imports: [DataTable, CommonModule],
   templateUrl: './renewal-component.html',
   styleUrl: './renewal-component.css',
 })
@@ -190,8 +190,8 @@ export class RenewalComponent {
         { key: 'country', label: 'Country', sortable: false },
         // { key: 'createdDate', label: 'Created Date', sortable: false,type: 'date'  },
 
-        { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date', hideable: false, },
-        { key: 'endDate', label: 'End Date', sortable: false, type: 'date', hideable: false, },
+        { key: 'renewDate', label: 'Renewal Start', sortable: true, type: 'date', hideable: false, },
+        { key: 'endDate', label: 'Renewal End', sortable: false, type: 'date', hideable: false, },
         { key: 'PremiumDate', label: 'Premium Date', sortable: true, type: 'date', hideable: false, },
 
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
@@ -257,7 +257,7 @@ export class RenewalComponent {
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
       exportFileName: 'Renewal Plans',
-      emptyMessage: 'No client records found.',
+      emptyMessage: 'No renewal plans found.',
       clickable: true,
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },
