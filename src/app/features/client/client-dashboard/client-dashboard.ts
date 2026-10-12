@@ -6,20 +6,31 @@ import { Clientdashboard } from '../services/client/clientdashboard/clientdashbo
 import { Data as ClientDashboardData } from '../models/client/clientdashboard.model';
 import { Clientdashboardmeeting } from '../services/client/clientdashboard/clientdashboardmeeting';
 import { Datum as MeetingDatum } from '../models/client/clientdashboardmeeting.model';
-import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
-import { AddonItem } from '../models/client/ClientDashboardAddons.model';
 import { Clientdashboardtickets } from '../services/client/clientdashboard/clientdashboardtickets';
 import { TicketItem } from '../models/client/clientdashboardtickets';
 import { AuthService } from '../../../core/services/auth-service';
 import { UbiDeskHandoffService } from '../../../core/services/ubidesk-handoff.service';
 import { Utils } from '../../../shared/utils/utils';
-import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
-import { UsageData } from '../models/client/clientdashboardusage.model';
 import { Clientimplementation } from '../services/client/clientdashboard/clientimplementation';
 import {
   ClientImplementationData,
   ImplementationModule,
 } from '../models/client/clientimplementation.model';
+import { Clientdashboardmodules } from '../services/client/clientdashboard/clientdashboardmodules';
+import { FeatureItem } from '../models/client/clientdashboardmodules.model';
+// import { Clientdashboardaddons } from '../services/client/clientdashboard/clientdashboardaddons';
+// import { AddonItem } from '../models/client/ClientDashboardAddons.model';
+// import { Clientdashboardusage } from '../services/client/clientdashboard/clientdashboardusage';
+// import { UsageData } from '../models/client/clientdashboardusage.model';
+// import { ModuleUsageItem } from '../models/client/clientdashboardmodules.model';
+
+
+interface FeatureTile {
+  name: string;
+  state: 'active' | 'idle' | 'unknown';
+  detail: string;
+  tooltip: string;
+}
 
 @Component({
   selector: 'app-client-dashboard',
@@ -31,12 +42,14 @@ export class ClientDashboard {
   private authService = inject(AuthService);
   private clientDashboardApi = inject(Clientdashboard);
   private clientDashboardMeetingApi = inject(Clientdashboardmeeting);
-  private clientDashboardAddonsApi = inject(Clientdashboardaddons);
   private clientDashboardTicketsApi = inject(Clientdashboardtickets);
-  private clientDashboardUsageApi = inject(Clientdashboardusage);
   private clientImplementationApi = inject(Clientimplementation);
   private location = inject(Location);
   private route = inject(ActivatedRoute);
+  private clientDashboardModulesApi = inject(Clientdashboardmodules);
+  private readonly MAX_VISIBLE_TILES = 9;
+  // private clientDashboardUsageApi = inject(Clientdashboardusage);
+  // private clientDashboardAddonsApi = inject(Clientdashboardaddons);
 
   // 👇 UbiDesk base URL - constant
   private readonly UBIDESK_BASE_URL = 'https://ubidesk.ubitechsolutions.com';
@@ -132,10 +145,10 @@ export class ClientDashboard {
   showAllMeetingsModal = signal(false);
 
   // ---- Add-ons state ----
-  addons = signal<AddonItem[]>([]);
-  addonsLoading = signal(false);
-  addonsError = signal('');
-  showAllAddonsModal = signal(false);
+  // addons = signal<AddonItem[]>([]);
+  // addonsLoading = signal(false);
+  // addonsError = signal('');
+  // showAllAddonsModal = signal(false);
 
   // ---- Tickets state ----
   tickets = signal<TicketItem[]>([]);
@@ -145,9 +158,27 @@ export class ClientDashboard {
   ticketFilterDays = signal<number>(28);
 
   // ---- Usage state ----
-  usage = signal<UsageData | null>(null);
-  usageLoading = signal(false);
-  usageError = signal('');
+  // usage = signal<UsageData | null>(null);
+  // usageLoading = signal(false);
+  // usageError = signal('');
+
+
+  // ---- Modules state ----
+// modules = signal<ModuleUsageItem[]>([]);
+// modulesLoading = signal(false);
+// modulesError = signal('');
+// fromDate = '';
+// toDate = '';
+// showAllFeaturesModal = signal(false);
+
+
+modules = signal<FeatureItem[]>([]);
+modulesLoading = signal(false);
+modulesError = signal('');
+totalEmployees = signal(0);
+fromDate = '';
+toDate = '';
+showAllFeaturesModal = signal(false);
 
   // ---- Usage visualization helpers ----
   selectedUsageMetric = signal<{ label: string; value: number } | null>(null);
@@ -170,10 +201,10 @@ export class ClientDashboard {
   hasMoreTickets = computed(() => this.tickets().length > 5);
 
   // In Widget only top 6 are comes
-  topSixAddons = computed(() => this.addons().slice(0, 6));
+  // topSixAddons = computed(() => this.addons().slice(0, 6));
 
   // "View All" only see if addons are more than 6
-  hasMoreAddons = computed(() => this.addons().length > 6);
+  // hasMoreAddons = computed(() => this.addons().length > 6);
 
   // In Widget only top 5 are comes
   topFiveMeetings = computed(() => this.meetings().slice(0, 5));
@@ -195,22 +226,156 @@ export class ClientDashboard {
       : 0;
   });
 
+
+// Tile colours per state
+readonly tileStyle = {
+  active: { box: 'bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500', text: 'text-emerald-600' },
+  idle: { box: 'bg-amber-50 border-amber-200', dot: 'bg-amber-500', text: 'text-amber-600' },
+  unknown: { box: 'bg-slate-50 border-slate-200', dot: 'bg-slate-400', text: 'text-slate-500' },
+};
+
+
+featureTiles = computed<FeatureTile[]>(() =>
+  this.modules().map((f) => ({
+    name: f.name,
+    state: f.error ? 'unknown' : f.flag ? 'idle' : 'active',
+    detail: this.featureDetail(f),
+    tooltip: this.featureTooltip(f),
+  })),
+);
+
+topTiles = computed(() => this.featureTiles().slice(0, this.MAX_VISIBLE_TILES));
+hasMoreTiles = computed(() => this.featureTiles().length > this.MAX_VISIBLE_TILES);
+featuresLoading = computed(() => this.modulesLoading());
+
+
+// Modules (with usage flag) + only ENABLED add-ons, in one list
+// featureTiles = computed<FeatureTile[]>(() => {
+//   const moduleTiles: FeatureTile[] = this.modules().map((m) => ({
+//     name: m.name,
+//     state: m.activeCount === null ? 'unknown' : m.flag ? 'idle' : 'active',
+//     detail: this.moduleDetail(m),
+//     tooltip: this.moduleTooltip(m),
+//   }));
+
+//   // Same name already shown as a module (e.g. Timesheet, Payroll) -> skip add-on
+//   const moduleNames = new Set(moduleTiles.map((t) => t.name.toLowerCase()));
+
+//   const addonTiles: FeatureTile[] = this.addons()
+//     .filter((a) => a.enabled && !moduleNames.has(a.name.toLowerCase()))
+//     .map((a) => ({
+//       name: a.name,
+//       state: 'active' as const, // add-on flag logic will come later
+//       detail: 'Enabled',
+//       tooltip: a.name,
+//     }));
+
+//   return [...moduleTiles, ...addonTiles];
+// });
+
+// topTiles = computed(() => this.featureTiles().slice(0, this.MAX_VISIBLE_TILES));
+// hasMoreTiles = computed(() => this.featureTiles().length > this.MAX_VISIBLE_TILES);
+// featuresLoading = computed(() => this.modulesLoading() || this.addonsLoading());
+
+
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       this.orgName = params.get('orgName') ?? '';
       this.orgId = params.get('orgId');
       this.orgCountry.set(params.get('country') ?? '');
 
+
+    // Date range selected on the client list; fallback = current month
+    const def = this.defaultRange();
+    this.fromDate = params.get('from') || def.from;
+    this.toDate = params.get('to') || def.to;
+
       if (this.orgId) {
         this.loadDashboard(this.orgId);
         this.loadMeetings(this.orgId);
-        this.loadAddons(this.orgId);
         this.loadTickets(this.orgId);
-        this.loadUsage(this.orgId);
+         this.loadModules(this.orgId);
         this.loadImplementation(this.orgId);
+        // this.loadAddons(this.orgId);
+        // this.loadUsage(this.orgId);
       }
     });
   }
+
+private loadModules(orgId: string): void {
+  this.modulesLoading.set(true);
+  this.modulesError.set('');
+
+  this.clientDashboardModulesApi
+    .getClientDashboard({ orgId, fromDate: this.fromDate, toDate: this.toDate })
+    .subscribe({
+      next: (res) => {
+        this.modulesLoading.set(false);
+        if (res?.status) {
+          this.modules.set(res.data ?? []);
+          this.totalEmployees.set(res.totalEmployees ?? 0);
+        } else {
+          this.modulesError.set(res?.msg || 'Failed to load modules');
+        }
+      },
+      error: (err) => {
+        this.modulesLoading.set(false);
+        this.modulesError.set(err?.error?.msg || 'Failed to load modules');
+      },
+    });
+}
+
+openAllFeaturesModal(): void {
+  this.showAllFeaturesModal.set(true);
+}
+
+closeAllFeaturesModal(): void {
+  this.showAllFeaturesModal.set(false);
+}
+
+// private moduleDetail(m: ModuleUsageItem): string {
+//   if (m.activeCount === null) return '—';
+//   if (m.flag) return 'No activity';
+//   return m.unit === 'employees'
+//     ? `${m.activeCount} / ${m.totalEmployees}`
+//     : `${m.activeCount} records`;
+// }
+
+// private moduleTooltip(m: ModuleUsageItem): string {
+//   if (m.activeCount === null) return `${m.name}: could not be calculated`;
+//   if (m.flag) return `${m.name}: no activity in the selected date range`;
+//   return m.unit === 'employees'
+//     ? `${m.name}: ${m.activeCount} of ${m.totalEmployees} active employees`
+//     : `${m.name}: ${m.activeCount} records in the selected date range`;
+// }
+
+private featureDetail(f: FeatureItem): string {
+  if (f.error) return '—';
+  if (f.flag) return 'No activity';
+  if (f.count === null) return 'Enabled';
+  return f.unit === 'employees'
+    ? `${f.count} / ${this.totalEmployees()}`
+    : `${f.count} records`;
+}
+
+private featureTooltip(f: FeatureItem): string {
+  if (f.error) return `${f.name}: could not be calculated`;
+  if (f.flag) return `${f.name}: no activity in the selected date range`;
+  if (f.count === null) return `${f.name}: enabled`;
+  return f.unit === 'employees'
+    ? `${f.name}: ${f.count} of ${this.totalEmployees()} active employees`
+    : `${f.name}: ${f.count} records in the selected date range`;
+}
+
+
+private defaultRange(): { from: string; to: string } {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const y = now.getFullYear();
+  const m = pad(now.getMonth() + 1);
+  return { from: `${y}-${m}-01`, to: `${y}-${m}-${pad(now.getDate())}` };
+}
+
 
   private readonly handoff = inject(UbiDeskHandoffService);
 
@@ -274,25 +439,25 @@ export class ClientDashboard {
     });
   }
 
-  private loadAddons(orgId: string): void {
-    this.addonsLoading.set(true);
-    this.addonsError.set('');
+  // private loadAddons(orgId: string): void {
+  //   this.addonsLoading.set(true);
+  //   this.addonsError.set('');
 
-    this.clientDashboardAddonsApi.getClientDashboard({ orgId }).subscribe({
-      next: (res) => {
-        this.addonsLoading.set(false);
-        if (res?.status) {
-          this.addons.set(res.data ?? []);
-        } else {
-          this.addonsError.set(res?.msg || 'Failed to load add-ons');
-        }
-      },
-      error: (err) => {
-        this.addonsLoading.set(false);
-        this.addonsError.set(err?.error?.msg || 'Failed to load add-ons');
-      },
-    });
-  }
+  //   this.clientDashboardAddonsApi.getClientDashboard({ orgId ,fromDate:'2026-07-01',toDate:'2026-09-30'}).subscribe({
+  //     next: (res) => {
+  //       this.addonsLoading.set(false);
+  //       if (res?.status) {
+  //         this.addons.set(res.data ?? []);
+  //       } else {
+  //         this.addonsError.set(res?.msg || 'Failed to load add-ons');
+  //       }
+  //     },
+  //     error: (err) => {
+  //       this.addonsLoading.set(false);
+  //       this.addonsError.set(err?.error?.msg || 'Failed to load add-ons');
+  //     },
+  //   });
+  // }
 
   private loadTickets(orgId: string, days: number = this.ticketFilterDays()): void {
     this.ticketsLoading.set(true);
@@ -323,25 +488,25 @@ export class ClientDashboard {
     }
   }
 
-  private loadUsage(orgId: string): void {
-    this.usageLoading.set(true);
-    this.usageError.set('');
+  // private loadUsage(orgId: string): void {
+  //   this.usageLoading.set(true);
+  //   this.usageError.set('');
 
-    this.clientDashboardUsageApi.getClientDashboard({ orgId }).subscribe({
-      next: (res) => {
-        this.usageLoading.set(false);
-        if (res?.status) {
-          this.usage.set(res.data ?? null);
-        } else {
-          this.usageError.set(res?.msg || 'Failed to load usage data');
-        }
-      },
-      error: (err) => {
-        this.usageLoading.set(false);
-        this.usageError.set(err?.error?.msg || 'Failed to load usage data');
-      },
-    });
-  }
+  //   this.clientDashboardUsageApi.getClientDashboard({ orgId }).subscribe({
+  //     next: (res) => {
+  //       this.usageLoading.set(false);
+  //       if (res?.status) {
+  //         this.usage.set(res.data ?? null);
+  //       } else {
+  //         this.usageError.set(res?.msg || 'Failed to load usage data');
+  //       }
+  //     },
+  //     error: (err) => {
+  //       this.usageLoading.set(false);
+  //       this.usageError.set(err?.error?.msg || 'Failed to load usage data');
+  //     },
+  //   });
+  // }
 
   openAllTicketsModal(): void {
     this.showAllTicketsModal.set(true);
@@ -351,13 +516,13 @@ export class ClientDashboard {
     this.showAllTicketsModal.set(false);
   }
 
-  openAllAddonsModal(): void {
-    this.showAllAddonsModal.set(true);
-  }
+  // openAllAddonsModal(): void {
+  //   this.showAllAddonsModal.set(true);
+  // }
 
-  closeAllAddonsModal(): void {
-    this.showAllAddonsModal.set(false);
-  }
+  // closeAllAddonsModal(): void {
+  //   this.showAllAddonsModal.set(false);
+  // }
 
   openAllMeetingsModal(): void {
     this.showAllMeetingsModal.set(true);
@@ -562,28 +727,28 @@ export class ClientDashboard {
   //   ];
   // }
 
-  usageMetrics(u: UsageData) {
-  const metrics: { label: string; value: number }[] = [
-    { label: 'Employee', value: u.employee ?? 0 },
-    { label: 'Leave', value: u.employeeLeave ?? 0 },
-    { label: 'Attendance', value: u.attendance ?? 0 },
-  ];
+//   usageMetrics(u: UsageData) {
+//   const metrics: { label: string; value: number }[] = [
+//     { label: 'Employee', value: u.employee ?? 0 },
+//     { label: 'Leave', value: u.employeeLeave ?? 0 },
+//     { label: 'Attendance', value: u.attendance ?? 0 },
+//   ];
 
-  // India -> Payroll, baaki sab International -> Salary
-  if (this.isIndianOrg()) {
-    metrics.push({ label: 'Payroll', value: (u as any).payroll ?? 0 });
-  } else {
-    metrics.push({ label: 'Salary', value: (u as any).salary ?? 0 });
-  }
+//   // India -> Payroll, baaki sab International -> Salary
+//   if (this.isIndianOrg()) {
+//     metrics.push({ label: 'Payroll', value: (u as any).payroll ?? 0 });
+//   } else {
+//     metrics.push({ label: 'Salary', value: (u as any).salary ?? 0 });
+//   }
 
-  metrics.push(
-    { label: 'Organisation', value: (u as any).organisation ?? 0 },
-    { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
-    { label: 'Performance', value: (u as any).performance ?? 0 },
-  );
+//   metrics.push(
+//     { label: 'Organisation', value: (u as any).organisation ?? 0 },
+//     { label: 'Timesheet', value: (u as any).timesheet ?? 0 },
+//     { label: 'Performance', value: (u as any).performance ?? 0 },
+//   );
 
-  return metrics;
-}
+//   return metrics;
+// }
 
   getAddonIconKey(name: string): string {
     const n = (name || '').toLowerCase();

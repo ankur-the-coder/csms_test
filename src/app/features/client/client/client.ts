@@ -71,6 +71,9 @@ export class Client implements OnInit, OnDestroy {
   private readonly tableEndpoint = `${this.clientApi.baseUrl}/clientDataTable`;
   private clientTimelineApi = inject(Clienttimeline);
   readonly clientFilterNames = ['leadOwner', 'supportOwner'];
+  // fields
+  private selectedFrom = '';
+  private selectedTo = '';
   statusFilter = signal<string>('all');
 
   initialDateFrom = signal('');
@@ -469,6 +472,8 @@ export class Client implements OnInit, OnDestroy {
           orgId: row.orgId,
           orgName: row.name,
           country: row.country,
+          from: this.selectedFrom || this.getTodayDateString(),
+          to: this.selectedTo || this.getTodayDateString(),
         },
       });
     } else if (action === 'Send Mail') {
@@ -611,19 +616,25 @@ export class Client implements OnInit, OnDestroy {
 
     return {
       columns: [
-        { key: 'name', label: 'Client', sortable: true,  hideable: false, },
-        { key: 'contactPerson', label: 'Contact Name',  hideable: false, },
-        { key: 'email', label: 'Email', sortable: false , hideable: false, },
+        { key: 'name', label: 'Client', sortable: true, hideable: false },
+        { key: 'contactPerson', label: 'Contact Name', hideable: false },
+        { key: 'email', label: 'Email', sortable: false, hideable: false },
         { key: 'phoneNumber', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
         { key: 'planStart', label: 'Plan Start', sortable: true, hideable: false, type: 'date' },
         { key: 'planEnd', label: 'Plan End', sortable: true, hideable: false, type: 'date' },
-        { key: 'premiumDate', label: 'Premium Date', sortable: true, hideable: false, type: 'date' },
+        {
+          key: 'premiumDate',
+          label: 'Premium Date',
+          sortable: true,
+          hideable: false,
+          type: 'date',
+        },
         { key: 'userLimit', label: 'User Limit', sortable: true },
         { key: 'modules', label: 'Modules', sortable: false },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
-        { key: 'action', label: 'Action', sortable: false, sticky: true , hideable: false },
+        { key: 'action', label: 'Action', sortable: false, sticky: true, hideable: false },
         // { key: 'progress', label: 'Implementation', sortable: false },
         // { key: 'trainingStatus', label: 'Training', sortable: false },
       ] as SmartColumn<ClientRow>[],
@@ -638,6 +649,10 @@ export class Client implements OnInit, OnDestroy {
           const today = this.getTodayDateString();
           const fromDate = ctx.dateFrom ? ctx.dateFrom : today;
           const toDate = ctx.dateTo ? ctx.dateTo : today;
+
+          // remember the range currently applied on the table
+          this.selectedFrom = fromDate;
+          this.selectedTo = toDate;
 
           const sortColMap: Record<string, string> = {
             name: 'client',
@@ -665,17 +680,13 @@ export class Client implements OnInit, OnDestroy {
             filter: JSON.stringify(filterObj),
             fromDate,
             toDate,
-           orgId: this.authService.getOrgId(),
+            orgId: this.authService.getOrgId(),
             userId: this.authService.getEmpId(),
-            adminSts: Number(this.authService.adminSts())
-
+            adminSts: Number(this.authService.adminSts()),
           };
 
           return { method: 'POST' as const, body };
         },
-
-
-
 
         transformRow: (raw: Datum): ClientRow | null => this.mapDatumToClientRow(raw),
       },
