@@ -53,7 +53,7 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error';
   imports: [
     CommonModule,
     FormsModule,
-    DatePipe,
+
     DecimalPipe,
     CurrencyPipe,
     CustomDateSelector,
@@ -221,7 +221,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   // DataTableService.getFilterOptions(name), which returns the full TableFilter
   // (label + options) for that name — static or API-backed. Runs whenever the
   // parent changes the filterNames input.
- private filtersLoading = false;   
+ private filtersLoading = false;
   private loadFilterOptionsIfNeeded(): void {
     const names = this.filterNames();
      if (!names.length || this.filtersFetched || this.filtersLoading) return;
@@ -250,7 +250,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       error: (err) => {
         console.error('[DataTable] Error loading filters:', err);
         this.loadedFilters.set([]);
-        this.filtersFetched = false; 
+        this.filtersFetched = false;
         this.filtersLoading = false;
       },
     });
