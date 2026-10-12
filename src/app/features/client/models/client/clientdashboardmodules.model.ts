@@ -1,13 +1,15 @@
 export interface ClientDashboardModulesResponse {
-  data?: ModuleUsageItem[];
+  data?: FeatureItem[];
+  totalEmployees?: number;
   status: boolean;
   msg: string;
 }
 
-export interface ModuleUsageItem {
+export interface FeatureItem {
   name: string;
-  flag: boolean;
-  activeCount: number | null;
-  unit: 'employees' | 'records';
-  totalEmployees: number;
+  type: 'module' | 'addon';
+  flag: boolean; // true = enabled but no activity in the date range
+  count: number | null;
+  unit: 'employees' | 'records' | null;
+  error?: boolean;
 }
