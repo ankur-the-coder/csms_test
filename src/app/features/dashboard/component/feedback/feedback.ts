@@ -2,7 +2,7 @@
 
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-
+import { finalize } from 'rxjs';
 import { BulkAction, RequestContext, SmartColumn, SmartTableConfig } from '../../../../shared/components/Data-table/data-table.types';
 import { DataTable } from "../../../../shared/components/Data-table/data-table";
 import { DashboardService } from '../../service/dashboard-service';
@@ -60,6 +60,9 @@ export class Feedback {
   private route = inject(ActivatedRoute);
   private readonly apiUrl = environment.apiUrl;
   private readonly tableEndpoint = `${this.apiUrl}/fetchFeedbackDataTable`;
+
+  isCardsLoading = signal(true);
+  readonly skeletonCards = Array.from({ length: 6 });
 
   statusFilter = signal<string>('all');
 
@@ -196,13 +199,13 @@ export class Feedback {
 
     return {
       columns: [
-        { key: 'client', label: 'Client', sortable: true, hideable: true },
-        { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: true },
+        { key: 'client', label: 'Client', sortable: true,  hideable: false,},
+        { key: 'contactPerson', label: 'Contact Person', sortable: true,  hideable: false, },
         { key: 'customerName', label: 'Customer Name', sortable: true, hideable: true },
         { key: 'phone', label: 'Customer Phone', sortable: true, hideable: true },
-        { key: 'customerEmail', label: 'Customer Email', sortable: true, hideable: true },
+        { key: 'customerEmail', label: 'Customer Email', sortable: true,  hideable: false,},
         { key: 'subject', label: 'Subject', sortable: true, hideable: true },
-        { key: 'rating', label: 'Rating', sortable: true, hideable: true },
+        { key: 'rating', label: 'Rating', sortable: true,  hideable: false, },
       ] as SmartColumn<ClientRow>[],
 
       apiConfig: {
@@ -249,8 +252,8 @@ export class Feedback {
       showPagination: true,
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
-      exportFileName: 'Feetdback Data',
-      emptyMessage: 'No client records found.',
+      exportFileName: 'Feedback Data',
+      emptyMessage: 'No Feedback records found.',
       clickable: true,
 
       toolbarButtons: [
@@ -271,7 +274,10 @@ export class Feedback {
   }
 
   private fetchDashboardCards(from: string, to: string, orgId: string,empId:string): void {
-    this.clientApi.fetchFeedbackCards(from, to, orgId,empId).subscribe({
+    this.isCardsLoading.set(true);
+    this.clientApi.fetchFeedbackCards(from, to, orgId,empId)
+     .pipe(finalize(() => this.isCardsLoading.set(false)))
+     .subscribe({
       next: (res: any) => {
         if (!res?.data) {
           return;

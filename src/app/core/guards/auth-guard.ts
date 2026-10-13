@@ -14,6 +14,10 @@ export const authGuard: CanActivateFn = (route, state) => {
   }
 
   if (authService.isAuthenticated()) {
+    // Clients must never land inside the agent app.
+    if (authService.isClient()) {
+      return router.createUrlTree(['/client-portal']);
+    }
     return true;
   }
   return router.createUrlTree(['/login']);
@@ -29,7 +33,7 @@ export const checkGuard: CanActivateFn = (route, state) => {
   }
 
   if (authService.isAuthenticated()) {
-    return router.createUrlTree(['/dashboard']);
+    return router.createUrlTree([authService.isClient() ? '/client-portal' : '/dashboard']);
   }
 
   return true;

@@ -1,0 +1,103 @@
+@if (state.detailModalOpen()) {
+<div class="scrim" (click)="closeModal()">
+  <div class="dialog lg" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="td-title">
+
+    <!-- Header -->
+    <header class="ui-head top">
+      <span class="ui-badge"><p-icon name="ticket" [size]="22" /></span>
+      <div class="ui-titles">
+        <h2 id="td-title">{{ ticket()?.subject || 'Ticket details' }}</h2>
+        @if (ticket(); as t) {
+          <p>{{ t.created_at | date:'dd MMM yyyy, hh:mm a' }} <span class="dotsep">•</span> {{ t.customer_name || t.customer_email || 'Client' }}</p>
+        }
+      </div>
+      <span class="tk-pill">Ticket #{{ state.selectedTicketUid() }}</span>
+      <button class="ui-x" type="button" (click)="closeModal()" aria-label="Close"><p-icon name="close" [size]="18" /></button>
+    </header>
+
+    <div class="ui-body detail">
+      @if (isLoading()) {
+        <div class="state-box"><span class="spin"></span><p>Loading case conversation...</p></div>
+      } @else if (errorMessage()) {
+        <div class="state-box"><p-icon name="alert" [size]="30" /><strong>{{ errorMessage() }}</strong></div>
+      } @else if (ticket(); as t) {
+
+        <div class="split">
+          <!-- LEFT: overview -->
+          <aside class="info">
+            <section class="box">
+              <h3>Ticket Overview</h3>
+              <dl>
+                <div><dt>Status</dt><dd><em class="pill" [ngClass]="'st-' + statusKey(t.status)">{{ statusLabel(t.status) }}</em></dd></div>
+                <div><dt>Priority</dt><dd class="cap">{{ t.priority || 'Normal' }}</dd></div>
+                <div><dt>Assigned Agent</dt><dd>{{ t.assigned_agent_name || 'Unassigned' }}</dd></div>
+                <div><dt>Requested By</dt><dd>{{ t.customer_name || t.customer_email || 'Client' }}</dd></div>
+                <div><dt>Created On</dt><dd>{{ t.created_at | date:'dd MMM yyyy, hh:mm a' }}</dd></div>
+                @if (statusKey(t.status) === 'closed') {
+                  <div><dt>Closed On</dt><dd>{{ t.closed_at ? (t.closed_at | date:'dd MMM yyyy, hh:mm a') : '--' }}</dd></div>
+                  @if (t.resolution_code) { <div><dt>Resolution</dt><dd>{{ t.resolution_code }}</dd></div> }
+                }
+              </dl>
+            </section>
+
+            @if (t.assignmentHistory && t.assignmentHistory.length > 0) {
+              <section class="box">
+                <h3>Assignment History</h3>
+                <ul class="hist">
+                  @for (h of t.assignmentHistory; track $index) {
+                    <li><span class="h-dot"></span><div><strong>{{ h.agent_name }}</strong><small>{{ h.created_at | date:'dd MMM yyyy, hh:mm a' }}</small></div></li>
+                  }
+                </ul>
+              </section>
+            }
+          </aside>
+
+          <!-- RIGHT: timeline -->
+          <section class="conv">
+            <h3 class="conv-title">Conversation &amp; Reviews <small>for reference</small></h3>
+
+            @if (timeline().length === 0) {
+              <p class="empty-line">No messages recorded for this ticket.</p>
+            } @else {
+              <ol class="timeline">
+                @for (m of timeline(); track m.id; let i = $index) {
+                  <li class="tl-item" [style.--i]="i">
+                    <div class="tl-date"><strong>{{ day(m.created_at) }}</strong><small>{{ mon(m.created_at) }}</small></div>
+                    <span class="tl-dot" [class.agent]="isAgent(m)"></span>
+
+                    <article class="tl-card">
+                      <span class="tag" [class.agent]="isAgent(m)">{{ isAgent(m) ? 'Agent reply' : 'You' }}</span>
+                      <h4>{{ senderName(m) }}</h4>
+
+                      <div class="body" [class.clamp]="isLong(m) && !isOpen(m.id)" [innerHTML]="m.message"></div>
+                      @if (isLong(m)) {
+                        <button type="button" class="more" (click)="toggle(m.id)">{{ isOpen(m.id) ? 'Show less' : 'Show more' }}</button>
+                      }
+
+                      @if (m.attachments && m.attachments.length > 0) {
+                        <div class="files">
+                          @for (att of m.attachments; track att.id) {
+                            <a [href]="att.url" target="_blank" rel="noopener noreferrer" class="file">
+                              <p-icon name="attach" [size]="14" />
+                              <span class="f-name">{{ att.file_name }}</span>
+                              <small>{{ formatFileSize(att.size) }}</small>
+                            </a>
+                          }
+                        </div>
+                      }
+
+                      <footer><span>Given by {{ isAgent(m) ? 'Support' : 'You' }}</span><span>{{ m.created_at | date:'hh:mm a' }}</span></footer>
+                    </article>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
+        </div>
+      }
+    </div>
+
+    <footer class="ui-foot"><button type="button" class="btn-ghost" (click)="closeModal()">Close</button></footer>
+  </div>
+</div>
+}

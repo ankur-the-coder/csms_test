@@ -99,6 +99,13 @@ export class WebRtcVoiceService {
   // ── Private State ───────────────────────────────────────────────────────
   private telnyxClient: TelnyxRTC | null = null;
   private activeRTCCall: any = null;          // TelnyxRTC Call instance
+  /**
+   * Inbound SDK call that rang in this browser but has NOT been claimed yet.
+   * Telnyx rings every registered browser, so the SDK ring alone must never open
+   * the popup -- ownership is decided by the backend (SSE `incoming_call` goes only
+   * to the owning agent, or to admins for new clients). See receiveIncomingCall().
+   */
+  private pendingInboundRtcCall: any = null;
   private localStream: MediaStream | null = null;
   private remoteAudioEl: HTMLAudioElement | null = null;
 
@@ -503,7 +510,12 @@ export class WebRtcVoiceService {
 
   async fetchMissedCallsCount(): Promise<void> {
     try {
-      const res = await fetch(`${this.API_BASE}/missed-calls-count`);
+      const missedParams = new URLSearchParams();
+      if (localStorage.getItem('adminSts') != '1') {
+        const empId = localStorage.getItem('empId');
+        if (empId) missedParams.set('userId', empId);
+      }
+      const res = await fetch(`${this.API_BASE}/missed-calls-count?${missedParams.toString()}`);
       const json = await res.json();
       if (json.status && json.data) {
         this.missedCallsCount.set(Number(json.data.count) || 0);
@@ -770,7 +782,7 @@ export class WebRtcVoiceService {
 
         // Extract provider call ID from Telnyx Call object
         const providerCallId = call.call_control_id || call.id || call.telnyxIDs?.callId;
-        if (providerCallId && this.activeCall()?.callLogId && !this.activeCall()?.providerCallId) {
+        if (providerCallId && this.activeCall()?.callLogId && !this.activeCall()?.providerCallId && this.activeCall()?.direction === 'outbound') {
           const cur = this.activeCall();
           if (cur) this.activeCall.set({ ...cur, providerCallId });
           this.attachProviderCallIdToBackend(providerCallId);
@@ -791,19 +803,14 @@ export class WebRtcVoiceService {
             console.log('[Voice][Call] Bridged WebRTC leg is ringing -- auto-accepting (agent already answered via REST).');
             this.autoAcceptBridgedCall(call);
           } else if (direction === 'inbound' && !isBusy) {
-            // Genuinely idle -- this is a new inbound call.
-            this.activeRTCCall = call;
-            this.activeCall.set({
-              providerCallId: call.id,
-              customerNumber: fromNumber,
-              customerName: call.options?.remoteCallerName || undefined,
-              direction: 'inbound',
-              status: 'ringing',
-              isMuted: false,
-              isHeld: false,
-              durationSeconds: 0,
-            });
+            // Telnyx rings EVERY registered browser, so the SDK ring must not open the
+            // popup by itself. Stash it; receiveIncomingCall() attaches it only if the
+            // backend routed this call to this user (owner agent, or admin for new clients).
+            this.pendingInboundRtcCall = call;
+            this.bindPendingRtcCallToActiveCall();
           } else if (direction === 'inbound' && isBusy) {
+            this.pendingInboundRtcCall = call;
+            this.bindPendingRtcCallToActiveCall();
             console.warn('[Voice][Call] Second inbound call rang while already busy -- ignoring at the WebRTC layer (SSE path handles the missed-call UI).');
           }
         }
@@ -820,6 +827,11 @@ export class WebRtcVoiceService {
           }
         }
         if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+          // A stashed (unclaimed) inbound ring ended -- it was never ours, so just drop it.
+          if (call === this.pendingInboundRtcCall) {
+            this.pendingInboundRtcCall = null;
+            return;
+          }
           this.clearRingTimeout(); // ← add this
 
           const cause: string = (call.cause || '').toLowerCase();
@@ -861,19 +873,11 @@ export class WebRtcVoiceService {
         }
 
         const existing = this.activeCall();
-        if (!existing || existing.status === 'ended') {
-          this.activeRTCCall = call;
-          this.activeCall.set({
-            providerCallId: call.id,
-            customerNumber: fromNumber,
-            customerName: fromName,
-            direction: 'inbound',
-            status: 'ringing',
-            isMuted: false,
-            isHeld: false,
-            durationSeconds: 0,
-          });
-        }
+        void existing;
+        // Same rule as the 'ringing' path: stash, let the backend (SSE) decide ownership.
+        this.pendingInboundRtcCall = call;
+        this.bindPendingRtcCallToActiveCall();
+        void fromNumber; void fromName;
         break;
       }
     }
@@ -1176,8 +1180,8 @@ export class WebRtcVoiceService {
           status: finalStatus,
           durationSeconds: cur.durationSeconds,
           userId: empId,
-          user_id: empId,
-          employeeId: empId,
+          // user_id: empId,
+          // employeeId: empId,
         }),
       });
     } catch (err: any) {
@@ -1237,6 +1241,25 @@ export class WebRtcVoiceService {
       isHeld: false,
       durationSeconds: 0,
     });
+    // This user IS a recipient -- attach the browser's SDK ring (if it already arrived).
+    this.bindPendingRtcCallToActiveCall();
+  }
+
+  /** Attaches a stashed SDK inbound ring to the SSE-created ringing popup, if there is one. */
+  private bindPendingRtcCallToActiveCall(): void {
+    const pending = this.pendingInboundRtcCall;
+    const cur = this.activeCall();
+    if (!pending || !cur) return;
+    if (['hangup', 'destroy', 'purge', 'ended'].includes(pending.state)) {
+      this.pendingInboundRtcCall = null;
+      return;
+    }
+    if (cur.direction !== 'inbound' || cur.status !== 'ringing' || this.activeRTCCall) return;
+    this.activeRTCCall = pending;
+    this.pendingInboundRtcCall = null;
+    if (pending.id && !cur.providerCallId) {
+      this.activeCall.set({ ...cur, providerCallId: pending.id });
+    }
   }
 
 
@@ -1248,9 +1271,9 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callLogId,
-          employeeId: empId,
+          // employeeId: empId,
           userId: empId,
-          user_id: empId,
+          // user_id: empId,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1345,9 +1368,9 @@ export class WebRtcVoiceService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               callLogId: current.callLogId,
-              employeeId: this.currentEmployeeId,
+              // employeeId: this.currentEmployeeId,
               userId: this.currentEmployeeId,
-              user_id: this.currentEmployeeId,
+              // user_id: this.currentEmployeeId,
             }),
           }).catch(() => {});
         }
@@ -1371,9 +1394,9 @@ export class WebRtcVoiceService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callLogId: current.callLogId,
-          employeeId: this.currentEmployeeId,
+          // employeeId: this.currentEmployeeId,
           userId: this.currentEmployeeId,
-          user_id: this.currentEmployeeId,
+          // user_id: this.currentEmployeeId,
         }),
       });
       const data = await res.json();
@@ -1407,9 +1430,9 @@ export class WebRtcVoiceService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             callLogId: current.callLogId,
-            employeeId: empId,
+            // employeeId: empId,
             userId: empId,
-            user_id: empId,
+            // user_id: empId,
           }),
         });
       } catch (e) {
@@ -1424,9 +1447,9 @@ export class WebRtcVoiceService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             callLogId: current.callLogId,
-            employeeId: empId,
+            // employeeId: empId,
             userId: empId,
-            user_id: empId,
+            // user_id: empId,
           }),
         });
       } catch (e) {
@@ -1552,10 +1575,29 @@ export class WebRtcVoiceService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SSE — Call State Signaling (unchanged responsibility)
+  // SSE — Call State Signaling (authenticated via signed stream ticket)
   // ─────────────────────────────────────────────────────────────────────────
 
-  initSSE(employeeId?: string): void {
+  private async fetchStreamTicket(): Promise<string | null> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('session_token') : null;
+    if (!token) return null;
+    try {
+      const res = await fetch(`${environment.apiUrl}/auth/stream-ticket`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data?.status && data?.ticket ? data.ticket : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async initSSE(employeeId?: string): Promise<void> {
     const targetEmpId = employeeId || this.currentEmployeeId;
     this.isIntentionallyClosed = false;
 
@@ -1564,14 +1606,20 @@ export class WebRtcVoiceService {
       this.closeSSE(false);
     }
 
-    if (!targetEmpId?.trim()) {
-      console.warn('[SSE] Invalid employee ID. SSE aborted.');
-      return;
-    }
-
     try {
-      const url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
-      console.log(`[SSE] Establishing SSE for Employee [${targetEmpId}]`);
+      const ticket = await this.fetchStreamTicket();
+      let url: string;
+      if (ticket) {
+        url = `${this.API_BASE}/events?st=${encodeURIComponent(ticket)}`;
+        console.log('[SSE] Establishing SSE with signed stream ticket');
+      } else {
+        if (!targetEmpId?.trim()) {
+          console.warn('[SSE] Invalid employee ID and no stream ticket. SSE aborted.');
+          return;
+        }
+        url = `${this.API_BASE}/events?employeeId=${encodeURIComponent(targetEmpId)}`;
+        console.log(`[SSE] Establishing legacy SSE for Employee [${targetEmpId}]`);
+      }
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {

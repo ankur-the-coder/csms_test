@@ -177,7 +177,7 @@ export class PendingRenewal {
     return {
       columns: [
         { key: 'client', label: 'Client', sortable: true, hideable: false, },
-        { key: 'contactPerson', label: 'Contact Person', sortable: true },
+        { key: 'contactPerson', label: 'Contact Person', sortable: true, hideable: false, },
         { key: 'email', label: 'Email', sortable: false, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
@@ -244,7 +244,7 @@ userId: this.authService.getEmpId(),
       defaultPageSize: 10,
       pageSizeOptions: [10, 25, 50, 100, 500],
       exportFileName: 'Pending Renewal Clients',
-      emptyMessage: 'No client records found.',
+      emptyMessage: 'No pending renewal records found.',
       clickable: true,
       toolbarButtons: [
         { id: 'date', type: 'datePicker' as const, label: 'Date' },

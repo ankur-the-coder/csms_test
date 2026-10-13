@@ -151,22 +151,26 @@ export class ScheduleMeetingService {
   constructor(private http: HttpClient) {}
 
   getOrganizations(): Observable<Organization[]> {
-    if (!this.organizations$) {
-      const payload: DataTablePayload = { start: 0, length: 10, search: '', sorting: '', filter: '' ,userId: localStorage.getItem('empId')  };
+    const rawEmpId = localStorage.getItem('empId');
+    const payload: DataTablePayload = {
+      start: 0,
+      length: 500,
+      search: '',
+      sorting: '',
+      filter: '',
+      userId: rawEmpId || undefined
+    };
 
-      this.organizations$ = this.http
-        .post<DataTableApiResponse>(`${this.baseUrl}/meetings/fetchOrganizations`, payload)
-        .pipe(
-          map(res => (res.data || []).map(row => ({
-            orgId: row.orgId,
-            name: row.organization,
-            email: row.email ?? row.Email ?? row.contactEmail ?? ''
-          }))),
-          catchError(() => of([])),
-          shareReplay(1)
-        );
-    }
-    return this.organizations$;
+    return this.http
+      .post<DataTableApiResponse>(`${this.baseUrl}/meetings/fetchOrganizations`, payload)
+      .pipe(
+        map(res => (res.data || []).map(row => ({
+          orgId: row.orgId,
+          name: row.organization,
+          email: row.email ?? row.Email ?? row.contactEmail ?? ''
+        }))),
+        catchError(() => of([]))
+      );
   }
 
   getLeadOwners(): Observable<OwnerOption[]> {

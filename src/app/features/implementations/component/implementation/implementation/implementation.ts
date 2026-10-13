@@ -42,7 +42,9 @@ export interface Client {
   onboarding_date: string;
   cs_lead: string;
   support_owner: string;
+  premium_date: string;
   country: string;
+
   rating: number;
   licence_start_date: string;
   licence_end_date: string;
@@ -139,6 +141,7 @@ export class Implementation implements OnInit, OnDestroy {
     //     'Risk':      { label: 'Risk' },
     //   }
     // },
+    {key: 'premium_date',       label: 'Premium Date',   sortable: false, hidden : true},
     { key: 'onboarding_date',    label: 'Onboarded',      sortable: false },
     { key: 'licence_start_date', label: 'Start Date',     sortable: false },
     { key: 'licence_end_date',   label: 'End Date',       sortable: false },
@@ -167,6 +170,7 @@ export class Implementation implements OnInit, OnDestroy {
     'health':          'health',
     'onboarding_date': 'onboardedDate',
     'orgId':           'orgId',
+    'premium_date':    'premiumDate',
   };
 
   private getTodayDateString(): string {
@@ -369,6 +373,7 @@ export class Implementation implements OnInit, OnDestroy {
       name:                row.organization,
       industry:            '',
       onboarding_date:     this.formatDate(row.onboardedDate?.toString() ?? ''),
+      premium_date:       this.formatDate(row.premiumDate?.toString() ?? ''),
       cs_lead:             row.csLead        || '-',
       support_owner:       row.supportOwner  || '—',
       country:             row.country       || '—',

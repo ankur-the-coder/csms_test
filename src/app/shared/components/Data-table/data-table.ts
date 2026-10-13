@@ -53,7 +53,7 @@ type LoadState = 'idle' | 'loading' | 'success' | 'error';
   imports: [
     CommonModule,
     FormsModule,
-    DatePipe,
+
     DecimalPipe,
     CurrencyPipe,
     CustomDateSelector,
@@ -208,14 +208,23 @@ export class DataTable<T extends object> implements AfterContentInit {
     return Array.from(map.values());
   });
 
+  // private loadFiltersEffect = effect(() => {
+  //   const names = this.filterNames();
+  //   if (names && names.length) {
+  //     untracked(() => {
+  //       this.loadFilterOptionsIfNeeded();
+  //     });
+  //   }
+  // });
+
   // Resolves each name in `filterNames` (e.g. ['gender', 'qualification']) via
   // DataTableService.getFilterOptions(name), which returns the full TableFilter
   // (label + options) for that name — static or API-backed. Runs whenever the
   // parent changes the filterNames input.
-
+ private filtersLoading = false;
   private loadFilterOptionsIfNeeded(): void {
     const names = this.filterNames();
-    if (!names.length || this.filtersFetched) return;
+     if (!names.length || this.filtersFetched || this.filtersLoading) return;
 
     forkJoin(
       names.map((n) =>
@@ -236,11 +245,13 @@ export class DataTable<T extends object> implements AfterContentInit {
         // the modal is opened.
         const gotRealData = filters.some((f) => (f.options?.length ?? 0) > 0);
         this.filtersFetched = gotRealData;
+        this.filtersLoading = false;
       },
       error: (err) => {
         console.error('[DataTable] Error loading filters:', err);
         this.loadedFilters.set([]);
-        this.filtersFetched = false; // fail hua to retry allow karo
+        this.filtersFetched = false;
+        this.filtersLoading = false;
       },
     });
   }
@@ -659,6 +670,8 @@ export class DataTable<T extends object> implements AfterContentInit {
     // and keep it in sync if templates are added/removed dynamically.
     this.buildTemplateMap();
     this.customTemplates.changes.subscribe(() => this.buildTemplateMap());
+
+    // this.loadFilterOptionsIfNeeded();
   }
 
   // ── Date filter ────────────────────────────────────────────────────────────

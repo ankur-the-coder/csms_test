@@ -104,6 +104,7 @@ export interface AttendanceRecord {
 export interface AttendanceCheckResponse {
   status: boolean;
   meetingId: number;
+  hostName?: string | null;
   wasHeld: boolean;
   meetingStart: string | null;
   meetingEnd: string | null;

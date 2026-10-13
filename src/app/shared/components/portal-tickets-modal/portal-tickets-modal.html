@@ -1,0 +1,67 @@
+@if (state.ticketsModalOpen()) {
+<div class="scrim" (click)="closeModal()">
+  <div class="dialog xl" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="tk-title">
+
+    <header class="ui-head">
+      <span class="ui-badge"><p-icon name="ticket" [size]="22" /></span>
+      <div class="ui-titles">
+        <h2 id="tk-title">Support Tickets</h2>
+        <p>View and track all cases submitted for your organization</p>
+      </div>
+      <button class="ui-x" type="button" (click)="closeModal()" aria-label="Close"><p-icon name="close" [size]="18" /></button>
+    </header>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <label class="search">
+        <p-icon name="search" [size]="17" />
+        <input type="text" placeholder="Search by ticket ID or subject..."
+          [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" (keyup.enter)="onSearch()" />
+      </label>
+
+      <div class="seg" role="tablist" [style.--idx]="filterIndex()">
+        <span class="seg-thumb"></span>
+        @for (f of filters; track f.key) {
+          <button type="button" role="tab" [class.on]="selectedStatus() === f.key" (click)="onStatusChange(f.key)">{{ f.label }}</button>
+        }
+      </div>
+    </div>
+
+    <!-- list -->
+    <div class="ui-body">
+      @if (isLoading() && tickets().length === 0) {
+        <div class="state-box"><span class="spin"></span><p>Loading support tickets...</p></div>
+      } @else if (errorMessage()) {
+        <div class="state-box"><p-icon name="alert" [size]="30" /><strong>{{ errorMessage() }}</strong>
+          <button type="button" class="btn-ghost" (click)="loadTickets()">Try again</button></div>
+      } @else if (tickets().length === 0) {
+        <div class="state-box"><p-icon name="ticket" [size]="32" /><strong>No tickets found</strong>
+          <p>There are no support tickets matching your current filter.</p></div>
+      } @else {
+        <div class="tbl" [class.dim]="isLoading()">
+          <div class="tr th"><span>Ticket ID</span><span>Subject</span><span>Status</span><span>Priority</span><span>Assigned Agent</span><span>Last Activity</span></div>
+          @for (t of tickets(); track t.ticket_uid; let i = $index) {
+            <div class="tr row" [style.--i]="i" tabindex="0" (click)="openTicket(t)" (keydown.enter)="openTicket(t)">
+              <span class="tid">#{{ t.ticket_uid }}</span>
+              <span class="subj">{{ t.subject || 'No subject' }}</span>
+              <span><em class="pill" [ngClass]="'st-' + statusKey(t.status)">{{ statusLabel(t.status) }}</em></span>
+              <span class="cap">{{ t.priority || 'Normal' }}</span>
+              <span>{{ t.assigned_agent_name || 'Unassigned' }}</span>
+              <span class="muted">{{ (t.last_message_at || t.created_at) | date:'dd MMM yyyy' }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="ui-foot spread">
+      <span class="muted">Showing {{ tickets().length }} of {{ totalTickets() }} tickets</span>
+      <div class="pager">
+        <button type="button" class="btn-ghost sm" [disabled]="currentPage() <= 1 || isLoading()" (click)="goToPage(currentPage() - 1)">Previous</button>
+        <span class="page">Page {{ currentPage() }} of {{ totalPages() }}</span>
+        <button type="button" class="btn-ghost sm" [disabled]="currentPage() >= totalPages() || isLoading()" (click)="goToPage(currentPage() + 1)">Next</button>
+      </div>
+    </footer>
+  </div>
+</div>
+}

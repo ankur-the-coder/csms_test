@@ -3,6 +3,7 @@ import {
   OnInit,
   signal,
   inject,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -20,6 +21,7 @@ import {
 import { AuthService } from '../../../../core/services/auth-service';
 import { Utils } from '../../../../shared/utils/utils';
 import { CountUpDirective } from './count-up.directive';
+import { finalize } from 'rxjs';
 
 interface DashboardCardData {
   premiumClients: number;
@@ -45,6 +47,15 @@ export class DashboardComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   readonly authService = inject(AuthService);
+
+readonly isCardsLoading = signal(true);
+readonly isCalendarLoading = signal(true);
+readonly skeletonCards = Array.from({ length: 4 });
+readonly skeletonCalendarCells = Array.from({ length: 35 });
+
+readonly isChartsLoading = computed(
+  () => this.isUsagesLoading() || this.isFeedbackLoading(),
+);
 
   // ---------------------------------------------------------------------------
   // Dashboard Cards
@@ -211,8 +222,10 @@ export class DashboardComponent implements OnInit {
     orgId: string,
     userId: string
   ): void {
+     this.isCardsLoading.set(true);
     this.dashboardService
       .getDashboardCards(from, to, orgId, userId, this.authService.adminSts())
+      .pipe(finalize(() => this.isCardsLoading.set(false)))
       .subscribe({
         next: (res: any) => {
           if (!res?.data) {
@@ -538,6 +551,7 @@ export class DashboardComponent implements OnInit {
     orgId: string,
     userId: string
   ): void {
+    this.isCalendarLoading.set(true);
     this.dashboardService
       .fetchDashBoardCalendar(
         from,
@@ -545,6 +559,7 @@ export class DashboardComponent implements OnInit {
         orgId,
         userId
       )
+      .pipe(finalize(() => this.isCalendarLoading.set(false)))
       .subscribe({
         next: (res: any) => {
           const meetings =
@@ -797,27 +812,27 @@ export class DashboardComponent implements OnInit {
       chipClass: string;
       accentClass: string;
     }> = {
-      pending: {
+      3: {
         chipClass: 'bg-amber-50 text-amber-700 border border-amber-200',
         accentClass: 'border-amber-500',
       },
-      completed: {
+      1: {
         chipClass: 'bg-green-50 text-green-700 border border-green-200',
         accentClass: 'border-green-500',
       },
-      cancel: {
+      // cancel: {
+      //   chipClass: 'bg-red-50 text-red-700 border border-red-200',
+      //   accentClass: 'border-red-500',
+      // },
+      4: {
         chipClass: 'bg-red-50 text-red-700 border border-red-200',
         accentClass: 'border-red-500',
       },
-      cancelled: {
-        chipClass: 'bg-red-50 text-red-700 border border-red-200',
-        accentClass: 'border-red-500',
-      },
-      scheduled: {
+      0: {
         chipClass: 'bg-blue-50 text-blue-700 border border-blue-200',
         accentClass: 'border-blue-500',
       },
-      rescheduled: {
+      2: {
         chipClass: 'bg-red-50 text-red-700 border border-red-200',
         accentClass: 'border-red-500',
       },

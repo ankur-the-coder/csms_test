@@ -16,12 +16,12 @@ export interface NavItem {
 export const csNavItems: NavItem[] = [
 
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', route: '/dashboard' },
-  { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/implementation' },
-  { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
-  { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+  { id: 'clients', label: 'Clients', icon: 'clients', route: '/client' },
   { id: 'renewal', label: 'Renewed Clients', icon: 'renewal', route: '/renewal' },
   { id: 'pendingrenewal', label: 'Pending Renewals', icon: 'pendingrenewal', route: '/pendingrenewal' },
+  { id: 'feedback', label: 'Feedback', icon: 'feedback', route: '/feedback' },
+  { id: 'meetings', label: 'Meetings', icon: 'meetings', route: '/meetings' },
   { id: 'voice', label: 'Voice Softphone', icon: 'voice', route: '/voice' },
 
   // { id: 'helpguide', label: 'Help Guide', icon: 'training', route: '/help-guide' },
