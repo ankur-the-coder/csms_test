@@ -19,6 +19,9 @@ const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   SERVER_ERROR: 'We could not sign you in right now because of a temporary problem. Please try again in a few minutes.',
 };
 
+/** Codes whose server message is personalised (contains the person's first name) and is shown as-is. */
+const SERVER_MESSAGE_CODES = ['USE_AGENT_CREDENTIALS', 'HR_RIGHTS_REQUIRED'];
+
 const GENERIC_LOGIN_ERROR = 'We could not sign you in. Please check your details and try again.';
 
 @Component({
@@ -116,7 +119,7 @@ export class Login implements OnInit {
           this.errorMessage.set(msg);
           this.toastr.warning(msg, 'Too Many Attempts');
         } else {
-          this.errorMessage.set(this.resolveErrorMessage(res.code));
+          this.errorMessage.set(this.resolveErrorMessage(res.code, res.msg));
         }
       },
       error: (err) => {
@@ -130,19 +133,25 @@ export class Login implements OnInit {
           this.errorMessage.set(msg);
           this.toastr.warning(msg, 'Too Many Attempts');
         } else {
-          this.errorMessage.set(this.resolveHttpErrorMessage(err?.status, errBody?.code));
+          this.errorMessage.set(this.resolveHttpErrorMessage(err?.status, errBody?.code, errBody?.msg));
         }
       },
     });
   }
 
   /** Maps a backend reason code to a safe, readable message. */
-  private resolveErrorMessage(code?: string): string {
+  private resolveErrorMessage(code?: string, msg?: string): string {
+    if (code && msg && SERVER_MESSAGE_CODES.includes(code)) {
+      return msg;
+    }
     return (code && LOGIN_ERROR_MESSAGES[code]) || GENERIC_LOGIN_ERROR;
   }
 
   /** Maps an HTTP failure (network down, 5xx, etc.) to a safe, readable message. */
-  private resolveHttpErrorMessage(status?: number, code?: string): string {
+  private resolveHttpErrorMessage(status?: number, code?: string, msg?: string): string {
+    if (code && msg && SERVER_MESSAGE_CODES.includes(code)) {
+      return msg;
+    }
     if (code && LOGIN_ERROR_MESSAGES[code]) {
       return LOGIN_ERROR_MESSAGES[code];
     }
