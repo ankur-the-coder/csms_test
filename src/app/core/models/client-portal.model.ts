@@ -15,7 +15,7 @@ export interface PortalDashboardData {
   meetings: PortalMeeting[];
   accountManager: { name: string | null; role: string };
 
-  // ---- dummy on the server for now ----
+  // ---- trainings (MeetingTable) & notifications ----
   trainingProgress: { completed: number; total: number };
   upcomingTrainings: PortalTraining[];
   notifications: { unread: number };
@@ -62,6 +62,7 @@ export interface PortalTraining {
   trainer: string;
   status: string;
   canJoin: boolean;
+  link?: string | null;
 }
 
 export interface PortalTicketItem {

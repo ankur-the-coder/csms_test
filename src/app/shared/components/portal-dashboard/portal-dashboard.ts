@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PortalDashboardData, PortalTicket } from '../../../core/models/client-portal.model';
+import { PortalDashboardData, PortalTicket, PortalTraining } from '../../../core/models/client-portal.model';
 import { ClientPortalService } from '../../../core/services/client-portal.service';
 import { PortalState } from '../../../core/services/portal-state';
 import { PortalCountUp } from '../../count-up.directive';
@@ -88,8 +88,9 @@ export class PortalDashboard implements OnInit {
 
   // ---- meeting helpers ----
   meetingLabel(s: number): string {
-    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled'][s] ?? 'Scheduled';
+    return ['Scheduled', 'Completed', 'Rescheduled', 'Pending', 'Cancelled', 'Client No-Show', 'Host No-Show'][s] ?? 'Scheduled';
   }
+  openTraining(t: PortalTraining) { if (t.link) window.open(t.link, '_blank'); }
   join(link: string | null) { if (link) window.open(link, '_blank'); }
 
   // ---- misc ----

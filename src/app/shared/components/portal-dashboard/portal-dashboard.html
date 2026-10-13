@@ -151,16 +151,20 @@
 
         @if (tab() === 'trainings') {
           @if (isSample('upcomingTrainings')) { <div class="sample-line">Sample data. Training scheduling isn't connected yet.</div> }
-          <div class="tbl swap">
-            <div class="tr th"><span>Training</span><span>Date & Time</span><span>Trainer</span><span>Status</span><span>Action</span></div>
-            @for (t of d.upcomingTrainings; track t.title; let i = $index) {
-              <div class="tr" [style.--i]="i">
-                <span class="strong">{{ t.title }}</span><span>{{ fmtDateTime(t.startTime) }}</span><span>{{ t.trainer }}</span>
-                <span><em class="pill p-pending">{{ t.status }}</em></span>
-                <span><button type="button" class="btn-tiny solid">{{ t.canJoin ? 'Join' : 'Book' }}</button></span>
-              </div>
-            }
-          </div>
+          @if (d.upcomingTrainings.length === 0) {
+            <div class="empty swap"><p-icon name="training" [size]="30" /><p>No upcoming trainings scheduled.</p></div>
+          } @else {
+            <div class="tbl swap">
+              <div class="tr th"><span>Training</span><span>Date & Time</span><span>Trainer</span><span>Status</span><span>Action</span></div>
+              @for (t of d.upcomingTrainings; track t.startTime + t.title; let i = $index) {
+                <div class="tr" [style.--i]="i">
+                  <span class="strong">{{ t.title }}</span><span>{{ fmtDateTime(t.startTime) }}</span><span>{{ t.trainer }}</span>
+                  <span><em class="pill p-pending">{{ t.status }}</em></span>
+                  <span><button type="button" class="btn-tiny solid" [disabled]="!t.canJoin" (click)="openTraining(t)">Join</button></span>
+                </div>
+              }
+            </div>
+          }
         } @else {
           @if (d.meetings.length === 0) {
             <div class="empty swap"><p-icon name="calendar" [size]="30" /><p>No upcoming meetings scheduled.</p></div>
