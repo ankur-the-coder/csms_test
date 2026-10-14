@@ -516,9 +516,9 @@
 @if (showRescheduleModal && selectedRescheduleMeeting) {
 
 <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 modal-overlay"
-  (click)="closeRescheduleModal()">
+  (mousedown)="onRescheduleBackdropMouseDown($event)">
 
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up" (click)="$event.stopPropagation()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-slide-up" (mousedown)="$event.stopPropagation()">
 
     <!-- HEADER -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -629,7 +629,7 @@
 
 
       <!-- ERROR -->
-      @if (rescheduleError) {
+      <!-- @if (rescheduleError) {
 
       <div class="flex items-start gap-2.5 p-3 mb-4 bg-rose-50 border border-rose-200 rounded-lg">
 
@@ -641,7 +641,7 @@
 
       </div>
 
-      }
+      } -->
 
     </div>
 

@@ -115,6 +115,7 @@ export interface Datum {
   orgId:              number;
   organization:       string;
   onboardedDate:      Date | string;
+  premiumDate:        Date | string | null;
   csLead:             string | null;
   supportOwner:       string | null;
   country:            string | null;
