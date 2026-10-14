@@ -784,7 +784,7 @@ export class RenewalComponent {
 
           orgName: row.client,
 
-          country: row.country,
+          // country: row.country,
 
           // Exact dates currently used by table
           from: this.tableFromDate,

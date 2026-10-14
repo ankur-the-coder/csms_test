@@ -4,18 +4,18 @@
       <button
         type="button"
         (click)="goBack()"
-        class="-ml-2 p-2 text-text-muted hover:text-text-primary hover:bg-surface-100 rounded-lg transition-colors"
+        class="-ml-2 p-2 text-text-primary  rounded-lg transition-colors"
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
       </button>
       <div>
-          <h1 class="text-xl font-bold m-0">Client Details</h1>
-        <p class="text-xs text-slate-600 mt-0.5">{{ orgName }}</p>
-        <span class="text-xs text-slate-600 mt-0.5"
+        <p class="text-md text-slate-600 mt-0.5">{{ orgName }} </p>
+          <h1 class="text-xl font-bold m-0">Client Details <span class="text-xs text-slate-600 ">[{{ fromDate | date: 'dd MMM yyyy' }} - {{ toDate | date: 'dd MMM yyyy' }} ]</span></h1>
+        <!-- <span  mt-0.5"
           >[{{ fromDate | date: 'dd MMM yyyy' }} - {{ toDate | date: 'dd MMM yyyy' }} ]</span
-        >
+        > -->
 
       </div>
     </div>
