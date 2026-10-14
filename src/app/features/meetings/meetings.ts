@@ -498,22 +498,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.rescheduleError = null;
     this.minDateToday = new Date();
 
-    // Existing meeting date
-    if (row.startTime) {
-
-      const raw = row.startTime
-        .replace(' ', 'T')
-        .split('.')[0];
-
-      const start = new Date(raw);
-
-      this.rescheduleDate = this.formatDateForInput(start);
-      this.rescheduleTime = this.formatTimeForInput(start);
-
-    } else {
-      this.rescheduleDate = '';
-      this.rescheduleTime = '';
-    }
+    // Use current date and time as defaults
+    const now = new Date();
+    this.rescheduleDate = this.formatDateForInput(now);
+    this.rescheduleTime = this.formatTimeForInput(now);
 
     // Existing duration
     this.rescheduleDuration = this.parseDurationToMinutes(row.duration);
@@ -750,6 +738,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
           const errMsg = err?.error?.message || 'Failed to reschedule meeting.';
           this.rescheduleError = errMsg;
           this.toastr.error(errMsg, 'Reschedule Failed');
+          this.closeRescheduleModal();
         }
       });
   }
@@ -762,6 +751,13 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.showRescheduleModal = false;
     this.selectedRescheduleMeeting = null;
     this.rescheduleError = null;
+  }
+
+  /** Close the reschedule modal only when the backdrop itself is clicked (not its children). */
+  onRescheduleBackdropMouseDown(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeRescheduleModal();
+    }
   }
 
   joinMeeting(row: MeetingRow): void {
