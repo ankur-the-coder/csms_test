@@ -2,7 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { DashboardCardCount, DashboardChartdata, CalendarApiResponse } from '../models/dashboardModel';
+import {
+  DashboardCardCount,
+  DashboardChartdata,
+  CalendarApiResponse,
+} from '../models/dashboardModel';
 import { ConnectedDataTableResponse } from '../models/connected.model';
 import { FeedbackDataTableResponse } from '../models/feedback.model';
 import { RenewalTableResponse } from '../models/renewalModel';
@@ -33,53 +37,119 @@ export interface TodaysTasksResponse {
 export class DashboardService {
   private readonly apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
-  getDashboardCards(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardCardCount> {
+  getDashboardCards(
+    from: string,
+    to: string,
+    orgId: string,
+    userId: string,
+    adminSts: string,
+  ): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
-      orgId, userId, adminSts: Number(adminSts)
+      orgId,
+      userId,
+      adminSts: Number(adminSts),
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchDashboardCards`, data);
   }
-  fetchDashBoardFeedbackChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
+  fetchDashBoardFeedbackChart(
+    from: string,
+    to: string,
+    orgId: string,
+    userId: string,
+    adminSts: string,
+  ): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId, adminSts: Number(adminSts)
+      toDate: to,
+      orgId,
+      userId,
+      adminSts: Number(adminSts),
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardFeedbackChart`, data);
   }
-  fetchDashBoardConnectChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
+  fetchDashBoardConnectChart(
+    from: string,
+    to: string,
+    orgId: string,
+    userId: string,
+    adminSts: string,
+  ): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId, adminSts: Number(adminSts)
+      toDate: to,
+      orgId,
+      userId,
+      adminSts: Number(adminSts),
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardConnectChart`, data);
   }
-  fetchDashBoardUsageChart(from: string, to: string, orgId: string, userId: string, adminSts: string): Observable<DashboardChartdata> {
+  fetchDashBoardUsageChart(
+    from: string,
+    to: string,
+    orgId: string,
+    userId: string,
+    adminSts: string,
+  ): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId, adminSts: Number(adminSts)
+      toDate: to,
+      orgId,
+      userId,
+      adminSts: Number(adminSts),
     };
 
     return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
-  dashboardImplementProgressChart(from: string, to: string, orgId: string,): Observable<DashboardChartdata> {
+  dashboardImplementProgressChart(
+    from: string,
+    to: string,
+    orgId: string,
+  ): Observable<DashboardChartdata> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to,
+      orgId,
     };
 
-    return this.http.post<DashboardChartdata>(`${this.apiUrl}/dashboardImplementProgressChart`, data);
+    return this.http.post<DashboardChartdata>(
+      `${this.apiUrl}/dashboardImplementProgressChart`,
+      data,
+    );
   }
-  fetchDashBoardCalendar(from: string, to: string, orgId: string, userId: string): Observable<CalendarApiResponse> {
+  fetchRenewablePlanDataByOrgId(
+    from: string,
+    to: string,
+    orgId: string,
+  ): Observable<RenewalTableResponse> {
     let data = {
       fromDate: from,
-      toDate: to, orgId, userId
+      toDate: to,
+      orgId,
+    };
+
+    return this.http.post<RenewalTableResponse>(
+      `${this.apiUrl}/fetchRenewablePlanDataByOrgId`,
+      data,
+    );
+  }
+  fetchDashBoardCalendar(
+    from: string,
+    to: string,
+    orgId: string,
+    userId: string,
+  ): Observable<CalendarApiResponse> {
+    let data = {
+      fromDate: from,
+      toDate: to,
+      orgId,
+      userId,
     };
 
     return this.http.post<CalendarApiResponse>(`${this.apiUrl}/fetchDashBoardCalendar`, data);
@@ -87,49 +157,58 @@ export class DashboardService {
   fetchTodaysTasksData(from: string, to: string, orgId: string): Observable<TodaysTasksResponse> {
     let data = {
       fromDate: from,
-      toDate: to, orgId
+      toDate: to,
+      orgId,
     };
 
     return this.http.post<TodaysTasksResponse>(`${this.apiUrl}/fetchTodaysTasksData`, data);
   }
   // Data table Api
   fetchFeedbackDataTable(payload: DataTablePayload): Observable<FeedbackDataTableResponse> {
-
-    return this.http.post<FeedbackDataTableResponse>(`${this.apiUrl}/fetchFeedbackDataTable`, payload);
-
+    return this.http.post<FeedbackDataTableResponse>(
+      `${this.apiUrl}/fetchFeedbackDataTable`,
+      payload,
+    );
   }
   fetchConnectedDataTable(payload: DataTablePayload): Observable<ConnectedDataTableResponse> {
-
-    return this.http.post<ConnectedDataTableResponse>(`${this.apiUrl}/fetchConnectedDataTable`, payload);
-
+    return this.http.post<ConnectedDataTableResponse>(
+      `${this.apiUrl}/fetchConnectedDataTable`,
+      payload,
+    );
   }
   fetchUsagesDataTable(payload: DataTablePayload): Observable<any> {
-
     return this.http.post<any>(`${this.apiUrl}/fetchDashBoardUsagesTable`, payload);
-
   }
 
-  fetchFeedbackCards(from: string, to: string, orgId: string,empId:string): Observable<DashboardCardCount> {
+  fetchFeedbackCards(
+    from: string,
+    to: string,
+    orgId: string,
+    empId: string,
+  ): Observable<DashboardCardCount> {
     let data = {
       fromDate: from,
       toDate: to,
-      orgId,userId:empId
+      orgId,
+      userId: empId,
     };
 
     return this.http.post<DashboardCardCount>(`${this.apiUrl}/fetchFeedbackCards`, data);
   }
   // Data table Api
   fetchRenewablePlanDataTable(payload: DataTablePayload): Observable<RenewalTableResponse> {
-
-    return this.http.post<RenewalTableResponse>(`${this.apiUrl}/fetchRenewablePlanDataTable`, payload);
-
+    return this.http.post<RenewalTableResponse>(
+      `${this.apiUrl}/fetchRenewablePlanDataTable`,
+      payload,
+    );
   }
   // Data table Api
-  fetchPendingRenewableDataTable(payload: DataTablePayload): Observable<pendingRenewalTableResponse> {
-
-    return this.http.post<pendingRenewalTableResponse>(`${this.apiUrl}/fetchPendingRenewableDataTable`, payload);
-
+  fetchPendingRenewableDataTable(
+    payload: DataTablePayload,
+  ): Observable<pendingRenewalTableResponse> {
+    return this.http.post<pendingRenewalTableResponse>(
+      `${this.apiUrl}/fetchPendingRenewableDataTable`,
+      payload,
+    );
   }
-
-
 }
