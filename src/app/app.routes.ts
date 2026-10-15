@@ -27,6 +27,7 @@ import { Usages } from './features/dashboard/component/usages/usages';
 import { ClientDashboard } from './features/client/client-dashboard/client-dashboard';
 import { RenewalComponent } from './features/dashboard/component/renewal-component/renewal-component';
 import { PendingRenewal } from './features/dashboard/component/pending-renewal/pending-renewal';
+import { RenewClientdetails } from './features/dashboard/component/renew-clientdetails/renew-clientdetails';
 
 
 export const routes: Routes = [
@@ -85,6 +86,7 @@ export const routes: Routes = [
       },
       { path: 'meetings/schedule', component: ScheduleMeeting },
       { path: 'client/client-dashboard', component: ClientDashboard },
+      { path: 'renewal/renewal-details', component: RenewClientdetails },
       // { path: 'trainings/materials', component: TrainingMaterials },
       // { path: 'onboarding', component: Dashboard },
       // { path: 'add-onboarding', component: AddOnboarding },

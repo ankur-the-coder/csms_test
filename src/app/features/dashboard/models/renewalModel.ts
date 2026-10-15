@@ -18,9 +18,10 @@ export interface Data {
     endDate:       string;
     createdDate:   string;
     PremiumDate:   string;
-country:  string;
-leadOwner:  string;
-supportOwner:  string;
+    renewCount: number;
+    country:  string;
+    leadOwner:  string;
+    supportOwner:  string;
 
 }
 
