@@ -31,3 +31,72 @@
   border-color: var(--card-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
+
+
+.schedule-shine-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 280ms ease,
+    background-color 250ms ease;
+}
+
+.schedule-shine-btn:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 7px 14px rgba(0, 0, 0, 0.14),
+    0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.schedule-shine-btn::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -75%;
+  width: 45%;
+  height: 200%;
+  transform: rotate(22deg);
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.65),
+      rgba(255, 255, 255, 0.12),
+      transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.schedule-shine-btn:not(:disabled):hover::before {
+  animation: button-shine 750ms ease-in-out;
+}
+
+.schedule-shine-btn:not(:disabled):active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+@keyframes button-shine {
+  from {
+    left: -75%;
+  }
+
+  to {
+    left: 140%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .schedule-shine-btn,
+  .org-toggle-indicator,
+  .org-toggle-btn {
+    transition: none;
+  }
+
+  .schedule-shine-btn:hover::before {
+    animation: none;
+  }
+}
