@@ -209,6 +209,11 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
     columns: [
+            {
+        key: 'orgName',
+        label: 'Organisation',
+        sortable: true,
+      },
       {
         key: 'title',
         label: 'Meeting',
@@ -217,11 +222,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       {
         key: 'meetingType',
         label: 'Meeting Type',
-      },
-      {
-        key: 'orgName',
-        label: 'Organisation',
-        sortable: true,
       },
       {
         key: 'purpose',
