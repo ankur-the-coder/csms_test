@@ -9,7 +9,7 @@
       </div>
       <div class="flex flex-wrap gap-3">
         <button (click)="openScheduleModal()"
-          class="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 px-4 py-2.5 cursor-pointer text-sm font-semibold text-white transition-colors shadow-sm">
+          class="inline-flex schedule-shine-btn items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2.5 cursor-pointer text-sm font-semibold text-white transition-colors shadow-sm">
           <i class="fas fa-plus-circle"></i> Schedule Meeting
         </button>
       </div>
@@ -173,11 +173,27 @@
       <!-- ── Meeting Title column ──────────────────────────────────────── -->
       <ng-template appCustomColumn="title" let-row>
         <div class="flex items-center gap-3 min-w-[180px]">
-
           <div class="min-w-0">
             <p class="font-semibold text-slate-800 truncate leading-tight">{{ row.title || '—' }}</p>
-            <p class="text-xs text-slate-400 truncate mt-0.5">{{ row.meetingType || 'No meetingType set' }}</p>
           </div>
+        </div>
+      </ng-template>
+
+      <!-- ── Meeting Type column ─────────────────────────────────────── -->
+      <ng-template appCustomColumn="meetingType" let-row>
+        <div class="min-w-[100px]">
+          @if (row.meetingType) {
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full" [ngClass]="{
+              'bg-blue-50 text-blue-700': row.meetingType === 'Online',
+              'bg-emerald-50 text-emerald-700': row.meetingType === 'In-Person' || row.meetingType === 'In Person',
+              'bg-purple-50 text-purple-700': row.meetingType === 'Hybrid',
+              'bg-slate-100 text-slate-600': row.meetingType !== 'Online' && row.meetingType !== 'In-Person' && row.meetingType !== 'In Person' && row.meetingType !== 'Hybrid'
+            }">
+            {{ row.meetingType }}
+          </span>
+          } @else {
+          <span class="text-slate-300 italic text-xs">N/A</span>
+          }
         </div>
       </ng-template>
 
@@ -192,6 +208,22 @@
         </div>
       </ng-template>
 
+      <!-- ── Created Date column ──────────────────────────────────────── -->
+      <ng-template appCustomColumn="createdDate" let-row>
+        <div class="min-w-[100px] text-xs">
+          @if (row.createdDate) {
+          <div class="font-medium text-slate-800">
+            {{ row.createdDate | date: 'dd MMM, yyyy' }}
+          </div>
+          <div class="text-slate-800 mt-0.5">
+            {{ row.createdDate | date: 'hh:mm a' }}
+          </div>
+          } @else {
+          <span class="text-slate-400 italic">N/A</span>
+          }
+        </div>
+      </ng-template>
+
       <!-- ── Date & Time column ────────────────────────────────────────── -->
       <ng-template appCustomColumn="startTime" let-row>
         <div class="min-w-[110px] text-xs">
@@ -199,11 +231,11 @@
           <div class="font-medium text-slate-800">
             {{ row.startTime | date: 'dd MMMM, yyyy' }}
           </div>
-          <div class="text-slate-400 mt-0.5">
+          <div class="text-slate-800 mt-0.5">
             {{ row.startTime | date: 'hh:mm a' }}
           </div>
           } @else {
-          <span class="text-slate-300 italic">N/A</span>
+          <span class="text-slate-400 italic">N/A</span>
           }
         </div>
       </ng-template>

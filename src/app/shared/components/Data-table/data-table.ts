@@ -453,12 +453,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   selectedCount = computed(() => this.selectedIds().size);
 
   hasActiveFilter = computed(() => {
-    const f = this.activeFilters();
-    return Object.entries(f).some(([k, v]) => {
-      if (k === 'search') return false;
-      if (Array.isArray(v)) return v.length > 0;
-      return v !== null && v !== undefined && v !== '';
-    });
+    return this.allFilters().some((f) => this.hasFilterChip(f));
   });
 
   allRows = computed<T[]>(() => (this.config().apiConfig ? this.rows() : this.clientRows()));
@@ -853,7 +848,10 @@ export class DataTable<T extends object> implements AfterContentInit {
         const opt = (filter.options ?? []).find((o) => String(o.value) === String(v));
         return opt?.label ?? String(v);
       });
-      return labels.length === 1 ? labels[0] : `${labels.length} selected`;
+      if (labels.length <= 2) {
+        return labels.join(', ');
+      }
+      return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
     }
     const opt = (filter.options ?? []).find((o) => String(o.value) === String(value));
     return opt?.label ?? String(value);
