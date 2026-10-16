@@ -209,6 +209,11 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
     columns: [
+            {
+        key: 'orgName',
+        label: 'Organisation',
+        sortable: true,
+      },
       {
         key: 'title',
         label: 'Meeting',
@@ -217,11 +222,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       {
         key: 'meetingType',
         label: 'Meeting Type',
-      },
-      {
-        key: 'orgName',
-        label: 'Organisation',
-        sortable: true,
       },
       {
         key: 'purpose',
@@ -1189,12 +1189,24 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   }
 
   updateMeetingTypesChartFromApi(rows: MeetingRow[], totalCount: number): void {
-    if (!rows || rows.length === 0) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const currentMonthRows = (rows || []).filter(r => {
+      const dateStr = r.startTime || r.createdDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    if (currentMonthRows.length === 0) {
       this.meetingTypeChartData = [];
       this.meetingTypeChartLabels = [];
       this.meetingTypeChartColors = [];
       this.meetingTypeDonutCenter = {
-        line1: totalCount.toString(),
+        line1: '0',
         line2: 'total',
         line3: ''
       };
@@ -1202,7 +1214,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }
 
     const counts: Record<string, number> = {};
-    for (const r of rows) {
+    for (const r of currentMonthRows) {
       const type = (r.meetingType && r.meetingType.trim()) ? r.meetingType.trim() : 'Kickoff';
       counts[type] = (counts[type] || 0) + 1;
     }
@@ -1225,7 +1237,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.meetingTypeChartData = data;
     this.meetingTypeChartColors = colors;
     this.meetingTypeDonutCenter = {
-      line1: totalCount.toString(),
+      line1: currentMonthRows.length.toString(),
       line2: 'total',
       line3: ''
     };
@@ -1398,7 +1410,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     const now = new Date();
     now.setDate(now.getDate());
     const next7 = new Date();
-    next7.setDate(now.getDate() + 7);
+    next7.setDate(now.getDate() + 6);
     const from = this.formatLocalDate(now);
     const to = this.formatLocalDate(next7);
 
@@ -1448,18 +1460,29 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   }
 
   filterByPendingFollowUps(): void {
-    const now = new Date();
+  const now = new Date();
+
+  // First and last day of the current month
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  // Format as YYYY-MM-DD using LOCAL time
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const from = fmt(firstDay);
+  const to = fmt(lastDay);
 
 
-    this.initialDateFrom.set("");
-    this.initialDateTo.set("");
-    this.filterDateFrom = "";
-    this.filterDateTo = "";
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
     this.initialFilters.set({ meetingStatus: ['3'] });
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set("");
-      this.meetingsTable.dateTo.set("");
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
       this.meetingsTable.page.set(0);

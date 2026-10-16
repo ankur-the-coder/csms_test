@@ -30,7 +30,7 @@ export class ScheduleMeeting implements OnInit {
     time: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
 
-    orgMode: 'manual' as EntryMode,
+    orgMode: 'select' as EntryMode,
     orgId: null as number | null,
     orgName: '',
     orgEmail: '',
@@ -116,6 +116,11 @@ export class ScheduleMeeting implements OnInit {
     private location: Location
   ) {}
 
+  /** Query-param values stashed before orgs are loaded (they arrive async). */
+  private pendingOrgId: number | null = null;
+  private pendingOrgName: string = '';
+  private pendingOrgEmail: string = '';
+
   ngOnInit(): void {
     this.readQueryParams();
     this.loadAllData();
@@ -128,22 +133,63 @@ export class ScheduleMeeting implements OnInit {
       const email = params.get('email') || params.get('orgEmail');
       const orgId = params.get('orgId');
 
-      if (orgName) {
-        this.newMeeting.orgName = orgName;
-      }
-      if (email) {
-        this.newMeeting.orgEmail = email;
-      }
       if (orgId) {
         const parsedId = Number(Utils.decode5t(orgId));
         if (!isNaN(parsedId)) {
-          this.newMeeting.orgId = parsedId;
+          this.pendingOrgId = parsedId;
         }
       }
-      if (orgName || email) {
-        this.newMeeting.orgMode = 'manual';
+      if (orgName) {
+        this.pendingOrgName = orgName;
       }
+      if (email) {
+        this.pendingOrgEmail = email;
+      }
+
+      // Always stay in 'select' (list) mode
+      this.newMeeting.orgMode = 'select';
+
+      // If orgs are already loaded, try to auto-select now
+      this.tryAutoSelectOrg();
     });
+  }
+
+  /**
+   * Tries to match the query-param org to an entry in the loaded organizations
+   * list and auto-select it. Called after query params are read AND after orgs
+   * are fetched, whichever comes last.
+   */
+  private tryAutoSelectOrg(): void {
+    if (this.organizations.length === 0) return;
+    if (!this.pendingOrgId && !this.pendingOrgName) return;
+
+    // 1. Try to match by orgId first
+    let match = this.pendingOrgId
+      ? this.organizations.find(o => o.orgId === this.pendingOrgId)
+      : null;
+
+    // 2. Fall back to matching by name (case-insensitive)
+    if (!match && this.pendingOrgName) {
+      const target = this.pendingOrgName.trim().toLowerCase();
+      match = this.organizations.find(o => o.name.trim().toLowerCase() === target);
+    }
+
+    if (match) {
+      this.newMeeting.orgId = match.orgId;
+      this.newMeeting.orgName = match.name;
+      // Use query-param email if provided, otherwise use the org's registered email
+      this.newMeeting.orgEmail = this.pendingOrgEmail || match.email;
+    } else if (this.pendingOrgName || this.pendingOrgEmail) {
+      // No match in the list — still populate name/email so user sees them
+      // (they will need to pick from the dropdown or the name won't validate)
+      this.newMeeting.orgName = this.pendingOrgName;
+      this.newMeeting.orgEmail = this.pendingOrgEmail;
+    }
+
+    // Clear pending values so we don't re-apply on future calls
+    this.pendingOrgId = null;
+    this.pendingOrgName = '';
+    this.pendingOrgEmail = '';
   }
 
   private loadAllData(): void {
@@ -154,6 +200,8 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => {
           this.organizations = organizations;
           this.loadingInitialData = false;
+          // If query params arrived before the org list, auto-select now
+          this.tryAutoSelectOrg();
         });
       },
       error: (err) => {
@@ -491,9 +539,8 @@ private buildEndDateTime(start: string): string {
   isFormValid(): boolean {
     const m = this.newMeeting;
 
-    const orgOk = m.orgMode === 'select'
-      ? !!m.orgId && this.isValidEmail(m.orgEmail)
-      : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
+    // Always use list-mode validation (manual mode is disabled)
+    const orgOk = !!m.orgId && this.isValidEmail(m.orgEmail);
 
     // 'select' mode means the host was auto-filled from the logged-in user;
     // 'manual' mode is the fallback used when that fetch failed.
