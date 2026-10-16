@@ -44,6 +44,77 @@ import { utils } from 'xlsx';
     .chart-bar {
       transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
+      
+/* Schedule Meeting button */
+.schedule-shine-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 280ms ease;
+}
+
+/* Slight lift on hover */
+.schedule-shine-btn:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.14);
+}
+
+/* Moving shine */
+.schedule-shine-btn::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 45%;
+  height: 200%;
+  transform: skewX(-25deg);
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 100%
+  );
+
+  pointer-events: none;
+  z-index: 1;
+}
+
+.schedule-shine-btn:not(:disabled):hover::before {
+  animation: schedule-button-shine 800ms ease-in-out;
+}
+
+@keyframes schedule-button-shine {
+  from {
+    left: -100%;
+  }
+
+  to {
+    left: 150%;
+  }
+}
+
+/* Click feedback */
+.schedule-shine-btn:not(:disabled):active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .schedule-shine-btn {
+    transition: none;
+  }
+
+  .schedule-shine-btn:hover::before {
+    animation: none;
+  }
+}
+
   `]
 })
 export class MeetingsComponent implements OnInit, OnDestroy {
@@ -144,6 +215,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         sortable: true,
       },
       {
+        key: 'meetingType',
+        label: 'Meeting Type',
+      },
+      {
         key: 'orgName',
         label: 'Organisation',
         sortable: true,
@@ -153,6 +228,11 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         label: 'Purpose',
         sortable: false,
         type: 'text',
+      },
+      {
+        key: 'createdDate',
+        label: 'Created Date',
+        sortable: true,
       },
       {
         key: 'startTime',
@@ -295,7 +375,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     pageSizeOptions: [10, 25, 50, 100],
     exportFileName: 'Meetings',
     emptyMessage: 'No meetings found.',
-    clickable: false,
+    clickable: true,
     toolbarButtons: [
       { id: 'datePicker', type: 'datePicker' },
       { id: 'filter', type: 'filter', label: 'Filter' },

@@ -361,7 +361,7 @@ cancelOrgEmailEdit(): void {
         // organizationId/organizationName here means the backend never
         // receives them, and OrgId/OrgName silently fail validation or
         // insert as null/empty.
-        orgId: localStorage.getItem('orgId') || this.newMeeting.orgId,
+        orgId:Utils.encode5t(this.newMeeting.orgId),
         orgName: this.newMeeting.orgName,
 
         hostId: this.newMeeting.hostId,
