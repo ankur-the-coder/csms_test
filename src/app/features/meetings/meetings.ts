@@ -215,6 +215,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         sortable: true,
       },
       {
+        key: 'meetingType',
+        label: 'Meeting Type',
+      },
+      {
         key: 'orgName',
         label: 'Organisation',
         sortable: true,
@@ -224,6 +228,11 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         label: 'Purpose',
         sortable: false,
         type: 'text',
+      },
+      {
+        key: 'createdDate',
+        label: 'Created Date',
+        sortable: true,
       },
       {
         key: 'startTime',
@@ -373,7 +382,6 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       { id: 'export', type: 'export', label: 'Export' },
       { id: 'refresh', type: 'refresh' },
       { id: 'columns', type: 'columnPicker', label: 'Columns' },
-      { id: 'showHideColumns', type: 'columnPicker', label: 'Columns' }
     ],
   }));
 
