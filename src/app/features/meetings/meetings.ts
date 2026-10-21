@@ -369,7 +369,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       transformRow: (raw: any): MeetingRow => {
         return {
           ...raw,
-          clientMail: this.decodeEmail(raw?.clientMail)
+          clientMail: this.decodeEmail(raw?.clientMail),
+          startTime: Utils.ensureUtcIso(raw?.startTime) || null,
+          endTime: Utils.ensureUtcIso(raw?.endTime) || null,
+          createdDate: Utils.ensureUtcIso(raw?.createdDate)
         };
       },
     },
@@ -625,10 +628,15 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.rescheduleError = null;
     this.minDateToday = new Date();
 
-    // Use current date and time as defaults
+    // Use existing meeting date/time (in user's country timezone) if in the future, otherwise now
+    const meetingDate = row.startTime ? new Date(row.startTime) : null;
     const now = new Date();
-    this.rescheduleDate = this.formatDateForInput(now);
-    this.rescheduleTime = this.formatTimeForInput(now);
+    const initialDate = (meetingDate && !isNaN(meetingDate.getTime()) && meetingDate.getTime() > now.getTime())
+      ? meetingDate
+      : now;
+
+    this.rescheduleDate = this.formatDateForInput(initialDate);
+    this.rescheduleTime = this.formatTimeForInput(initialDate);
 
     // Existing duration
     this.rescheduleDuration = this.parseDurationToMinutes(row.duration);
@@ -706,7 +714,16 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }
 
     const timeStr = String(this.rescheduleTime).includes(':') ? this.rescheduleTime : '00:00';
-    const start = new Date(`${formattedDate}T${timeStr}:00`);
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const dateParts = formattedDate.split('-').map(Number);
+
+    if (dateParts.length !== 3) {
+      const d = new Date(`${formattedDate}T${timeStr}:00`);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // Construct local Date in the user's country timezone
+    const start = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes, 0, 0);
 
     if (Number.isNaN(start.getTime())) {
       return null;
@@ -756,17 +773,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       start.getTime() + durationMins * 60 * 1000
     );
 
-    const pad = (value: number) =>
-      String(value).padStart(2, '0');
-
-    const formatLocalDateTime = (date: Date): string => {
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-        `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    };
-
+    // Convert local country time into International Standard Time (UTC ISO string)
     return {
-      start: formatLocalDateTime(start),
-      end: formatLocalDateTime(end)
+      start: start.toISOString(),
+      end: end.toISOString()
     };
   }
 
@@ -1216,9 +1226,12 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
-          const decodedMeetings = (res.data || []).map(m => ({
+          const decodedMeetings: MeetingRow[] = (res.data || []).map(m => ({
             ...m,
-            clientMail: this.decodeEmail(m.clientMail)
+            clientMail: this.decodeEmail(m.clientMail),
+            startTime: Utils.ensureUtcIso(m.startTime) || null,
+            endTime: Utils.ensureUtcIso(m.endTime) || null,
+            createdDate: Utils.ensureUtcIso(m.createdDate)
           }));
           this.apiMeetings.set(decodedMeetings);
           if (decodedMeetings.length > 0 && decodedMeetings[0].startTime) {
