@@ -220,6 +220,12 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         sortable: true,
       },
       {
+        key: 'organizerName',
+        label: 'Organizer',
+        excludeFromExport: false,
+        excludeFromPdf: true,
+      },
+      {
         key: 'meetingType',
         label: 'Meeting Type',
       },
@@ -565,6 +571,47 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       return false;
     }
     return String(row.createdById) === String(loggedEmpId);
+  }
+
+  isLoggedInUserOrganizer(row: MeetingRow): boolean {
+    if (!row) return false;
+
+    // 1. Compare organizerName with logged-in user's userName (case-insensitive)
+    const currentUserName = (localStorage.getItem('userName') || '').trim().toLowerCase();
+    const rowOrganizerName = (row.organizerName || '').trim().toLowerCase();
+    if (currentUserName && rowOrganizerName && currentUserName === rowOrganizerName) {
+      return true;
+    }
+
+    // 2. Compare empId / createdById with logged-in empId (both raw and decoded)
+    const rawEmpId = localStorage.getItem('empId');
+    if (rawEmpId) {
+      const cleanRaw = String(rawEmpId).trim();
+      let decodedEmpId = '';
+      try {
+        decodedEmpId = Utils.decode5t(rawEmpId).trim();
+      } catch {
+        decodedEmpId = '';
+      }
+
+      const matchIds = [cleanRaw, decodedEmpId].filter(Boolean);
+      const rowEmpId = String(row.empId ?? '').trim();
+      const rowCreatedById = String(row.createdById ?? '').trim();
+
+      if (rowEmpId && matchIds.includes(rowEmpId)) {
+        return true;
+      }
+      if (rowCreatedById && matchIds.includes(rowCreatedById)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  getOrganizerInitials(name?: string): string {
+    if (!name) return '?';
+    return name.trim().split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   }
 
   openRescheduleModal(row: MeetingRow): void {

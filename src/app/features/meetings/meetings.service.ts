@@ -22,6 +22,7 @@ export interface MeetingRow {
   orgId: number | string | null;
   orgName: string;
   empId: number | string;
+  organizerName?: string;
   priority: number;
   purpose: string;
   title: string;
