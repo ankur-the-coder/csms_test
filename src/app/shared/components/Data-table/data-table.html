@@ -353,8 +353,7 @@
             class="st-th sticky top-0 px-3.5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-[--st-text3] bg-[--st-header-bg] border-b border-[--st-border] whitespace-nowrap text-left select-none transition-colors duration-150 group"
             [class.st-th--sortable]="col.sortable" [class.st-th--sorted]="sort().key === col.key"
             [class.st-th--right]="col.align === 'right'" [class.st-th--center]="col.align === 'center'"
-            [class.st-th--sticky-left]="isStickyLeft(col)"
-            [class.st-th--sticky-right]="isStickyRight(col)"
+            [class.st-th--sticky-left]="isStickyLeft(col)" [class.st-th--sticky-right]="isStickyRight(col)"
             [class.st-th--sticky]="col.sticky === true" [class.st-th--dragging]="dragSrcKey() === col.key.toString()"
             [class.st-th--drag-over]="dragOverKey() === col.key.toString()"
             [style.width.px]="colWidths()[col.key.toString()] ?? null"
@@ -459,8 +458,7 @@
           <td
             class="st-td px-3.5 py-2.5 text-[13px] leading-1.4 text-[--st-text] align-middle whitespace-nowrap overflow-hidden text-ellipsis max-w-50"
             [class.st-td--right]="col.align === 'right'" [class.st-td--center]="col.align === 'center'"
-            [class.st-td--sticky-left]="isStickyLeft(col)"
-            [class.st-td--sticky-right]="isStickyRight(col)"
+            [class.st-td--sticky-left]="isStickyLeft(col)" [class.st-td--sticky-right]="isStickyRight(col)"
             [class.st-td--sticky]="col.sticky === true" [style.width.px]="colWidths()[col.key.toString()] ?? null"
             [style.max-width]="getColumnTemplate(col.key.toString()) ? 'none' : ((colWidths()[col.key.toString()] ?? 200) + 'px')"
             [style.overflow]="getColumnTemplate(col.key.toString()) ? 'visible' : 'hidden'">
@@ -777,8 +775,7 @@
 <div class="fixed inset-0 z-1500 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 "
   (click)="$event.target === $event.currentTarget && closeFilterModal()">
   <div
-    class=" bg-card-bg rounded-xl border border-card-border shadow-2xl w-full max-w-160 max-h-[85vh] flex flex-col overflow-hidden "
-    >
+    class=" bg-card-bg rounded-xl border border-card-border shadow-2xl w-full max-w-160 max-h-[85vh] flex flex-col overflow-hidden ">
 
     <!-- Modal Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-card-border bg-card-bg">
@@ -1033,12 +1030,9 @@
     <div class="flex-1 overflow-y-auto p-5 bg-white">
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         @for (col of config().columns; track col.key) {
-        <label
-          class="flex items-center gap-2.5 p-2.5 rounded-xl border transition-all group"
-          [class.cursor-pointer]="col.hideable !== false"
-          [class.cursor-not-allowed]="col.hideable === false"
-          [class.opacity-60]="col.hideable === false"
-          [class.border-slate-100]="!isColVisible(col.key.toString())"
+        <label class="flex items-center gap-2.5 p-2.5 rounded-xl border transition-all group"
+          [class.cursor-pointer]="col.hideable !== false" [class.cursor-not-allowed]="col.hideable === false"
+          [class.opacity-60]="col.hideable === false" [class.border-slate-100]="!isColVisible(col.key.toString())"
           [class.hover:border-slate-200]="!isColVisible(col.key.toString()) && col.hideable !== false"
           [class.hover:bg-slate-50/70]="!isColVisible(col.key.toString()) && col.hideable !== false"
           [class.bg-emerald-50/40]="isColVisible(col.key.toString())"
@@ -1046,10 +1040,8 @@
 
           <input type="checkbox"
             class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 focus:ring-offset-0 accent-emerald-600 shrink-0 cursor-pointer disabled:cursor-not-allowed"
-            [class.cursor-pointer]="col.hideable !== false"
-            [class.cursor-not-allowed]="col.hideable === false"
-            [checked]="isColVisible(col.key.toString())"
-            [disabled]="col.hideable === false"
+            [class.cursor-pointer]="col.hideable !== false" [class.cursor-not-allowed]="col.hideable === false"
+            [checked]="isColVisible(col.key.toString())" [disabled]="col.hideable === false"
             (change)="toggleColVisibility(col.key.toString(), $any($event.target).checked)" />
 
           <span class="text-xs font-medium text-slate-700 group-hover:text-slate-900 truncate"
@@ -1116,8 +1108,6 @@
           <div class="space-y-1.5">
             @for (opt of [
             { label: 'Current page', sub: pageSize() + ' rows', value: 'current' },
-            { label: '100 rows', sub: '', value: 100 },
-            { label: '200 rows', sub: '', value: 200 },
             { label: 'All rows', sub: totalCount() + ' rows', value: 'all' }
             ]; track opt.value) {
             <label class="flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all cursor-pointer"
