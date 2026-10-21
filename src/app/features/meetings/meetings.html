@@ -38,7 +38,7 @@
     <!-- Upcoming Meetings -->
     <div (click)="filterByUpcoming()" (keydown.enter)="filterByUpcoming()" (keydown.space)="filterByUpcoming()"
       role="button" tabindex="0"
-      class="card flex items-center justify-between  gap-6 border border-success-300  bg-success-100 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
+      class="card flex items-center justify-between gap-6 border border-brand-300 bg-brand-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getUpcomingMeetings()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Upcoming</span>
@@ -176,6 +176,27 @@
           <div class="min-w-0">
             <p class="font-semibold text-slate-800 truncate leading-tight">{{ row.title || '—' }}</p>
           </div>
+        </div>
+      </ng-template>
+
+      <!-- ── Organizer column ──────────────────────────────────────── -->
+      <ng-template appCustomColumn="organizerName" let-row>
+        <div class="min-w-[120px] flex items-center">
+          @if (isLoggedInUserOrganizer(row)) {
+          <span>
+
+            You
+          </span>
+          } @else if (row.organizerName) {
+          <div class="flex items-center gap-2">
+
+            <span class="text-xs font-medium text-slate-800 truncate max-w-[130px]" [title]="row.organizerName">
+              {{ row.organizerName }}
+            </span>
+          </div>
+          } @else {
+          <span class="text-slate-300 italic text-xs">—</span>
+          }
         </div>
       </ng-template>
 

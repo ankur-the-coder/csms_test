@@ -450,7 +450,7 @@ private buildStartDateTime(): string {
     let d: Date;
 
     if (raw instanceof Date) {
-      d = raw;
+      d = new Date(raw.getTime());
     } else if (typeof raw === 'string' && raw.includes(',')) {
       const rev = DatePickerService.reverseFormatDate(raw);
       d = new Date(rev);
@@ -466,25 +466,17 @@ private buildStartDateTime(): string {
         throw new Error(`Invalid meeting time value: ${JSON.stringify(this.newMeeting.time)}`);
     }
 
-    const yyyy = d.getFullYear();
+    // Combine user's chosen local date and local time (in their country timezone)
+    const [hours, minutes] = this.newMeeting.time.split(':').map(Number);
+    const localDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes, 0, 0);
 
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-
-    const dd = String(d.getDate()).padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}T${this.newMeeting.time}:00`;
+    // Convert local country time into International Standard Time (UTC ISO string)
+    return localDate.toISOString();
 
 }
 
 private buildEndDateTime(start: string): string {
 
-    // `start` is a plain local-time string (yyyy-mm-ddThh:mm:00, no timezone).
-    // `new Date(start)` parses that as local time, which is correct — but we
-    // must format the result back out as local-time components too. Using
-    // .toISOString() here would convert to UTC and silently shift the time
-    // by the browser's timezone offset, producing an `end` that no longer
-    // lines up with `start` (e.g. IST users would see `end` land ~5.5 hours
-    // "before" `start`, tripping the backend's end-after-start validation).
     const end = new Date(start);
 
     switch (this.newMeeting.duration) {
@@ -518,14 +510,8 @@ private buildEndDateTime(start: string): string {
 
     }
 
-    const yyyy = end.getFullYear();
-    const mm = String(end.getMonth() + 1).padStart(2, '0');
-    const dd = String(end.getDate()).padStart(2, '0');
-    const hh = String(end.getHours()).padStart(2, '0');
-    const mi = String(end.getMinutes()).padStart(2, '0');
-    const ss = String(end.getSeconds()).padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
+    // Both start and end are sent in International Standard Time (UTC ISO string)
+    return end.toISOString();
 
 }
 
@@ -661,8 +647,10 @@ private buildEndDateTime(start: string): string {
     // 2. Check overlap with existing booked meetings
     if (this.bookedMeetings && this.bookedMeetings.length > 0) {
       for (const meeting of this.bookedMeetings) {
-        const start = new Date(meeting.startTime);
-        const end = new Date(meeting.endTime);
+        const utcStartStr = Utils.ensureUtcIso(meeting.startTime);
+        const utcEndStr = Utils.ensureUtcIso(meeting.endTime);
+        const start = utcStartStr ? new Date(utcStartStr) : new Date(meeting.startTime);
+        const end = utcEndStr ? new Date(utcEndStr) : new Date(meeting.endTime);
 
         const bookedStartMin = start.getHours() * 60 + start.getMinutes();
         const bookedEndMin = end.getHours() * 60 + end.getMinutes();
