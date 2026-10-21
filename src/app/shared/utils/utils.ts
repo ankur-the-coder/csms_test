@@ -54,4 +54,29 @@ public static decode5t(value: any): string {
 
   return str;
 }
+
+  /**
+   * Normalizes timestamps from backend (which are in UTC but often returned without timezone marker)
+   * into a proper UTC ISO string (ending with 'Z') so that the browser and Angular DatePipe
+   * automatically convert them into the user's country/local time.
+   */
+  public static ensureUtcIso(value: any): string {
+    if (!value) return '';
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? '' : value.toISOString();
+    }
+    const raw = String(value).trim();
+    if (!raw) return '';
+
+    // Remove any trailing microseconds beyond 3 digits if present (e.g. .123456 -> .123)
+    let str = raw.replace(' ', 'T');
+
+    // If it already has Z or an explicit timezone offset like +05:30, -04:00, +00:00
+    if (/Z$|[+-]\d{2}(:?\d{2})?$/.test(str)) {
+      return str;
+    }
+
+    // Append 'Z' to treat as UTC
+    return `${str}Z`;
+  }
 }
