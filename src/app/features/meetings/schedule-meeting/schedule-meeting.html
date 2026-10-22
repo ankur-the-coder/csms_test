@@ -24,9 +24,11 @@
           class="px-4 py-2 text-xs font-semibold text-text-secondary bg-card-bg border border-card-border rounded-lg hover:bg-surface-100 transition-colors">
           Save Draft
         </button> -->
+
         <button (click)="onScheduleClick()"
           [disabled]="saving || hostDetailsLoading || hasConflict || loadingBookedTimes || newMeeting.hostEmail.includes('@gmail')"
-          class="px-5 py-2 text-xs font-semibold text-white bg-brand-500 rounded-lg hover:bg-brand-600 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed transition-colors shadow-sm">
+          class="schedule-shine-btn px-5 py-2 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-lg disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed shadow-sm">
+
           @if (saving) {
           <span><i class="fas fa-circle-notch fa-spin"></i> Scheduling...</span>
           } @else if (hasConflict) {
@@ -179,25 +181,9 @@
             Organization
           </h2>
 
-          <div class="inline-flex p-0.5 bg-surface-100 rounded-lg border border-card-border">
-            <button type="button" (click)="setOrgMode('select')"
-              class="px-2.5 py-1 cursor-pointer text-[11px] font-medium rounded-md transition-all"
-              [class.bg-brand-500]="newMeeting.orgMode === 'select'"
-              [class.text-white]="newMeeting.orgMode === 'select'"
-              [class.text-text-muted]="newMeeting.orgMode !== 'select'">
-              List
-            </button>
-            <button type="button" cursor-pointer (click)="setOrgMode('manual')"
-              class="px-2.5 py-1 cursor-pointer text-[11px] font-medium rounded-md transition-all"
-              [class.bg-brand-500]="newMeeting.orgMode === 'manual'"
-              [class.text-white]="newMeeting.orgMode === 'manual'"
-              [class.text-text-muted]="newMeeting.orgMode !== 'manual'">
-              Manual
-            </button>
-          </div>
+          <!-- Only List mode is active — Manual entry is commented out -->
         </div>
 
-        @if (newMeeting.orgMode === 'select') {
         <app-single-input label="Select Organization" [required]="true" [options]="organizationOptions"
           [placeHolder]="loadingInitialData ? 'Loading...' : 'Select organization...'" [ngModel]="newMeeting.orgId"
           (ngModelChange)="onOrganizationSelect($event)" name="orgId" [enableSearch]="true">
@@ -243,7 +229,8 @@
           }
         </div>
         }
-        } @else {
+
+        <!-- ── Manual org entry (commented out) ──────────────────────────
         <div>
           <label class="block text-xs font-semibold text-text-secondary mb-1">Org Name <span
               class="text-red-500">*</span></label>
@@ -263,11 +250,10 @@
             [class.border-card-border]="!showOrgEmailError" [class.border-red-400]="showOrgEmailError"
             placeholder="e.g. jane@acme.com, jane@gmail.com, jane@outlook.com...">
           @if (showOrgEmailError) {
-          <p class="mt-1 text-[11px] text-red-500">Enter a valid email address (any provider — Gmail, Outlook, Hotmail,
-            company domain, etc. all work).</p>
+          <p class="mt-1 text-[11px] text-red-500">Enter a valid email address.</p>
           }
         </div>
-        }
+        ──────────────────────────────────────────────────────────────── -->
       </div>
 
       <!-- Card 4: Host -->

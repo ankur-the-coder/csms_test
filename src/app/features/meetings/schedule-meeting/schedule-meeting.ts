@@ -30,7 +30,7 @@ export class ScheduleMeeting implements OnInit {
     time: '',
     priority: 'Medium' as 'Low' | 'Medium' | 'High',
 
-    orgMode: 'manual' as EntryMode,
+    orgMode: 'select' as EntryMode,
     orgId: null as number | null,
     orgName: '',
     orgEmail: '',
@@ -116,6 +116,11 @@ export class ScheduleMeeting implements OnInit {
     private location: Location
   ) {}
 
+  /** Query-param values stashed before orgs are loaded (they arrive async). */
+  private pendingOrgId: number | null = null;
+  private pendingOrgName: string = '';
+  private pendingOrgEmail: string = '';
+
   ngOnInit(): void {
     this.readQueryParams();
     this.loadAllData();
@@ -128,22 +133,63 @@ export class ScheduleMeeting implements OnInit {
       const email = params.get('email') || params.get('orgEmail');
       const orgId = params.get('orgId');
 
-      if (orgName) {
-        this.newMeeting.orgName = orgName;
-      }
-      if (email) {
-        this.newMeeting.orgEmail = email;
-      }
       if (orgId) {
         const parsedId = Number(Utils.decode5t(orgId));
         if (!isNaN(parsedId)) {
-          this.newMeeting.orgId = parsedId;
+          this.pendingOrgId = parsedId;
         }
       }
-      if (orgName || email) {
-        this.newMeeting.orgMode = 'manual';
+      if (orgName) {
+        this.pendingOrgName = orgName;
       }
+      if (email) {
+        this.pendingOrgEmail = email;
+      }
+
+      // Always stay in 'select' (list) mode
+      this.newMeeting.orgMode = 'select';
+
+      // If orgs are already loaded, try to auto-select now
+      this.tryAutoSelectOrg();
     });
+  }
+
+  /**
+   * Tries to match the query-param org to an entry in the loaded organizations
+   * list and auto-select it. Called after query params are read AND after orgs
+   * are fetched, whichever comes last.
+   */
+  private tryAutoSelectOrg(): void {
+    if (this.organizations.length === 0) return;
+    if (!this.pendingOrgId && !this.pendingOrgName) return;
+
+    // 1. Try to match by orgId first
+    let match = this.pendingOrgId
+      ? this.organizations.find(o => o.orgId === this.pendingOrgId)
+      : null;
+
+    // 2. Fall back to matching by name (case-insensitive)
+    if (!match && this.pendingOrgName) {
+      const target = this.pendingOrgName.trim().toLowerCase();
+      match = this.organizations.find(o => o.name.trim().toLowerCase() === target);
+    }
+
+    if (match) {
+      this.newMeeting.orgId = match.orgId;
+      this.newMeeting.orgName = match.name;
+      // Use query-param email if provided, otherwise use the org's registered email
+      this.newMeeting.orgEmail = this.pendingOrgEmail || match.email;
+    } else if (this.pendingOrgName || this.pendingOrgEmail) {
+      // No match in the list — still populate name/email so user sees them
+      // (they will need to pick from the dropdown or the name won't validate)
+      this.newMeeting.orgName = this.pendingOrgName;
+      this.newMeeting.orgEmail = this.pendingOrgEmail;
+    }
+
+    // Clear pending values so we don't re-apply on future calls
+    this.pendingOrgId = null;
+    this.pendingOrgName = '';
+    this.pendingOrgEmail = '';
   }
 
   private loadAllData(): void {
@@ -154,6 +200,8 @@ export class ScheduleMeeting implements OnInit {
         this.ngZone.run(() => {
           this.organizations = organizations;
           this.loadingInitialData = false;
+          // If query params arrived before the org list, auto-select now
+          this.tryAutoSelectOrg();
         });
       },
       error: (err) => {
@@ -361,7 +409,7 @@ cancelOrgEmailEdit(): void {
         // organizationId/organizationName here means the backend never
         // receives them, and OrgId/OrgName silently fail validation or
         // insert as null/empty.
-        orgId: localStorage.getItem('orgId') || this.newMeeting.orgId,
+        orgId:Utils.encode5t(this.newMeeting.orgId),
         orgName: this.newMeeting.orgName,
 
         hostId: this.newMeeting.hostId,
@@ -402,7 +450,7 @@ private buildStartDateTime(): string {
     let d: Date;
 
     if (raw instanceof Date) {
-      d = raw;
+      d = new Date(raw.getTime());
     } else if (typeof raw === 'string' && raw.includes(',')) {
       const rev = DatePickerService.reverseFormatDate(raw);
       d = new Date(rev);
@@ -418,25 +466,17 @@ private buildStartDateTime(): string {
         throw new Error(`Invalid meeting time value: ${JSON.stringify(this.newMeeting.time)}`);
     }
 
-    const yyyy = d.getFullYear();
+    // Combine user's chosen local date and local time (in their country timezone)
+    const [hours, minutes] = this.newMeeting.time.split(':').map(Number);
+    const localDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes, 0, 0);
 
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-
-    const dd = String(d.getDate()).padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}T${this.newMeeting.time}:00`;
+    // Convert local country time into International Standard Time (UTC ISO string)
+    return localDate.toISOString();
 
 }
 
 private buildEndDateTime(start: string): string {
 
-    // `start` is a plain local-time string (yyyy-mm-ddThh:mm:00, no timezone).
-    // `new Date(start)` parses that as local time, which is correct — but we
-    // must format the result back out as local-time components too. Using
-    // .toISOString() here would convert to UTC and silently shift the time
-    // by the browser's timezone offset, producing an `end` that no longer
-    // lines up with `start` (e.g. IST users would see `end` land ~5.5 hours
-    // "before" `start`, tripping the backend's end-after-start validation).
     const end = new Date(start);
 
     switch (this.newMeeting.duration) {
@@ -470,14 +510,8 @@ private buildEndDateTime(start: string): string {
 
     }
 
-    const yyyy = end.getFullYear();
-    const mm = String(end.getMonth() + 1).padStart(2, '0');
-    const dd = String(end.getDate()).padStart(2, '0');
-    const hh = String(end.getHours()).padStart(2, '0');
-    const mi = String(end.getMinutes()).padStart(2, '0');
-    const ss = String(end.getSeconds()).padStart(2, '0');
-
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`;
+    // Both start and end are sent in International Standard Time (UTC ISO string)
+    return end.toISOString();
 
 }
 
@@ -491,9 +525,8 @@ private buildEndDateTime(start: string): string {
   isFormValid(): boolean {
     const m = this.newMeeting;
 
-    const orgOk = m.orgMode === 'select'
-      ? !!m.orgId && this.isValidEmail(m.orgEmail)
-      : m.orgName.trim().length > 0 && this.isValidEmail(m.orgEmail);
+    // Always use list-mode validation (manual mode is disabled)
+    const orgOk = !!m.orgId && this.isValidEmail(m.orgEmail);
 
     // 'select' mode means the host was auto-filled from the logged-in user;
     // 'manual' mode is the fallback used when that fetch failed.
@@ -614,8 +647,10 @@ private buildEndDateTime(start: string): string {
     // 2. Check overlap with existing booked meetings
     if (this.bookedMeetings && this.bookedMeetings.length > 0) {
       for (const meeting of this.bookedMeetings) {
-        const start = new Date(meeting.startTime);
-        const end = new Date(meeting.endTime);
+        const utcStartStr = Utils.ensureUtcIso(meeting.startTime);
+        const utcEndStr = Utils.ensureUtcIso(meeting.endTime);
+        const start = utcStartStr ? new Date(utcStartStr) : new Date(meeting.startTime);
+        const end = utcEndStr ? new Date(utcEndStr) : new Date(meeting.endTime);
 
         const bookedStartMin = start.getHours() * 60 + start.getMinutes();
         const bookedEndMin = end.getHours() * 60 + end.getMinutes();

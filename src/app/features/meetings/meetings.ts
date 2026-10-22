@@ -44,6 +44,77 @@ import { utils } from 'xlsx';
     .chart-bar {
       transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
+      
+/* Schedule Meeting button */
+.schedule-shine-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: none;
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 280ms ease;
+}
+
+/* Slight lift on hover */
+.schedule-shine-btn:not(:disabled):hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.14);
+}
+
+/* Moving shine */
+.schedule-shine-btn::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 45%;
+  height: 200%;
+  transform: skewX(-25deg);
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 100%
+  );
+
+  pointer-events: none;
+  z-index: 1;
+}
+
+.schedule-shine-btn:not(:disabled):hover::before {
+  animation: schedule-button-shine 800ms ease-in-out;
+}
+
+@keyframes schedule-button-shine {
+  from {
+    left: -100%;
+  }
+
+  to {
+    left: 150%;
+  }
+}
+
+/* Click feedback */
+.schedule-shine-btn:not(:disabled):active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .schedule-shine-btn {
+    transition: none;
+  }
+
+  .schedule-shine-btn:hover::before {
+    animation: none;
+  }
+}
+
   `]
 })
 export class MeetingsComponent implements OnInit, OnDestroy {
@@ -138,21 +209,36 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   tableConfig = computed<SmartTableConfig<MeetingRow>>(() => ({
     columns: [
+            {
+        key: 'orgName',
+        label: 'Organisation',
+        sortable: true,
+      },
       {
         key: 'title',
         label: 'Meeting',
         sortable: true,
       },
       {
-        key: 'orgName',
-        label: 'Organisation',
-        sortable: true,
+        key: 'organizerName',
+        label: 'Organizer',
+        excludeFromExport: false,
+        excludeFromPdf: true,
+      },
+      {
+        key: 'meetingType',
+        label: 'Meeting Type',
       },
       {
         key: 'purpose',
         label: 'Purpose',
         sortable: false,
         type: 'text',
+      },
+      {
+        key: 'createdDate',
+        label: 'Created Date',
+        sortable: true,
       },
       {
         key: 'startTime',
@@ -283,7 +369,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       transformRow: (raw: any): MeetingRow => {
         return {
           ...raw,
-          clientMail: this.decodeEmail(raw?.clientMail)
+          clientMail: this.decodeEmail(raw?.clientMail),
+          startTime: Utils.ensureUtcIso(raw?.startTime) || null,
+          endTime: Utils.ensureUtcIso(raw?.endTime) || null,
+          createdDate: Utils.ensureUtcIso(raw?.createdDate)
         };
       },
     },
@@ -295,7 +384,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     pageSizeOptions: [10, 25, 50, 100],
     exportFileName: 'Meetings',
     emptyMessage: 'No meetings found.',
-    clickable: false,
+    clickable: true,
     toolbarButtons: [
       { id: 'datePicker', type: 'datePicker' },
       { id: 'filter', type: 'filter', label: 'Filter' },
@@ -487,6 +576,47 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     return String(row.createdById) === String(loggedEmpId);
   }
 
+  isLoggedInUserOrganizer(row: MeetingRow): boolean {
+    if (!row) return false;
+
+    // 1. Compare organizerName with logged-in user's userName (case-insensitive)
+    const currentUserName = (localStorage.getItem('userName') || '').trim().toLowerCase();
+    const rowOrganizerName = (row.organizerName || '').trim().toLowerCase();
+    if (currentUserName && rowOrganizerName && currentUserName === rowOrganizerName) {
+      return true;
+    }
+
+    // 2. Compare empId / createdById with logged-in empId (both raw and decoded)
+    const rawEmpId = localStorage.getItem('empId');
+    if (rawEmpId) {
+      const cleanRaw = String(rawEmpId).trim();
+      let decodedEmpId = '';
+      try {
+        decodedEmpId = Utils.decode5t(rawEmpId).trim();
+      } catch {
+        decodedEmpId = '';
+      }
+
+      const matchIds = [cleanRaw, decodedEmpId].filter(Boolean);
+      const rowEmpId = String(row.empId ?? '').trim();
+      const rowCreatedById = String(row.createdById ?? '').trim();
+
+      if (rowEmpId && matchIds.includes(rowEmpId)) {
+        return true;
+      }
+      if (rowCreatedById && matchIds.includes(rowCreatedById)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  getOrganizerInitials(name?: string): string {
+    if (!name) return '?';
+    return name.trim().split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
   openRescheduleModal(row: MeetingRow): void {
     if (!this.canRescheduleMeeting(row)) {
       return;
@@ -498,10 +628,15 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.rescheduleError = null;
     this.minDateToday = new Date();
 
-    // Use current date and time as defaults
+    // Use existing meeting date/time (in user's country timezone) if in the future, otherwise now
+    const meetingDate = row.startTime ? new Date(row.startTime) : null;
     const now = new Date();
-    this.rescheduleDate = this.formatDateForInput(now);
-    this.rescheduleTime = this.formatTimeForInput(now);
+    const initialDate = (meetingDate && !isNaN(meetingDate.getTime()) && meetingDate.getTime() > now.getTime())
+      ? meetingDate
+      : now;
+
+    this.rescheduleDate = this.formatDateForInput(initialDate);
+    this.rescheduleTime = this.formatTimeForInput(initialDate);
 
     // Existing duration
     this.rescheduleDuration = this.parseDurationToMinutes(row.duration);
@@ -579,7 +714,16 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }
 
     const timeStr = String(this.rescheduleTime).includes(':') ? this.rescheduleTime : '00:00';
-    const start = new Date(`${formattedDate}T${timeStr}:00`);
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const dateParts = formattedDate.split('-').map(Number);
+
+    if (dateParts.length !== 3) {
+      const d = new Date(`${formattedDate}T${timeStr}:00`);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // Construct local Date in the user's country timezone
+    const start = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes, 0, 0);
 
     if (Number.isNaN(start.getTime())) {
       return null;
@@ -629,17 +773,10 @@ export class MeetingsComponent implements OnInit, OnDestroy {
       start.getTime() + durationMins * 60 * 1000
     );
 
-    const pad = (value: number) =>
-      String(value).padStart(2, '0');
-
-    const formatLocalDateTime = (date: Date): string => {
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-        `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    };
-
+    // Convert local country time into International Standard Time (UTC ISO string)
     return {
-      start: formatLocalDateTime(start),
-      end: formatLocalDateTime(end)
+      start: start.toISOString(),
+      end: end.toISOString()
     };
   }
 
@@ -1089,9 +1226,12 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         if (res && res.data) {
-          const decodedMeetings = (res.data || []).map(m => ({
+          const decodedMeetings: MeetingRow[] = (res.data || []).map(m => ({
             ...m,
-            clientMail: this.decodeEmail(m.clientMail)
+            clientMail: this.decodeEmail(m.clientMail),
+            startTime: Utils.ensureUtcIso(m.startTime) || null,
+            endTime: Utils.ensureUtcIso(m.endTime) || null,
+            createdDate: Utils.ensureUtcIso(m.createdDate)
           }));
           this.apiMeetings.set(decodedMeetings);
           if (decodedMeetings.length > 0 && decodedMeetings[0].startTime) {
@@ -1109,12 +1249,24 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   }
 
   updateMeetingTypesChartFromApi(rows: MeetingRow[], totalCount: number): void {
-    if (!rows || rows.length === 0) {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const currentMonthRows = (rows || []).filter(r => {
+      const dateStr = r.startTime || r.createdDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return false;
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    if (currentMonthRows.length === 0) {
       this.meetingTypeChartData = [];
       this.meetingTypeChartLabels = [];
       this.meetingTypeChartColors = [];
       this.meetingTypeDonutCenter = {
-        line1: totalCount.toString(),
+        line1: '0',
         line2: 'total',
         line3: ''
       };
@@ -1122,7 +1274,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }
 
     const counts: Record<string, number> = {};
-    for (const r of rows) {
+    for (const r of currentMonthRows) {
       const type = (r.meetingType && r.meetingType.trim()) ? r.meetingType.trim() : 'Kickoff';
       counts[type] = (counts[type] || 0) + 1;
     }
@@ -1145,7 +1297,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.meetingTypeChartData = data;
     this.meetingTypeChartColors = colors;
     this.meetingTypeDonutCenter = {
-      line1: totalCount.toString(),
+      line1: currentMonthRows.length.toString(),
       line2: 'total',
       line3: ''
     };
@@ -1318,7 +1470,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     const now = new Date();
     now.setDate(now.getDate());
     const next7 = new Date();
-    next7.setDate(now.getDate() + 7);
+    next7.setDate(now.getDate() + 6);
     const from = this.formatLocalDate(now);
     const to = this.formatLocalDate(next7);
 
@@ -1368,18 +1520,29 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   }
 
   filterByPendingFollowUps(): void {
-    const now = new Date();
+  const now = new Date();
+
+  // First and last day of the current month
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  // Format as YYYY-MM-DD using LOCAL time
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const from = fmt(firstDay);
+  const to = fmt(lastDay);
 
 
-    this.initialDateFrom.set("");
-    this.initialDateTo.set("");
-    this.filterDateFrom = "";
-    this.filterDateTo = "";
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
     this.initialFilters.set({ meetingStatus: ['3'] });
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set("");
-      this.meetingsTable.dateTo.set("");
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
       this.meetingsTable.page.set(0);
