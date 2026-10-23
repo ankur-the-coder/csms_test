@@ -625,142 +625,6 @@ readonly isChartsLoading = computed(
     return [];
   }
 
-  // private createCalendarEvent(
-  //   meeting: CalendarMeeting,
-  // ): {
-  //   dateKey: string;
-  //   dayEvent: DayEvent;
-  // } | null {
-  //   const rawDate =
-  //     meeting.EndTime ||
-  //     (meeting as any).Date ||
-  //     (meeting as any).date ||
-  //     (meeting as any).MeetingDate ||
-  //     meeting.StartTime ||
-  //     '';
-
-  //   const dateKey = String(rawDate)
-  //     .split('T')[0]
-  //     .split(' ')[0]
-  //     .trim();
-
-  //   if (!dateKey) {
-  //     return null;
-  //   }
-
-  //   const startTime =
-  //     meeting.StartTime || '09:00';
-
-  //   const startParts = startTime
-  //     .split(':')
-  //     .map(Number);
-
-  //   const startHour = Number.isNaN(
-  //     startParts[0],
-  //   )
-  //     ? 9
-  //     : startParts[0];
-
-  //   const startMinute = Number.isNaN(
-  //     startParts[1],
-  //   )
-  //     ? 0
-  //     : startParts[1];
-
-  //   const startMinutes =
-  //     startHour * 60 + startMinute;
-
-  //   const duration =
-  //     meeting.Duration || '01:00:00';
-
-  //   const durationParts =
-  //     duration.split(':');
-
-  //   const durationHours =
-  //     Number(durationParts[0]) || 0;
-
-  //   const durationMinutes =
-  //     Number(durationParts[1]) || 0;
-
-  //   const totalDuration =
-  //     durationHours * 60 +
-  //     durationMinutes ||
-  //     60;
-
-  //   const endMinutes =
-  //     startMinutes + totalDuration;
-
-  //   const endHour =
-  //     Math.floor(endMinutes / 60) % 24;
-
-  //   const endMinute =
-  //     endMinutes % 60;
-
-  //   const startLabel =
-  //     this.formatTime(
-  //       startHour,
-  //       startMinute,
-  //     );
-
-  //   const endLabel =
-  //     this.formatTime(
-  //       endHour,
-  //       endMinute,
-  //     );
-
-  //   const durationLabel =
-  //     durationHours > 0
-  //       ? `${durationHours}h ${durationMinutes}m`
-  //       : `${durationMinutes || 60}m`;
-
-  //   const dayEvent: DayEvent = {
-  //     title:
-  //       meeting.Title ||
-  //       meeting.OrgName ||
-  //       'Meeting',
-
-  //     client:
-  //       meeting.OrgName ||
-  //       'Client',
-
-  //     timeLabel:
-  //       `${startLabel} - ${endLabel}`,
-
-  //     startTime: startLabel,
-
-  //     startMinutes,
-
-  //     endMinutes,
-
-  //     chipClass:
-  //       'bg-blue-50 text-blue-700 border border-blue-200',
-
-  //     accentClass:
-  //       'border-blue-500',
-
-  //     icon: '🤝',
-
-  //     purpose: meeting.Purpose,
-
-  //     meetingType:
-  //       meeting.MeetingType,
-
-  //     duration: durationLabel,
-
-  //     status: meeting.Status,
-
-  //     orgId: meeting.OrgId,
-  //   };
-
-  //   return {
-  //     dateKey,
-  //     dayEvent,
-  //   };
-  // }
-
-  // ---------------------------------------------------------------------------
-  // Navigation
-  // ---------------------------------------------------------------------------
 
   private createCalendarEvent(
     meeting: CalendarMeeting,
@@ -804,7 +668,7 @@ readonly isChartsLoading = computed(
     const durationLabel =
       durationHours > 0
         ? `${durationHours}h ${durationMinutes}m`
-        : `${durationMinutes || 60}m`;
+        : `${durationMinutes || 60} mins`;
 
     const status = String(meeting.Status || '').toLowerCase().trim();
 
@@ -847,7 +711,7 @@ readonly isChartsLoading = computed(
       title: meeting.Title || meeting.OrgName || 'Meeting',
       client: meeting.OrgName || 'Client',
 
-      timeLabel: `${startLabel} - ${endLabel}`,
+      timeLabel: `${startLabel} (${(durationLabel)})`,
       startTime: startLabel,
       startMinutes,
       endMinutes,
