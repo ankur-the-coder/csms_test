@@ -668,7 +668,7 @@ readonly isChartsLoading = computed(
     const durationLabel =
       durationHours > 0
         ? `${durationHours}h ${durationMinutes}m`
-        : `${durationMinutes || 60}m`;
+        : `${durationMinutes || 60} mins`;
 
     const status = String(meeting.Status || '').toLowerCase().trim();
 
@@ -711,7 +711,7 @@ readonly isChartsLoading = computed(
       title: meeting.Title || meeting.OrgName || 'Meeting',
       client: meeting.OrgName || 'Client',
 
-      timeLabel: `${startLabel} - ${endLabel}`,
+      timeLabel: `${startLabel} (${(durationLabel)})`,
       startTime: startLabel,
       startMinutes,
       endMinutes,
