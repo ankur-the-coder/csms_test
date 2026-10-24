@@ -413,6 +413,9 @@
           <!-- Result -->
           @if (!attendanceLoading && !attendanceError && attendanceResult) {
 
+          <!-- Architecture & Integration Flow -->
+          <app-meeting-flow [orgName]="selectedAttendanceMeeting?.orgName"></app-meeting-flow>
+
           <!-- Outcome badge & Organizer -->
           <div class="flex items-center justify-between gap-3 mb-5 flex-wrap">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold border rounded-full"

@@ -19,11 +19,12 @@ import { ChartComponent } from '../../shared/components/inputs/charts/charts';
 import { CountUpDirective } from '../dashboard/component/dashboard/count-up.directive';
 import { environment } from '../../../environments/environment';
 import { utils } from 'xlsx';
+import { MeetingFlowComponent } from './meeting-flow';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent, CountUpDirective],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent, CountUpDirective, MeetingFlowComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -181,6 +182,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   attendanceResult: AttendanceCheckResponse | null = null;
   /** Title of the meeting currently shown in the modal (row data isn't kept around otherwise). */
   attendanceMeetingTitle = '';
+  selectedAttendanceMeeting: MeetingRow | null = null;
 
   // ============ Reschedule Meeting Modal ============
 
@@ -968,6 +970,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
    * message which is shown in the modal instead of attendance data.
    */
   openAttendanceModal(row: MeetingRow): void {
+    this.selectedAttendanceMeeting = row;
     this.attendanceMeetingTitle = row.title || 'Meeting';
 
     // Open modal immediately
@@ -1010,6 +1013,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.showAttendanceModal = false;
     this.attendanceResult = null;
     this.attendanceError = null;
+    this.selectedAttendanceMeeting = null;
   }
 
   /** "2026-08-12T05:11:40.241Z" -> "05:11 AM" for the modal's time labels. */
