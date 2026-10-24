@@ -48,14 +48,14 @@ export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   readonly authService = inject(AuthService);
 
-readonly isCardsLoading = signal(true);
-readonly isCalendarLoading = signal(true);
-readonly skeletonCards = Array.from({ length: 4 });
-readonly skeletonCalendarCells = Array.from({ length: 35 });
+  readonly isCardsLoading = signal(true);
+  readonly isCalendarLoading = signal(true);
+  readonly skeletonCards = Array.from({ length: 4 });
+  readonly skeletonCalendarCells = Array.from({ length: 35 });
 
-readonly isChartsLoading = computed(
-  () => this.isUsagesLoading() || this.isFeedbackLoading(),
-);
+  readonly isChartsLoading = computed(
+    () => this.isUsagesLoading() || this.isFeedbackLoading(),
+  );
 
   // ---------------------------------------------------------------------------
   // Dashboard Cards
@@ -222,7 +222,7 @@ readonly isChartsLoading = computed(
     orgId: string,
     userId: string
   ): void {
-     this.isCardsLoading.set(true);
+    this.isCardsLoading.set(true);
     this.dashboardService
       .getDashboardCards(from, to, orgId, userId, this.authService.adminSts())
       .pipe(finalize(() => this.isCardsLoading.set(false)))
@@ -630,25 +630,44 @@ readonly isChartsLoading = computed(
     meeting: CalendarMeeting,
   ): { dateKey: string; dayEvent: DayEvent } | null {
 
+    const rawStart = meeting.StartTime || '';
     const rawDate =
-      meeting.EndTime ||
       (meeting as any).Date ||
       (meeting as any).date ||
       (meeting as any).MeetingDate ||
+      meeting.EndTime ||
       meeting.StartTime ||
       '';
 
-    const dateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
+    const fallbackDateKey = String(rawDate).split('T')[0].split(' ')[0].trim();
+
+    // 1. Build UTC ISO string
+    let utcStartInput = '';
+    if (rawStart.includes('T') || (rawStart.includes('-') && rawStart.includes(':'))) {
+      utcStartInput = rawStart;
+    } else if (fallbackDateKey && rawStart) {
+      utcStartInput = `${fallbackDateKey}T${rawStart}`;
+    } else if (rawStart) {
+      utcStartInput = rawStart;
+    }
+
+    const startIso = Utils.ensureUtcIso(utcStartInput);
+    const startDate = startIso ? new Date(startIso) : null;
+    const isValidStartDate = startDate !== null && !Number.isNaN(startDate.getTime());
+
+    // 2. Date in user's local country timezone
+    const dateKey = isValidStartDate
+      ? this.toDateString(startDate)
+      : fallbackDateKey;
 
     if (!dateKey) return null;
 
-    const startTime = meeting.StartTime || '09:00';
-    const startParts = startTime.split(':').map(Number);
-
-    const startHour = Number.isNaN(startParts[0]) ? 9 : startParts[0];
-    const startMinute = Number.isNaN(startParts[1]) ? 0 : startParts[1];
+    // 3. Start time in user's local country timezone
+    const startHour = isValidStartDate ? startDate.getHours() : 9;
+    const startMinute = isValidStartDate ? startDate.getMinutes() : 0;
     const startMinutes = startHour * 60 + startMinute;
 
+    // 4. Duration calculation
     const duration = meeting.Duration || '01:00:00';
     const durationParts = duration.split(':');
 
@@ -662,12 +681,13 @@ readonly isChartsLoading = computed(
     const endHour = Math.floor(endMinutes / 60) % 24;
     const endMinute = endMinutes % 60;
 
+    // 5. Formatted local country time labels
     const startLabel = this.formatTime(startHour, startMinute);
     const endLabel = this.formatTime(endHour, endMinute);
 
     const durationLabel =
       durationHours > 0
-        ? `${durationHours}h ${durationMinutes}m`
+        ? `${durationHours}h ${durationMinutes} mins`
         : `${durationMinutes || 60} mins`;
 
     const status = String(meeting.Status || '').toLowerCase().trim();
@@ -711,7 +731,7 @@ readonly isChartsLoading = computed(
       title: meeting.Title || meeting.OrgName || 'Meeting',
       client: meeting.OrgName || 'Client',
 
-      timeLabel: `${startLabel} (${(durationLabel)})`,
+      timeLabel: `${startLabel}  (${durationLabel})`,
       startTime: startLabel,
       startMinutes,
       endMinutes,
