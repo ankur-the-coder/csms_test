@@ -20,9 +20,10 @@ export interface ClientRow {
   phone: string;
   countryCode: string;
   renewDate: string;
+  startDate: string;
   endDate: string;
   createdDate: string;
-
+  modules: string;
 
   PremiumDate: string;
 
@@ -107,11 +108,12 @@ export class PendingRenewal {
       contactPerson: raw.contactPerson,
       countryCode: raw.countryCode,
       createdDate: raw.createdDate,
-
+      modules: raw.modules,
       email: raw.email,
       endDate: raw.endDate,
       phone: raw.phone,
       renewDate: raw.renewDate,
+      startDate: raw.startDate,
       country: raw.country,
       supportOwner: raw.supportOwner,
       leadOwner: raw.leadOwner,
@@ -181,14 +183,15 @@ export class PendingRenewal {
         { key: 'email', label: 'Email', sortable: false, hideable: false, },
         { key: 'phone', label: 'Phone', sortable: false },
         { key: 'country', label: 'Country', sortable: false },
-        // { key: 'renewDate', label: 'Renew Date', sortable: true, type: 'date' },
+        { key: 'modules', label: 'Modules', sortable: false },
         // { key: 'countryCode', label: 'Country Code', sortable: false },
-        { key: 'createdDate', label: 'Created Date', sortable: true, type: 'date' },
+        // { key: 'createdDate', label: 'Created Date', sortable: false, type: 'date' },
+        { key: 'startDate', label: 'Plan Start', sortable: false, type: 'date', hideable: false, },
 
-        { key: 'endDate', label: 'End Date', sortable: false, type: 'date' ,hideable: false,},
-        { key: 'PremiumDate', label: 'Premium Date', sortable: true, type: 'date' ,hideable: false,},
+        { key: 'endDate', label: 'Plan End', sortable: true, type: 'date', hideable: false, },
+        { key: 'PremiumDate', label: 'Premium Date', sortable: false, type: 'date', hideable: false, },
 
-        // { key: 'orgId', label: 'Org ID', sortable: true },
+        // { key: 'module', label: 'Module', sortable: true },
         { key: 'leadOwner', label: 'Lead Owner', sortable: false },
         { key: 'supportOwner', label: 'Support Owner', sortable: false },
         // { key: 'renewId', label: 'Renew ID', sortable: true },
@@ -228,8 +231,8 @@ export class PendingRenewal {
             fromDate,
             toDate,
             orgId: this.authService.getOrgId(),
-userId: this.authService.getEmpId(),
- adminSts: Number(this.authService.adminSts())
+            userId: this.authService.getEmpId(),
+            adminSts: Number(this.authService.adminSts())
           };
 
           return { method: 'POST' as const, body };
