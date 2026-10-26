@@ -96,11 +96,11 @@ export class Client implements OnInit, OnDestroy {
     this.mailModalRow.set(row);
     this.mailTab.set('edit');
     this.mailRecipients.set(row.email ? [row.email.trim()] : []);
-    this.mailSubject = `Welcome to UbiClient, ${row.name}!`;
+    this.mailSubject = `Welcome to UbiHrm, ${row.name}!`;
     this.mailBody =
       `<p>Hi ${row.contactPerson || row.name},</p>` +
-      `<p>Welcome aboard! We're excited to have ${row.name} on UbiClient. Your account has been set up and the portal is ready whenever you are.</p>` +
-      `<p>Best,<br>The UbiClient Team</p>`;
+      `<p>Welcome aboard! We're excited to have ${row.name} on UbiHrm. Your account has been set up and the portal is ready whenever you are.</p>` +
+      `<p>Best,<br>The UbiHrm Team</p>`;
     this.mailModalOpen.set(true);
   }
 

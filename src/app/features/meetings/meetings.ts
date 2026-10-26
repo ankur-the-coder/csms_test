@@ -45,7 +45,7 @@ import { MeetingFlowComponent } from './meeting-flow';
     .chart-bar {
       transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
-      
+
 /* Schedule Meeting button */
 .schedule-shine-btn {
   position: relative;
@@ -214,7 +214,7 @@ export class MeetingsComponent implements OnInit, OnDestroy {
             {
         key: 'orgName',
         label: 'Organisation',
-        sortable: true,
+        sortable: true,hideable: false
       },
       {
         key: 'title',
@@ -225,32 +225,33 @@ export class MeetingsComponent implements OnInit, OnDestroy {
         key: 'organizerName',
         label: 'Organizer',
         excludeFromExport: false,
-        excludeFromPdf: true,
+        excludeFromPdf: true,hideable: false
       },
       {
         key: 'meetingType',
         label: 'Meeting Type',
+        hideable: false
       },
       {
         key: 'purpose',
         label: 'Purpose',
         sortable: false,
-        type: 'text',
+        type: 'text',hideable: false
       },
       {
         key: 'createdDate',
         label: 'Created Date',
-        sortable: true,
+        sortable: true,hideable: false
       },
       {
         key: 'startTime',
         label: 'Date & Time',
-        sortable: true,
+        sortable: true,hideable: false
       },
       {
         key: 'duration',
         label: 'Duration',
-        sortable: false,
+        sortable: false,hideable: false
       },
       {
         key: 'priority',
