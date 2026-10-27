@@ -1927,7 +1927,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    this.toastr.success('QR Code image downloaded successfully!', 'Downloaded');
   }
 
   async shareQrCode(): Promise<void> {
@@ -1949,7 +1948,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
               url: link,
               files: [file]
             });
-            this.toastr.success('Shared successfully!', 'Shared');
+            
             return;
           }
         }
@@ -1959,7 +1958,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
           text: `Scan QR code or click the link to join: ${title}`,
           url: link
         });
-        this.toastr.success('Shared successfully!', 'Shared');
+        
         return;
       } catch (err: any) {
         if (err?.name === 'AbortError') return;
