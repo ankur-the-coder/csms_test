@@ -38,7 +38,7 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     if (this.isBrowser) {
-      const stored = this.readStoredLogin();
+      const stored = this.readStoredLogin();                                                                                                                   
       if (stored !== this.isLoggedIn()) {
         this.isLoggedIn.set(stored);
       }

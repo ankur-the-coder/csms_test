@@ -31,21 +31,12 @@ export interface CallHistoryRow {
 export class History implements OnInit {
   private readonly router = inject(Router);
   private readonly voiceService = inject(WebRtcVoiceService);
-
-  // static: true works here because ng-template elements are never actually
-  // rendered/conditional in the DOM -- this resolves in time for ngOnInit,
-  // which is why historyTableConfig (below) is built there instead of as a
-  // field initializer: field initializers run in the constructor, before
-  // ViewChild resolution, so these templates would still be undefined then.
   @ViewChild('directionCell', { static: true }) directionCellTemplate!: TemplateRef<any>;
   @ViewChild('didCell', { static: true }) didCellTemplate!: TemplateRef<any>;
   @ViewChild('statusCell', { static: true }) statusCellTemplate!: TemplateRef<any>;
   @ViewChild('dateCell', { static: true }) dateCellTemplate!: TemplateRef<any>;
   @ViewChild('durationCell', { static: true }) durationCellTemplate!: TemplateRef<any>;
 
-  // Same backend the softphone itself talks to (WebRtcVoiceService.API_BASE is
-  // private to the service) -- kept as its own constant here, matching the
-  // pattern ClientService uses for its own baseUrl.
   private readonly voiceApiBase = `${environment.apiUrl}/api/voice`;
 
   historyTableConfig!: SmartTableConfig<CallHistoryRow>;
@@ -82,8 +73,6 @@ export class History implements OnInit {
     return labels[s] ?? (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
   }
 
-  /** Status text color -- theme's subtle text tokens (success/warning/danger-text),
-   *  not the saturated badge-pill colors used before. */
   getStatusTextClass(status: string): string {
     const s = (status || '').toLowerCase().trim();
     if (s === 'completed' || s === 'answered') return 'text-success-text';
@@ -100,10 +89,7 @@ export class History implements OnInit {
   }
 
   ngOnInit(): void {
-    // Refresh the missed-calls badge count when the agent actually opens
-    // Call History -- cheap, and keeps it in sync with whatever the
-    // backend currently has even if the nav badge's own refresh triggers
-    // (call end events) missed something (e.g. a tab that reconnected).
+   
     this.voiceService.fetchMissedCallsCount(); // also refreshes inboundCallsCount internally
     this.voiceService.fetchInboundCallsCount();
 
