@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef, NgZone, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -20,10 +20,12 @@ import { CountUpDirective } from '../dashboard/component/dashboard/count-up.dire
 import { environment } from '../../../environments/environment';
 import { utils } from 'xlsx';
 import { MeetingFlowComponent } from './meeting-flow';
+import * as QRCode from 'qrcode';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
+  encapsulation: ViewEncapsulation.None,
   imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent, CountUpDirective, MeetingFlowComponent],
   templateUrl: './meetings.html',
   styles: [`
@@ -115,16 +117,61 @@ import { MeetingFlowComponent } from './meeting-flow';
     animation: none;
   }
 }
-
   `]
 })
-export class MeetingsComponent implements OnInit, OnDestroy {
+export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Reference to the table so we can ask it to reload after cancelling a
   // meeting. NOTE: '.refresh()' below is a guess at the method name — check
   // your actual DataTable component's public API and rename if different
   // (common alternatives: reload(), fetchData(), loadData()).
   @ViewChild(DataTable) meetingsTable?: DataTable<any>;
+
+  // ============ Flow Canvas Refs & State ============
+  @ViewChild('flowViewport', { static: false }) flowViewportRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('flowWorld', { static: false }) flowWorldRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('flowWires', { static: false }) flowWiresRef?: ElementRef<SVGSVGElement>;
+  @ViewChild('flowNodes', { static: false }) flowNodesRef?: ElementRef<HTMLDivElement>;
+
+  flowView = { x: 0, y: 0, k: 1 };
+  flowW = 800; flowH = 860;
+  flowNodes: Record<string, any> = {};
+  flowSegs: any[] = [];
+  flowPacks: any[] = [];
+  flowTouched = false;
+  flowAnimId: number | null = null;
+  flowDrag: any = null;
+  flowPtrs: Record<number, { x: number; y: number }> = {};
+  flowPinch: any = null;
+  flowZoomLabel = '100%';
+  flowSearchTerm = '';
+  flowStatusFilter = 'All';
+  flowSelectedDate: Date | null = null;
+  flowIsFullScreen = false;
+  flowStatusOptions: SelectOption[] = [
+    { label: 'All Statuses', value: 'All' },
+    { label: 'Scheduled', value: 'Scheduled' },
+    { label: 'Completed', value: 'Completed' },
+    { label: 'Cancelled', value: 'Cancelled' },
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Rescheduled', value: 'Rescheduled' }
+  ];
+  flowMonth = new Date().getMonth();
+  flowYear = new Date().getFullYear();
+  flowIsPanning = false;
+  private readonly FLOW_COLORS = ['#0ea371', '#f59e0b', '#ef4444', '#3b82f6', '#a855f7', '#14b8a6'];
+  private readonly FLOW_K = 0.1;
+  private readonly FLOW_D = 0.87;
+  private readonly FLOW_SP = 0.00028;
+  private flowReducedMotion = false;
+  flowLegend: { name: string; color: string }[] = [];
+
+  // FIX: the Flow viewport element is destroyed/re-created by *ngIf every time the
+  // user switches views. Track WHICH element the listeners are bound to (instead of
+  // a one-time boolean) so they are re-attached to each new element.
+  private flowBoundVp: HTMLDivElement | null = null;
+  // window/document listeners only need to be registered once.
+  private flowGlobalBound = false;
 
   // ============ UI State ============
   activeView = 'table';
@@ -151,6 +198,8 @@ export class MeetingsComponent implements OnInit, OnDestroy {
   inviteEmailInput = signal('');
   inviteSubmitting = signal(false);
   inviteError = signal<string | null>(null);
+  showInviteQr = signal(false);
+  inviteQrDataUrl = signal<string | null>(null);
 
   // ============ Dashboard KPI Cards (from /meetings/dashboard-stats) ============
   // A signal, not a plain property — under zoneless change detection, a signal
@@ -495,8 +544,33 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     }
   };
 
+  // FIX: window / document level flow listeners as stable class members so they
+  // can be registered once and removed on destroy.
+  private onFlowWindowResize = () => {
+    if (this.activeView === 'flow' && !this.flowTouched) this.flowFit();
+  };
+
+  private onFlowFullscreenChange = () => {
+    this.flowIsFullScreen = !!document.fullscreenElement;
+    setTimeout(() => {
+      this.flowFit();
+      this.cdr.detectChanges();
+    }, 100);
+  };
+
   ngOnDestroy(): void {
     document.removeEventListener('scroll', this.closeActionMenuOnScroll, true);
+    window.removeEventListener('resize', this.onFlowWindowResize);
+    document.removeEventListener('fullscreenchange', this.onFlowFullscreenChange);
+    document.removeEventListener('webkitfullscreenchange', this.onFlowFullscreenChange);
+    if (this.flowAnimId != null) {
+      cancelAnimationFrame(this.flowAnimId);
+      this.flowAnimId = null;
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Flow animation and listeners are set up lazily when user switches to Flow view
   }
 
   onMenuJoin(row: MeetingRow): void {
@@ -1157,8 +1231,11 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private meetingService: MeetingService,
     private cdr: ChangeDetectorRef,
-    private toastr: ToastrService
-  ) { }
+    private toastr: ToastrService,
+    private ngZone: NgZone
+  ) {
+    this.flowReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -1561,12 +1638,18 @@ export class MeetingsComponent implements OnInit, OnDestroy {
 
   setActiveView(view: string): void {
     this.activeView = view;
+    if (view === 'flow') {
+      // FIX: make sure the *ngIf block (and #flowViewport) actually exists in the DOM
+      // before we try to draw into it / bind listeners to it.
+      this.cdr.detectChanges();
+      setTimeout(() => this.renderFlowCanvas(), 0);
+    }
   }
 
   // ============ Calendar & Timeline API Helper Methods ============
 
   calendarMonth = signal<number>(new Date().getMonth());
-  calendarYear = signal<number>(new Date().getFullYear());
+  calendarYear = signal<number>(new Date().getFullYear());  
 
   onCalendarDateSelect(date: Date): void {
     if (date) {
@@ -1674,13 +1757,18 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     this.inviteEmailInput.set('');
     this.inviteError.set(null);
     this.inviteSubmitting.set(false);
+    this.showInviteQr.set(false);
+    this.inviteQrDataUrl.set(null);
     this.showInviteModal.set(true);
+    this.generateInviteQr(row);
   }
 
   closeInviteModal(): void {
     if (this.inviteSubmitting()) return;
     this.showInviteModal.set(false);
     this.inviteMeetingRow.set(null);
+    this.showInviteQr.set(false);
+    this.inviteQrDataUrl.set(null);
   }
 
   /** Called on (keydown.enter) / (blur) of the email input — supports
@@ -1788,5 +1876,684 @@ export class MeetingsComponent implements OnInit, OnDestroy {
     } catch {
       this.toastr.error('Failed to copy meeting link.', 'Error');
     }
+  }
+
+  async generateInviteQr(row: MeetingRow): Promise<void> {
+    const link = row?.meetingLink || row?.webLink;
+    if (!link) {
+      this.inviteQrDataUrl.set(null);
+      return;
+    }
+    try {
+      const dataUrl = await QRCode.toDataURL(link, {
+        width: 240,
+        margin: 2,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff'
+        },
+        errorCorrectionLevel: 'M'
+      });
+      this.inviteQrDataUrl.set(dataUrl);
+    } catch (err) {
+      console.error('Failed to generate meeting QR code:', err);
+      this.inviteQrDataUrl.set(null);
+    }
+  }
+
+  toggleInviteQrCode(): void {
+    const next = !this.showInviteQr();
+    this.showInviteQr.set(next);
+    if (next && !this.inviteQrDataUrl()) {
+      const row = this.inviteMeetingRow();
+      if (row) {
+        this.generateInviteQr(row);
+      }
+    }
+  }
+
+  downloadQrCode(): void {
+    const dataUrl = this.inviteQrDataUrl();
+    if (!dataUrl) {
+      this.toastr.warning('No QR code available to download.', 'Notice');
+      return;
+    }
+    const row = this.inviteMeetingRow();
+    const filename = `${(row?.title || 'meeting').replace(/[^a-zA-Z0-9_-]/g, '_')}_qr.png`;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    this.toastr.success('QR Code image downloaded successfully!', 'Downloaded');
+  }
+
+  async shareQrCode(): Promise<void> {
+    const row = this.inviteMeetingRow();
+    const link = row?.meetingLink || row?.webLink || '';
+    const title = row?.title || 'Meeting';
+    const dataUrl = this.inviteQrDataUrl();
+
+    if (navigator?.share) {
+      try {
+        if (dataUrl && navigator.canShare) {
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const file = new File([blob], `${title.replace(/[^a-zA-Z0-9_-]/g, '_')}_qr.png`, { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Join ${title}`,
+              text: `Scan the QR code or click the link to join: ${title}`,
+              url: link,
+              files: [file]
+            });
+            this.toastr.success('Shared successfully!', 'Shared');
+            return;
+          }
+        }
+
+        await navigator.share({
+          title: `Join ${title}`,
+          text: `Scan QR code or click the link to join: ${title}`,
+          url: link
+        });
+        this.toastr.success('Shared successfully!', 'Shared');
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: Copy link and inform user
+    if (link) {
+      this.fallbackCopyInviteLink(link);
+    }
+  }
+
+  // ============ Flow Canvas Engine ============
+
+  private readonly MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  getFlowMonthLabel(): string {
+    const last = new Date(this.flowYear, this.flowMonth + 1, 0).getDate();
+    return `01 ${this.MONTHS_SHORT[this.flowMonth]} ${this.flowYear} - ${last} ${this.MONTHS_SHORT[this.flowMonth]} ${this.flowYear}`;
+  }
+
+  flowMonthNav(dir: number): void {
+    this.flowMonth += dir;
+    if (this.flowMonth < 0) { this.flowMonth = 11; this.flowYear--; }
+    if (this.flowMonth > 11) { this.flowMonth = 0; this.flowYear++; }
+    this.flowSelectedDate = null;
+    this.renderFlowCanvas();
+  }
+
+  onFlowDateSelect(d: Date): void {
+    this.flowSelectedDate = d;
+    if (d) {
+      const parsed = new Date(d);
+      if (!isNaN(parsed.getTime())) {
+        this.flowYear = parsed.getFullYear();
+        this.flowMonth = parsed.getMonth();
+      }
+    }
+    this.renderFlowCanvas();
+  }
+
+  onFlowClearDate(): void {
+    this.flowSelectedDate = null;
+    this.renderFlowCanvas();
+  }
+
+  toggleFlowFullScreen(): void {
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!vp) return;
+
+    if (!document.fullscreenElement) {
+      const req = vp.requestFullscreen || (vp as any).webkitRequestFullscreen || (vp as any).msRequestFullscreen;
+      if (req) {
+        req.call(vp).catch(() => {});
+      }
+    } else {
+      const exit = document.exitFullscreen || (document as any).webkitExitFullscreen || (document as any).msExitFullscreen;
+      if (exit) {
+        exit.call(document).catch(() => {});
+      }
+    }
+  }
+
+  flowResetFilters(): void {
+    this.flowSearchTerm = '';
+    this.flowStatusFilter = 'All';
+    this.flowSelectedDate = null;
+    this.flowMonth = new Date().getMonth();
+    this.flowYear = new Date().getFullYear();
+    this.renderFlowCanvas();
+  }
+
+  onFlowSearchChange(): void {
+    this.renderFlowCanvas();
+  }
+
+  onFlowStatusChange(): void {
+    this.renderFlowCanvas();
+  }
+
+  private getFlowFilteredMeetings(): MeetingRow[] {
+    const q = this.flowSearchTerm.trim().toLowerCase();
+    return this.apiMeetings().filter(m => {
+      // Date filter
+      const d = m.startTime ? new Date(m.startTime) : null;
+      if (!d || isNaN(d.getTime())) return false;
+
+      if (this.flowSelectedDate) {
+        const sel = new Date(this.flowSelectedDate);
+        if (
+          d.getFullYear() !== sel.getFullYear() ||
+          d.getMonth() !== sel.getMonth() ||
+          d.getDate() !== sel.getDate()
+        ) {
+          return false;
+        }
+      } else {
+        if (d.getFullYear() !== this.flowYear || d.getMonth() !== this.flowMonth) return false;
+      }
+
+      // Status filter
+      if (this.flowStatusFilter && this.flowStatusFilter !== 'All') {
+        const sl = this.getStatusLabel(m.status);
+        if (sl.toLowerCase() !== this.flowStatusFilter.toLowerCase()) return false;
+      }
+
+      // Search filter
+      if (q) {
+        const hay = [m.title, m.orgName, m.organizerName, m.clientMail, m.meetingType].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  renderFlowCanvas(): void {
+    const vp = this.flowViewportRef?.nativeElement;
+    const world = this.flowWorldRef?.nativeElement;
+    const wires = this.flowWiresRef?.nativeElement;
+    const nodesEl = this.flowNodesRef?.nativeElement;
+    if (!vp || !world || !wires || !nodesEl) return;
+
+    // FIX: bind interaction listeners to the CURRENT viewport element. The element is
+    // re-created by *ngIf each time the Flow tab is opened, so a one-time boolean
+    // flag left the new element without any listeners (no zoom / pan / drag).
+    if (this.flowBoundVp !== vp) {
+      this.flowBoundVp = vp;
+      this.flowDrag = null;
+      this.flowPinch = null;
+      this.flowPtrs = {};
+      this.flowIsPanning = false;
+      this.bindFlowListeners(vp);
+    }
+
+    // Clear
+    nodesEl.innerHTML = '';
+    wires.innerHTML = '';
+    this.flowNodes = {};
+    this.flowSegs = [];
+    this.flowPacks = [];
+
+    const rows = this.getFlowFilteredMeetings();
+    if (!rows.length) {
+      this.flowLegend = [];
+      nodesEl.innerHTML = `<div style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:320px;text-align:center;color:#6b7280;padding:70px 20px">No meetings found for this period.</div>`;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Determine unique organizers
+    const ord: string[] = [];
+    rows.forEach(m => { if (m.organizerName && !ord.includes(m.organizerName)) ord.push(m.organizerName); });
+
+    // Sort rows by organizer then time
+    const sortedRows = rows.slice().sort((a, b) =>
+      ord.indexOf(a.organizerName || '') - ord.indexOf(b.organizerName || '') ||
+      ((a.startTime || '') < (b.startTime || '') ? -1 : 1)
+    );
+
+    const n = sortedRows.length;
+    const GAP = 214;
+    const xs = sortedRows.map((_, i) => 60 + GAP * (i + 0.5));
+    this.flowW = n * GAP + 120;
+
+    // Compute organizer X positions (average of their meetings' x positions)
+    const ox = ord.map(o => {
+      let total = 0, count = 0;
+      sortedRows.forEach((m, i) => { if (m.organizerName === o) { total += xs[i]; count++; } });
+      return count ? total / count : this.flowW / 2;
+    });
+    // Ensure minimum spacing between organizers
+    for (let j = 1; j < ox.length; j++) {
+      ox[j] = Math.max(ox[j], ox[j - 1] + 230);
+    }
+    this.flowW = Math.max(this.flowW, (ox[ox.length - 1] || 0) + 150);
+
+    // Create hub (Teams) node
+    const hubEl = this.createFlowNode(nodesEl, 'hub', 'flow-node flow-hub', this.flowW / 2, 480,
+      `<i class="flow-hub-ring"></i><i class="flow-hub-ring"></i>` +
+     `<img src="/teamsLogo.png" alt="Microsoft Teams" class="flow-hub-logo" width="86" height="90" style="width:86px;height:90px;object-fit:contain;display:block;pointer-events:none" draggable="false" />` +
+      `<span>Microsoft Teams</span><small>${n} meeting${n > 1 ? 's' : ''}</small>`
+    );
+
+    // Create organizer nodes (bottom row)
+    const orgNodes = ord.map((o, j) => {
+      const mm = sortedRows.filter(m => m.organizerName === o);
+      const totalDur = mm.reduce((a, m) => a + (parseInt(m.duration, 10) || 0), 0);
+      const c = this.FLOW_COLORS[j % this.FLOW_COLORS.length];
+      const initial = (o || '?').charAt(0).toUpperCase();
+      return this.createFlowNode(nodesEl, 'o' + j, 'flow-node flow-oc', ox[j], 770,
+        `<div class="flow-av" style="--c:${c};--fc:${c}">${initial}</div>` +
+        `<div><b title="${this.escHtml(o)}">${this.escHtml(o)}</b>` +
+        `<small>Organizer · ${mm.length} meeting</small></div>`,
+        { 'data-o': String(j), style: `--c:${c};--fc:${c}` }
+      );
+    });
+
+    // Create meeting cards (top row)
+    const mcNodes = sortedRows.map((m, i) => {
+      const j = ord.indexOf(m.organizerName || '');
+      (m as any)._flowOrgIdx = j;
+      const c = this.FLOW_COLORS[j % this.FLOW_COLORS.length];
+      const orgInitial = (m.orgName || '?').charAt(0).toUpperCase();
+      const statusLabel = this.getStatusLabel(m.status);
+      const priorityLabel = this.getPriorityLabel(m.priority);
+      const startStr = m.startTime ? new Date(m.startTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+      const timeStart = m.startTime ? new Date(m.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+      const timeEnd = m.endTime ? new Date(m.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+      const statusIcon = statusLabel === 'Completed' ? 'fa-check' :
+        statusLabel === 'Cancelled' ? 'fa-times' :
+        statusLabel === 'Scheduled' ? 'fa-calendar-check' : 'fa-hourglass-half';
+      return this.createFlowNode(nodesEl, 'm' + i, 'flow-node flow-mc', xs[i], 160,
+        `<div class="flow-av" style="--c:${c};--fc:${c}">${orgInitial}</div>` +
+        `<b title="${this.escHtml(m.orgName)}">${this.escHtml(m.orgName)}</b>` +
+        `<small title="${this.escHtml(m.title)}">${this.escHtml(m.title)}</small>` +
+        `<span class="flow-tag">${this.escHtml(m.meetingType || 'Meeting')}</span>` +
+        `<div class="flow-chips">` +
+          `<span><i class="far fa-calendar-alt text-slate-400"></i> ${startStr}</span>` +
+          `<span><i class="far fa-clock text-slate-400"></i> ${timeStart}${timeEnd ? ' – ' + timeEnd : ''}</span>` +
+          `<span><i class="fas fa-hourglass-half text-amber-500"></i> ${this.formatDuration(m.duration)} · ${priorityLabel}</span>` +
+        `</div>` +
+        `<em class="flow-stt s-${statusLabel}"><i class="fas ${statusIcon} text-[9px]"></i> ${statusLabel}</em>`,
+        { 'data-m': String(i), style: `--c:${c};--fc:${c}` }
+      );
+    });
+
+    // Build SVG wire groups
+    let svgH = '';
+    sortedRows.forEach((m, i) => {
+      const j = (m as any)._flowOrgIdx;
+      const statusLabel = this.getStatusLabel(m.status);
+      const idle = statusLabel !== 'Pending' && statusLabel !== 'Scheduled';
+      const c = this.FLOW_COLORS[j % this.FLOW_COLORS.length];
+      svgH += `<g class="flow-wire-group${idle ? ' idle' : ''}" style="color:${c}" data-m="${i}" data-o="${j}">` +
+        `<path class="flow-wire-line"/><path class="flow-wire-line"/>` +
+        `<path class="flow-wire-hit"/><path class="flow-wire-hit"/>` +
+        `<circle r="3.6"/><circle r="3.6"/>` +
+        `</g>`;
+    });
+    wires.innerHTML = svgH;
+
+    // Build segment & packet data for animation
+    sortedRows.forEach((m, i) => {
+      const g = wires.children[i] as SVGGElement;
+      const lns = g.querySelectorAll('.flow-wire-line');
+      const hts = g.querySelectorAll('.flow-wire-hit');
+      const cs = g.querySelectorAll('circle');
+      const j = (m as any)._flowOrgIdx;
+      const sp = Math.max(-36, Math.min(36, (i - (n - 1) / 2) * 8));
+      const statusLabel = this.getStatusLabel(m.status);
+      const isLive = statusLabel === 'Pending' || statusLabel === 'Scheduled';
+
+      const segA: any = { k: 'A', a: orgNodes[j], b: hubEl, sp, ln: lns[0], ht: hts[0] };
+      const segB: any = { k: 'B', a: hubEl, b: mcNodes[i], sp, ln: lns[1], ht: hts[1] };
+      (hts[0] as any).__seg = segA;
+      (hts[1] as any).__seg = segB;
+      this.flowSegs.push(segA, segB);
+
+      if (isLive) {
+        this.flowPacks.push(
+          { A: segA, B: segB, base: i * 0.17, el: cs[0] },
+          { A: segA, B: segB, base: i * 0.17 + 0.5, el: cs[1] }
+        );
+      }
+    });
+
+    // Legend
+    this.flowLegend = ord.map((o, j) => ({
+      name: o,
+      color: this.FLOW_COLORS[j % this.FLOW_COLORS.length]
+    }));
+
+    // Measure and fit
+    this.flowTouched = false;
+    this.measureFlowNodes();
+    this.flowFit();
+    setTimeout(() => { this.measureFlowNodes(); if (!this.flowTouched) this.flowFit(); }, 60);
+
+    // Start animation loop (outside Angular for performance)
+    if (this.flowAnimId == null) {
+      this.ngZone.runOutsideAngular(() => {
+        const loop = (ts: number) => {
+          this.flowAnimId = requestAnimationFrame(loop);
+          if (this.activeView !== 'flow') return;
+          this.flowAnimationStep(ts);
+        };
+        this.flowAnimId = requestAnimationFrame(loop);
+      });
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  private createFlowNode(parent: HTMLElement, id: string, cls: string, x: number, y: number, inner: string, attrs?: Record<string, string>): any {
+    const el = document.createElement('div');
+    el.className = cls;
+    el.dataset['id'] = id;
+    if (attrs) {
+      Object.entries(attrs).forEach(([k, v]) => {
+        if (k === 'style') el.setAttribute('style', v);
+        else el.dataset[k.replace('data-', '')] = v;
+      });
+    }
+    el.innerHTML = inner;
+    parent.appendChild(el);
+    const o = { el, x, y, hh: 40 };
+    this.flowNodes[id] = o;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    return o;
+  }
+
+  private measureFlowNodes(): void {
+    for (const id in this.flowNodes) {
+      this.flowNodes[id].hh = this.flowNodes[id].el.offsetHeight / 2;
+    }
+  }
+
+  private flowApplyTransform(): void {
+    const world = this.flowWorldRef?.nativeElement;
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!world || !vp) return;
+    world.style.transform = `translate(${this.flowView.x}px,${this.flowView.y}px) scale(${this.flowView.k})`;
+    vp.style.setProperty('--gx', this.flowView.x + 'px');
+    vp.style.setProperty('--gy', this.flowView.y + 'px');
+    vp.style.setProperty('--gs', 26 * this.flowView.k + 'px');
+    this.flowZoomLabel = Math.round(this.flowView.k * 100) + '%';
+  }
+
+  flowZoomAt(mx: number, my: number, factor: number): void {
+    const k = Math.max(0.2, Math.min(2.5, this.flowView.k * factor));
+    const r = k / this.flowView.k;
+    this.flowView.x = mx - (mx - this.flowView.x) * r;
+    this.flowView.y = my - (my - this.flowView.y) * r;
+    this.flowView.k = k;
+    this.flowTouched = true;
+    this.flowApplyTransform();
+  }
+
+  flowFit(): void {
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!vp) return;
+    const r = vp.getBoundingClientRect();
+    if (!r.width) return;
+    const k = Math.max(0.2, Math.min(1.1, Math.min(r.width / this.flowW, r.height / this.flowH) * 0.94));
+    this.flowView.k = k;
+    this.flowView.x = (r.width - this.flowW * k) / 2;
+    this.flowView.y = (r.height - this.flowH * k) / 2;
+    this.flowApplyTransform();
+  }
+
+  flowZoomIn(): void {
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!vp) return;
+    const r = vp.getBoundingClientRect();
+    this.flowZoomAt(r.width / 2, r.height / 2, 1.25);
+  }
+
+  flowZoomOut(): void {
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!vp) return;
+    const r = vp.getBoundingClientRect();
+    this.flowZoomAt(r.width / 2, r.height / 2, 0.8);
+  }
+
+  flowZoomFit(): void {
+    this.flowTouched = false;
+    this.flowFit();
+  }
+
+  private flowAnimationStep(ts: number): void {
+    // Update wire segments
+    this.flowSegs.forEach(s => {
+      this.stepFlowSeg(s);
+      const e = s.st;
+      const c = s.c;
+      const d = `M${e.sx} ${e.sy} C${c[0].x} ${c[0].y} ${c[1].x} ${c[1].y} ${e.ex} ${e.ey}`;
+      s.ln.setAttribute('d', d);
+      s.ht.setAttribute('d', d);
+    });
+
+    // Update traveling dots
+    this.flowPacks.forEach(p => {
+      if (this.flowReducedMotion) { p.el.setAttribute('opacity', '0'); return; }
+      const ph = (ts * this.FLOW_SP + p.base) % 1;
+      const seg = ph < 0.5 ? p.A : p.B;
+      const q = this.flowBezierPt(seg, (ph < 0.5 ? ph : ph - 0.5) * 2);
+      p.el.setAttribute('cx', String(q.x));
+      p.el.setAttribute('cy', String(q.y));
+      p.el.setAttribute('opacity', String(Math.sin(Math.PI * ph)));
+    });
+  }
+
+  private stepFlowSeg(s: any): void {
+    const st = this.flowSegEnds(s);
+    const dy = (st.ey - st.sy) * 0.55;
+    const t = [{ x: st.sx, y: st.sy + dy }, { x: st.ex, y: st.ey - dy }];
+
+    if (s.pull) {
+      const mx = (st.sx + 3 * t[0].x + 3 * t[1].x + st.ex) / 8;
+      const my = (st.sy + 3 * t[0].y + 3 * t[1].y + st.ey) / 8;
+      let ddx = (s.pull.x - mx) / 0.75;
+      let ddy = (s.pull.y - my) / 0.75;
+      const L = Math.hypot(ddx, ddy);
+      if (L > 340) { ddx *= 340 / L; ddy *= 340 / L; }
+      t.forEach(q => { q.x += ddx; q.y += ddy; });
+    }
+
+    if (!s.c) {
+      s.c = [
+        { x: t[0].x, y: t[0].y, vx: 0, vy: 0 },
+        { x: t[1].x, y: t[1].y, vx: 0, vy: 0 }
+      ];
+    }
+
+    const kk = s.pull ? 0.22 : this.FLOW_K;
+    t.forEach((q, i) => {
+      const c = s.c[i];
+      if (this.flowReducedMotion) { c.x = q.x; c.y = q.y; return; }
+      c.vx = (c.vx + (q.x - c.x) * kk) * this.FLOW_D;
+      c.vy = (c.vy + (q.y - c.y) * kk) * this.FLOW_D;
+      c.x += c.vx;
+      c.y += c.vy;
+    });
+    s.st = st;
+  }
+
+  private flowSegEnds(s: any): { sx: number; sy: number; ex: number; ey: number } {
+    const a = s.a, b = s.b;
+    if (s.k === 'A') {
+      return { sx: a.x, sy: a.y - a.hh, ex: b.x + s.sp, ey: b.y + b.hh };
+    }
+    return { sx: a.x + s.sp, sy: a.y - a.hh, ex: b.x, ey: b.y + b.hh };
+  }
+
+  private flowBezierPt(s: any, t: number): { x: number; y: number } {
+    const u = 1 - t;
+    const e = s.st, c = s.c;
+    return {
+      x: u * u * u * e.sx + 3 * u * u * t * c[0].x + 3 * u * t * t * c[1].x + t * t * t * e.ex,
+      y: u * u * u * e.sy + 3 * u * u * t * c[0].y + 3 * u * t * t * c[1].y + t * t * t * e.ey
+    };
+  }
+
+  private flowW2(e: PointerEvent): { x: number; y: number } {
+    const vp = this.flowViewportRef?.nativeElement;
+    if (!vp) return { x: 0, y: 0 };
+    const r = vp.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left - this.flowView.x) / this.flowView.k,
+      y: (e.clientY - r.top - this.flowView.y) / this.flowView.k
+    };
+  }
+
+  private bindFlowListeners(vp: HTMLDivElement): void {
+    // Wheel zoom
+    vp.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault();
+      const r = vp.getBoundingClientRect();
+      this.flowZoomAt(
+        e.clientX - r.left, e.clientY - r.top,
+        Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016))
+      );
+    }, { passive: false });
+
+    // FIX: never allow text selection / native drag inside the canvas
+    vp.addEventListener('selectstart', (e) => e.preventDefault());
+    vp.addEventListener('dragstart', (e) => e.preventDefault());
+
+    // Pointer down
+    vp.addEventListener('pointerdown', (e: PointerEvent) => {
+      if ((e.target as HTMLElement).closest('.flow-tools,.flow-legend')) return;
+      // FIX: stops the browser starting a text selection while dragging
+      e.preventDefault();
+      vp.setPointerCapture(e.pointerId);
+      this.flowPtrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+
+      const pts = Object.values(this.flowPtrs);
+      if (pts.length === 2) {
+        this.flowDrag = null;
+        this.flowPinch = { d: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) };
+        return;
+      }
+
+      const nd = (e.target as HTMLElement).closest('.flow-node') as HTMLElement;
+      const ht = (e.target as HTMLElement).closest('.flow-wire-hit') as SVGPathElement;
+
+      if (nd) {
+        this.flowDrag = { t: 'node', o: this.flowNodes[nd.dataset['id']!], lx: e.clientX, ly: e.clientY };
+      } else if (ht) {
+        const s = (ht as any).__seg;
+        if (s) { s.pull = this.flowW2(e); this.flowDrag = { t: 'pull', s }; }
+      } else {
+        this.flowDrag = { t: 'pan', lx: e.clientX, ly: e.clientY };
+        this.flowIsPanning = true;
+      }
+    });
+
+    // Pointer move
+    vp.addEventListener('pointermove', (e: PointerEvent) => {
+      if (this.flowPtrs[e.pointerId]) {
+        this.flowPtrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      }
+
+      const pts = Object.values(this.flowPtrs);
+      if (this.flowPinch && pts.length === 2) {
+        const d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const r = vp.getBoundingClientRect();
+        this.flowZoomAt(
+          (pts[0].x + pts[1].x) / 2 - r.left,
+          (pts[0].y + pts[1].y) / 2 - r.top,
+          d / this.flowPinch.d
+        );
+        this.flowPinch.d = d;
+        return;
+      }
+      if (!this.flowDrag) return;
+
+      if (this.flowDrag.t === 'pull') {
+        this.flowDrag.s.pull = this.flowW2(e);
+        return;
+      }
+
+      const dx = e.clientX - this.flowDrag.lx;
+      const dy = e.clientY - this.flowDrag.ly;
+      this.flowDrag.lx = e.clientX;
+      this.flowDrag.ly = e.clientY;
+
+      if (this.flowDrag.t === 'node') {
+        this.flowDrag.o.x += dx / this.flowView.k;
+        this.flowDrag.o.y += dy / this.flowView.k;
+        this.flowDrag.o.el.style.left = this.flowDrag.o.x + 'px';
+        this.flowDrag.o.el.style.top = this.flowDrag.o.y + 'px';
+      } else {
+        this.flowView.x += dx;
+        this.flowView.y += dy;
+        this.flowTouched = true;
+        this.flowApplyTransform();
+      }
+    });
+
+    // Pointer up
+    const up = (e: PointerEvent) => {
+      delete this.flowPtrs[e.pointerId];
+      if (this.flowDrag && this.flowDrag.t === 'pull') this.flowDrag.s.pull = null;
+      this.flowDrag = null;
+      this.flowPinch = null;
+      this.flowIsPanning = false;
+    };
+    vp.addEventListener('pointerup', up);
+    vp.addEventListener('pointercancel', up);
+
+    // Hover highlighting
+    const wires = this.flowWiresRef?.nativeElement;
+    if (wires) {
+      vp.addEventListener('pointerover', (e: PointerEvent) => {
+        if (this.flowDrag) return;
+        const nd = (e.target as HTMLElement).closest('.flow-node') as HTMLElement;
+        const g = (e.target as HTMLElement).closest('.flow-wire-group') as SVGGElement;
+
+        if (nd && nd.dataset['m'] !== undefined) {
+          this.flowHighlight(wires, x => x.dataset['m'] === nd.dataset['m']);
+        } else if (nd && nd.dataset['o'] !== undefined) {
+          this.flowHighlight(wires, x => x.dataset['o'] === nd.dataset['o']);
+        } else if (nd && nd.dataset['id'] === 'hub') {
+          this.flowHighlight(wires, () => true);
+        } else if (g) {
+          this.flowHighlight(wires, x => x === g);
+        } else {
+          this.flowHighlight(wires, null);
+        }
+      });
+      vp.addEventListener('pointerleave', () => {
+        if (!this.flowDrag) this.flowHighlight(wires, null);
+      });
+    }
+
+    // FIX: window/document listeners are registered only once (not per viewport)
+    if (!this.flowGlobalBound) {
+      this.flowGlobalBound = true;
+      window.addEventListener('resize', this.onFlowWindowResize);
+      document.addEventListener('fullscreenchange', this.onFlowFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', this.onFlowFullscreenChange);
+    }
+  }
+
+  private flowHighlight(wires: SVGSVGElement, fn: ((g: SVGGElement) => boolean) | null): void {
+    wires.classList.toggle('highlight', !!fn);
+    wires.querySelectorAll('.flow-wire-group').forEach((g: Element) => {
+      (g as SVGGElement).classList.toggle('on', !!fn && fn(g as SVGGElement));
+    });
+  }
+
+  private escHtml(s: string | null | undefined): string {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }

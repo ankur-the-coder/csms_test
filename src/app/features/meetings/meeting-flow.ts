@@ -52,14 +52,7 @@ interface ArrowState {
         <div class="node teams">
           <div class="node-icon-wrapper teams-icon">
             <!-- Official Microsoft Teams Fluent Icon -->
-            <svg class="teams-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M33.5 17.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Z" fill="#505AC9"/>
-              <path d="M28.5 20.2h9.5a3.3 3.3 0 0 1 3.3 3.3v6.5a9.5 9.5 0 0 1-9.5 9.5H32a9.5 9.5 0 0 1-3.5-.7v-15.3a3.3 3.3 0 0 1 0-3.3Z" fill="#505AC9"/>
-              <path d="M22 17a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z" fill="#7B83EB"/>
-              <path d="M15.5 19.5h13a3.5 3.5 0 0 1 3.5 3.5v11.5a11.5 11.5 0 0 1-11.5 11.5h-.5a11.5 11.5 0 0 1-11.5-11.5V23a3.5 3.5 0 0 1 3.5-3.5h3.5Z" fill="#7B83EB"/>
-              <rect x="2" y="14" width="22" height="22" rx="4.5" fill="#4B53BC"/>
-              <path d="M8 20.2h10v2.8h-3.6v8h-2.8v-8H8v-2.8Z" fill="#FFFFFF"/>
-            </svg>
+            <img src="teamsLogo.png" alt="Microsoft Teams" class="flow-hub-logo teams-logo-img" draggable="false" />
           </div>
           <span class="node-label">Graph API</span>
         </div>
@@ -151,10 +144,15 @@ interface ArrowState {
       animation: teams-float 3s ease-in-out infinite;
     }
 
-    .teams-svg {
-      width: 36px;
-      height: 36px;
-    }
+    .teams-logo-img {
+  width: 100%;
+  height: 100%;
+  padding: 9px;            /* breathing room inside the box, increase for a smaller logo */
+  object-fit: contain;     /* keeps the logo's proportions, never stretches */
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
 
     @keyframes teams-float {
       0%, 100% { transform: translateY(0); }
@@ -238,7 +236,7 @@ interface ArrowState {
       .node.teams { margin-top: 0; }
       .node-label { font-size: 11px; }
       .node-icon-wrapper, .org-avatar { width: 46px; height: 46px; border-radius: 12px; font-size: 18px; }
-      .teams-svg { width: 28px; height: 28px; }
+      
       .arrow-connector { min-width: 28px; height: 60px; margin: 0 2px; }
     }
   `]
