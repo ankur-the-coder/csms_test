@@ -59,7 +59,7 @@ export class AuthService {
       payload.append('logoutOthers', 'true');
     }
 
-    return this.http.post<LoginResponse>(`https://csms.ubitechsolutions.com/api/login`, payload).pipe(
+    return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload).pipe(
       tap((res) => {
         if (res?.status === true && this.isBrowser && res.data) {
           this.persistSession(res.data);
