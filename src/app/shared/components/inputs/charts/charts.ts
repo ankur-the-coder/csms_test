@@ -2198,8 +2198,11 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    const baseName = (this.hoverLabel || this.convertHtmlToPlainText(this.headingText) || 'chart')
+    .replace(/\s+/g, '_');
+    link.setAttribute('download', `${baseName}_data.csv`);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${this.hoverLabel.replace(/\s+/g, '_')}_data.csv`);
+    // link.setAttribute('download', `${this.hoverLabel.replace(/\s+/g, '_')}_data.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -2209,96 +2212,172 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   }
 
   // Generate CSV content
+  // private generateCSVContent(): string {
+  //   let csv = 'Label,Value\n';
+
+  //   this.chartLabels.forEach((label, index) => {
+  //     const value = this.chartData[index];
+  //     // Escape commas and quotes in labels
+  //     const escapedLabel = label.includes(',') || label.includes('"') ? `"${label.replace(/"/g, '""')}"` : label;
+  //     csv += `${escapedLabel},${value}\n`;
+  //   });
+
+  //   return csv;
+  // }
+
   private generateCSVContent(): string {
-    let csv = 'Label,Value\n';
+  const escape = (v: string) =>
+    v.includes(',') || v.includes('"') || v.includes('\n')
+      ? `"${v.replace(/"/g, '""')}"`
+      : v;
 
-    this.chartLabels.forEach((label, index) => {
-      const value = this.chartData[index];
-      // Escape commas and quotes in labels
-      const escapedLabel = label.includes(',') || label.includes('"') ? `"${label.replace(/"/g, '""')}"` : label;
-      csv += `${escapedLabel},${value}\n`;
+  // Grouped bar: Label, Active Usage, Low Usage, Non Usage
+  if (this.chartType === 'groupedBar') {
+    const header = ['Label', ...this.groupLabels].map(escape).join(',');
+    const rows = this.chartLabels.map((label, i) => {
+      const values = (this.groupedData[i] || []).map(v => v ?? 0);
+      return [escape(label), ...values].join(',');
     });
-
-    return csv;
+    return [header, ...rows].join('\n') + '\n';
   }
 
+  // Normal charts
+  let csv = 'Label,Value\n';
+  this.chartLabels.forEach((label, index) => {
+    csv += `${escape(label)},${this.chartData[index] ?? 0}\n`;
+  });
+  return csv;
+}
+
   // Download Excel
-  async downloadExcel() {
-    // Guard: canvas rendering + dynamic exceljs import is browser-only.
-    if (!this.isBrowser) {
-      return;
+  // async downloadExcel() {
+  //   // Guard: canvas rendering + dynamic exceljs import is browser-only.
+  //   if (!this.isBrowser) {
+  //     return;
+  //   }
+
+  //   // Step 1: Generate chart image (PNG)
+  //   const width = 1200;
+  //   const height = 800;
+  //   const chartConfig = this.getHighResChartConfig(width, height, true);
+  //   const tempCanvas = document.createElement('canvas');
+  //   tempCanvas.width = width;
+  //   tempCanvas.height = height;
+
+  //   const whiteBgPlugin = {
+  //     id: 'whiteBackground',
+  //     beforeDraw: (chart: any) => {
+  //       const ctx = chart.ctx;
+  //       ctx.save();
+  //       ctx.globalCompositeOperation = 'destination-over';
+  //       ctx.fillStyle = '#fff';
+  //       ctx.fillRect(0, 0, width, height);
+  //       ctx.restore();
+  //     }
+  //   };
+
+  //   const configWithBg = {
+  //     ...chartConfig,
+  //     plugins: [...(chartConfig.plugins || []), whiteBgPlugin],
+  //   };
+
+  //   const tempChart = new Chart(tempCanvas, configWithBg);
+  //   await new Promise(resolve => setTimeout(resolve, 100));
+
+  //   const imageDataUrl = tempCanvas.toDataURL('image/png');
+  //   const imageBuffer = this.dataURLToBuffer(imageDataUrl);
+
+  //   // Step 2: Use ExcelJS
+  //   const ExcelJS = await import('exceljs');
+  //   const workbook = new ExcelJS.default.Workbook();
+  //   const worksheet = workbook.addWorksheet('Chart');
+
+  //   // Add data
+  //   worksheet.addRow(['Label', 'Value']);
+  //   this.chartLabels.forEach((label, i) => {
+  //     worksheet.addRow([label, this.chartData[i]]);
+  //   });
+  //   worksheet.getColumn('A').width = 20;
+  //   worksheet.getColumn('B').width = 15;
+
+  //   // ✅ CORRECT: Add image to WORKBOOK first → returns imageId
+  //   const imageId = workbook.addImage({
+
+  //     extension: 'png',
+  //   });
+
+  //   // ✅ CORRECT: Then add image to WORKSHEET using imageId + position
+  //   worksheet.addImage(imageId, {
+  //     tl: { col: 3, row: 0 }, // top-left: column 3 (D), row 0 (1st row)
+  //     ext: { width: 800, height: 600 },
+  //   });
+
+  //   // Generate and download
+  //   const buffer = await workbook.xlsx.writeBuffer();
+  //   const blob = new Blob([buffer], {
+  //     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  //   });
+  //   const link = document.createElement('a');
+  //   link.href = URL.createObjectURL(blob);
+  //   link.download = `${this.hoverLabel.replace(/\s+/g, '_')}_chart.xlsx`;
+  //   link.click();
+  //   URL.revokeObjectURL(link.href);
+
+  //   tempChart.destroy();
+  //   this.isExportDropdownOpen = false;
+  // }
+
+async downloadExcel() {
+  if (!this.isBrowser) {
+    return;
+  }
+
+  try {
+    const ExcelJS = await import('exceljs');
+    const Workbook = (ExcelJS as any).default?.Workbook ?? (ExcelJS as any).Workbook;
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Data');
+
+    let dataCols = 2;
+
+    if (this.chartType === 'groupedBar') {
+      worksheet.addRow(['Label', ...this.groupLabels]);
+      this.chartLabels.forEach((label, i) => {
+        worksheet.addRow([label, ...(this.groupedData[i] || []).map(v => v ?? 0)]);
+      });
+      dataCols = 1 + this.groupLabels.length;
+    } else {
+      worksheet.addRow(['Label', 'Value']);
+      this.chartLabels.forEach((label, i) => {
+        worksheet.addRow([label, this.chartData[i] ?? 0]);
+      });
     }
 
-    // Step 1: Generate chart image (PNG)
-    const width = 1200;
-    const height = 800;
-    const chartConfig = this.getHighResChartConfig(width, height, true);
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
+    // Header styling
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getColumn(1).width = 22;
+    for (let c = 2; c <= dataCols; c++) {
+      worksheet.getColumn(c).width = 16;
+    }
 
-    const whiteBgPlugin = {
-      id: 'whiteBackground',
-      beforeDraw: (chart: any) => {
-        const ctx = chart.ctx;
-        ctx.save();
-        ctx.globalCompositeOperation = 'destination-over';
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.restore();
-      }
-    };
-
-    const configWithBg = {
-      ...chartConfig,
-      plugins: [...(chartConfig.plugins || []), whiteBgPlugin],
-    };
-
-    const tempChart = new Chart(tempCanvas, configWithBg);
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const imageDataUrl = tempCanvas.toDataURL('image/png');
-    const imageBuffer = this.dataURLToBuffer(imageDataUrl);
-
-    // Step 2: Use ExcelJS
-    const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.default.Workbook();
-    const worksheet = workbook.addWorksheet('Chart');
-
-    // Add data
-    worksheet.addRow(['Label', 'Value']);
-    this.chartLabels.forEach((label, i) => {
-      worksheet.addRow([label, this.chartData[i]]);
-    });
-    worksheet.getColumn('A').width = 20;
-    worksheet.getColumn('B').width = 15;
-
-    // ✅ CORRECT: Add image to WORKBOOK first → returns imageId
-    const imageId = workbook.addImage({
-
-      extension: 'png',
-    });
-
-    // ✅ CORRECT: Then add image to WORKSHEET using imageId + position
-    worksheet.addImage(imageId, {
-      tl: { col: 3, row: 0 }, // top-left: column 3 (D), row 0 (1st row)
-      ext: { width: 800, height: 600 },
-    });
-
-    // Generate and download
+    // Download
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
+    const baseName = (this.hoverLabel || this.convertHtmlToPlainText(this.headingText) || 'chart')
+      .replace(/\s+/g, '_');
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${this.hoverLabel.replace(/\s+/g, '_')}_chart.xlsx`;
+    link.download = `${baseName}_data.xlsx`;
     link.click();
     URL.revokeObjectURL(link.href);
-
-    tempChart.destroy();
+  } catch (error) {
+    console.error('Excel download failed:', error);
+  } finally {
     this.isExportDropdownOpen = false;
   }
+}
 
   private dataURLToBuffer(dataURL: string): Uint8Array {
     const base64 = dataURL.split(',')[1];
@@ -2514,10 +2593,11 @@ this.chartLabels = dataWithIndices.map(item => item.label);
               display: !!this.xAxisTitle,
               text: this.xAxisTitle,
               font: {
-                size: 10,
+                size: 12,
                 weight: 'bold',
               },
               color: labelColor,
+              padding: { top: 8 },
             },
             ticks: {
               color: labelColor,
