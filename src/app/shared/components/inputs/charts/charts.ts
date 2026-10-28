@@ -72,7 +72,7 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() xAxisTitle: string = '';
   @Input() yAxisTitle: string = '';
   @Input() leaveChart:boolean = false;
- 
+
   @Input() sort:boolean = false;
   @Input() groupedData: number[][] = []; // For [[1,2], [4,6], [1,9]] format
 @Input() groupColors: string[] = []; // Colors for each position in group
@@ -146,7 +146,7 @@ private getSafeColors(): string[] {
       changes['yAxisTitle'] ||
       changes['groupedData']
     ) {
-      this.filterTopData(); 
+      this.filterTopData();
       this.updateChart();
     }
   }
@@ -156,19 +156,19 @@ private filterTopData(): void {
   if (this.chartType === 'groupedBar') {
     return;
   }
-  
+
   // CRITICAL: Always clear cached data when in normal mode (not fullscreen)
   if (!this.isFullscreenMode) {
     // Reset the cache first
     this.fullChartData = [];
     this.fullChartLabels = [];
-    
+
     // Now check if we need to filter
     if (this.chartData.length > 5 && this.sort) {
       // Store original data
       this.fullChartData = [...this.chartData];
       this.fullChartLabels = [...this.chartLabels];
-      
+
       // Create array with values, labels, and original indices
       const dataWithIndices = this.chartData.map((value, index) => ({
         value,
@@ -176,18 +176,18 @@ private filterTopData(): void {
         color: this.backgroundColors[index],
         originalIndex: index
       }));
-      
+
       // Sort by value (highest to lowest) and take top 5
       const top5 = dataWithIndices
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
-      
+
       // Update chart data with top 5
       this.chartData = top5.map(item => item.value);
       this.chartLabels = top5.map(item => item.label);
       // this.backgroundColors = top5.map(item => item.color);
     }
-  } 
+  }
   // Only restore when explicitly in fullscreen mode
   else if (this.fullChartData.length > 0) {
     this.chartData = [...this.fullChartData];
@@ -199,7 +199,7 @@ private filterTopData(): void {
     overlay: HTMLElement;
     cleanup: () => void;
   } | null = null;
-  
+
 
   private updateChart(): void {
   if (!this.isBrowser) {
@@ -244,7 +244,7 @@ private filterTopData(): void {
   }
 
 
-  
+
   // Same chart type (for example, date/filter changed).
   // Do NOT simply assign the new values and call update once: depending on
   // Angular's change-detection timing the browser can paint the final state
@@ -261,8 +261,8 @@ private filterTopData(): void {
   if (this.myChart.data.datasets?.[0]) {
     this.myChart.data.datasets[0].data = targetData.map(() => 0) as any;
     this.myChart.data.datasets[0].label = this.hoverLabel;
-     this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any; 
-  this.myChart.data.datasets[0].borderColor = this.getBorderColorForUpdate() as any; 
+     this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any;
+  this.myChart.data.datasets[0].borderColor = this.getBorderColorForUpdate() as any;
   }
 
   this.myChart.update();
@@ -408,19 +408,37 @@ private createChartInternal(animateFromZero: boolean = false): void {
           ticks: { color: labelColor },
           grid: { color: isDarkMode ? '#333' : '#ddd' },
         },
+        // y: {
+        //   beginAtZero: true,
+        //   suggestedMin: 0,
+        //   suggestedMax: 1,
+        //   title: {
+        //     display: !!this.yAxisTitle,
+        //     text: this.yAxisTitle,
+        //     color: labelColor,
+        //     font: { size: 10, weight: 'bold' },
+        //   },
+        //   ticks: { color: labelColor },
+        //   grid: { color: isDarkMode ? '#333' : '#ddd' },
+        // },
         y: {
-          beginAtZero: true,
-          suggestedMin: 0,
-          suggestedMax: 1,
-          title: {
-            display: !!this.yAxisTitle,
-            text: this.yAxisTitle,
-            color: labelColor,
-            font: { size: 10, weight: 'bold' },
-          },
-          ticks: { color: labelColor },
-          grid: { color: isDarkMode ? '#333' : '#ddd' },
-        },
+  beginAtZero: true,
+  suggestedMin: 0,
+  suggestedMax: 5,
+  title: {
+    display: !!this.yAxisTitle,
+    text: this.yAxisTitle,
+    color: labelColor,
+    font: { size: 10, weight: 'bold' },
+  },
+  ticks: {
+    color: labelColor,
+    precision: 0, // decimal hata dega
+    callback: (value: any) =>
+      Number.isInteger(Number(value)) ? value : '',
+  },
+  grid: { color: isDarkMode ? '#333' : '#ddd' },
+},
       } : undefined,
       elements: {
         point: { radius: 5 },
@@ -522,7 +540,7 @@ private rebuildGroupedBarWithAnimation(): void {
       value: 'pie',
       label: 'Pie Chart',
       icon: `<svg  viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"  width="20" height="20" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    
+
     <title>pie-chart</title>
     <desc>Created with Sketch Beta.</desc>
     <defs>
@@ -552,7 +570,7 @@ private rebuildGroupedBarWithAnimation(): void {
     {
       value: 'radar',
       label: 'Radar Chart',
-      icon: `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+      icon: `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 	 width="20px" height="20px" viewBox="0 0 96.946 96.946"
 	 xml:space="preserve">
 <g>
@@ -687,7 +705,7 @@ private rebuildGroupedBarWithAnimation(): void {
 
     // Initial theme check
     this.isDarkMode = document.documentElement.classList.contains('dark');
-  
+
     // Create observer for theme changes
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -704,7 +722,7 @@ private rebuildGroupedBarWithAnimation(): void {
         }
       });
     });
-  
+
     // Start observing theme changes
     this.themeObserver.observe(document.documentElement, {
       attributes: true,
@@ -720,15 +738,15 @@ private rebuildGroupedBarWithAnimation(): void {
 
     if (this.myChart) {
       const labelColor = this.isDarkMode ? 'white' : 'black';
-  
+
       // Update legend labels color
       if (this.myChart.options.plugins?.legend?.labels) {
         this.myChart.options.plugins.legend.labels.color = labelColor;
       }
-  
+
       // Update scales color if they exist
       const scales = this.myChart.options.scales as { [key: string]: any };
-  
+
       if (scales?.['x']) {
         if (scales['x'].title) {
           scales['x'].title.color = labelColor;
@@ -742,7 +760,7 @@ private rebuildGroupedBarWithAnimation(): void {
           color: this.isDarkMode ? '#333' : '#ddd'
         };
       }
-  
+
       if (scales?.['y']) {
         // Explicitly update the y-axis title color
         if (scales['y'].title) {
@@ -757,7 +775,7 @@ private rebuildGroupedBarWithAnimation(): void {
           color: this.isDarkMode ? '#333' : '#ddd'
         };
       }
-  
+
       // Force chart update
       this.myChart.update();
     }
@@ -930,7 +948,7 @@ private rebuildGroupedBarWithAnimation(): void {
   }
 
   // Create high-resolution chart for export
-  
+
 
   // High resolution donut text plugin
   donutTextPluginHighRes() {
@@ -977,17 +995,17 @@ private rebuildGroupedBarWithAnimation(): void {
     const isArea = this.isAreaChart();
     const isLine = this.isLineChart();
     const isRadar = this.isRadarChart();
-    
+
     // Force white background and black labels for export if requested
     const isDarkMode = forceWhite ? false : document.documentElement.classList.contains('dark');
     const labelColor = forceWhite ? 'black' : (isDarkMode ? 'white' : 'black');
-    
+
     // Calculate font sizes based on canvas size
     const headingFontSize = Math.max(Math.round(height * 0.035), 18);
     const axisTitleFontSize = Math.max(Math.round(height * 0.025), 14);
     const tickFontSize = Math.max(Math.round(height * 0.018), 12);
     const legendFontSize = Math.max(Math.round(height * 0.022), 14);
-    
+
     const getBackgroundColor = () => {
       if (isArea) {
         const firstColor = colors[0] || '#4BC0C0';
@@ -1008,7 +1026,7 @@ private rebuildGroupedBarWithAnimation(): void {
         return colors;
       }
     };
-    
+
     const getBorderColor = () => {
       if (isArea) {
         const firstColor = colors[0] || '#4BC0C0';
@@ -1029,13 +1047,13 @@ private rebuildGroupedBarWithAnimation(): void {
         return 'rgba(75, 192, 192, 0.0)';
       }
     };
-    
+
     // Add donut center text plugin for doughnut charts
     let extraPlugins: any[] = [];
     if (this.chartType === 'doughnut' && this.donutCenterText) {
       extraPlugins.push(this.getDonutTextPluginForExport(width, height, forceWhite));
     }
-    
+
     return {
      type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
       data: {
@@ -1113,6 +1131,7 @@ private rebuildGroupedBarWithAnimation(): void {
           },
           y: {
             beginAtZero: true,
+            suggestedMax: 5,
             title: {
               display: !!this.yAxisTitle,
               text: this.yAxisTitle,
@@ -1125,6 +1144,9 @@ private rebuildGroupedBarWithAnimation(): void {
             },
             ticks: {
               color: labelColor,
+              precision: 0,
+              callback: (value: any) =>
+              Number.isInteger(Number(value)) ? value : '',
               font: {
                 size: tickFontSize
               },
@@ -1167,12 +1189,12 @@ private getDonutTextPluginForExport(width: number, height: number, forceWhite: b
       if (chart.config.type === 'doughnut' && this.donutCenterText) {
         const ctx = chart.ctx;
         const chartArea = chart.chartArea;
-        
+
         // Add safety check for chartArea
         if (!chartArea || chartArea.width === 0 || chartArea.height === 0) {
           return;
         }
-        
+
         const centerX = (chartArea.left + chartArea.right) / 2;
         const centerY = (chartArea.top + chartArea.bottom) / 2;
 
@@ -1239,10 +1261,10 @@ dataWithIndices.sort((a, b) => b.value - a.value);
 this.chartData = dataWithIndices.map(item => item.value);
 this.chartLabels = dataWithIndices.map(item => item.label);
   }
-  
+
   const screenWidth = window.screen.width || window.innerWidth;
   const screenHeight = window.screen.height || window.innerHeight;
-  
+
   const overlay = document.createElement('div');
   overlay.id = 'chart-fullscreen-overlay';
   overlay.style.cssText = `
@@ -1281,7 +1303,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     justify-content: center;
     transition: background 0.3s;
   `;
-  
+
   closeButton.onmouseover = () => closeButton.style.background = 'rgba(255, 255, 255, 1)';
   closeButton.onmouseout = () => closeButton.style.background = 'rgba(255, 255, 255, 0.8)';
 
@@ -1301,7 +1323,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   const canvas = document.createElement('canvas');
   const canvasWidth = Math.min(screenWidth * 0.85, 1920);
   const canvasHeight = Math.min(screenHeight * 0.75, 1080);
-  
+
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
   canvas.style.cssText = `
@@ -1311,8 +1333,8 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   `;
 
   const fullscreenConfig = this.getHighResChartConfig(
-    canvasWidth, 
-    canvasHeight, 
+    canvasWidth,
+    canvasHeight,
     true,
     true
   );
@@ -1321,7 +1343,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     this.isFullscreenMode = false; // Reset fullscreen mode
     this.filterTopData(); // Re-filter to top 6
     this.updateChart(); // Update the original chart
-    
+
     if (fullscreenChart) {
       fullscreenChart.destroy();
     }
@@ -1329,7 +1351,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       overlay.parentNode.removeChild(overlay);
     }
     document.body.style.overflow = '';
-    
+
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(console.error);
     }
@@ -1341,7 +1363,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       closeFullscreen();
     }
   };
-  
+
   const escHandler = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       closeFullscreen();
@@ -1354,20 +1376,20 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   overlay.appendChild(closeButton);
   overlay.appendChild(canvasContainer);
   document.body.appendChild(overlay);
-  
+
   document.body.style.overflow = 'hidden';
 
   let fullscreenChart: any;
   setTimeout(() => {
     try {
       fullscreenChart = new Chart(canvas, fullscreenConfig);
-      
+
       setTimeout(() => {
         if (fullscreenChart && !fullscreenChart.destroyed) {
           fullscreenChart.update('none');
         }
       }, 100);
-      
+
     } catch (error) {
       console.error('Error creating fullscreen chart:', error);
       closeFullscreen();
@@ -1387,9 +1409,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       setTimeout(closeFullscreen, 100);
     }
   };
-  
+
   document.addEventListener('fullscreenchange', fullscreenChangeHandler);
-  
+
   this.currentFullscreenChart = {
     chart: fullscreenChart,
     overlay: overlay,
@@ -1412,12 +1434,12 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const width = 1122;
     const height = 793;
     const hoverLabel = this.hoverLabel;
-  
+
     const chartConfig = this.getHighResChartConfig(width, height, true, false);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-  
+
     const printConfig = {
       ...chartConfig,
       plugins: [
@@ -1435,12 +1457,12 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-  
+
     const tempChart = new Chart(tempCanvas, printConfig);
-  
+
     setTimeout(() => {
       const chartImageData = tempCanvas.toDataURL('image/png', 1.0);
-  
+
       // Create print container
       const printContainer = document.createElement('div');
       printContainer.id = 'print-container';
@@ -1489,18 +1511,18 @@ this.chartLabels = dataWithIndices.map(item => item.label);
             }
           }
         </style>
-       
+
         <img id="chart-image" src="${chartImageData}" class="chart-image" />
       `;
       document.body.appendChild(printContainer);
-  
+
       // Wait for image to load before printing
       const img = printContainer.querySelector<HTMLImageElement>('#chart-image');
       img?.addEventListener('load', () => {
         setTimeout(() => {
           window.print();
         }, 100); // small delay to ensure rendering
-  
+
         window.onafterprint = () => {
           document.body.removeChild(printContainer);
           tempChart.destroy();
@@ -1509,7 +1531,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       });
     }, 500);
   }
-  
+
 
   // Download image (PNG/JPEG)
   downloadImage(format: 'png' | 'jpeg') {
@@ -1566,7 +1588,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    
+
     const whiteBgPlugin = {
       id: 'whiteBackground',
       beforeDraw: (chart: any) => {
@@ -1578,7 +1600,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         ctx.restore();
       }
     };
-    
+
     const configWithHook = {
       ...chartConfig,
       plugins: [
@@ -1600,7 +1622,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-    
+
     new Chart(tempCanvas, configWithHook);
   }
 
@@ -1614,14 +1636,14 @@ this.chartLabels = dataWithIndices.map(item => item.label);
 
     const { default: pdfMake } = await import('pdfmake/build/pdfmake');
     const { default: pdfFonts } = await import('pdfmake/build/vfs_fonts');
-    
+
     const width = 1122;
     const height = 793;
     const chartConfig = this.getHighResChartConfig(width, height, true);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    
+
     // Create chart with white background and donut text
     const configWithBg = {
       ...chartConfig,
@@ -1640,13 +1662,13 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-    
+
     const tempChart = new Chart(tempCanvas, configWithBg);
-    
+
     // Wait for chart to render before getting image data
     setTimeout(() => {
       const imgData = tempCanvas.toDataURL('image/png');
-      
+
       const docDefinition: any = {
         content: [
           // {
@@ -1668,7 +1690,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
           }
         }
       };
-      
+
       pdfMake.createPdf(docDefinition).download(`${this.hoverLabel.replace(/\s+/g, '_')}_chart.pdf`);
       tempChart.destroy();
       this.isExportDropdownOpen = false;
@@ -2164,7 +2186,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
 
 
 
-  
+
   // Download CSV
   downloadCSV() {
     // Guard: Blob/URL/anchor-click download is browser-only.
@@ -2185,21 +2207,21 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     URL.revokeObjectURL(url);
     this.isExportDropdownOpen = false;
   }
-  
+
   // Generate CSV content
   private generateCSVContent(): string {
     let csv = 'Label,Value\n';
-    
+
     this.chartLabels.forEach((label, index) => {
       const value = this.chartData[index];
       // Escape commas and quotes in labels
       const escapedLabel = label.includes(',') || label.includes('"') ? `"${label.replace(/"/g, '""')}"` : label;
       csv += `${escapedLabel},${value}\n`;
     });
-    
+
     return csv;
   }
-  
+
   // Download Excel
   async downloadExcel() {
     // Guard: canvas rendering + dynamic exceljs import is browser-only.
@@ -2214,7 +2236,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-  
+
     const whiteBgPlugin = {
       id: 'whiteBackground',
       beforeDraw: (chart: any) => {
@@ -2226,23 +2248,23 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         ctx.restore();
       }
     };
-  
+
     const configWithBg = {
       ...chartConfig,
       plugins: [...(chartConfig.plugins || []), whiteBgPlugin],
     };
-  
+
     const tempChart = new Chart(tempCanvas, configWithBg);
     await new Promise(resolve => setTimeout(resolve, 100));
-  
+
     const imageDataUrl = tempCanvas.toDataURL('image/png');
     const imageBuffer = this.dataURLToBuffer(imageDataUrl);
-  
+
     // Step 2: Use ExcelJS
     const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.default.Workbook();
     const worksheet = workbook.addWorksheet('Chart');
-  
+
     // Add data
     worksheet.addRow(['Label', 'Value']);
     this.chartLabels.forEach((label, i) => {
@@ -2250,19 +2272,19 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     });
     worksheet.getColumn('A').width = 20;
     worksheet.getColumn('B').width = 15;
-  
+
     // ✅ CORRECT: Add image to WORKBOOK first → returns imageId
     const imageId = workbook.addImage({
-    
+
       extension: 'png',
     });
-  
+
     // ✅ CORRECT: Then add image to WORKSHEET using imageId + position
     worksheet.addImage(imageId, {
       tl: { col: 3, row: 0 }, // top-left: column 3 (D), row 0 (1st row)
       ext: { width: 800, height: 600 },
     });
-  
+
     // Generate and download
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -2273,7 +2295,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     link.download = `${this.hoverLabel.replace(/\s+/g, '_')}_chart.xlsx`;
     link.click();
     URL.revokeObjectURL(link.href);
-  
+
     tempChart.destroy();
     this.isExportDropdownOpen = false;
   }
@@ -2302,8 +2324,8 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       return '';
     }
   }
-  
-  
+
+
 
   ngOnDestroy() {
     // Guard: nothing to clean up on the server since nothing was created there.
@@ -2434,15 +2456,15 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const isDarkMode = document.documentElement.classList.contains('dark');
     const labelColor = isDarkMode ? 'white' : 'black';
     const gridColor = isDarkMode ? '#333' : '#ddd';
-    
+
     const groupSize = this.groupedData[0]?.length || 2;
-    
+
     // Prepare datasets - one for each position in the group
     const datasets = [];
     for (let i = 0; i < groupSize; i++) {
       const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
       const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
-      
+
       datasets.push({
         label: label,
         data: this.groupedData.map(group => group[i] || 0),
@@ -2453,12 +2475,12 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         },
       });
     }
-  
+
     const data: ChartData = {
       labels: this.chartLabels,
       datasets: datasets,
     };
-  
+
     const config: ChartConfiguration = {
       type: 'bar',
       data,
@@ -2504,33 +2526,55 @@ this.chartLabels = dataWithIndices.map(item => item.label);
               color: gridColor,
             },
           },
+          // y: {
+          //   beginAtZero: true,
+          //   title: {
+          //     display: !!this.yAxisTitle,
+          //     text: this.yAxisTitle,
+          //     color: labelColor,
+          //     font: {
+          //       size: 10,
+          //       weight: 'bold',
+          //     },
+          //   },
+          //   ticks: {
+          //     color: labelColor,
+          //   },
+          //   grid: {
+          //     color: gridColor,
+          //   },
+          // },
           y: {
-            beginAtZero: true,
-            title: {
-              display: !!this.yAxisTitle,
-              text: this.yAxisTitle,
-              color: labelColor,
-              font: {
-                size: 10,
-                weight: 'bold',
-              },
-            },
-            ticks: {
-              color: labelColor,
-            },
-            grid: {
-              color: gridColor,
-            },
-          },
+  beginAtZero: true,
+  suggestedMax: 5,
+  title: {
+    display: !!this.yAxisTitle,
+    text: this.yAxisTitle,
+    color: labelColor,
+    font: {
+      size: 10,
+      weight: 'bold',
+    },
+  },
+  ticks: {
+    color: labelColor,
+    precision: 0,
+    callback: (value: any) =>
+      Number.isInteger(Number(value)) ? value : '',
+  },
+  grid: {
+    color: gridColor,
+  },
+},
         },
       },
     };
-  
+
     if (this.myChart) {
       this.myChart.destroy();
       this.myChart = null;
     }
-  
+
     const canvas = this.chartCanvasRef?.nativeElement || (document.getElementById(this.chartId) as HTMLCanvasElement);
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -2546,19 +2590,19 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const isDarkMode = forceWhite ? false : document.documentElement.classList.contains('dark');
     const labelColor = forceWhite ? 'black' : (isDarkMode ? 'white' : 'black');
     const gridColor = forceWhite ? '#ddd' : (isDarkMode ? '#333' : '#ddd');
-    
+
     const headingFontSize = Math.max(Math.round(height * 0.035), 18);
     const axisTitleFontSize = Math.max(Math.round(height * 0.025), 14);
     const tickFontSize = Math.max(Math.round(height * 0.018), 12);
     const legendFontSize = Math.max(Math.round(height * 0.022), 14);
-    
+
     const groupSize = this.groupedData[0]?.length || 2;
     const datasets = [];
-    
+
     for (let i = 0; i < groupSize; i++) {
       const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
       const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
-      
+
       datasets.push({
         label: label,
         data: this.groupedData.map(group => group[i] || 0),
@@ -2566,7 +2610,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         borderRadius: { topLeft: 10, topRight: 10 },
       });
     }
-  
+
     return {
       type: 'bar',
       data: {
@@ -2623,6 +2667,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
           },
           y: {
             beginAtZero: true,
+            suggestedMax: 5,
             title: {
               display: !!this.yAxisTitle,
               text: this.yAxisTitle,
@@ -2632,6 +2677,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
             },
             ticks: {
               color: labelColor,
+              precision: 0,
+              callback: (value: any) =>
+              Number.isInteger(Number(value)) ? value : '',
               font: { size: tickFontSize },
               padding: Math.round(tickFontSize * 0.5)
             },
@@ -2651,9 +2699,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   const groupWidth = chartWidth / this.chartLabels.length * 0.8;
   const barWidth = groupWidth / groupSize;
   const groupSpacing = chartWidth / this.chartLabels.length * 0.2;
-  
+
   let svg = '';
-  
+
   // Draw horizontal grid lines and y-axis ticks
   for (let i = 0; i <= yTicks; i++) {
     const y = padding + 60 + chartHeight - (i / yTicks) * chartHeight;
@@ -2661,52 +2709,52 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     svg += `<line x1="${padding}" y1="${y}" x2="${padding + chartWidth}" y2="${y}" stroke="${gridColor}" stroke-width="1" />`;
     svg += `<text x="${padding - 8}" y="${y + 4}" text-anchor="end" fill="${textColor}" font-size="12">${this.escapeXml(Math.round(value))}</text>`;
   }
-  
+
   // Draw grouped bars
   for (let i = 0; i < this.chartLabels.length; i++) {
     const groupX = padding + i * (groupWidth + groupSpacing) + groupSpacing / 2;
-    
+
     for (let j = 0; j < groupSize; j++) {
       const value = this.groupedData[i]?.[j] || 0;
       const barHeight = (value / maxValue) * chartHeight;
       const x = groupX + j * barWidth;
       const y = padding + 60 + (chartHeight - barHeight);
       const color = this.groupColors[j % this.groupColors.length] || `hsl(${j * 360 / groupSize}, 70%, 60%)`;
-      
+
       svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="5"/>`;
     }
-    
+
     // X-axis labels
     const xLabelEscaped = this.escapeXml(this.chartLabels[i]);
     svg += `<text x="${groupX + groupWidth/2}" y="${padding + 60 + chartHeight + 18}" text-anchor="middle" fill="${textColor}" font-size="12">${xLabelEscaped}</text>`;
   }
-  
+
   // Y-axis title
   if (this.yAxisTitle) {
     const yAxisTitleEscaped = this.escapeXml(this.yAxisTitle);
     svg += `<text x="${padding - 40}" y="${padding + 60 + chartHeight/2}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold" transform="rotate(-90,${padding - 40},${padding + 60 + chartHeight/2})">${yAxisTitleEscaped}</text>`;
   }
-  
+
   // X-axis title
   if (this.xAxisTitle) {
     const xAxisTitleEscaped = this.escapeXml(this.xAxisTitle);
     svg += `<text x="${padding + chartWidth/2}" y="${padding + 60 + chartHeight + 45}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold">${xAxisTitleEscaped}</text>`;
   }
-  
+
   // Legend
   const legendY = padding + 60 + chartHeight + 70;
   const legendItemWidth = 120;
   const legendStartX = padding + chartWidth/2 - (groupSize * legendItemWidth) / 2;
-  
+
   for (let i = 0; i < groupSize; i++) {
     const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
     const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
     const x = legendStartX + i * legendItemWidth;
-    
+
     svg += `<rect x="${x}" y="${legendY - 5}" width="12" height="12" fill="${color}" rx="2"/>`;
     svg += `<text x="${x + 18}" y="${legendY + 5}" font-size="12" fill="${textColor}" text-anchor="start">${this.escapeXml(label)}</text>`;
   }
-  
+
   return svg;
 }
 
