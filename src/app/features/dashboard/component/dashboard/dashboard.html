@@ -140,6 +140,7 @@
       } @else {
       <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
         [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
+        [organizationDetails]="usagesOrganizationDetails()"
         [headingText]="'Monthly Organizations Usage'" [xAxisTitle]="'Modules'" [yAxisTitle]="'Organizations Count'" [leaveChart]="true" [isLoading]="false"
         [hasError]="usagesHasError()">
       </app-charts>
