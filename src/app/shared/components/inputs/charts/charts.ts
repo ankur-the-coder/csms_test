@@ -60,6 +60,7 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() chartLabels: string[] = [];
   @Output() onChangeDate: Subject<{ from: string, to: string }> = new Subject()
   @Input() chartType: CustomChartType | ChartType | any = 'bar';
+  @Input() allowedChartTypes: string[] = [];
   @Input() hoverLabel: string = '';
   @Input() backgroundColors: string[] = ['', '', '', ''];
   @Input() chartId: string = '';
@@ -781,9 +782,31 @@ private rebuildGroupedBarWithAnimation(): void {
     }
   }
 
+  private getAvailableChartTypes(): ChartTypeOption[] {
+    if (!this.allowedChartTypes || this.allowedChartTypes.length === 0) {
+      return this.chartTypes;
+    }
+
+    const allowedValues = this.allowedChartTypes
+      .map((type) => String(type).trim())
+      .filter((type) => type.length > 0);
+
+    if (allowedValues.length === 0) {
+      return this.chartTypes;
+    }
+
+    return this.chartTypes.filter((type) => allowedValues.includes(type.value));
+  }
+
   setSelectedChartType() {
-    // Find the default chart based on the provided chartType
-    this.selectedChart = this.chartTypes.find((type) => type.value === this.chartType) || this.chartTypes[0];
+    const availableChartTypes = this.getAvailableChartTypes();
+    const matchingChart = availableChartTypes.find((type) => type.value === this.chartType);
+
+    this.selectedChart = matchingChart || availableChartTypes[0] || this.chartTypes[0];
+
+    if (this.chartType && !matchingChart && this.selectedChart) {
+      this.chartType = this.selectedChart.value as CustomChartType | ChartType;
+    }
   }
 
   toggleDropdown() {
@@ -2840,11 +2863,13 @@ async downloadExcel() {
 
 
 getFilteredChartTypes() {
+  const availableChartTypes = this.getAvailableChartTypes();
+
   if (this.selectedChart?.value === 'groupedBar') {
-    return this.chartTypes.filter(t => t.value === 'groupedBar');
-  } else {
-    return this.chartTypes.filter(t => t.value !== 'groupedBar');
+    return availableChartTypes.filter(t => t.value === 'groupedBar');
   }
+
+  return availableChartTypes.filter(t => t.value !== 'groupedBar');
 }
 
 

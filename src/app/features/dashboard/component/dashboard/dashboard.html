@@ -154,7 +154,8 @@
         <div class="shimmer h-64 w-full rounded-xl"></div>
       </div>
       } @else {
-      <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
+      <app-charts chartId="FeedbackChart" [chartType]="'bar'" [chartData]="feedbackDonutData()"
+        [allowedChartTypes]="['bar']"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
         [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true" [isLoading]="false"
         [hasError]="feedbackHasError()" [yAxisTitle]="'Feedback Count'">
