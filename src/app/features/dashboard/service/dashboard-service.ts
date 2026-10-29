@@ -6,6 +6,7 @@ import {
   DashboardCardCount,
   DashboardChartdata,
   CalendarApiResponse,
+  DashboardUsageChartdata,
 } from '../models/dashboardModel';
 import { ConnectedDataTableResponse } from '../models/connected.model';
 import { FeedbackDataTableResponse } from '../models/feedback.model';
@@ -96,7 +97,7 @@ export class DashboardService {
     orgId: string,
     userId: string,
     adminSts: string,
-  ): Observable<DashboardChartdata> {
+  ): Observable<DashboardUsageChartdata> {
     let data = {
       fromDate: from,
       toDate: to,
@@ -105,7 +106,7 @@ export class DashboardService {
       adminSts: Number(adminSts),
     };
 
-    return this.http.post<DashboardChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
+    return this.http.post<DashboardUsageChartdata>(`${this.apiUrl}/fetchDashBoardUsageChart`, data);
   }
   dashboardImplementProgressChart(
     from: string,

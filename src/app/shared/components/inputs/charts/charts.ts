@@ -60,6 +60,7 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() chartLabels: string[] = [];
   @Output() onChangeDate: Subject<{ from: string, to: string }> = new Subject()
   @Input() chartType: CustomChartType | ChartType | any = 'bar';
+  @Input() allowedChartTypes: string[] = [];
   @Input() hoverLabel: string = '';
   @Input() backgroundColors: string[] = ['', '', '', ''];
   @Input() chartId: string = '';
@@ -79,6 +80,7 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
 @Input() groupLabels: string[] = []; // Labels that repeat for each group
 @Input() isLoading: boolean = false;
 @Input() hasError: boolean = false;
+@Input() organizationDetails: any = null;
 
   isDropdownOpen = false;
   selectedChart: ChartTypeOption | null = null;
@@ -781,9 +783,31 @@ private rebuildGroupedBarWithAnimation(): void {
     }
   }
 
+  private getAvailableChartTypes(): ChartTypeOption[] {
+    if (!this.allowedChartTypes || this.allowedChartTypes.length === 0) {
+      return this.chartTypes;
+    }
+
+    const allowedValues = this.allowedChartTypes
+      .map((type) => String(type).trim())
+      .filter((type) => type.length > 0);
+
+    if (allowedValues.length === 0) {
+      return this.chartTypes;
+    }
+
+    return this.chartTypes.filter((type) => allowedValues.includes(type.value));
+  }
+
   setSelectedChartType() {
-    // Find the default chart based on the provided chartType
-    this.selectedChart = this.chartTypes.find((type) => type.value === this.chartType) || this.chartTypes[0];
+    const availableChartTypes = this.getAvailableChartTypes();
+    const matchingChart = availableChartTypes.find((type) => type.value === this.chartType);
+
+    this.selectedChart = matchingChart || availableChartTypes[0] || this.chartTypes[0];
+
+    if (this.chartType && !matchingChart && this.selectedChart) {
+      this.chartType = this.selectedChart.value as CustomChartType | ChartType;
+    }
   }
 
   toggleDropdown() {
@@ -2225,29 +2249,255 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   //   return csv;
   // }
 
-  private generateCSVContent(): string {
-  const escape = (v: string) =>
-    v.includes(',') || v.includes('"') || v.includes('\n')
-      ? `"${v.replace(/"/g, '""')}"`
-      : v;
+  private getNormalizedOrgDetails(): Record<string, any> | null {
+    if (!this.organizationDetails) return null;
 
-  // Grouped bar: Label, Active Usage, Low Usage, Non Usage
-  if (this.chartType === 'groupedBar') {
-    const header = ['Label', ...this.groupLabels].map(escape).join(',');
-    const rows = this.chartLabels.map((label, i) => {
-      const values = (this.groupedData[i] || []).map(v => v ?? 0);
-      return [escape(label), ...values].join(',');
-    });
-    return [header, ...rows].join('\n') + '\n';
+    let data = this.organizationDetails;
+
+    if (typeof data === 'function') {
+      try {
+        data = data();
+      } catch {
+        return null;
+      }
+    }
+
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch {
+        return null;
+      }
+    }
+
+    if (!data || typeof data !== 'object') return null;
+
+    if (data.organizationDetails) {
+      let sub = data.organizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.organization_details) {
+      let sub = data.organization_details;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.OrganizationDetails) {
+      let sub = data.OrganizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data?.organizationDetails) {
+      let sub = data.data.organizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data?.organization_details) {
+      let sub = data.data.organization_details;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+      const sampleKeys = Object.keys(data.data);
+      if (sampleKeys.some(k => ['employee', 'attendance', 'leave', 'organization', 'salary','payroll','timesheet','performance'].includes(k.toLowerCase()))) {
+        return data.data;
+      }
+    }
+
+    if (Array.isArray(data)) {
+      const grouped: Record<string, any[]> = {};
+      data.forEach(item => {
+        const mod = (item.module || item.moduleName || item.label || 'unknown').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!grouped[mod]) grouped[mod] = [];
+        grouped[mod].push(item);
+      });
+      return grouped;
+    }
+
+    return data;
   }
 
-  // Normal charts
-  let csv = 'Label,Value\n';
-  this.chartLabels.forEach((label, index) => {
-    csv += `${escape(label)},${this.chartData[index] ?? 0}\n`;
-  });
-  return csv;
-}
+  private getOrgNamesForModule(label: string): { active: string; low: string; non: string } {
+    const details = this.getNormalizedOrgDetails();
+    if (!details || typeof details !== 'object') {
+      return { active: '-', low: '-', non: '-' };
+    }
+
+    const normalizedLabel = (label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const keys = Object.keys(details);
+    const matchedKey = keys.find(k => {
+      const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return kNorm === normalizedLabel || normalizedLabel.includes(kNorm) || kNorm.includes(normalizedLabel);
+    });
+
+    if (!matchedKey) {
+      return { active: '-', low: '-', non: '-' };
+    }
+
+    const rawItems = details[matchedKey];
+    const items: any[] = Array.isArray(rawItems)
+      ? rawItems
+      : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+    const activeList: string[] = [];
+    const lowList: string[] = [];
+    const nonList: string[] = [];
+
+    items.forEach((item: any) => {
+      if (!item) return;
+
+      const name = (
+        typeof item === 'string'
+          ? item
+          : (
+              item.organizationName ??
+              item.organization_name ??
+              item.OrganizationName ??
+              item.orgName ??
+              item.OrgName ??
+              item.org_name ??
+              item.name ??
+              item.Name ??
+              item.companyName ??
+              item.clientName ??
+              item.org_title ??
+              ''
+            )
+      ).toString().trim();
+
+      if (!name || name === '-') return;
+
+      const status = (
+        typeof item === 'string'
+          ? ''
+          : (
+              item.usageStatus ??
+              item.usage_status ??
+              item.UsageStatus ??
+              item.status ??
+              item.Status ??
+              item.usageType ??
+              item.type ??
+              ''
+            )
+      ).toString().toLowerCase();
+
+      if (status.includes('activ') || status === '1' || status === 'high') {
+        if (!activeList.includes(name)) activeList.push(name);
+      } else if (status.includes('low') || status === '2') {
+        if (!lowList.includes(name)) lowList.push(name);
+      } else if (status.includes('non') || status === '0' || status === 'inactive') {
+        if (!nonList.includes(name)) nonList.push(name);
+      } else {
+        if (!activeList.includes(name)) activeList.push(name);
+      }
+    });
+
+    if (rawItems && typeof rawItems === 'object' && !Array.isArray(rawItems)) {
+      Object.keys(rawItems).forEach(subKey => {
+        const subVal = rawItems[subKey];
+        const subKeyLower = subKey.toLowerCase();
+        let targetList: string[] | null = null;
+        if (subKeyLower.includes('activ') || subKeyLower === '1') targetList = activeList;
+        else if (subKeyLower.includes('low') || subKeyLower === '2') targetList = lowList;
+        else if (subKeyLower.includes('non') || subKeyLower === '0') targetList = nonList;
+
+        if (targetList && Array.isArray(subVal)) {
+          subVal.forEach((subItem: any) => {
+            const subName = (
+              typeof subItem === 'string'
+                ? subItem
+                : (
+                    subItem?.organizationName ??
+                    subItem?.orgName ??
+                    subItem?.OrgName ??
+                    subItem?.name ??
+                    ''
+                  )
+            ).toString().trim();
+            if (subName && !targetList.includes(subName)) targetList.push(subName);
+          });
+        }
+      });
+    }
+
+    return {
+      active: activeList.length > 0 ? activeList.join(', ') : '-',
+      low: lowList.length > 0 ? lowList.join(', ') : '-',
+      non: nonList.length > 0 ? nonList.join(', ') : '-'
+    };
+  }
+
+  private generateCSVContent(): string {
+    const escape = (v: any) => {
+      const str = String(v ?? '');
+      return str.includes(',') || str.includes('"') || str.includes('\n')
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    };
+
+    // Grouped bar: Label, Active Usage, Low Usage, Non Usage
+    if (this.chartType === 'groupedBar') {
+      const moduleCol = this.xAxisTitle ? this.xAxisTitle.replace(/s$/, '') : 'Label';
+
+      if (this.organizationDetails) {
+        const header = [
+          moduleCol,
+          this.groupLabels[0] || 'Actively Usages',
+          'Actively Usage Org',
+          this.groupLabels[1] || 'Low Usages',
+          'Low Usage Org',
+          this.groupLabels[2] || 'Non Usages',
+          'Non Usage Org'
+        ].map(escape).join(',');
+
+        const rows = this.chartLabels.map((label, i) => {
+          const values = this.groupedData[i] || [];
+          const orgs = this.getOrgNamesForModule(label);
+          return [
+            escape(label),
+            values[0] ?? 0,
+            escape(orgs.active),
+            values[1] ?? 0,
+            escape(orgs.low),
+            values[2] ?? 0,
+            escape(orgs.non)
+          ].join(',');
+        });
+
+        return [header, ...rows].join('\n') + '\n';
+      }
+
+      const header = [moduleCol, ...this.groupLabels].map(escape).join(',');
+      const rows = this.chartLabels.map((label, i) => {
+        const values = (this.groupedData[i] || []).map(v => v ?? 0);
+        return [escape(label), ...values].join(',');
+      });
+      return [header, ...rows].join('\n') + '\n';
+    }
+
+    // Normal charts
+    let csv = 'Label,Value\n';
+    this.chartLabels.forEach((label, index) => {
+      csv += `${escape(label)},${this.chartData[index] ?? 0}\n`;
+    });
+    return csv;
+  }
 
   // Download Excel
   // async downloadExcel() {
@@ -2336,28 +2586,215 @@ async downloadExcel() {
     const ExcelJS = await import('exceljs');
     const Workbook = (ExcelJS as any).default?.Workbook ?? (ExcelJS as any).Workbook;
     const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('Data');
+    const worksheet = workbook.addWorksheet(this.organizationDetails ? 'Usage Summary' : 'Data');
 
+    const moduleCol = this.xAxisTitle ? this.xAxisTitle.replace(/s$/, '') : 'Label';
     let dataCols = 2;
 
     if (this.chartType === 'groupedBar') {
-      worksheet.addRow(['Label', ...this.groupLabels]);
-      this.chartLabels.forEach((label, i) => {
-        worksheet.addRow([label, ...(this.groupedData[i] || []).map(v => v ?? 0)]);
-      });
-      dataCols = 1 + this.groupLabels.length;
+      if (this.organizationDetails) {
+        const headers = [
+          moduleCol,
+          this.groupLabels[0] || 'Actively Usages',
+          'Actively Usage Org',
+          this.groupLabels[1] || 'Low Usages',
+          'Low Usage Org',
+          this.groupLabels[2] || 'Non Usages',
+          'Non Usage Org'
+        ];
+        worksheet.addRow(headers);
+        dataCols = headers.length;
+
+        this.chartLabels.forEach((label, i) => {
+          const values = this.groupedData[i] || [];
+          const orgs = this.getOrgNamesForModule(label);
+          worksheet.addRow([
+            label,
+            values[0] ?? 0,
+            orgs.active,
+            values[1] ?? 0,
+            orgs.low,
+            values[2] ?? 0,
+            orgs.non
+          ]);
+        });
+
+        // Set column widths
+        worksheet.getColumn(1).width = 20; // Module
+        worksheet.getColumn(2).width = 16; // Actively Usages
+        worksheet.getColumn(3).width = 36; // Actively Usage Org
+        worksheet.getColumn(4).width = 14; // Low Usages
+        worksheet.getColumn(5).width = 36; // Low Usage Org
+        worksheet.getColumn(6).width = 14; // Non Usages
+        worksheet.getColumn(7).width = 36; // Non Usage Org
+
+        // Header styling
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.height = 28;
+
+        headerRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        headerRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+        headerRow.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+        headerRow.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } };
+        headerRow.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
+        headerRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+        headerRow.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEF4444' } };
+
+        for (let c = 1; c <= 7; c++) {
+          headerRow.getCell(c).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          headerRow.getCell(c).border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+
+        // Data rows styling
+        for (let r = 2; r <= this.chartLabels.length + 1; r++) {
+          const row = worksheet.getRow(r);
+          row.height = 22;
+          row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+          row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+          row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(5).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+          row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(7).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+          for (let c = 1; c <= 7; c++) {
+            row.getCell(c).border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+          }
+        }
+
+        // Sheet 2: Organization Details
+        const detailsSheet = workbook.addWorksheet('Organization Details');
+        detailsSheet.addRow(['Module', 'Org ID', 'Organization Name', 'Usage Status', 'Activity Count']);
+        const detailsHeader = detailsSheet.getRow(1);
+        detailsHeader.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        detailsHeader.height = 28;
+        for (let c = 1; c <= 5; c++) {
+          detailsHeader.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+          detailsHeader.getCell(c).alignment = { horizontal: 'center', vertical: 'middle' };
+          detailsHeader.getCell(c).border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+        detailsSheet.getColumn(1).width = 20;
+        detailsSheet.getColumn(2).width = 14;
+        detailsSheet.getColumn(3).width = 36;
+        detailsSheet.getColumn(4).width = 18;
+        detailsSheet.getColumn(5).width = 16;
+
+        const detailsObj = this.getNormalizedOrgDetails();
+        this.chartLabels.forEach((label) => {
+          const normalizedLabel = (label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const keys = Object.keys(detailsObj || {});
+          const matchedKey = keys.find(k => {
+            const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return kNorm === normalizedLabel || normalizedLabel.includes(kNorm) || kNorm.includes(normalizedLabel);
+          });
+          const rawItems = matchedKey ? detailsObj![matchedKey] : [];
+          const items: any[] = Array.isArray(rawItems)
+            ? rawItems
+            : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+          items.forEach(item => {
+            if (!item) return;
+            const orgName = (
+              typeof item === 'string'
+                ? item
+                : (
+                    item.organizationName ??
+                    item.organization_name ??
+                    item.OrganizationName ??
+                    item.orgName ??
+                    item.OrgName ??
+                    item.org_name ??
+                    item.name ??
+                    item.Name ??
+                    item.companyName ??
+                    '-'
+                  )
+            ).toString().trim();
+
+            const orgId = item.orgId ?? item.organizationId ?? item.org_id ?? item.id ?? '-';
+            const activityCount = item.activityCount ?? item.activity_count ?? item.count ?? 0;
+
+            const status = (
+              typeof item === 'string'
+                ? ''
+                : (
+                    item.usageStatus ??
+                    item.usage_status ??
+                    item.UsageStatus ??
+                    item.status ??
+                    item.Status ??
+                    ''
+                  )
+            ).toString().toLowerCase();
+
+            const statusLabel = status.includes('activ')
+              ? 'Actively Usage'
+              : status.includes('low')
+              ? 'Low Usage'
+              : status.includes('non')
+              ? 'Non Usage'
+              : (item.usageStatus || '-');
+
+            const row = detailsSheet.addRow([
+              label,
+              orgId,
+              orgName,
+              statusLabel,
+              activityCount
+            ]);
+            row.height = 20;
+            row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+            row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+            row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle' };
+            row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+            row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            for (let c = 1; c <= 5; c++) {
+              row.getCell(c).border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+              };
+            }
+          });
+        });
+      } else {
+        worksheet.addRow([moduleCol, ...this.groupLabels]);
+        this.chartLabels.forEach((label, i) => {
+          worksheet.addRow([label, ...(this.groupedData[i] || []).map(v => v ?? 0)]);
+        });
+        dataCols = 1 + this.groupLabels.length;
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getColumn(1).width = 22;
+        for (let c = 2; c <= dataCols; c++) {
+          worksheet.getColumn(c).width = 16;
+        }
+      }
     } else {
       worksheet.addRow(['Label', 'Value']);
       this.chartLabels.forEach((label, i) => {
         worksheet.addRow([label, this.chartData[i] ?? 0]);
       });
-    }
-
-    // Header styling
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getColumn(1).width = 22;
-    for (let c = 2; c <= dataCols; c++) {
-      worksheet.getColumn(c).width = 16;
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getColumn(1).width = 22;
+      worksheet.getColumn(2).width = 16;
     }
 
     // Download
@@ -2840,11 +3277,13 @@ async downloadExcel() {
 
 
 getFilteredChartTypes() {
+  const availableChartTypes = this.getAvailableChartTypes();
+
   if (this.selectedChart?.value === 'groupedBar') {
-    return this.chartTypes.filter(t => t.value === 'groupedBar');
-  } else {
-    return this.chartTypes.filter(t => t.value !== 'groupedBar');
+    return availableChartTypes.filter(t => t.value === 'groupedBar');
   }
+
+  return availableChartTypes.filter(t => t.value !== 'groupedBar');
 }
 
 
