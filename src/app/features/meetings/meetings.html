@@ -273,6 +273,22 @@
           {{ formatDuration(row.duration) }}
         </span>
       </ng-template>
+      <ng-template appCustomColumn="priority" let-row>
+        <div class="inline-flex items-center gap-0.5 px-3 py-1 rounded-full
+
+     font-medium" [ngClass]="{
+      'text-gray-700 bg-red-200 ': row.priority == 0,
+      'text-gray-700 bg-yellow-200': row.priority == 1,
+      'text-gray-700 bg-green-200': row.priority ==2
+    }">
+          {{
+          row.priority == 0 ? 'Low' :
+          row.priority == 1 ? 'Medium' :
+          row.priority == 2 ? 'High' : '-'
+          }}
+
+        </div>
+      </ng-template>
 
       <!-- ── Client Email column ───────────────────────────────────────── -->
       <ng-template appCustomColumn="clientMail" let-row>
