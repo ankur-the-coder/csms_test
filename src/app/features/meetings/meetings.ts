@@ -1518,6 +1518,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.dashboardStats().followUpsPending;
   }
 
+  getAllMeetings(): number {
+    return this.dashboardStats().totalMeetings;
+  }
+
   // ============ KPI Card Click Handlers ============
 
   private formatLocalDate(d: Date): string {
@@ -1560,7 +1564,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.initialDateTo.set(to);
     this.filterDateFrom = from;
     this.filterDateTo = to;
-    this.initialFilters.set({ meetingStatus: [] });
+    this.initialFilters.set({ meetingStatus: [0,2] });
 
     if (this.meetingsTable) {
       this.meetingsTable.dateFrom.set(from);
@@ -1627,6 +1631,26 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
       this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
+      this.meetingsTable.page.set(0);
+    }
+
+    this.activeView = 'table';
+    setTimeout(() => this.scrollToDataTable(), 100);
+    setTimeout(() => this.scrollToDataTable(), 350);
+  }
+
+  filterByAllMeetings(): void {
+    this.initialDateFrom.set('');
+    this.initialDateTo.set('');
+    this.filterDateFrom = '';
+    this.filterDateTo = '';
+    this.initialFilters.set({ meetingStatus: [] });
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set('');
+      this.meetingsTable.dateTo.set('');
+      this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
+      this.meetingsTable.tempFilters.set({ meetingStatus: [] });
       this.meetingsTable.page.set(0);
     }
 

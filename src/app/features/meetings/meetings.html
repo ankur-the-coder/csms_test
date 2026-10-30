@@ -17,7 +17,22 @@
   </div>
 
   <!-- KPI Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+
+    <!-- All Meetings -->
+    <div (click)="filterByAllMeetings()" (keydown.enter)="filterByAllMeetings()" (keydown.space)="filterByAllMeetings()"
+      role="button" tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-violet-300 bg-violet-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
+      <div class="min-w-0">
+        <div class="text-2xl font-bold mt-1" [appCountUp]="getAllMeetings()"></div>
+        <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">All Meetings</span>
+      </div>
+      <div class="stat-icon w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </div>
+    </div>
 
     <!-- Today's Meetings -->
     <div (click)="filterByToday()" (keydown.enter)="filterByToday()" (keydown.space)="filterByToday()" role="button"

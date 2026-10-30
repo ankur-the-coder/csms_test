@@ -327,6 +327,8 @@
 
           <div class="flex flex-wrap items-center gap-2">
             <label
+              [class.opacity-40]="mailAttachments().length >= 3"
+              [class.pointer-events-none]="mailAttachments().length >= 3"
               class="inline-flex items-center gap-1.5 h-8 border border-dashed border-slate-300 rounded-full pl-2.5 pr-3 text-xs font-medium text-slate-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/40 transition shrink-0">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -359,6 +361,8 @@
 
           @if (attachmentError()) {
           <p class="text-xs text-red-500 mt-1.5">{{ attachmentError() }}</p>
+          } @else {
+          <p class="text-[10.5px] text-slate-400 mt-1.5">Max 3 files · 5 MB each · 5 MB total</p>
           }
         </div>
       </div>
