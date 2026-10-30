@@ -306,13 +306,13 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
         key: 'priority',
         label: 'Priority',
         sortable: true,
-        type: 'badge' as const,
-        align: 'center' as const,
-        badgeMap: {
-          '0': { label: 'Low' },
-          '1': { label: 'Medium' },
-          '2': { label: 'High' },
-        } as Record<string, BadgeMapEntry>,
+        // type: 'badge' as const,
+        // align: 'center' as const,
+        // badgeMap: {
+        //   '0': { label: 'Low' },
+        //   '1': { label: 'Medium' },
+        //   '2': { label: 'High' },
+        // } as Record<string, BadgeMapEntry>,
       },
       {
         key: 'status',
@@ -1674,7 +1674,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   // ============ Calendar & Timeline API Helper Methods ============
 
   calendarMonth = signal<number>(new Date().getMonth());
-  calendarYear = signal<number>(new Date().getFullYear());  
+  calendarYear = signal<number>(new Date().getFullYear());
 
   onCalendarDateSelect(date: Date): void {
     if (date) {
@@ -1972,7 +1972,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
               url: link,
               files: [file]
             });
-            
+
             return;
           }
         }
@@ -1982,7 +1982,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
           text: `Scan QR code or click the link to join: ${title}`,
           url: link
         });
-        
+
         return;
       } catch (err: any) {
         if (err?.name === 'AbortError') return;

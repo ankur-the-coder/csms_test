@@ -73,3 +73,54 @@ export interface CalendarApiResponse {
   status: boolean;
   msg: string;
 }
+
+//*************************//
+export interface DashboardUsageChartdata {
+    status:              boolean;
+    modules:             Modules;
+    organizationDetails: OrganizationDetails;
+    overall:             Overall;
+}
+
+export interface Modules {
+    employee:     Overall;
+    attendance:   Overall;
+    leave:        Overall;
+    salary:       Overall;
+    organization: Overall;
+    performance:  Overall;
+    timesheet:    Overall;
+    payroll:      Overall;
+}
+
+export interface Overall {
+    activelyUsages:           number;
+    lowuUsages:               number;
+    nonUsages:                number;
+    activelyUsagesPercentage: number;
+    lowuUsagesPercentage:     number;
+    nonUsagesPercentage:      number;
+}
+
+export interface OrganizationDetails {
+    employee:     Attendance[];
+    attendance:   Attendance[];
+    leave:        Attendance[];
+    salary:       any[];
+    organization: Attendance[];
+    performance:  any[];
+    timesheet:    any[];
+    payroll:      any[];
+}
+
+export interface Attendance {
+    orgId:            number;
+    organizationName: string;
+    activityCount:    number;
+    usageStatus:      string;
+}
+
+
+
+
+

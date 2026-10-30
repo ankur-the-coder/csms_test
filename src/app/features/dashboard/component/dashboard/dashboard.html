@@ -140,6 +140,7 @@
       } @else {
       <app-charts chartId="UsagesChart" [chartType]="'groupedBar'" [groupedData]="usagesGroupedData()"
         [chartLabels]="usagesChartLabels()" [groupLabels]="usagesGroupLabels()" [groupColors]="usagesGroupColors()"
+        [organizationDetails]="usagesOrganizationDetails()"
         [headingText]="'Monthly Organizations Usage'" [xAxisTitle]="'Modules'" [yAxisTitle]="'Organizations Count'" [leaveChart]="true" [isLoading]="false"
         [hasError]="usagesHasError()">
       </app-charts>
@@ -154,7 +155,8 @@
         <div class="shimmer h-64 w-full rounded-xl"></div>
       </div>
       } @else {
-      <app-charts chartId="FeedbackChart" [chartType]="'area'" [chartData]="feedbackDonutData()"
+      <app-charts chartId="FeedbackChart" [chartType]="'bar'" [chartData]="feedbackDonutData()"
+        [allowedChartTypes]="['bar']"
         [chartLabels]="feedbackDonutLabels()" [backgroundColors]="feedbackDonutColors()" [headingText]="'Feedback'"
         [hoverLabel]="'Feedbacks'" [donutCenterText]="feedbackDonutCenterText()" [leaveChart]="true" [isLoading]="false"
         [hasError]="feedbackHasError()" [yAxisTitle]="'Feedback Count'">
