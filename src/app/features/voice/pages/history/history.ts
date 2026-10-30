@@ -39,6 +39,7 @@ export class History implements OnInit {
 
   private readonly voiceApiBase = `${environment.apiUrl}/api/voice`;
 
+readonly defaultFilters: Record<string, any> = { country: '1' };
   historyTableConfig!: SmartTableConfig<CallHistoryRow>;
 
   callNumber(row: CallHistoryRow): void {
@@ -147,6 +148,15 @@ export class History implements OnInit {
           { label: 'Outgoing', value: 'outbound' },
         ],
       },
+       {
+        key: 'country',
+        label: 'Country',
+        type: 'select',
+        options: [
+          { label: 'International', value: '1' },
+          { label: 'National', value: '2' },
+        ],
+      },
     ],
 
     toolbarButtons: [
@@ -178,6 +188,7 @@ buildRequest: (ctx: RequestContext) => {
 
   params.set('page', String(ctx.page + 1));
   params.set('limit', String(ctx.pageSize));
+  params.set('country', ctx.filters['country'] || '1');
 
   const currentEmpId = localStorage.getItem('empId');
   const isAdmin = localStorage.getItem('adminSts') === '1';
@@ -196,6 +207,10 @@ buildRequest: (ctx: RequestContext) => {
 
   if (ctx.filters['direction']) {
     params.set('direction', ctx.filters['direction']);
+  }
+
+  if (ctx.filters['country']) {
+    params.set('country', ctx.filters['country']);
   }
 
   return {

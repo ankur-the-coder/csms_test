@@ -16,11 +16,12 @@ import {
   ViewChild,
   ViewChildren,
   ElementRef,
+  DestroyRef,
 } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { CommonModule, DatePipe, DecimalPipe, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, of, catchError } from 'rxjs';
+import { forkJoin, of, catchError, Subscription } from 'rxjs';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -77,6 +78,8 @@ export class DataTable<T extends object> implements AfterContentInit {
   private http = inject(HttpClient);
   private dataTableService = inject(DataTableService);
   private _lastFetchKey = '';
+  private _activeFetchSub?: Subscription;
+  private destroyRef = inject(DestroyRef);
 
   // ── Inputs ────────────────────────────────────────────────────────────────
   config = input.required<SmartTableConfig<T>>();
@@ -559,6 +562,9 @@ export class DataTable<T extends object> implements AfterContentInit {
       if (fetchKey === this._lastFetchKey) return;
       this._lastFetchKey = fetchKey;
 
+      // Abort previous in-flight request only when starting a new different request
+      this._activeFetchSub?.unsubscribe();
+
       this.loadState.set('loading');
       this.errorMessage.set('');
 
@@ -595,10 +601,8 @@ export class DataTable<T extends object> implements AfterContentInit {
         });
       }
 
-      let stale = false;
-      const sub = request$.subscribe({
+      this._activeFetchSub = request$.subscribe({
         next: (res) => {
-          if (stale) return;
           const rawData = (getByPath(res, dp) as any[]) ?? [];
           const mapped = transformRow ? rawData.map(transformRow) : (rawData as T[]);
           const data = mapped.filter((r): r is T => r !== null && r !== undefined);
@@ -611,18 +615,12 @@ export class DataTable<T extends object> implements AfterContentInit {
           this.isSpinning.set(false);
         },
         error: (err) => {
-          if (stale) return;
           this._lastFetchKey = '';
           this.loadState.set('error');
           this.errorMessage.set(err?.message ?? 'Failed to load data');
           this.initialLoadDone.set(true);
           this.isSpinning.set(false);
         },
-      });
-
-      onCleanup(() => {
-        stale = true;
-        sub.unsubscribe();
       });
     });
   });
@@ -645,6 +643,10 @@ export class DataTable<T extends object> implements AfterContentInit {
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
+  constructor() {
+    this.destroyRef.onDestroy(() => this._activeFetchSub?.unsubscribe());
+  }
+
   ngAfterContentInit(): void {
     const cfg = this.config();
     untracked(() => {
