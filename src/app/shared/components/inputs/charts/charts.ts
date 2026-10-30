@@ -1454,7 +1454,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const width = 1122;
     const height = 793;
     const hoverLabel = this.hoverLabel;
@@ -1563,7 +1563,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const width = 5120;
     const height = 3840;
     if (this.chartType === 'radar') {
@@ -1657,7 +1657,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const { default: pdfMake } = await import('pdfmake/build/pdfmake');
     const { default: pdfFonts } = await import('pdfmake/build/vfs_fonts');
 
@@ -1690,7 +1690,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const tempChart = new Chart(tempCanvas, configWithBg);
 
     // Wait for chart to render before getting image data
-    setTimeout(() => {
+    // setTimeout(() => {
       const imgData = tempCanvas.toDataURL('image/png');
 
       const docDefinition: any = {
@@ -1718,7 +1718,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       pdfMake.createPdf(docDefinition).download(`${this.hoverLabel.replace(/\s+/g, '_')}_chart.pdf`);
       tempChart.destroy();
       this.isExportDropdownOpen = false;
-    }, 0);
+    // }, 0);
   }
 
   // Download SVG
@@ -2581,7 +2581,7 @@ async downloadExcel() {
   if (!this.isBrowser) {
     return;
   }
-
+this.isExportDropdownOpen = false;
   try {
     const ExcelJS = await import('exceljs');
     const Workbook = (ExcelJS as any).default?.Workbook ?? (ExcelJS as any).Workbook;
@@ -2814,6 +2814,7 @@ async downloadExcel() {
   } finally {
     this.isExportDropdownOpen = false;
   }
+this.isExportDropdownOpen = false;
 }
 
   private dataURLToBuffer(dataURL: string): Uint8Array {
