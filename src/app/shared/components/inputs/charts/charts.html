@@ -39,12 +39,12 @@
               <button
                 type="button"
                 (click)="selectChart(type)"
-                class="w-full py-2 px-3 flex items-center gap-2.5 hover:bg-slate-50 focus:outline-none transition-colors text-left cursor-pointer"
+                class="w-full py-2 px-3 flex items-center gap-2.5 hover:bg-emerald-150  focus:outline-none transition-colors text-left cursor-pointer"
                 [class.bg-[#bbf7d0]]="selectedChart?.value === type.value"
                 [class.hover:bg-[#bbf7d0]]="selectedChart?.value === type.value"
                 [class.font-semibold]="selectedChart?.value === type.value"
               >
-                <div 
+                <div
                   [innerHTML]="getSanitizedIcon(type.value)"
                   class="w-5 h-5 shrink-0 flex items-center justify-center text-slate-800"
                 ></div>
@@ -71,7 +71,7 @@
               <path d="M9 7V4a2 2 0 012-2h2a2 2 0 012 2v3"/>
             </svg>
           </div>
-          <svg  
+          <svg
             class="w-3.5 h-3.5 text-slate-600 transition-transform duration-200"
             [class.rotate-180]="isExportDropdownOpen"
             fill="none"
@@ -89,7 +89,7 @@
 
         @if(isExportDropdownOpen){
           <div class="absolute top-full right-0 z-50 mt-1 min-w-48 rounded-xl bg-white text-slate-800 border border-slate-200 shadow-xl py-1.5 overflow-hidden">
-            
+
             <button
               type="button"
               (click)="viewFullScreen()"
@@ -203,7 +203,7 @@
       </div>
     </div>
   </div>
-   
+
   <div #chartContainer class="relative w-full h-70 min-h-70 z-0" (click)="viewFullScreen()">
     <canvas #chartCanvas class="block w-full h-full rounded-md" [id]="chartId"></canvas>
   </div>
