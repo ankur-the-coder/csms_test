@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef, NgZone, ViewEncapsulation } from '@angular/core';
+﻿import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef, NgZone, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -321,13 +321,13 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
         type: 'badge' as const,
         align: 'center' as const,
         badgeMap: {
-          '0': { label: 'Scheduled' },
-          '1': { label: 'Completed' },
-          '2': { label: 'Rescheduled' },
-          '3': { label: 'Pending' },
-          '4': { label: 'Cancelled' },
-          '5': { label: 'Client No-Show' },
-          '6': { label: 'Host No-Show' },
+          '0': { label: 'Scheduled'                      },
+          '1': { label: 'Completed',      color: 'good'   },
+          '2': { label: 'Rescheduled',    color: 'pink'   },
+          '3': { label: 'Pending',        color: 'warn'   },
+          '4': { label: 'Cancelled',      color: 'danger' },
+          '5': { label: 'Client No-Show', color: 'danger' },
+          '6': { label: 'Host No-Show',   color: 'danger' },
         } as Record<string, BadgeMapEntry>,
       },
       {
