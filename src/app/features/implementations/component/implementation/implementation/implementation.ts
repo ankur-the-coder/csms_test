@@ -204,8 +204,6 @@ export class Implementation implements OnInit, OnDestroy {
         totalPath: 'meta.total',
 
         buildRequest: (ctx: RequestContext) => {
-          if (ctx.dateFrom) this.selectedDateFrom.set(ctx.dateFrom);
-          if (ctx.dateTo)   this.selectedDateTo.set(ctx.dateTo);
 
           const today = this.getTodayDateString();
           const firstDay = this.getFirstDayOfMonthString();
