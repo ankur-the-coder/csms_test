@@ -87,7 +87,7 @@ export class AuthService {
           if (d.empId) window.localStorage.setItem('empId', d.empId);
           if (d.designation) window.localStorage.setItem('designation', d.designation);
           if (d.adminSts !== undefined) window.localStorage.setItem('adminSts', String(d.adminSts));
-          if (d.hrSts !== undefined) window.localStorage.setItem('hrSts', String(d.hrSts));
+          // if (d.hrSts !== undefined) window.localStorage.setItem('hrSts', String(d.hrSts));
           if (d.orgId) window.localStorage.setItem('orgId', d.orgId);
           if (d.email) window.localStorage.setItem('email', d.email);
           if (d.phone) window.localStorage.setItem('phone', d.phone);
@@ -150,7 +150,7 @@ export class AuthService {
     window.localStorage.removeItem('usermasterEmpId');
     window.localStorage.removeItem('userType');
     window.localStorage.removeItem('adminSts');
-    window.localStorage.removeItem('hrSts');
+    // window.localStorage.removeItem('hrSts');
     window.localStorage.removeItem('orgId');
   }
 
@@ -182,9 +182,9 @@ export class AuthService {
   adminSts(): string {
     return this.isBrowser ? (window.localStorage.getItem('adminSts') ?? '') : '';
   }
-  hrSts(): string {
-    return this.isBrowser ? (window.localStorage.getItem('hrSts') ?? '') : '';
-  }
+  // hrSts(): string {
+  //   return this.isBrowser ? (window.localStorage.getItem('hrSts') ?? '') : '';
+  // }
 
   email(): string {
     return this.isBrowser ? (window.localStorage.getItem('email') ?? '') : '';
@@ -209,7 +209,7 @@ export class AuthService {
     if (data.empId) window.localStorage.setItem('empId', data.empId);
     if (data.designation) window.localStorage.setItem('designation', data.designation);
     if (data.adminSts !== undefined) window.localStorage.setItem('adminSts', data.adminSts.toString());
-    if (data.hrSts !== undefined) window.localStorage.setItem('hrSts', data.hrSts.toString());
+    // if (data.hrSts !== undefined) window.localStorage.setItem('hrSts', data.hrSts.toString());
     if (data.orgId) window.localStorage.setItem('orgId', data.orgId);
     if (data.email) window.localStorage.setItem('email', data.email);
     if (data.phone) window.localStorage.setItem('phone', data.phone);
