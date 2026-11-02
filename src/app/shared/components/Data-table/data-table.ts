@@ -128,6 +128,7 @@ export class DataTable<T extends object> implements AfterContentInit {
   pageSizePopoverOpen = signal(false);
   private wasDragging = signal(false);
   activeDropdownKey = signal<string | null>(null);
+  dropdownSearch = signal<Record<string, string>>({});
   // Viewport-relative coordinates for the currently open dropdown popover.
   // Computed from the trigger button's own bounding rect so the popover can
   // render with position:fixed and escape the modal body's overflow-y-auto
@@ -1972,12 +1973,21 @@ export class DataTable<T extends object> implements AfterContentInit {
     return `${selectedLabels.slice(0, 2).join(', ')} +${selectedLabels.length - 2} more`;
   }
 
-  /**
-   * Placeholder for future server-side / client-side search filtering
-   */
   onDropdownSearch(filterKey: string, searchTerm: string): void {
-    // Logic to emit an event or filter filter.options dynamically
-    console.log(`Searching for '${searchTerm}' in filter: ${filterKey}`);
+    this.dropdownSearch.update((searches) => ({
+      ...searches,
+      [filterKey]: searchTerm,
+    }));
+  }
+
+  getFilteredMultiSelectOptions(filter: TableFilter): NonNullable<TableFilter['options']> {
+    const options = filter.options ?? [];
+    const searchTerm = (this.dropdownSearch()[filter.key] ?? '').trim().toLocaleLowerCase();
+    if (!searchTerm) return options;
+
+    return options.filter(({ label, value }) =>
+      `${label} ${value}`.toLocaleLowerCase().includes(searchTerm),
+    );
   }
 
   // ── Star rating filter helpers ───────────────────────────
