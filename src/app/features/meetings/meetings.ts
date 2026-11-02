@@ -1,4 +1,4 @@
-import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef, NgZone, ViewEncapsulation } from '@angular/core';
+﻿import { Component, signal, computed, ViewChild, ElementRef, OnInit, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef, NgZone, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -321,13 +321,13 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
         type: 'badge' as const,
         align: 'center' as const,
         badgeMap: {
-          '0': { label: 'Scheduled' },
-          '1': { label: 'Completed' },
-          '2': { label: 'Rescheduled' },
-          '3': { label: 'Pending' },
-          '4': { label: 'Cancelled' },
-          '5': { label: 'Client No-Show' },
-          '6': { label: 'Host No-Show' },
+          '0': { label: 'Scheduled'                      },
+          '1': { label: 'Completed',      color: 'good'   },
+          '2': { label: 'Rescheduled',    color: 'pink'   },
+          '3': { label: 'Pending',        color: 'warn'   },
+          '4': { label: 'Cancelled',      color: 'danger' },
+          '5': { label: 'Client No-Show', color: 'danger' },
+          '6': { label: 'Host No-Show',   color: 'danger' },
         } as Record<string, BadgeMapEntry>,
       },
       {
@@ -1244,6 +1244,15 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
       const to = params.get('to');
       const status = params.get('status');
 
+      // Default: current month (overridden if query params exist)
+      const _now     = new Date();
+      const _defFrom = this.formatLocalDate(new Date(_now.getFullYear(), _now.getMonth(), 1));
+      const _defTo   = this.formatLocalDate(new Date(_now.getFullYear(), _now.getMonth() + 1, 0));
+      this.initialDateFrom.set(_defFrom);
+      this.initialDateTo.set(_defTo);
+      this.filterDateFrom = _defFrom;
+      this.filterDateTo   = _defTo;
+
       if (from && to) {
         this.initialDateFrom.set(from);
         this.initialDateTo.set(to);
@@ -1581,8 +1590,8 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   filterByCompleted(): void {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1 - 7);
-    const lastDay = new Date(now.getFullYear(), now.getMonth(),1);
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const from = this.formatLocalDate(firstDay);
     const to = this.formatLocalDate(lastDay);
 
@@ -1640,15 +1649,18 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   filterByAllMeetings(): void {
-    this.initialDateFrom.set('');
-    this.initialDateTo.set('');
-    this.filterDateFrom = '';
-    this.filterDateTo = '';
+    const _n  = new Date();
+    const from = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth(), 1));
+    const to   = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth() + 1, 0));
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+    this.filterDateFrom = from;
+    this.filterDateTo   = to;
     this.initialFilters.set({ meetingStatus: [] });
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set('');
-      this.meetingsTable.dateTo.set('');
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
       this.meetingsTable.tempFilters.set({ meetingStatus: [] });
       this.meetingsTable.page.set(0);
