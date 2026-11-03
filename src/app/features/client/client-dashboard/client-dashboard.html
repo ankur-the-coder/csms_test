@@ -82,12 +82,14 @@
   </section>
 
   <!-- Implementation Tracker + Modules & Purchased Features -->
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
+  <!-- CHANGE: lg:grid-cols-3 -> lg:grid-cols-2 (dono cards barabar width) -->
+  <section class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 mb-5">
     <!-- Implementation Tracker Card -->
-    <div class="bg-white rounded-2xl p-5 flex flex-col justify-between">
-      <div>
+    <!-- CHANGE: fixed height + flex-col (dono cards barabar height) -->
+    <div class="bg-white rounded-2xl p-5 flex flex-col lg:h-[340px]">
+      <div class="flex flex-col flex-1 min-h-0">
         <!-- Card Header -->
-        <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center justify-between mb-3 shrink-0">
           <div class="flex items-center gap-2">
             <h2 class="text-[15px] font-bold m-0">Implementation Tracker</h2>
             <span
@@ -118,7 +120,7 @@
         <!-- Overall Progress Bar -->
         <div
           *ngIf="overallImplementationProgress().total > 0"
-          class="mb-3.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100"
+          class="mb-3.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100 shrink-0"
         >
           <div
             class="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5"
@@ -142,7 +144,7 @@
         <!-- Module Filter Tabs (Pills) -->
         <div
           *ngIf="implementationModules().length > 1"
-          class="p-1 mb-3 bg-slate-100 rounded-xl flex items-center gap-1 overflow-x-auto hide-scrollbar"
+          class="p-1 mb-3 bg-slate-100 rounded-xl flex items-center gap-1 overflow-x-auto hide-scrollbar shrink-0"
         >
           <button
             (click)="selectModuleTab('all')"
@@ -180,9 +182,10 @@
         </div>
 
         <!-- Scrollable Module Cards List -->
+        <!-- CHANGE: flex-1 min-h-0 overflow-y-auto (card ke andar scroll) -->
         <div
           *ngIf="!implementationLoading() && widgetTrackerModules().length > 0"
-          class="space-y-3 pr-1 hide-scrollbar"
+          class="space-y-3 pr-1 hide-scrollbar flex-1 min-h-0 overflow-y-auto max-h-[320px] lg:max-h-none"
         >
           <div
             *ngFor="let mod of widgetTrackerModules()"
@@ -267,7 +270,7 @@
         <!-- Empty State -->
         <div
           *ngIf="!implementationLoading() && widgetTrackerModules().length === 0"
-          class="flex flex-col items-center justify-center py-12 text-center"
+          class="flex-1 flex flex-col items-center justify-center py-12 text-center"
         >
           <div
             class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2.5"
@@ -294,7 +297,7 @@
         <!-- Loading State -->
         <div
           *ngIf="implementationLoading()"
-          class="flex flex-col items-center justify-center py-12 text-center"
+          class="flex-1 flex flex-col items-center justify-center py-12 text-center"
         >
           <svg class="animate-spin w-6 h-6 text-slate-400 mb-2" viewBox="0 0 24 24" fill="none">
             <circle
@@ -317,148 +320,10 @@
     </div>
 
     <!-- ==================== MODULES & PURCHASED FEATURES ==================== -->
-    <!-- <div class="lg:col-span-2 bg-white rounded-2xl p-5 flex flex-col">
-
-
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-[15px] font-bold m-0">Modules &amp; Purchased Features</h2>
-        <a
-          *ngIf="hasMoreAddons()"
-          (click)="openAllAddonsModal()"
-          class="text-blue-500 hover:text-blue-700 text-xs font-semibold cursor-pointer"
-          >View All</a
-        >
-      </div>
-
-
-      <div class="mb-4">
-        <div
-          *ngIf="!usageLoading() && usage() as u"
-          class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1"
-        >
-          <div
-            *ngFor="let metric of usageMetrics(u); let i = index"
-            class="flex items-center gap-3 px-2 py-1.5 rounded-lg cursor-pointer transition-colors"
-            [class.bg-slate-50]="selectedUsageMetric()?.label === metric.label"
-            (click)="
-              selectedUsageMetric.set(
-                selectedUsageMetric()?.label === metric.label ? null : metric
-              )
-            "
-          >
-            <span class="text-xs font-semibold text-slate-700 w-20 shrink-0 truncate">
-              {{ metric.label }}
-            </span>
-            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-500"
-                [style.width.%]="metric.value > 100 ? 100 : metric.value"
-                [style.background]="ringColors[i % ringColors.length]"
-              ></div>
-            </div>
-            <span class="text-[11px] font-bold text-slate-600 w-9 text-right shrink-0">
-              {{ metric.value }}%
-            </span>
-          </div>
-        </div>
-
-
-        <div
-          *ngIf="!usageLoading() && !usage()"
-          class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3"
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M3 3v18h18" />
-            <path d="M7 15l4-4 3 3 5-6" />
-          </svg>
-          No usage data available
-        </div>
-
-
-        <div *ngIf="usageLoading()" class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3">
-          <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-          </svg>
-          Loading usage...
-        </div>
-      </div>
-
-
-      <div class="border-t border-slate-100 mb-4"></div>
-
-
-      <div>
-        <div
-          *ngIf="!addonsLoading() && topSixAddons().length > 0"
-          class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"
-        >
-          <div
-            *ngFor="let addon of topSixAddons()"
-            class="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all"
-            [class.bg-emerald-50]="addon.enabled"
-            [class.border-emerald-200]="addon.enabled"
-            [class.bg-rose-50]="!addon.enabled"
-            [class.border-rose-200]="!addon.enabled"
-          >
-
-            <span
-              class="w-2 h-2 rounded-full shrink-0"
-              [class.bg-emerald-500]="addon.enabled"
-              [class.bg-rose-500]="!addon.enabled"
-            ></span>
-
-
-            <span
-              class="text-xs font-semibold truncate flex-1"
-              [class.text-slate-800]="addon.enabled"
-              [class.text-slate-700]="!addon.enabled"
-              [title]="addon.name"
-            >
-              {{ addon.name }}
-            </span>
-
-
-            <span
-              class="text-[10px] font-semibold shrink-0"
-              [class.text-emerald-600]="addon.enabled"
-              [class.text-rose-600]="!addon.enabled"
-            >
-              {{ addon.enabled ? 'Enabled' : 'Disabled' }}
-            </span>
-          </div>
-        </div>
-
-
-        <div
-          *ngIf="!addonsLoading() && topSixAddons().length === 0"
-          class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3"
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="4" y="4" width="16" height="16" rx="3" />
-            <circle cx="9" cy="10" r="1" />
-            <circle cx="15" cy="10" r="1" />
-            <path d="M9 15c1 1 5 1 6 0" />
-          </svg>
-          No add-ons purchased
-        </div>
-
-
-        <div *ngIf="addonsLoading()" class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3">
-          <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-          </svg>
-          Loading add-ons...
-        </div>
-      </div>
-
-    </div> -->
-
-    <!-- ==================== MODULES & PURCHASED FEATURES ==================== -->
-    <div class="lg:col-span-2  bg-white rounded-2xl p-5 flex flex-col">
+    <!-- CHANGE: lg:col-span-2 hata diya, same fixed height, tiles card bharte hain -->
+    <div class="bg-white rounded-2xl p-5 flex flex-col lg:h-[340px]">
       <!-- Card Header -->
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h2 class="text-[15px] font-bold m-0">Modules &amp; Purchased Features</h2>
           <p class="text-[11px] text-slate-400 m-0 mt-0.5">
@@ -473,10 +338,10 @@
         >
       </div>
 
-      <!-- Tiles -->
+      <!-- Tiles: max 6 (topTiles), pehle jaisa chhota size -->
       <div
         *ngIf="!featuresLoading() && topTiles().length > 0"
-        class="flex-1 grid grid-cols-2 sm:grid-cols-3 content-evenly gap-2.5"
+        class="flex-1 grid grid-cols-2 content-evenly gap-2.5"
       >
         <div
           *ngFor="let t of topTiles()"
@@ -486,9 +351,6 @@
         >
           <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="tileStyle[t.state].dot"></span>
           <span class="text-xs font-semibold truncate flex-1 text-slate-800">{{ t.name }}</span>
-          <!-- <span class="text-[10px] font-semibold shrink-0" [ngClass]="tileStyle[t.state].text">
-        {{ t.detail }}
-      </span> -->
           <span
             *ngIf="t.detail === 'No activity'"
             class="text-[10px] font-semibold shrink-0"
@@ -500,22 +362,25 @@
       </div>
 
       <!-- Partial error (modules failed but add-ons loaded, or vice versa) -->
-      <p *ngIf="!featuresLoading() && modulesError()" class="text-[11px] text-rose-500 mt-2 m-0">
+      <p
+        *ngIf="!featuresLoading() && modulesError()"
+        class="text-[11px] text-rose-500 mt-2 m-0 shrink-0"
+      >
         {{ modulesError() }}
       </p>
 
       <!-- Empty -->
       <div
         *ngIf="!featuresLoading() && topTiles().length === 0"
-        class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3"
+        class="flex-1 flex flex-col items-center justify-center gap-2 text-xs text-slate-400"
       >
         <svg
           viewBox="0 0 24 24"
-          width="14"
-          height="14"
+          width="22"
+          height="22"
           fill="none"
           stroke="currentColor"
-          stroke-width="1.8"
+          stroke-width="1.6"
         >
           <rect x="4" y="4" width="16" height="16" rx="3" />
           <circle cx="9" cy="10" r="1" />
@@ -528,9 +393,9 @@
       <!-- Loading -->
       <div
         *ngIf="featuresLoading()"
-        class="flex items-center gap-2 text-xs text-slate-400 px-2 py-3"
+        class="flex-1 flex items-center justify-center gap-2 text-xs text-slate-400"
       >
-        <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
           <circle
             class="opacity-25"
             cx="12"
@@ -759,62 +624,6 @@
       </div>
     </div>
 
-    <!-- View All Add-ons Modal -->
-    <!-- <div
-      *ngIf="showAllAddonsModal()"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-      (click)="closeAllAddonsModal()"
-    >
-      <div
-        class="bg-white rounded-2xl p-5 w-full max-w-lg max-h-[80vh] overflow-y-auto"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="flex items-center justify-between mb-3.5">
-          <h2 class="text-[15px] font-bold">All Purchased Add-ons</h2>
-          <button (click)="closeAllAddonsModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div
-            *ngFor="let addon of addons()"
-            class="flex items-start gap-2.5 border rounded-xl p-3"
-            [class.border-emerald-200]="addon.enabled"
-            [class.bg-emerald-50]="addon.enabled"
-            [class.border-rose-200]="!addon.enabled"
-            [class.bg-rose-50]="!addon.enabled"
-          >
-            <div
-              class="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0"
-              [class.bg-emerald-100]="addon.enabled"
-              [class.text-emerald-600]="addon.enabled"
-              [class.bg-rose-100]="!addon.enabled"
-              [class.text-rose-600]="!addon.enabled"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="4" y="4" width="16" height="16" rx="3" />
-                <circle cx="9" cy="10" r="1" />
-                <circle cx="15" cy="10" r="1" />
-                <path d="M9 15c1 1 5 1 6 0" />
-              </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold m-0 leading-snug">{{ addon.name }}</p>
-              <p
-                class="text-[11px] m-0 mt-0.5 font-semibold"
-                [class.text-emerald-600]="addon.enabled"
-                [class.text-rose-600]="!addon.enabled"
-              >
-                {{ addon.enabled ? 'Enabled' : 'Disabled' }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div> -->
-
     <!-- View All Modules & Add-ons Modal -->
     <div
       *ngIf="showAllFeaturesModal()"
@@ -855,9 +664,6 @@
           >
             <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="tileStyle[t.state].dot"></span>
             <span class="text-xs font-semibold truncate flex-1 text-slate-800">{{ t.name }}</span>
-            <!-- <span class="text-[10px] font-semibold shrink-0" [ngClass]="tileStyle[t.state].text">
-          {{ t.detail }}
-        </span> -->
             <span
               *ngIf="t.detail === 'No activity'"
               class="text-[10px] font-semibold shrink-0"

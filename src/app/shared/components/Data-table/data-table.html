@@ -480,7 +480,10 @@
             <span
               class="st-badge inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-[0.03em] whitespace-nowrap leading-1.5 [&::before]:content-[''] [&::before]:w-1.5 [&::before]:h-1.5 [&::before]:rounded-full [&::before]:bg-current [&::before]:shrink-0"
               [ngClass]="getBadgeClass(col, getCellValue(row, col.key))">
-              {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
+              <span
+                [style.color]="col.key === 'status' && col.badgeMap?.['0']?.label === 'Scheduled' ? '#000' : null">
+                {{ getBadgeLabel(col, getCellValue(row, col.key)) }}
+              </span>
             </span>
             }
 
@@ -914,13 +917,15 @@
                   </svg>
                   <input type="text" placeholder="Search"
                     class="w-full pl-8 pr-3 py-1.5 text-xs font-inherit bg-surface-100 text-text-primary border border-card-border rounded-lg outline-none focus:border-brand-500 transition-colors"
+                    [value]="dropdownSearch()[filter.key] ?? ''"
                     (input)="onDropdownSearch(filter.key, $any($event.target).value)" />
                 </div>
               </div>
 
               <!-- Options List -->
               <div class="flex-1 overflow-y-auto p-1.5 scrollbar-thin scrollbar-thumb-surface-200">
-                @for (opt of filter.options ?? []; track opt.value) {
+                @let filteredOptions = getFilteredMultiSelectOptions(filter);
+                @for (opt of filteredOptions; track opt.value) {
                 <label
                   class="group/opt relative flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 select-none"
                   [class.bg-brand-50]="isTempFilterValueChecked(filter.key, opt.value)"
@@ -967,9 +972,9 @@
                 </label>
                 }
 
-                @if (!(filter.options ?? []).length) {
+                @if (!filteredOptions.length) {
                 <div class="px-3 py-4 text-center text-xs text-text-muted">
-                  No options found
+                  {{ dropdownSearch()[filter.key] ? 'No matching options' : 'No options found' }}
                 </div>
                 }
               </div>

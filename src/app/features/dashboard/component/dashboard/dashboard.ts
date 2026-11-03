@@ -105,6 +105,7 @@ export class DashboardComponent implements OnInit {
 
   readonly isUsagesLoading = signal(true);
   readonly usagesHasError = signal(false);
+  readonly usagesOrganizationDetails = signal<any>(null);
 
   // ---------------------------------------------------------------------------
   // Feedback Chart
@@ -439,6 +440,16 @@ export class DashboardComponent implements OnInit {
           this.isUsagesLoading.set(false);
 
           if (res?.modules) {
+            const orgDetails =
+              res?.organizationDetails ??
+              res?.organization_details ??
+              res?.OrganizationDetails ??
+              res?.orgDetails ??
+              res?.data?.organizationDetails ??
+              res?.data?.organization_details ??
+              res?.data ??
+              res;
+            this.usagesOrganizationDetails.set(orgDetails);
             const moduleKeys = Object.keys(
               res.modules,
             );
@@ -466,6 +477,16 @@ export class DashboardComponent implements OnInit {
 
           // Fallback if API returns normal data array.
           if (Array.isArray(res?.data)) {
+            const orgDetails =
+              res?.organizationDetails ??
+              res?.organization_details ??
+              res?.OrganizationDetails ??
+              res?.orgDetails ??
+              res?.data?.organizationDetails ??
+              res?.data?.organization_details ??
+              res?.data ??
+              res;
+            this.usagesOrganizationDetails.set(orgDetails);
             this.usagesChartLabels.set(
               res.data.map(
                 (item: any) => item.label,
@@ -483,6 +504,7 @@ export class DashboardComponent implements OnInit {
             return;
           }
 
+          this.usagesOrganizationDetails.set(null);
           this.usagesChartLabels.set([]);
           this.usagesGroupedData.set([]);
         },
@@ -495,6 +517,7 @@ export class DashboardComponent implements OnInit {
 
           this.isUsagesLoading.set(false);
           this.usagesHasError.set(true);
+          this.usagesOrganizationDetails.set(null);
         },
       });
   }

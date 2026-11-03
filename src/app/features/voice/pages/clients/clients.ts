@@ -92,18 +92,18 @@ export class Clients  {
 
   tableConfig = computed<SmartTableConfig<AdminClientRow>>(() => ({
     columns: [
-      { key: 'name', label: 'Client', sortable: true, hideable: true },
-      { key: 'phoneNumber', label: 'Phone Number', sortable: false },
+      { key: 'name', label: 'Client', sortable: true, hideable: false },
+      { key: 'phoneNumber', label: 'Phone Number', sortable: false , hideable:false },
       { key: 'altPhoneNumber', label: 'Alt Phone', sortable: false },
       { key: 'leadOwner', label: 'Lead Owner', sortable: false },
-      { key: 'supportOwner', label: 'Support Owner', sortable: false },
+      { key: 'supportOwner', label: 'Support Owner', sortable: false ,hideable:false},
       { key: 'renewalOwner', label: 'Renewal Owner', sortable: false },
-      { key: 'orgStatus', label: 'Status', sortable: true },
+      { key: 'orgStatus', label: 'Status', sortable: true , hideable : false},
       { key: 'leadSource', label: 'Lead Source', sortable: false },
       { key: 'reseller', label: 'Reseller', sortable: false },
       { key: 'tags', label: 'Tags', sortable: false },
-      { key: 'rating', label: 'Rating', sortable: false },
-      { key: 'country', label: 'Country', sortable: false },
+      { key: 'rating', label: 'Rating', sortable: false ,hideable:false},
+      { key: 'country', label: 'Country', sortable: false , hideable:false },
     ] as SmartColumn<AdminClientRow>[],
 
     apiConfig: {
@@ -112,8 +112,7 @@ export class Clients  {
       totalPath: 'totalRecords',
 
       buildRequest: (ctx: RequestContext) => {
-        // Keep the filter keys aligned with VoiceService's filter parser.
-        // The shared table sends multi-select values as arrays.
+       
         const sortColMap: Record<string, string> = {
           name: 'name',
           orgId: 'orgId',
@@ -122,10 +121,7 @@ export class Clients  {
         const sortCol = ctx.sortKey ? (sortColMap[ctx.sortKey] ?? ctx.sortKey) : 'orgId';
         const filters = { ...ctx.filters } as Record<string, any>;
 
-        // The generic table's filterNames list uses 'stage' for the status
-        // filter, while VoiceService.fetchAdminClientsDataTable checks
-        // filters.orgStatus / filters.status / filters.leadStage. Map it
-        // across so the backend actually sees the selected status values.
+       
         if (filters['stage'] && !filters['orgStatus']) {
           filters['orgStatus'] = filters['stage'];
         }

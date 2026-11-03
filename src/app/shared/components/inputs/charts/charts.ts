@@ -60,6 +60,7 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() chartLabels: string[] = [];
   @Output() onChangeDate: Subject<{ from: string, to: string }> = new Subject()
   @Input() chartType: CustomChartType | ChartType | any = 'bar';
+  @Input() allowedChartTypes: string[] = [];
   @Input() hoverLabel: string = '';
   @Input() backgroundColors: string[] = ['', '', '', ''];
   @Input() chartId: string = '';
@@ -72,13 +73,14 @@ export class ChartComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() xAxisTitle: string = '';
   @Input() yAxisTitle: string = '';
   @Input() leaveChart:boolean = false;
- 
+
   @Input() sort:boolean = false;
   @Input() groupedData: number[][] = []; // For [[1,2], [4,6], [1,9]] format
 @Input() groupColors: string[] = []; // Colors for each position in group
 @Input() groupLabels: string[] = []; // Labels that repeat for each group
 @Input() isLoading: boolean = false;
 @Input() hasError: boolean = false;
+@Input() organizationDetails: any = null;
 
   isDropdownOpen = false;
   selectedChart: ChartTypeOption | null = null;
@@ -146,7 +148,7 @@ private getSafeColors(): string[] {
       changes['yAxisTitle'] ||
       changes['groupedData']
     ) {
-      this.filterTopData(); 
+      this.filterTopData();
       this.updateChart();
     }
   }
@@ -156,19 +158,19 @@ private filterTopData(): void {
   if (this.chartType === 'groupedBar') {
     return;
   }
-  
+
   // CRITICAL: Always clear cached data when in normal mode (not fullscreen)
   if (!this.isFullscreenMode) {
     // Reset the cache first
     this.fullChartData = [];
     this.fullChartLabels = [];
-    
+
     // Now check if we need to filter
     if (this.chartData.length > 5 && this.sort) {
       // Store original data
       this.fullChartData = [...this.chartData];
       this.fullChartLabels = [...this.chartLabels];
-      
+
       // Create array with values, labels, and original indices
       const dataWithIndices = this.chartData.map((value, index) => ({
         value,
@@ -176,18 +178,18 @@ private filterTopData(): void {
         color: this.backgroundColors[index],
         originalIndex: index
       }));
-      
+
       // Sort by value (highest to lowest) and take top 5
       const top5 = dataWithIndices
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
-      
+
       // Update chart data with top 5
       this.chartData = top5.map(item => item.value);
       this.chartLabels = top5.map(item => item.label);
       // this.backgroundColors = top5.map(item => item.color);
     }
-  } 
+  }
   // Only restore when explicitly in fullscreen mode
   else if (this.fullChartData.length > 0) {
     this.chartData = [...this.fullChartData];
@@ -199,7 +201,7 @@ private filterTopData(): void {
     overlay: HTMLElement;
     cleanup: () => void;
   } | null = null;
-  
+
 
   private updateChart(): void {
   if (!this.isBrowser) {
@@ -244,7 +246,7 @@ private filterTopData(): void {
   }
 
 
-  
+
   // Same chart type (for example, date/filter changed).
   // Do NOT simply assign the new values and call update once: depending on
   // Angular's change-detection timing the browser can paint the final state
@@ -261,8 +263,8 @@ private filterTopData(): void {
   if (this.myChart.data.datasets?.[0]) {
     this.myChart.data.datasets[0].data = targetData.map(() => 0) as any;
     this.myChart.data.datasets[0].label = this.hoverLabel;
-     this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any; 
-  this.myChart.data.datasets[0].borderColor = this.getBorderColorForUpdate() as any; 
+     this.myChart.data.datasets[0].backgroundColor = this.getSafeColors() as any;
+  this.myChart.data.datasets[0].borderColor = this.getBorderColorForUpdate() as any;
   }
 
   this.myChart.update();
@@ -408,19 +410,37 @@ private createChartInternal(animateFromZero: boolean = false): void {
           ticks: { color: labelColor },
           grid: { color: isDarkMode ? '#333' : '#ddd' },
         },
+        // y: {
+        //   beginAtZero: true,
+        //   suggestedMin: 0,
+        //   suggestedMax: 1,
+        //   title: {
+        //     display: !!this.yAxisTitle,
+        //     text: this.yAxisTitle,
+        //     color: labelColor,
+        //     font: { size: 10, weight: 'bold' },
+        //   },
+        //   ticks: { color: labelColor },
+        //   grid: { color: isDarkMode ? '#333' : '#ddd' },
+        // },
         y: {
-          beginAtZero: true,
-          suggestedMin: 0,
-          suggestedMax: 1,
-          title: {
-            display: !!this.yAxisTitle,
-            text: this.yAxisTitle,
-            color: labelColor,
-            font: { size: 10, weight: 'bold' },
-          },
-          ticks: { color: labelColor },
-          grid: { color: isDarkMode ? '#333' : '#ddd' },
-        },
+  beginAtZero: true,
+  suggestedMin: 0,
+  suggestedMax: 5,
+  title: {
+    display: !!this.yAxisTitle,
+    text: this.yAxisTitle,
+    color: labelColor,
+    font: { size: 10, weight: 'bold' },
+  },
+  ticks: {
+    color: labelColor,
+    precision: 0, // decimal hata dega
+    callback: (value: any) =>
+      Number.isInteger(Number(value)) ? value : '',
+  },
+  grid: { color: isDarkMode ? '#333' : '#ddd' },
+},
       } : undefined,
       elements: {
         point: { radius: 5 },
@@ -522,7 +542,7 @@ private rebuildGroupedBarWithAnimation(): void {
       value: 'pie',
       label: 'Pie Chart',
       icon: `<svg  viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg"  width="20" height="20" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
-    
+
     <title>pie-chart</title>
     <desc>Created with Sketch Beta.</desc>
     <defs>
@@ -552,7 +572,7 @@ private rebuildGroupedBarWithAnimation(): void {
     {
       value: 'radar',
       label: 'Radar Chart',
-      icon: `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+      icon: `<svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
 	 width="20px" height="20px" viewBox="0 0 96.946 96.946"
 	 xml:space="preserve">
 <g>
@@ -687,7 +707,7 @@ private rebuildGroupedBarWithAnimation(): void {
 
     // Initial theme check
     this.isDarkMode = document.documentElement.classList.contains('dark');
-  
+
     // Create observer for theme changes
     this.themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -704,7 +724,7 @@ private rebuildGroupedBarWithAnimation(): void {
         }
       });
     });
-  
+
     // Start observing theme changes
     this.themeObserver.observe(document.documentElement, {
       attributes: true,
@@ -720,15 +740,15 @@ private rebuildGroupedBarWithAnimation(): void {
 
     if (this.myChart) {
       const labelColor = this.isDarkMode ? 'white' : 'black';
-  
+
       // Update legend labels color
       if (this.myChart.options.plugins?.legend?.labels) {
         this.myChart.options.plugins.legend.labels.color = labelColor;
       }
-  
+
       // Update scales color if they exist
       const scales = this.myChart.options.scales as { [key: string]: any };
-  
+
       if (scales?.['x']) {
         if (scales['x'].title) {
           scales['x'].title.color = labelColor;
@@ -742,7 +762,7 @@ private rebuildGroupedBarWithAnimation(): void {
           color: this.isDarkMode ? '#333' : '#ddd'
         };
       }
-  
+
       if (scales?.['y']) {
         // Explicitly update the y-axis title color
         if (scales['y'].title) {
@@ -757,15 +777,37 @@ private rebuildGroupedBarWithAnimation(): void {
           color: this.isDarkMode ? '#333' : '#ddd'
         };
       }
-  
+
       // Force chart update
       this.myChart.update();
     }
   }
 
+  private getAvailableChartTypes(): ChartTypeOption[] {
+    if (!this.allowedChartTypes || this.allowedChartTypes.length === 0) {
+      return this.chartTypes;
+    }
+
+    const allowedValues = this.allowedChartTypes
+      .map((type) => String(type).trim())
+      .filter((type) => type.length > 0);
+
+    if (allowedValues.length === 0) {
+      return this.chartTypes;
+    }
+
+    return this.chartTypes.filter((type) => allowedValues.includes(type.value));
+  }
+
   setSelectedChartType() {
-    // Find the default chart based on the provided chartType
-    this.selectedChart = this.chartTypes.find((type) => type.value === this.chartType) || this.chartTypes[0];
+    const availableChartTypes = this.getAvailableChartTypes();
+    const matchingChart = availableChartTypes.find((type) => type.value === this.chartType);
+
+    this.selectedChart = matchingChart || availableChartTypes[0] || this.chartTypes[0];
+
+    if (this.chartType && !matchingChart && this.selectedChart) {
+      this.chartType = this.selectedChart.value as CustomChartType | ChartType;
+    }
   }
 
   toggleDropdown() {
@@ -930,7 +972,7 @@ private rebuildGroupedBarWithAnimation(): void {
   }
 
   // Create high-resolution chart for export
-  
+
 
   // High resolution donut text plugin
   donutTextPluginHighRes() {
@@ -977,17 +1019,17 @@ private rebuildGroupedBarWithAnimation(): void {
     const isArea = this.isAreaChart();
     const isLine = this.isLineChart();
     const isRadar = this.isRadarChart();
-    
+
     // Force white background and black labels for export if requested
     const isDarkMode = forceWhite ? false : document.documentElement.classList.contains('dark');
     const labelColor = forceWhite ? 'black' : (isDarkMode ? 'white' : 'black');
-    
+
     // Calculate font sizes based on canvas size
     const headingFontSize = Math.max(Math.round(height * 0.035), 18);
     const axisTitleFontSize = Math.max(Math.round(height * 0.025), 14);
     const tickFontSize = Math.max(Math.round(height * 0.018), 12);
     const legendFontSize = Math.max(Math.round(height * 0.022), 14);
-    
+
     const getBackgroundColor = () => {
       if (isArea) {
         const firstColor = colors[0] || '#4BC0C0';
@@ -1008,7 +1050,7 @@ private rebuildGroupedBarWithAnimation(): void {
         return colors;
       }
     };
-    
+
     const getBorderColor = () => {
       if (isArea) {
         const firstColor = colors[0] || '#4BC0C0';
@@ -1029,13 +1071,13 @@ private rebuildGroupedBarWithAnimation(): void {
         return 'rgba(75, 192, 192, 0.0)';
       }
     };
-    
+
     // Add donut center text plugin for doughnut charts
     let extraPlugins: any[] = [];
     if (this.chartType === 'doughnut' && this.donutCenterText) {
       extraPlugins.push(this.getDonutTextPluginForExport(width, height, forceWhite));
     }
-    
+
     return {
      type: isArea ? 'line' : (this.chartType === 'groupedBar' ? 'bar' : this.chartType),
       data: {
@@ -1113,6 +1155,7 @@ private rebuildGroupedBarWithAnimation(): void {
           },
           y: {
             beginAtZero: true,
+            suggestedMax: 5,
             title: {
               display: !!this.yAxisTitle,
               text: this.yAxisTitle,
@@ -1125,6 +1168,9 @@ private rebuildGroupedBarWithAnimation(): void {
             },
             ticks: {
               color: labelColor,
+              precision: 0,
+              callback: (value: any) =>
+              Number.isInteger(Number(value)) ? value : '',
               font: {
                 size: tickFontSize
               },
@@ -1167,12 +1213,12 @@ private getDonutTextPluginForExport(width: number, height: number, forceWhite: b
       if (chart.config.type === 'doughnut' && this.donutCenterText) {
         const ctx = chart.ctx;
         const chartArea = chart.chartArea;
-        
+
         // Add safety check for chartArea
         if (!chartArea || chartArea.width === 0 || chartArea.height === 0) {
           return;
         }
-        
+
         const centerX = (chartArea.left + chartArea.right) / 2;
         const centerY = (chartArea.top + chartArea.bottom) / 2;
 
@@ -1239,10 +1285,10 @@ dataWithIndices.sort((a, b) => b.value - a.value);
 this.chartData = dataWithIndices.map(item => item.value);
 this.chartLabels = dataWithIndices.map(item => item.label);
   }
-  
+
   const screenWidth = window.screen.width || window.innerWidth;
   const screenHeight = window.screen.height || window.innerHeight;
-  
+
   const overlay = document.createElement('div');
   overlay.id = 'chart-fullscreen-overlay';
   overlay.style.cssText = `
@@ -1281,7 +1327,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     justify-content: center;
     transition: background 0.3s;
   `;
-  
+
   closeButton.onmouseover = () => closeButton.style.background = 'rgba(255, 255, 255, 1)';
   closeButton.onmouseout = () => closeButton.style.background = 'rgba(255, 255, 255, 0.8)';
 
@@ -1301,7 +1347,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   const canvas = document.createElement('canvas');
   const canvasWidth = Math.min(screenWidth * 0.85, 1920);
   const canvasHeight = Math.min(screenHeight * 0.75, 1080);
-  
+
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
   canvas.style.cssText = `
@@ -1311,8 +1357,8 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   `;
 
   const fullscreenConfig = this.getHighResChartConfig(
-    canvasWidth, 
-    canvasHeight, 
+    canvasWidth,
+    canvasHeight,
     true,
     true
   );
@@ -1321,7 +1367,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     this.isFullscreenMode = false; // Reset fullscreen mode
     this.filterTopData(); // Re-filter to top 6
     this.updateChart(); // Update the original chart
-    
+
     if (fullscreenChart) {
       fullscreenChart.destroy();
     }
@@ -1329,7 +1375,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       overlay.parentNode.removeChild(overlay);
     }
     document.body.style.overflow = '';
-    
+
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(console.error);
     }
@@ -1341,7 +1387,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       closeFullscreen();
     }
   };
-  
+
   const escHandler = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       closeFullscreen();
@@ -1354,20 +1400,20 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   overlay.appendChild(closeButton);
   overlay.appendChild(canvasContainer);
   document.body.appendChild(overlay);
-  
+
   document.body.style.overflow = 'hidden';
 
   let fullscreenChart: any;
   setTimeout(() => {
     try {
       fullscreenChart = new Chart(canvas, fullscreenConfig);
-      
+
       setTimeout(() => {
         if (fullscreenChart && !fullscreenChart.destroyed) {
           fullscreenChart.update('none');
         }
       }, 100);
-      
+
     } catch (error) {
       console.error('Error creating fullscreen chart:', error);
       closeFullscreen();
@@ -1387,9 +1433,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       setTimeout(closeFullscreen, 100);
     }
   };
-  
+
   document.addEventListener('fullscreenchange', fullscreenChangeHandler);
-  
+
   this.currentFullscreenChart = {
     chart: fullscreenChart,
     overlay: overlay,
@@ -1408,16 +1454,16 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const width = 1122;
     const height = 793;
     const hoverLabel = this.hoverLabel;
-  
+
     const chartConfig = this.getHighResChartConfig(width, height, true, false);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-  
+
     const printConfig = {
       ...chartConfig,
       plugins: [
@@ -1435,12 +1481,12 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-  
+
     const tempChart = new Chart(tempCanvas, printConfig);
-  
+
     setTimeout(() => {
       const chartImageData = tempCanvas.toDataURL('image/png', 1.0);
-  
+
       // Create print container
       const printContainer = document.createElement('div');
       printContainer.id = 'print-container';
@@ -1489,18 +1535,18 @@ this.chartLabels = dataWithIndices.map(item => item.label);
             }
           }
         </style>
-       
+
         <img id="chart-image" src="${chartImageData}" class="chart-image" />
       `;
       document.body.appendChild(printContainer);
-  
+
       // Wait for image to load before printing
       const img = printContainer.querySelector<HTMLImageElement>('#chart-image');
       img?.addEventListener('load', () => {
         setTimeout(() => {
           window.print();
         }, 100); // small delay to ensure rendering
-  
+
         window.onafterprint = () => {
           document.body.removeChild(printContainer);
           tempChart.destroy();
@@ -1509,7 +1555,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       });
     }, 500);
   }
-  
+
 
   // Download image (PNG/JPEG)
   downloadImage(format: 'png' | 'jpeg') {
@@ -1517,7 +1563,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const width = 5120;
     const height = 3840;
     if (this.chartType === 'radar') {
@@ -1566,7 +1612,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    
+
     const whiteBgPlugin = {
       id: 'whiteBackground',
       beforeDraw: (chart: any) => {
@@ -1578,7 +1624,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         ctx.restore();
       }
     };
-    
+
     const configWithHook = {
       ...chartConfig,
       plugins: [
@@ -1600,7 +1646,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-    
+
     new Chart(tempCanvas, configWithHook);
   }
 
@@ -1611,17 +1657,17 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     if (!this.isBrowser) {
       return;
     }
-
+this.isExportDropdownOpen = false;
     const { default: pdfMake } = await import('pdfmake/build/pdfmake');
     const { default: pdfFonts } = await import('pdfmake/build/vfs_fonts');
-    
+
     const width = 1122;
     const height = 793;
     const chartConfig = this.getHighResChartConfig(width, height, true);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
-    
+
     // Create chart with white background and donut text
     const configWithBg = {
       ...chartConfig,
@@ -1640,13 +1686,13 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         }
       ]
     };
-    
+
     const tempChart = new Chart(tempCanvas, configWithBg);
-    
+
     // Wait for chart to render before getting image data
-    setTimeout(() => {
+    // setTimeout(() => {
       const imgData = tempCanvas.toDataURL('image/png');
-      
+
       const docDefinition: any = {
         content: [
           // {
@@ -1668,11 +1714,11 @@ this.chartLabels = dataWithIndices.map(item => item.label);
           }
         }
       };
-      
+
       pdfMake.createPdf(docDefinition).download(`${this.hoverLabel.replace(/\s+/g, '_')}_chart.pdf`);
       tempChart.destroy();
       this.isExportDropdownOpen = false;
-    }, 0);
+    // }, 0);
   }
 
   // Download SVG
@@ -2164,7 +2210,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
 
 
 
-  
+
   // Download CSV
   downloadCSV() {
     // Guard: Blob/URL/anchor-click download is browser-only.
@@ -2176,8 +2222,11 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+    const baseName = (this.hoverLabel || this.convertHtmlToPlainText(this.headingText) || 'chart')
+    .replace(/\s+/g, '_');
+    link.setAttribute('download', `${baseName}_data.csv`);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${this.hoverLabel.replace(/\s+/g, '_')}_data.csv`);
+    // link.setAttribute('download', `${this.hoverLabel.replace(/\s+/g, '_')}_data.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -2185,98 +2234,588 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     URL.revokeObjectURL(url);
     this.isExportDropdownOpen = false;
   }
-  
+
   // Generate CSV content
-  private generateCSVContent(): string {
-    let csv = 'Label,Value\n';
-    
-    this.chartLabels.forEach((label, index) => {
-      const value = this.chartData[index];
-      // Escape commas and quotes in labels
-      const escapedLabel = label.includes(',') || label.includes('"') ? `"${label.replace(/"/g, '""')}"` : label;
-      csv += `${escapedLabel},${value}\n`;
-    });
-    
-    return csv;
-  }
-  
-  // Download Excel
-  async downloadExcel() {
-    // Guard: canvas rendering + dynamic exceljs import is browser-only.
-    if (!this.isBrowser) {
-      return;
+  // private generateCSVContent(): string {
+  //   let csv = 'Label,Value\n';
+
+  //   this.chartLabels.forEach((label, index) => {
+  //     const value = this.chartData[index];
+  //     // Escape commas and quotes in labels
+  //     const escapedLabel = label.includes(',') || label.includes('"') ? `"${label.replace(/"/g, '""')}"` : label;
+  //     csv += `${escapedLabel},${value}\n`;
+  //   });
+
+  //   return csv;
+  // }
+
+  private getNormalizedOrgDetails(): Record<string, any> | null {
+    if (!this.organizationDetails) return null;
+
+    let data = this.organizationDetails;
+
+    if (typeof data === 'function') {
+      try {
+        data = data();
+      } catch {
+        return null;
+      }
     }
 
-    // Step 1: Generate chart image (PNG)
-    const width = 1200;
-    const height = 800;
-    const chartConfig = this.getHighResChartConfig(width, height, true);
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-  
-    const whiteBgPlugin = {
-      id: 'whiteBackground',
-      beforeDraw: (chart: any) => {
-        const ctx = chart.ctx;
-        ctx.save();
-        ctx.globalCompositeOperation = 'destination-over';
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.restore();
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch {
+        return null;
       }
+    }
+
+    if (!data || typeof data !== 'object') return null;
+
+    if (data.organizationDetails) {
+      let sub = data.organizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.organization_details) {
+      let sub = data.organization_details;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.OrganizationDetails) {
+      let sub = data.OrganizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data?.organizationDetails) {
+      let sub = data.data.organizationDetails;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data?.organization_details) {
+      let sub = data.data.organization_details;
+      if (typeof sub === 'string') {
+        try { sub = JSON.parse(sub); } catch {}
+      }
+      if (sub && typeof sub === 'object') return sub;
+    }
+
+    if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+      const sampleKeys = Object.keys(data.data);
+      if (sampleKeys.some(k => ['employee', 'attendance', 'leave', 'organization', 'salary','payroll','timesheet','performance'].includes(k.toLowerCase()))) {
+        return data.data;
+      }
+    }
+
+    if (Array.isArray(data)) {
+      const grouped: Record<string, any[]> = {};
+      data.forEach(item => {
+        const mod = (item.module || item.moduleName || item.label || 'unknown').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!grouped[mod]) grouped[mod] = [];
+        grouped[mod].push(item);
+      });
+      return grouped;
+    }
+
+    return data;
+  }
+
+  private getOrgNamesForModule(label: string): { active: string; low: string; non: string } {
+    const details = this.getNormalizedOrgDetails();
+    if (!details || typeof details !== 'object') {
+      return { active: '-', low: '-', non: '-' };
+    }
+
+    const normalizedLabel = (label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const keys = Object.keys(details);
+    const matchedKey = keys.find(k => {
+      const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return kNorm === normalizedLabel || normalizedLabel.includes(kNorm) || kNorm.includes(normalizedLabel);
+    });
+
+    if (!matchedKey) {
+      return { active: '-', low: '-', non: '-' };
+    }
+
+    const rawItems = details[matchedKey];
+    const items: any[] = Array.isArray(rawItems)
+      ? rawItems
+      : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+    const activeList: string[] = [];
+    const lowList: string[] = [];
+    const nonList: string[] = [];
+
+    items.forEach((item: any) => {
+      if (!item) return;
+
+      const name = (
+        typeof item === 'string'
+          ? item
+          : (
+              item.organizationName ??
+              item.organization_name ??
+              item.OrganizationName ??
+              item.orgName ??
+              item.OrgName ??
+              item.org_name ??
+              item.name ??
+              item.Name ??
+              item.companyName ??
+              item.clientName ??
+              item.org_title ??
+              ''
+            )
+      ).toString().trim();
+
+      if (!name || name === '-') return;
+
+      const status = (
+        typeof item === 'string'
+          ? ''
+          : (
+              item.usageStatus ??
+              item.usage_status ??
+              item.UsageStatus ??
+              item.status ??
+              item.Status ??
+              item.usageType ??
+              item.type ??
+              ''
+            )
+      ).toString().toLowerCase();
+
+      if (status.includes('activ') || status === '1' || status === 'high') {
+        if (!activeList.includes(name)) activeList.push(name);
+      } else if (status.includes('low') || status === '2') {
+        if (!lowList.includes(name)) lowList.push(name);
+      } else if (status.includes('non') || status === '0' || status === 'inactive') {
+        if (!nonList.includes(name)) nonList.push(name);
+      } else {
+        if (!activeList.includes(name)) activeList.push(name);
+      }
+    });
+
+    if (rawItems && typeof rawItems === 'object' && !Array.isArray(rawItems)) {
+      Object.keys(rawItems).forEach(subKey => {
+        const subVal = rawItems[subKey];
+        const subKeyLower = subKey.toLowerCase();
+        let targetList: string[] | null = null;
+        if (subKeyLower.includes('activ') || subKeyLower === '1') targetList = activeList;
+        else if (subKeyLower.includes('low') || subKeyLower === '2') targetList = lowList;
+        else if (subKeyLower.includes('non') || subKeyLower === '0') targetList = nonList;
+
+        if (targetList && Array.isArray(subVal)) {
+          subVal.forEach((subItem: any) => {
+            const subName = (
+              typeof subItem === 'string'
+                ? subItem
+                : (
+                    subItem?.organizationName ??
+                    subItem?.orgName ??
+                    subItem?.OrgName ??
+                    subItem?.name ??
+                    ''
+                  )
+            ).toString().trim();
+            if (subName && !targetList.includes(subName)) targetList.push(subName);
+          });
+        }
+      });
+    }
+
+    return {
+      active: activeList.length > 0 ? activeList.join(', ') : '-',
+      low: lowList.length > 0 ? lowList.join(', ') : '-',
+      non: nonList.length > 0 ? nonList.join(', ') : '-'
     };
-  
-    const configWithBg = {
-      ...chartConfig,
-      plugins: [...(chartConfig.plugins || []), whiteBgPlugin],
+  }
+
+  private generateCSVContent(): string {
+    const escape = (v: any) => {
+      const str = String(v ?? '');
+      return str.includes(',') || str.includes('"') || str.includes('\n')
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
     };
-  
-    const tempChart = new Chart(tempCanvas, configWithBg);
-    await new Promise(resolve => setTimeout(resolve, 100));
-  
-    const imageDataUrl = tempCanvas.toDataURL('image/png');
-    const imageBuffer = this.dataURLToBuffer(imageDataUrl);
-  
-    // Step 2: Use ExcelJS
+
+    // Grouped bar: Label, Active Usage, Low Usage, Non Usage
+    if (this.chartType === 'groupedBar') {
+      const moduleCol = this.xAxisTitle ? this.xAxisTitle.replace(/s$/, '') : 'Label';
+
+      if (this.organizationDetails) {
+        const header = [
+          moduleCol,
+          this.groupLabels[0] || 'Actively Usages',
+          'Actively Usage Org',
+          this.groupLabels[1] || 'Low Usages',
+          'Low Usage Org',
+          this.groupLabels[2] || 'Non Usages',
+          'Non Usage Org'
+        ].map(escape).join(',');
+
+        const rows = this.chartLabels.map((label, i) => {
+          const values = this.groupedData[i] || [];
+          const orgs = this.getOrgNamesForModule(label);
+          return [
+            escape(label),
+            values[0] ?? 0,
+            escape(orgs.active),
+            values[1] ?? 0,
+            escape(orgs.low),
+            values[2] ?? 0,
+            escape(orgs.non)
+          ].join(',');
+        });
+
+        return [header, ...rows].join('\n') + '\n';
+      }
+
+      const header = [moduleCol, ...this.groupLabels].map(escape).join(',');
+      const rows = this.chartLabels.map((label, i) => {
+        const values = (this.groupedData[i] || []).map(v => v ?? 0);
+        return [escape(label), ...values].join(',');
+      });
+      return [header, ...rows].join('\n') + '\n';
+    }
+
+    // Normal charts
+    let csv = 'Label,Value\n';
+    this.chartLabels.forEach((label, index) => {
+      csv += `${escape(label)},${this.chartData[index] ?? 0}\n`;
+    });
+    return csv;
+  }
+
+  // Download Excel
+  // async downloadExcel() {
+  //   // Guard: canvas rendering + dynamic exceljs import is browser-only.
+  //   if (!this.isBrowser) {
+  //     return;
+  //   }
+
+  //   // Step 1: Generate chart image (PNG)
+  //   const width = 1200;
+  //   const height = 800;
+  //   const chartConfig = this.getHighResChartConfig(width, height, true);
+  //   const tempCanvas = document.createElement('canvas');
+  //   tempCanvas.width = width;
+  //   tempCanvas.height = height;
+
+  //   const whiteBgPlugin = {
+  //     id: 'whiteBackground',
+  //     beforeDraw: (chart: any) => {
+  //       const ctx = chart.ctx;
+  //       ctx.save();
+  //       ctx.globalCompositeOperation = 'destination-over';
+  //       ctx.fillStyle = '#fff';
+  //       ctx.fillRect(0, 0, width, height);
+  //       ctx.restore();
+  //     }
+  //   };
+
+  //   const configWithBg = {
+  //     ...chartConfig,
+  //     plugins: [...(chartConfig.plugins || []), whiteBgPlugin],
+  //   };
+
+  //   const tempChart = new Chart(tempCanvas, configWithBg);
+  //   await new Promise(resolve => setTimeout(resolve, 100));
+
+  //   const imageDataUrl = tempCanvas.toDataURL('image/png');
+  //   const imageBuffer = this.dataURLToBuffer(imageDataUrl);
+
+  //   // Step 2: Use ExcelJS
+  //   const ExcelJS = await import('exceljs');
+  //   const workbook = new ExcelJS.default.Workbook();
+  //   const worksheet = workbook.addWorksheet('Chart');
+
+  //   // Add data
+  //   worksheet.addRow(['Label', 'Value']);
+  //   this.chartLabels.forEach((label, i) => {
+  //     worksheet.addRow([label, this.chartData[i]]);
+  //   });
+  //   worksheet.getColumn('A').width = 20;
+  //   worksheet.getColumn('B').width = 15;
+
+  //   // ✅ CORRECT: Add image to WORKBOOK first → returns imageId
+  //   const imageId = workbook.addImage({
+
+  //     extension: 'png',
+  //   });
+
+  //   // ✅ CORRECT: Then add image to WORKSHEET using imageId + position
+  //   worksheet.addImage(imageId, {
+  //     tl: { col: 3, row: 0 }, // top-left: column 3 (D), row 0 (1st row)
+  //     ext: { width: 800, height: 600 },
+  //   });
+
+  //   // Generate and download
+  //   const buffer = await workbook.xlsx.writeBuffer();
+  //   const blob = new Blob([buffer], {
+  //     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  //   });
+  //   const link = document.createElement('a');
+  //   link.href = URL.createObjectURL(blob);
+  //   link.download = `${this.hoverLabel.replace(/\s+/g, '_')}_chart.xlsx`;
+  //   link.click();
+  //   URL.revokeObjectURL(link.href);
+
+  //   tempChart.destroy();
+  //   this.isExportDropdownOpen = false;
+  // }
+
+async downloadExcel() {
+  if (!this.isBrowser) {
+    return;
+  }
+this.isExportDropdownOpen = false;
+  try {
     const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.default.Workbook();
-    const worksheet = workbook.addWorksheet('Chart');
-  
-    // Add data
-    worksheet.addRow(['Label', 'Value']);
-    this.chartLabels.forEach((label, i) => {
-      worksheet.addRow([label, this.chartData[i]]);
-    });
-    worksheet.getColumn('A').width = 20;
-    worksheet.getColumn('B').width = 15;
-  
-    // ✅ CORRECT: Add image to WORKBOOK first → returns imageId
-    const imageId = workbook.addImage({
-    
-      extension: 'png',
-    });
-  
-    // ✅ CORRECT: Then add image to WORKSHEET using imageId + position
-    worksheet.addImage(imageId, {
-      tl: { col: 3, row: 0 }, // top-left: column 3 (D), row 0 (1st row)
-      ext: { width: 800, height: 600 },
-    });
-  
-    // Generate and download
+    const Workbook = (ExcelJS as any).default?.Workbook ?? (ExcelJS as any).Workbook;
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet(this.organizationDetails ? 'Usage Summary' : 'Data');
+
+    const moduleCol = this.xAxisTitle ? this.xAxisTitle.replace(/s$/, '') : 'Label';
+    let dataCols = 2;
+
+    if (this.chartType === 'groupedBar') {
+      if (this.organizationDetails) {
+        const headers = [
+          moduleCol,
+          this.groupLabels[0] || 'Actively Usages',
+          'Actively Usage Org',
+          this.groupLabels[1] || 'Low Usages',
+          'Low Usage Org',
+          this.groupLabels[2] || 'Non Usages',
+          'Non Usage Org'
+        ];
+        worksheet.addRow(headers);
+        dataCols = headers.length;
+
+        this.chartLabels.forEach((label, i) => {
+          const values = this.groupedData[i] || [];
+          const orgs = this.getOrgNamesForModule(label);
+          worksheet.addRow([
+            label,
+            values[0] ?? 0,
+            orgs.active,
+            values[1] ?? 0,
+            orgs.low,
+            values[2] ?? 0,
+            orgs.non
+          ]);
+        });
+
+        // Set column widths
+        worksheet.getColumn(1).width = 20; // Module
+        worksheet.getColumn(2).width = 16; // Actively Usages
+        worksheet.getColumn(3).width = 36; // Actively Usage Org
+        worksheet.getColumn(4).width = 14; // Low Usages
+        worksheet.getColumn(5).width = 36; // Low Usage Org
+        worksheet.getColumn(6).width = 14; // Non Usages
+        worksheet.getColumn(7).width = 36; // Non Usage Org
+
+        // Header styling
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        headerRow.height = 28;
+
+        headerRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+        headerRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+        headerRow.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+        headerRow.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } };
+        headerRow.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };
+        headerRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+        headerRow.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEF4444' } };
+
+        for (let c = 1; c <= 7; c++) {
+          headerRow.getCell(c).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          headerRow.getCell(c).border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+
+        // Data rows styling
+        for (let r = 2; r <= this.chartLabels.length + 1; r++) {
+          const row = worksheet.getRow(r);
+          row.height = 22;
+          row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+          row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+          row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(5).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+          row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+          row.getCell(7).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+          for (let c = 1; c <= 7; c++) {
+            row.getCell(c).border = {
+              top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+          }
+        }
+
+        // Sheet 2: Organization Details
+        const detailsSheet = workbook.addWorksheet('Organization Details');
+        detailsSheet.addRow(['Module', 'Org ID', 'Organization Name', 'Usage Status', 'Activity Count']);
+        const detailsHeader = detailsSheet.getRow(1);
+        detailsHeader.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        detailsHeader.height = 28;
+        for (let c = 1; c <= 5; c++) {
+          detailsHeader.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+          detailsHeader.getCell(c).alignment = { horizontal: 'center', vertical: 'middle' };
+          detailsHeader.getCell(c).border = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'medium', color: { argb: 'FF94A3B8' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+        }
+        detailsSheet.getColumn(1).width = 20;
+        detailsSheet.getColumn(2).width = 14;
+        detailsSheet.getColumn(3).width = 36;
+        detailsSheet.getColumn(4).width = 18;
+        detailsSheet.getColumn(5).width = 16;
+
+        const detailsObj = this.getNormalizedOrgDetails();
+        this.chartLabels.forEach((label) => {
+          const normalizedLabel = (label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const keys = Object.keys(detailsObj || {});
+          const matchedKey = keys.find(k => {
+            const kNorm = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            return kNorm === normalizedLabel || normalizedLabel.includes(kNorm) || kNorm.includes(normalizedLabel);
+          });
+          const rawItems = matchedKey ? detailsObj![matchedKey] : [];
+          const items: any[] = Array.isArray(rawItems)
+            ? rawItems
+            : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+          items.forEach(item => {
+            if (!item) return;
+            const orgName = (
+              typeof item === 'string'
+                ? item
+                : (
+                    item.organizationName ??
+                    item.organization_name ??
+                    item.OrganizationName ??
+                    item.orgName ??
+                    item.OrgName ??
+                    item.org_name ??
+                    item.name ??
+                    item.Name ??
+                    item.companyName ??
+                    '-'
+                  )
+            ).toString().trim();
+
+            const orgId = item.orgId ?? item.organizationId ?? item.org_id ?? item.id ?? '-';
+            const activityCount = item.activityCount ?? item.activity_count ?? item.count ?? 0;
+
+            const status = (
+              typeof item === 'string'
+                ? ''
+                : (
+                    item.usageStatus ??
+                    item.usage_status ??
+                    item.UsageStatus ??
+                    item.status ??
+                    item.Status ??
+                    ''
+                  )
+            ).toString().toLowerCase();
+
+            const statusLabel = status.includes('activ')
+              ? 'Actively Usage'
+              : status.includes('low')
+              ? 'Low Usage'
+              : status.includes('non')
+              ? 'Non Usage'
+              : (item.usageStatus || '-');
+
+            const row = detailsSheet.addRow([
+              label,
+              orgId,
+              orgName,
+              statusLabel,
+              activityCount
+            ]);
+            row.height = 20;
+            row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+            row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+            row.getCell(3).alignment = { horizontal: 'left', vertical: 'middle' };
+            row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+            row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+
+            for (let c = 1; c <= 5; c++) {
+              row.getCell(c).border = {
+                top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+              };
+            }
+          });
+        });
+      } else {
+        worksheet.addRow([moduleCol, ...this.groupLabels]);
+        this.chartLabels.forEach((label, i) => {
+          worksheet.addRow([label, ...(this.groupedData[i] || []).map(v => v ?? 0)]);
+        });
+        dataCols = 1 + this.groupLabels.length;
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getColumn(1).width = 22;
+        for (let c = 2; c <= dataCols; c++) {
+          worksheet.getColumn(c).width = 16;
+        }
+      }
+    } else {
+      worksheet.addRow(['Label', 'Value']);
+      this.chartLabels.forEach((label, i) => {
+        worksheet.addRow([label, this.chartData[i] ?? 0]);
+      });
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getColumn(1).width = 22;
+      worksheet.getColumn(2).width = 16;
+    }
+
+    // Download
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
+    const baseName = (this.hoverLabel || this.convertHtmlToPlainText(this.headingText) || 'chart')
+      .replace(/\s+/g, '_');
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${this.hoverLabel.replace(/\s+/g, '_')}_chart.xlsx`;
+    link.download = `${baseName}_data.xlsx`;
     link.click();
     URL.revokeObjectURL(link.href);
-  
-    tempChart.destroy();
+  } catch (error) {
+    console.error('Excel download failed:', error);
+  } finally {
     this.isExportDropdownOpen = false;
   }
+this.isExportDropdownOpen = false;
+}
 
   private dataURLToBuffer(dataURL: string): Uint8Array {
     const base64 = dataURL.split(',')[1];
@@ -2302,8 +2841,8 @@ this.chartLabels = dataWithIndices.map(item => item.label);
       return '';
     }
   }
-  
-  
+
+
 
   ngOnDestroy() {
     // Guard: nothing to clean up on the server since nothing was created there.
@@ -2434,15 +2973,15 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const isDarkMode = document.documentElement.classList.contains('dark');
     const labelColor = isDarkMode ? 'white' : 'black';
     const gridColor = isDarkMode ? '#333' : '#ddd';
-    
+
     const groupSize = this.groupedData[0]?.length || 2;
-    
+
     // Prepare datasets - one for each position in the group
     const datasets = [];
     for (let i = 0; i < groupSize; i++) {
       const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
       const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
-      
+
       datasets.push({
         label: label,
         data: this.groupedData.map(group => group[i] || 0),
@@ -2453,12 +2992,12 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         },
       });
     }
-  
+
     const data: ChartData = {
       labels: this.chartLabels,
       datasets: datasets,
     };
-  
+
     const config: ChartConfiguration = {
       type: 'bar',
       data,
@@ -2492,10 +3031,11 @@ this.chartLabels = dataWithIndices.map(item => item.label);
               display: !!this.xAxisTitle,
               text: this.xAxisTitle,
               font: {
-                size: 10,
+                size: 12,
                 weight: 'bold',
               },
               color: labelColor,
+              padding: { top: 8 },
             },
             ticks: {
               color: labelColor,
@@ -2504,33 +3044,55 @@ this.chartLabels = dataWithIndices.map(item => item.label);
               color: gridColor,
             },
           },
+          // y: {
+          //   beginAtZero: true,
+          //   title: {
+          //     display: !!this.yAxisTitle,
+          //     text: this.yAxisTitle,
+          //     color: labelColor,
+          //     font: {
+          //       size: 10,
+          //       weight: 'bold',
+          //     },
+          //   },
+          //   ticks: {
+          //     color: labelColor,
+          //   },
+          //   grid: {
+          //     color: gridColor,
+          //   },
+          // },
           y: {
-            beginAtZero: true,
-            title: {
-              display: !!this.yAxisTitle,
-              text: this.yAxisTitle,
-              color: labelColor,
-              font: {
-                size: 10,
-                weight: 'bold',
-              },
-            },
-            ticks: {
-              color: labelColor,
-            },
-            grid: {
-              color: gridColor,
-            },
-          },
+  beginAtZero: true,
+  suggestedMax: 5,
+  title: {
+    display: !!this.yAxisTitle,
+    text: this.yAxisTitle,
+    color: labelColor,
+    font: {
+      size: 10,
+      weight: 'bold',
+    },
+  },
+  ticks: {
+    color: labelColor,
+    precision: 0,
+    callback: (value: any) =>
+      Number.isInteger(Number(value)) ? value : '',
+  },
+  grid: {
+    color: gridColor,
+  },
+},
         },
       },
     };
-  
+
     if (this.myChart) {
       this.myChart.destroy();
       this.myChart = null;
     }
-  
+
     const canvas = this.chartCanvasRef?.nativeElement || (document.getElementById(this.chartId) as HTMLCanvasElement);
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -2546,19 +3108,19 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     const isDarkMode = forceWhite ? false : document.documentElement.classList.contains('dark');
     const labelColor = forceWhite ? 'black' : (isDarkMode ? 'white' : 'black');
     const gridColor = forceWhite ? '#ddd' : (isDarkMode ? '#333' : '#ddd');
-    
+
     const headingFontSize = Math.max(Math.round(height * 0.035), 18);
     const axisTitleFontSize = Math.max(Math.round(height * 0.025), 14);
     const tickFontSize = Math.max(Math.round(height * 0.018), 12);
     const legendFontSize = Math.max(Math.round(height * 0.022), 14);
-    
+
     const groupSize = this.groupedData[0]?.length || 2;
     const datasets = [];
-    
+
     for (let i = 0; i < groupSize; i++) {
       const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
       const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
-      
+
       datasets.push({
         label: label,
         data: this.groupedData.map(group => group[i] || 0),
@@ -2566,7 +3128,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
         borderRadius: { topLeft: 10, topRight: 10 },
       });
     }
-  
+
     return {
       type: 'bar',
       data: {
@@ -2623,6 +3185,7 @@ this.chartLabels = dataWithIndices.map(item => item.label);
           },
           y: {
             beginAtZero: true,
+            suggestedMax: 5,
             title: {
               display: !!this.yAxisTitle,
               text: this.yAxisTitle,
@@ -2632,6 +3195,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
             },
             ticks: {
               color: labelColor,
+              precision: 0,
+              callback: (value: any) =>
+              Number.isInteger(Number(value)) ? value : '',
               font: { size: tickFontSize },
               padding: Math.round(tickFontSize * 0.5)
             },
@@ -2651,9 +3217,9 @@ this.chartLabels = dataWithIndices.map(item => item.label);
   const groupWidth = chartWidth / this.chartLabels.length * 0.8;
   const barWidth = groupWidth / groupSize;
   const groupSpacing = chartWidth / this.chartLabels.length * 0.2;
-  
+
   let svg = '';
-  
+
   // Draw horizontal grid lines and y-axis ticks
   for (let i = 0; i <= yTicks; i++) {
     const y = padding + 60 + chartHeight - (i / yTicks) * chartHeight;
@@ -2661,62 +3227,64 @@ this.chartLabels = dataWithIndices.map(item => item.label);
     svg += `<line x1="${padding}" y1="${y}" x2="${padding + chartWidth}" y2="${y}" stroke="${gridColor}" stroke-width="1" />`;
     svg += `<text x="${padding - 8}" y="${y + 4}" text-anchor="end" fill="${textColor}" font-size="12">${this.escapeXml(Math.round(value))}</text>`;
   }
-  
+
   // Draw grouped bars
   for (let i = 0; i < this.chartLabels.length; i++) {
     const groupX = padding + i * (groupWidth + groupSpacing) + groupSpacing / 2;
-    
+
     for (let j = 0; j < groupSize; j++) {
       const value = this.groupedData[i]?.[j] || 0;
       const barHeight = (value / maxValue) * chartHeight;
       const x = groupX + j * barWidth;
       const y = padding + 60 + (chartHeight - barHeight);
       const color = this.groupColors[j % this.groupColors.length] || `hsl(${j * 360 / groupSize}, 70%, 60%)`;
-      
+
       svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="5"/>`;
     }
-    
+
     // X-axis labels
     const xLabelEscaped = this.escapeXml(this.chartLabels[i]);
     svg += `<text x="${groupX + groupWidth/2}" y="${padding + 60 + chartHeight + 18}" text-anchor="middle" fill="${textColor}" font-size="12">${xLabelEscaped}</text>`;
   }
-  
+
   // Y-axis title
   if (this.yAxisTitle) {
     const yAxisTitleEscaped = this.escapeXml(this.yAxisTitle);
     svg += `<text x="${padding - 40}" y="${padding + 60 + chartHeight/2}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold" transform="rotate(-90,${padding - 40},${padding + 60 + chartHeight/2})">${yAxisTitleEscaped}</text>`;
   }
-  
+
   // X-axis title
   if (this.xAxisTitle) {
     const xAxisTitleEscaped = this.escapeXml(this.xAxisTitle);
     svg += `<text x="${padding + chartWidth/2}" y="${padding + 60 + chartHeight + 45}" text-anchor="middle" fill="${textColor}" font-size="14" font-weight="bold">${xAxisTitleEscaped}</text>`;
   }
-  
+
   // Legend
   const legendY = padding + 60 + chartHeight + 70;
   const legendItemWidth = 120;
   const legendStartX = padding + chartWidth/2 - (groupSize * legendItemWidth) / 2;
-  
+
   for (let i = 0; i < groupSize; i++) {
     const color = this.groupColors[i % this.groupColors.length] || `hsl(${i * 360 / groupSize}, 70%, 60%)`;
     const label = this.groupLabels[i % this.groupLabels.length] || `Series ${i + 1}`;
     const x = legendStartX + i * legendItemWidth;
-    
+
     svg += `<rect x="${x}" y="${legendY - 5}" width="12" height="12" fill="${color}" rx="2"/>`;
     svg += `<text x="${x + 18}" y="${legendY + 5}" font-size="12" fill="${textColor}" text-anchor="start">${this.escapeXml(label)}</text>`;
   }
-  
+
   return svg;
 }
 
 
 getFilteredChartTypes() {
+  const availableChartTypes = this.getAvailableChartTypes();
+
   if (this.selectedChart?.value === 'groupedBar') {
-    return this.chartTypes.filter(t => t.value === 'groupedBar');
-  } else {
-    return this.chartTypes.filter(t => t.value !== 'groupedBar');
+    return availableChartTypes.filter(t => t.value === 'groupedBar');
   }
+
+  return availableChartTypes.filter(t => t.value !== 'groupedBar');
 }
 
 

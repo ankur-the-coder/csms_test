@@ -36,6 +36,7 @@ export interface Data {
   designation: string;
   orgId: string | null;
   adminSts: number;
+  hrSts: number;
   email: string | null;
   phone: string | null;
   usermasterEmpId: string ;

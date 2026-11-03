@@ -96,11 +96,11 @@ export class Client implements OnInit, OnDestroy {
     this.mailModalRow.set(row);
     this.mailTab.set('edit');
     this.mailRecipients.set(row.email ? [row.email.trim()] : []);
-    this.mailSubject = `Welcome to UbiClient, ${row.name}!`;
+    this.mailSubject = `Welcome to UbiHrm, ${row.name}!`;
     this.mailBody =
       `<p>Hi ${row.contactPerson || row.name},</p>` +
-      `<p>Welcome aboard! We're excited to have ${row.name} on UbiClient. Your account has been set up and the portal is ready whenever you are.</p>` +
-      `<p>Best,<br>The UbiClient Team</p>`;
+      `<p>Welcome aboard! We're excited to have ${row.name} on UbiHrm. Your account has been set up and the portal is ready whenever you are.</p>` +
+      `<p>Best,<br>The UbiHrm Team</p>`;
     this.mailModalOpen.set(true);
   }
 
@@ -715,8 +715,9 @@ export class Client implements OnInit, OnDestroy {
   >([]);
   attachmentError = signal('');
 
-  private readonly MAX_ATTACHMENT_MB = 3; // per-file limit
-  private readonly MAX_TOTAL_MB = 10; // total across all files (Graph hard-caps ~25MB via API)
+  private readonly MAX_ATTACHMENT_COUNT = 3; // max number of files
+  private readonly MAX_ATTACHMENT_MB = 5;    // per-file limit in MB
+  private readonly MAX_TOTAL_MB = 5;          // total across all files in MB
 
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -728,6 +729,11 @@ export class Client implements OnInit, OnDestroy {
 
   private addAttachment(file: File): void {
     this.attachmentError.set('');
+
+    if (this.mailAttachments().length >= this.MAX_ATTACHMENT_COUNT) {
+      this.attachmentError.set(`You can attach a maximum of ${this.MAX_ATTACHMENT_COUNT} files.`);
+      return;
+    }
 
     if (file.size > this.MAX_ATTACHMENT_MB * 1024 * 1024) {
       this.attachmentError.set(`${file.name} exceeds ${this.MAX_ATTACHMENT_MB}MB.`);
