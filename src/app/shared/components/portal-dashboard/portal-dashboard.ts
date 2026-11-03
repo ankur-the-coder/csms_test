@@ -145,7 +145,7 @@ export class PortalDashboard implements OnInit {
   statusLabel(s: string): string { return s === 'completed' ? 'Completed' : s === 'in_progress' ? 'In progress' : 'Not started'; }
   healthLabel(h: string | undefined): string { return h === 'Good' ? 'On track' : h === 'Neutral' ? 'In progress' : 'Getting started'; }
   explore(a: PortalAddon) {
-    if (a.type !== 'module' && PortalDashboard.PAGE_ADDONS.has(a.key)) { this.router.navigate(['/client-portal/addons'], { fragment: a.key }); return; }
+    // if (a.type !== 'module' && PortalDashboard.PAGE_ADDONS.has(a.key)) { this.router.navigate(['/client-portal/addons'], { fragment: a.key }); return; }
     if (a.url) window.open(a.url, '_blank', 'noopener,noreferrer'); }
   openTraining(t: PortalTraining) { if (t.link) window.open(t.link, '_blank'); }
   join(link: string | null) { if (link) window.open(link, '_blank'); }
