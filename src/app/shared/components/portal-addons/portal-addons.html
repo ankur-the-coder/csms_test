@@ -1,0 +1,172 @@
+<section class="addons-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="addons" [size]="26" /></div>
+    <div class="head-text">
+      <h1>Add-ons</h1>
+      <p>Everything available for your plan and the status of each add-on.</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load your add-ons</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="stats">
+      @for (s of [1, 2, 3]; track s) { <div class="card sk-tile"><div class="sk sk-line w40"></div><div class="sk sk-big"></div></div> }
+    </div>
+    <div class="grid">
+      @for (s of skeletons; track s) { <div class="card sk-tile tall"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div><div class="sk sk-line"></div></div> }
+    </div>
+  } @else if (summary(); as s) {
+
+    <!-- ============ Summary ============ -->
+    <div class="stats rise" style="--d:1">
+      <div class="card stat"><span class="badge-ico"><p-icon name="check" [size]="20" /></span><div><b>{{ s.active }}</b><small>Active add-ons</small></div></div>
+      <div class="card stat"><span class="badge-ico blue"><p-icon name="clock" [size]="20" /></span><div><b>{{ s.trial }}</b><small>On free trial</small></div></div>
+      <div class="card stat"><span class="badge-ico purple"><p-icon name="plus" [size]="20" /></span><div><b>{{ s.available + s.expired }}</b><small>Available to add</small></div></div>
+    </div>
+
+    <!-- ============ Toolbar ============ -->
+    <div class="toolbar rise" style="--d:2">
+      <div class="chips" role="tablist" aria-label="Filter add-ons">
+        @for (c of chips(); track c.id) {
+          <button type="button" role="tab" class="chip" [class.on]="filter() === c.id" [attr.aria-selected]="filter() === c.id" (click)="setFilter(c.id)">
+            {{ c.label }} <em>{{ c.count }}</em>
+          </button>
+        }
+      </div>
+      <label class="search">
+        <p-icon name="search" [size]="16" />
+        <input type="text" placeholder="Search add-ons" aria-label="Search add-ons" [value]="query()" (input)="onSearch($event)" />
+      </label>
+    </div>
+
+    @if (s.users > 0) {
+      <p class="price-note rise" style="--d:2">
+        Prices are shown <strong>per user, per year</strong> in {{ s.currency }}, for your plan size
+        ({{ s.users }} users{{ s.band ? ', band ' + s.band : '' }}).
+      </p>
+    }
+
+    <!-- ============ Cards ============ -->
+    @if (cards().length === 0) {
+      <div class="card empty rise" style="--d:3"><p-icon name="search" [size]="30" /><p>No add-ons match your filter.</p></div>
+    } @else {
+      <div class="grid">
+        @for (c of cards(); track c.key; let i = $index) {
+          <article class="card addon rise" [ngClass]="'st-' + c.status" [style.--d]="3 + i" tabindex="0"
+                   (click)="open(c)" (keydown.enter)="open(c)">
+            <header>
+              <span class="a-ico"><p-icon [name]="icon(c.key)" [size]="22" /></span>
+              <h3>{{ c.name }}</h3>
+              <span class="status" [ngClass]="'s-' + c.status">{{ statusLabel(c.status) }}</span>
+            </header>
+            <p class="desc">{{ c.shortDescription }}</p>
+            <footer>
+              @if (c.status === 'active' || c.status === 'trial' || c.status === 'expired') {
+                <span class="foot" [class.warn]="c.purchase?.expiringSoon" [class.bad]="c.status === 'expired'">{{ footnote(c) || 'Included in your plan' }}</span>
+              } @else if (c.price) {
+                <span class="foot price"><b>{{ money(c.price.perUserPerYear) }}</b> <small>/ user / year</small></span>
+              } @else {
+                <span class="foot">Pricing on request</span>
+              }
+              <button type="button" class="link" (click)="open(c); $event.stopPropagation()">Details <p-icon name="arrow" [size]="14" /></button>
+            </footer>
+          </article>
+        }
+      </div>
+    }
+
+  }
+</section>
+
+<!-- ============ Detail drawer ============ -->
+@if (selected(); as c) {
+  <div class="overlay" (click)="close()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="c.name + ' details'">
+    <header class="d-head">
+      <span class="a-ico lg"><p-icon [name]="icon(c.key)" [size]="26" /></span>
+      <div class="d-title">
+        <h2>{{ c.content?.headline || c.name }}</h2>
+        <span class="status" [ngClass]="'s-' + c.status">{{ statusLabel(c.status) }}</span>
+      </div>
+      <button type="button" class="x" aria-label="Close" (click)="close()"><p-icon name="close" [size]="20" /></button>
+    </header>
+
+    <div class="d-body">
+      @if (c.content?.tagline) { <p class="tagline">{{ c.content?.tagline }}</p> }
+      <p class="intro">{{ c.description }}</p>
+
+      @if (c.purchase; as p) {
+        <div class="panel">
+          <h4>{{ c.status === 'expired' ? 'Last subscription' : c.status === 'trial' ? 'Your free trial' : 'Your subscription' }}</h4>
+          <dl>
+            @if (p.startDate) { <div><dt>Started</dt><dd>{{ date(p.startDate) }}</dd></div> }
+            <div>
+              <dt>{{ c.status === 'expired' ? 'Expired' : 'Valid until' }}</dt>
+              <dd>@if (p.endsWithPlan) { Your plan end date ({{ date(p.endDate) }}) } @else if (p.endDate) { {{ date(p.endDate) }} } @else { No end date }
+                @if (p.daysLeft !== null && p.daysLeft >= 0 && c.status !== 'expired') { <small [class.warn]="p.expiringSoon"> · {{ p.daysLeft }} day{{ p.daysLeft === 1 ? '' : 's' }} left</small> }
+              </dd>
+            </div>
+            @if (p.users) { <div><dt>Users</dt><dd>{{ p.users }}</dd></div> }
+            @if (p.amount !== null) { <div><dt>Amount paid</dt><dd>{{ money(p.amount, p.currency) }}</dd></div> }
+          </dl>
+        </div>
+      }
+
+      @if (c.price; as pr) {
+        <div class="panel price">
+          <h4>Pricing</h4>
+          <div class="p-row">
+            <b>{{ money(pr.perUserPerYear) }}</b><small>per user / year</small>
+          </div>
+          @if (summary(); as s) {
+            @if (pr.estimatedYearly !== null) {
+              <p class="est">About <strong>{{ money(pr.estimatedYearly) }}</strong> a year for your {{ s.users }} users. Final amount may vary with taxes and your plan end date.</p>
+            }
+          }
+        </div>
+      } @else if (c.status !== 'active') {
+        <div class="panel"><h4>Pricing</h4><p class="est">Pricing depends on your plan. Your account manager can share the details.</p></div>
+      }
+
+      @if (c.content?.benefits?.length) {
+        <h4 class="sec">Why teams use it</h4>
+        <div class="benefits">
+          @for (b of c.content!.benefits; track b.title) {
+            <div class="benefit"><span class="tick"><p-icon name="check" [size]="14" /></span><div><strong>{{ b.title }}</strong><p>{{ b.text }}</p></div></div>
+          }
+        </div>
+      }
+
+      @if (c.content?.steps?.length) {
+        <h4 class="sec">How it works</h4>
+        <ol class="steps">
+          @for (st of c.content!.steps; track st.title; let n = $index) {
+            <li><span class="num">{{ n + 1 }}</span><div><strong>{{ st.title }}</strong><p>{{ st.text }}</p></div></li>
+          }
+        </ol>
+      }
+
+      @if (c.content?.features?.length) {
+        <h4 class="sec">What's included</h4>
+        <div class="tags">@for (f of c.content!.features; track f) { <span class="tag">{{ f }}</span> }</div>
+      }
+
+      @if (c.content?.industries?.length) {
+        <h4 class="sec">Popular in</h4>
+        <div class="tags soft">@for (f of c.content!.industries; track f) { <span class="tag">{{ f }}</span> }</div>
+      }
+    </div>
+
+    <footer class="d-foot">
+      @if (c.learnMoreUrl) {
+        <button type="button" class="btn-solid" (click)="learnMore(c)">Learn more <p-icon name="external" [size]="14" /></button>
+      }
+    </footer>
+  </aside>
+}

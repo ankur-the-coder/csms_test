@@ -1,0 +1,109 @@
+<section class="addons-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="support" [size]="26" /></div>
+    <div class="head-text">
+      <h1>Support</h1>
+      <p>Raise a ticket, follow your cases and reach our team.</p>
+    </div>
+    <div class="head-actions"><button type="button" class="btn-solid" (click)="raise()"><p-icon name="plus" [size]="16" /> Raise a ticket</button></div>
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load support</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="stats four">
+      @for (s of skeletons; track s) { <div class="card sk-tile"><div class="sk sk-line w40"></div><div class="sk sk-big"></div></div> }
+    </div>
+    <div class="card sk-tile tall"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div><div class="sk sk-line"></div></div>
+  } @else if (data(); as d) {
+
+    <!-- ============ Summary ============ -->
+    <div class="stats four rise" style="--d:1">
+      <button type="button" class="card stat" style="text-align:left;cursor:pointer" (click)="viewOpen()">
+        <span class="badge-ico blue"><p-icon name="ticket" [size]="20" /></span>
+        <div><b>{{ d.stats.open }}</b><small>Open tickets@if (d.stats.raisedThisMonth) { · <em>{{ d.stats.raisedThisMonth }}</em> new this month }</small></div>
+      </button>
+      <button type="button" class="card stat" style="text-align:left;cursor:pointer" (click)="viewClosed()">
+        <span class="badge-ico"><p-icon name="check" [size]="20" /></span>
+        <div><b>{{ d.stats.closed }}</b><small>Closed tickets</small></div>
+      </button>
+      <div class="card stat">
+        <span class="badge-ico purple"><p-icon name="clock" [size]="20" /></span>
+        <div><b>{{ resolution(d.stats.avgResolutionHours) }}</b><small>Avg. time to close @if (d.stats.resolvedSampled) { · last 6 months }</small></div>
+      </div>
+      <div class="card stat">
+        <span class="badge-ico"><p-icon name="bolt" [size]="20" /></span>
+        <div>
+          <b>{{ d.stats.avgRating !== null ? d.stats.avgRating : '-' }}<span class="stars"> {{ stars(d.stats.avgRating) }}</span></b>
+          <small>{{ d.stats.ratedCount ? 'Your rating · ' + d.stats.ratedCount + ' rated' : 'No ratings yet' }}</small>
+        </div>
+      </div>
+    </div>
+
+    @if (d.stats.waitingForYou > 0) {
+      <div class="banner blue rise" style="--d:2">
+        <p><strong>{{ d.stats.waitingForYou }} ticket{{ d.stats.waitingForYou === 1 ? ' is' : 's are' }} waiting for your reply.</strong> Our team needs more information from you to continue.</p>
+        <button type="button" class="btn-solid" (click)="viewOpen()">View open tickets</button>
+      </div>
+    }
+    @if (d.stats.awaitingRating > 0) {
+      <div class="banner rise" style="--d:2">
+        <p><strong>{{ d.stats.awaitingRating }} recently closed ticket{{ d.stats.awaitingRating === 1 ? '' : 's' }} can be rated.</strong> Your feedback helps us improve.</p>
+        <button type="button" class="btn-ghost" (click)="viewClosed()">Rate now</button>
+      </div>
+    }
+
+    <div class="cols">
+      <!-- ============ Recent tickets ============ -->
+      <div class="card panel-card rise" style="--d:3">
+        <h2>Recent tickets <button type="button" class="link" (click)="viewAll()">View all <p-icon name="arrow" [size]="14" /></button></h2>
+        @if (d.recent.length === 0) {
+          <div class="empty"><p-icon name="ticket" [size]="30" /><p>No tickets yet. Raise one whenever you need help.</p></div>
+        } @else {
+          @for (t of d.recent; track t.ticket_uid) {
+            <div class="tk" tabindex="0" (click)="openTicket(t)" (keydown.enter)="openTicket(t)">
+              <span class="id">#{{ t.ticket_uid }}</span>
+              <span class="sub"><b>{{ t.subject || 'No subject' }}</b><small>{{ t.assigned_agent_name || 'Unassigned' }} · {{ date(t.last_message_at || t.created_at) }}</small></span>
+              <em class="pill" [ngClass]="'st-' + statusKey(t.status)">{{ statusLabel(t.status) }}</em>
+            </div>
+          }
+        }
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- ============ Open by priority ============ -->
+        <div class="card panel-card rise" style="--d:4">
+          <h2>Open by priority</h2>
+          @if (d.stats.open === 0) {
+            <p class="est" style="margin:0">Nothing open right now.</p>
+          } @else {
+            <div class="prio">
+              @for (p of priorities; track p.key) {
+                <div class="prio-row">
+                  <span>{{ p.label }}</span>
+                  <span class="bar" [ngClass]="p.key"><i [style.width.%]="(d.stats.openByPriority[p.key] / d.stats.open) * 100"></i></span>
+                  <b>{{ d.stats.openByPriority[p.key] }}</b>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- ============ Contact ============ -->
+        <div class="card panel-card rise" style="--d:5">
+          <h2>Contact our team</h2>
+          <div class="contact">
+            <div><small>Email</small><a [href]="'mailto:' + d.contacts.email">{{ d.contacts.email }}</a></div>
+            <div><small>India (toll-free)</small><a [href]="telHref(d.contacts.phoneIndia)">{{ d.contacts.phoneIndia }}</a></div>
+            <div><small>UAE</small><a [href]="telHref(d.contacts.phoneUae)">{{ d.contacts.phoneUae }}</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>

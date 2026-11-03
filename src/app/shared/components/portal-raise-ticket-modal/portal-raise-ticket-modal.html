@@ -1,5 +1,5 @@
 @if (state.raiseTicketModalOpen()) {
-  <div class="scrim" (click)="close()">
+  <div class="scrim" [class.ghost]="recording() || hideModal()" (click)="close()">
     <div class="dialog md" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="rt-title">
 
       <header class="ui-head">
@@ -23,16 +23,6 @@
         </div>
 
         <div class="field">
-          <label for="ticket-priority">Priority</label>
-          <select id="ticket-priority" class="input" [ngModel]="priority()" (ngModelChange)="priority.set($event)" [disabled]="isSubmitting()">
-            <option value="low">Low — General inquiry</option>
-            <option value="normal">Normal — Standard request</option>
-            <option value="high">High — System impacted</option>
-            <option value="urgent">Urgent — Critical blocker</option>
-          </select>
-        </div>
-
-        <div class="field">
           <label for="ticket-desc">Description <span class="req">*</span></label>
           <textarea id="ticket-desc" rows="5" class="input" placeholder="Please detail what you are experiencing, relevant steps to reproduce, or requirements..."
             [ngModel]="description()" (ngModelChange)="description.set($event)" [disabled]="isSubmitting()"></textarea>
@@ -53,14 +43,39 @@
             </ul>
           }
 
+          @if (captures().length > 0) {
+            <ul class="files caps">
+              @for (c of captures(); track c.id) {
+                <li>
+                  <span class="thumb">
+                    @if (c.kind === 'photo') { <img [src]="c.safeUrl" alt="Screenshot preview" /> }
+                    @else { <video [src]="c.safeUrl" muted preload="metadata"></video><i class="dur">{{ fmtTime(c.durationSec || 0) }}</i> }
+                  </span>
+                  <span class="f-name">{{ c.fileName }}<small>{{ c.kind === 'photo' ? 'Screenshot' : 'Screen recording' }} · {{ fmtSize(c.size) }}</small></span>
+                  <button type="button" class="f-open" (click)="openCapture(c)"><p-icon name="external" [size]="14" /> Open</button>
+                  <button type="button" class="f-del" (click)="removeCapture(c)" [disabled]="isSubmitting()" aria-label="Remove capture"><p-icon name="trash" [size]="15" /></button>
+                </li>
+              }
+            </ul>
+          }
+
           <div class="upload-row">
             <label class="upload" [class.disabled]="isUploading() || isSubmitting()">
               <p-icon name="plus" [size]="15" />
               <span>{{ isUploading() ? 'Uploading...' : 'Add File' }}</span>
               <input type="file" (change)="onFileSelected($event)" [disabled]="isUploading() || isSubmitting()" hidden />
             </label>
+            @if (captureSupported) {
+              <button type="button" class="upload" (click)="capturePhoto()" [disabled]="busy() || isUploading()">
+                <p-icon name="camera" [size]="15" /><span>{{ capturing() ? 'Capturing...' : 'Capture Photo' }}</span>
+              </button>
+              <button type="button" class="upload" (click)="startVideo()" [disabled]="busy() || isUploading()">
+                <p-icon name="video" [size]="15" /><span>Record Video</span>
+              </button>
+            }
             @if (isUploading()) { <span class="hint">Uploading attachment to secure storage...</span> }
           </div>
+          @if (captureSupported) { <p class="cap-hint">Capture any tab, window or your whole screen. Videos include sound and stop automatically at 1 minute.</p> }
         </div>
       </div>
 
@@ -72,4 +87,13 @@
       </footer>
     </div>
   </div>
+
+  @if (recording()) {
+    <div class="rec-pill" role="status" aria-live="polite">
+      <span class="rec-dot"></span>
+      <strong>Recording</strong>
+      <span class="rec-time">{{ fmtTime(elapsed()) }} / {{ fmtTime(maxVideoSec) }}</span>
+      <button type="button" (click)="stopVideo()"><p-icon name="stop" [size]="13" /> Stop</button>
+    </div>
+  }
 }

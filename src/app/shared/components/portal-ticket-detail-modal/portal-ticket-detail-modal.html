@@ -40,6 +40,24 @@
               </dl>
             </section>
 
+            @if (statusKey(t.status) === 'closed' && (t.can_rate || t.rating)) {
+              <section class="box">
+                <h3>{{ t.can_rate ? 'Rate your experience' : 'Your feedback' }}</h3>
+                @if (t.can_rate) {
+                  <div class="stars" role="group" aria-label="Rate your experience">
+                    @for (n of [5,4,3,2,1]; track n) { <button type="button" class="star" [attr.aria-label]="n + ' star'" (click)="rate(n)">★</button> }
+                  </div>
+                  <p class="rate-hint">How was the support you received on this ticket?</p>
+                } @else {
+                  <div class="stars done" [attr.title]="'You rated ' + t.rating + ' / 5'">
+                    @for (n of stars; track n) { <span class="star" [class.on]="n <= (t.rating || 0)">★</span> }
+                  </div>
+                  @if (t.rating_liked_most) { <p class="rate-hint"><strong>Liked most:</strong> {{ t.rating_liked_most }}</p> }
+                  @if (t.rating_improve_feedback) { <p class="rate-hint"><strong>Can improve:</strong> {{ t.rating_improve_feedback }}</p> }
+                }
+              </section>
+            }
+
             @if (t.assignmentHistory && t.assignmentHistory.length > 0) {
               <section class="box">
                 <h3>Assignment History</h3>

@@ -39,6 +39,8 @@ export interface Data {
   email: string | null;
   phone: string | null;
   usermasterEmpId: string ;
+  /** Employee profile picture URL (EmployeeMaster.ImageName), null when none */
+  profileImage?: string | null;
   profile?: string;
   /** 'agent' = support_agents login, 'client' = UserMaster (customer) login */
   userType?: 'agent' | 'client';

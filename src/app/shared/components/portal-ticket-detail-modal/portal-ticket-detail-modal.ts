@@ -42,6 +42,20 @@ export class PortalTicketDetailModal implements OnDestroy {
         }
       });
     });
+
+    // Reload after the client rates this ticket so the rating box updates.
+    effect(() => {
+      const f = this.state.lastFeedback();
+      untracked(() => {
+        if (f && this.state.detailModalOpen() && this.state.selectedTicketUid() === f.ticketUid) this.loadDetail(f.ticketUid);
+      });
+    });
+  }
+
+  readonly stars = [1, 2, 3, 4, 5];
+  rate(n: number): void {
+    const t = this.ticket();
+    if (t) this.state.openFeedback(t.ticket_uid, n, t.subject);
   }
 
   ngOnDestroy(): void { this.req?.unsubscribe(); }
