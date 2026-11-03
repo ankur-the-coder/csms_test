@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://127.0.0.1:50137', 
-  socketUrl:   'http://127.0.0.1:50137', 
+  apiUrl: 'http://127.0.0.1:5000',
+  socketUrl:   'http://127.0.0.1:5000',
   ubiDeskApiUrl: 'http://127.0.0.1:3000', // ubiDesk backend base URL (no trailing slash)
   ubiDeskUrl: 'http://localhost:4200',
   appName: 'UbiCSMS (Dev)',
