@@ -95,8 +95,10 @@
         (click)="showProfileMenu.update((value) => !value)">
         <div class="relative shrink-0">
           <div
-            class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs">
-            {{ getFirstLetter() }}
+            class="h-9 w-9 rounded-full bg-linear-to-tr from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-extrabold text-xs overflow-hidden">
+            <img *ngIf="profileImage() && !imgFailed()" [src]="profileImage()" alt="" class="h-full w-full object-cover"
+              (error)="imgFailed.set(true)" />
+            <ng-container *ngIf="!profileImage() || imgFailed()">{{ getFirstLetter() }}</ng-container>
           </div>
           <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
         </div>

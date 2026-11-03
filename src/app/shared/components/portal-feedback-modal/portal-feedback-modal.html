@@ -1,0 +1,66 @@
+@if (state.feedbackTicketUid(); as uid) {
+<div class="scrim" (click)="close()">
+  <div class="dialog md fb" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="fb-title">
+
+    <header class="ui-head">
+      <span class="ui-badge amber"><p-icon name="ticket" [size]="22" /></span>
+      <div class="ui-titles">
+        <h2 id="fb-title">Rate your experience</h2>
+        <p>#{{ uid }}@if (state.feedbackSubject()) { · {{ state.feedbackSubject() }} }</p>
+      </div>
+      <button class="ui-x" type="button" (click)="close()" aria-label="Close"><p-icon name="close" [size]="18" /></button>
+    </header>
+
+    <div class="ui-body">
+      <div class="fb-stars">
+        <div class="stars big" role="group" aria-label="Star rating" (mouseleave)="hover.set(0)">
+          @for (n of starsRev; track n) {
+            <button type="button" class="star" [class.on]="isOn(n)" [attr.aria-label]="n + ' star'" [attr.aria-pressed]="rating() === n"
+              (mouseenter)="hover.set(n)" (click)="rating.set(n)">★</button>
+          }
+        </div>
+        <strong class="fb-label" [attr.data-tier]="tier()">{{ label() }}</strong>
+      </div>
+
+      @switch (tier()) {
+        @case ('positive') {
+          <div class="field">
+            <label for="fb-liked">What did you like the most?</label>
+            <textarea id="fb-liked" class="input" maxlength="2000" placeholder="e.g. quick response, agent was helpful..."
+              [value]="likedMost()" (input)="onText(likedMost, $event)"></textarea>
+          </div>
+          <div class="field">
+            <label for="fb-improve">What can we improve further?</label>
+            <textarea id="fb-improve" class="input" maxlength="2000" placeholder="Anything we could do better?"
+              [value]="improve()" (input)="onText(improve, $event)"></textarea>
+          </div>
+        }
+        @case ('neutral') {
+          <div class="field">
+            <label for="fb-improve">What can we improve?</label>
+            <textarea id="fb-improve" class="input" maxlength="2000" placeholder="Tell us what would have made this better..."
+              [value]="improve()" (input)="onText(improve, $event)"></textarea>
+          </div>
+        }
+        @case ('negative') {
+          <div class="notice warn">We're sorry to hear that. This ticket will be reopened so our team can follow up.</div>
+          <div class="field">
+            <label for="fb-explain">What went wrong?</label>
+            <textarea id="fb-explain" class="input" maxlength="2000" placeholder="Please explain what happened and what you need..."
+              [value]="explanation()" (input)="onText(explanation, $event)"></textarea>
+          </div>
+        }
+      }
+
+      @if (error()) { <div class="notice err">{{ error() }}</div> }
+    </div>
+
+    <footer class="ui-foot">
+      <button type="button" class="btn-ghost" (click)="close()" [disabled]="submitting()">Cancel</button>
+      <button type="button" class="btn-solid" (click)="submit()" [disabled]="!rating() || submitting()">
+        {{ submitting() ? 'Submitting...' : (tier() === 'negative' ? 'Send to our team' : 'Submit feedback') }}
+      </button>
+    </footer>
+  </div>
+</div>
+}

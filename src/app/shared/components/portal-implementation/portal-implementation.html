@@ -1,0 +1,121 @@
+<section class="impl-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="implementation" [size]="26" /></div>
+    <div class="head-text">
+      <h1>Implementation</h1>
+      <p>Track your setup module by module, and see exactly what is done and what is next.</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load your implementation</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card sk-box"><div class="sk sk-line w40"></div><div class="sk sk-big"></div></div>
+    <div class="split">
+      <div class="list">@for (s of skeletons; track s) { <div class="card sk-box sm"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div></div> }</div>
+      <div class="card sk-box tall"></div>
+    </div>
+  } @else if (data(); as d) {
+
+    <!-- ============ Overview ============ -->
+    <article class="card hero rise" [ngClass]="'h-' + tone()" style="--d:1">
+      <svg viewBox="0 0 100 100" class="gauge" aria-hidden="true">
+        <circle cx="50" cy="50" r="38" class="ring-bg" />
+        <circle cx="50" cy="50" r="38" class="ring-fg" transform="rotate(-90 50 50)"
+          [attr.stroke-dasharray]="C" [attr.stroke-dashoffset]="animate() ? offset(d.overall.percentage) : C" />
+      </svg>
+      <div class="hero-num"><b><span [pCountUp]="d.overall.percentage" pSuffix="%"></span></b><small>complete</small></div>
+
+      <div class="hero-main">
+        <div class="hero-top">
+          <h2>{{ d.overall.started ? 'Your setup is underway' : 'Your setup is about to begin' }}</h2>
+          <span class="health">{{ d.overall.healthLabel }}</span>
+        </div>
+        <p class="sub">{{ d.overall.completed }} of {{ d.overall.total }} setup steps completed across {{ d.overall.modulesTotal }} module{{ d.overall.modulesTotal === 1 ? '' : 's' }}.</p>
+        <div class="facts">
+          <div><small>Modules done</small><strong>{{ d.overall.modulesDone }} / {{ d.overall.modulesTotal }}</strong></div>
+          <div><small>Last activity</small><strong>{{ d.overall.lastActivity ? date(d.overall.lastActivity) : '—' }}</strong></div>
+          @if (d.owner.name) { <div><small>{{ d.owner.role }}</small><strong>{{ d.owner.name }}</strong></div> }
+        </div>
+      </div>
+    </article>
+
+    @if (!d.modules.length) {
+      <div class="card empty rise" style="--d:2"><p-icon name="implementation" [size]="30" /><h3>No setup steps yet</h3><p>Your implementation plan will appear here as soon as your team starts the setup.</p></div>
+    } @else {
+
+      <!-- ============ Up next ============ -->
+      @if (d.upNext.length) {
+        <div class="next rise" style="--d:2">
+          <div class="next-title"><p-icon name="bolt" [size]="16" /> Up next</div>
+          <div class="next-row">
+            @for (n of d.upNext; track n.module) { <span class="next-chip"><b>{{ n.module }}</b> {{ n.step }}</span> }
+          </div>
+        </div>
+      }
+
+      <!-- ============ Filters ============ -->
+      <div class="chips rise" style="--d:3" role="tablist">
+        @for (c of chips(); track c.id) {
+          <button type="button" role="tab" class="chip" [class.on]="filter() === c.id" [attr.aria-selected]="filter() === c.id" (click)="filter.set(c.id)">{{ c.label }} <em>{{ c.n }}</em></button>
+        }
+      </div>
+
+      <!-- ============ Modules + steps ============ -->
+      <div class="split">
+        <div class="list">
+          @for (m of visible(); track m.tabId; let i = $index) {
+            <button type="button" class="card mod rise" [class.sel]="selected()?.tabId === m.tabId" [ngClass]="'st-' + m.status" [style.--d]="3 + i" (click)="select(m)">
+              <span class="badge-ico"><p-icon [name]="icon(m.label)" [size]="20" /></span>
+              <span class="mod-main">
+                <span class="mod-top"><strong>{{ m.label }}</strong><span class="pill">{{ statusLabel[m.status] }}</span></span>
+                <span class="bar"><i [style.width.%]="animate() ? m.percent : 0"></i></span>
+                <small>{{ m.approved }} of {{ m.total }} steps · {{ m.percent }}%</small>
+              </span>
+            </button>
+          } @empty { <div class="card empty sm"><p>No modules in this view.</p></div> }
+        </div>
+
+        @if (selected(); as s) {
+          <article class="card detail rise" style="--d:4">
+            <header>
+              <span class="badge-ico big"><p-icon [name]="icon(s.label)" [size]="24" /></span>
+              <div><h3>{{ s.label }}</h3><small>{{ s.approved }} of {{ s.total }} steps done@if (s.lastActivity) { · updated {{ date(s.lastActivity) }} }</small></div>
+              <span class="pill" [ngClass]="'st-' + s.status">{{ statusLabel[s.status] }}</span>
+            </header>
+
+            @if (!s.steps.length) {
+              <p class="muted">Your team hasn't started this module yet. We'll list every step here once it begins.</p>
+            } @else {
+              <ol class="steps">
+                @for (st of s.steps; track $index) {
+                  <li [class.done]="st.done" [class.now]="!st.done && nextIndex(s) === $index">
+                    <span class="dot">@if (st.done) { <p-icon name="check" [size]="14" /> }</span>
+                    <div class="st-body">
+                      <strong>{{ st.name }}</strong>
+                      <small>
+                        @if (st.done) { Completed{{ st.completedAt ? ' on ' + date(st.completedAt) : '' }} }
+                        @else if (nextIndex(s) === $index) { Up next{{ st.startedAt ? ' · started ' + date(st.startedAt) : '' }} }
+                        @else { Pending }
+                      </small>
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </article>
+        }
+      </div>
+    }
+
+    <div class="cta-strip rise" style="--d:6">
+      <div><strong>Stuck on a step or want to move faster?</strong><p>Raise a ticket and your implementation team will help you right away.</p></div>
+      <button type="button" class="btn-solid" (click)="ask()">Ask our team</button>
+    </div>
+  }
+</section>

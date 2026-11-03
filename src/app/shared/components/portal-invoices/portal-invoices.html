@@ -1,0 +1,160 @@
+<section class="addons-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="invoice" [size]="26" /></div>
+    <div class="head-text">
+      <h1>Invoices &amp; Payments</h1>
+      <p>Your payment history for plan purchases, renewals, upgrades and add-ons.</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load your payments</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="stats">
+      @for (s of [1, 2, 3]; track s) { <div class="card sk-tile"><div class="sk sk-line w40"></div><div class="sk sk-big"></div></div> }
+    </div>
+    <div class="rows">
+      @for (s of skeletons; track s) { <div class="card sk-tile"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div></div> }
+    </div>
+  } @else if (summary(); as s) {
+
+    <!-- ============ Summary ============ -->
+    <div class="stats rise" style="--d:1">
+      <div class="card stat"><span class="badge-ico"><p-icon name="check" [size]="20" /></span>
+        <div>
+          <b>@if (s.totals.length) { <span class="totals">@for (t of s.totals; track t.currency) { <span>{{ money(t.amount, t.symbol) }}</span> }</span> } @else { - }</b>
+          <small>Total paid · {{ s.paidCount }} payment{{ s.paidCount === 1 ? '' : 's' }}</small>
+        </div>
+      </div>
+      <div class="card stat"><span class="badge-ico blue"><p-icon name="invoice" [size]="20" /></span>
+        <div>
+          <b>@if (s.last) { {{ money(s.last.total, s.last.symbol) }} } @else { - }</b>
+          <small>@if (s.last) { Last payment · {{ date(s.last.date) }} } @else { No payments yet }</small>
+        </div>
+      </div>
+      <div class="card stat"><span class="badge-ico purple"><p-icon name="plan" [size]="20" /></span>
+        <div>
+          <b>{{ s.planEnd ? date(s.planEnd) : '-' }}</b>
+          <small>@if (s.daysLeft !== null && s.daysLeft >= 0) { Plan valid · {{ s.daysLeft }} day{{ s.daysLeft === 1 ? '' : 's' }} left } @else if (s.daysLeft !== null) { Plan ended } @else { Plan end date }</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Toolbar ============ -->
+    <div class="toolbar rise" style="--d:2">
+      <div class="chips" role="tablist" aria-label="Filter payments">
+        @for (c of chips(); track c.id) {
+          <button type="button" role="tab" class="chip" [class.on]="filter() === c.id" [attr.aria-selected]="filter() === c.id" (click)="setFilter(c.id)">
+            {{ c.label }} <em>{{ c.count }}</em>
+          </button>
+        }
+      </div>
+      <label class="search">
+        <p-icon name="search" [size]="16" />
+        <input type="text" placeholder="Search invoice no., add-on, method" aria-label="Search payments" [value]="query()" (input)="onSearch($event)" />
+      </label>
+    </div>
+
+    <!-- ============ List ============ -->
+    @if (filtered().length === 0) {
+      <div class="card empty rise" style="--d:3"><p-icon name="invoice" [size]="30" /><p>{{ data()!.invoices.length === 0 ? 'No payments recorded yet.' : 'No payments match your filter.' }}</p></div>
+    } @else {
+      <div class="rows">
+        @for (i of rows(); track i.key; let n = $index) {
+          <article class="card row rise" [class.muted]="i.kind === 'incomplete'" [style.--d]="3 + (n < 6 ? n : 6)" tabindex="0"
+                   (click)="open(i)" (keydown.enter)="open(i)">
+            <span class="when">{{ date(i.date) }}</span>
+            <span class="what">
+              <b>{{ i.invoiceNumber || (i.type + ' attempt') }}</b>
+              <small>{{ i.type }}@if (i.items.length) { · {{ i.items.length }} item{{ i.items.length === 1 ? '' : 's' }} }</small>
+            </span>
+            <span class="how">{{ i.method || '-' }}</span>
+            <span class="amt">{{ amount(i) }}</span>
+            <span class="pill-cell"><span class="status" [ngClass]="pill(i.status)">{{ i.statusLabel }}</span></span>
+            <span class="chev"><p-icon name="arrow" [size]="14" /></span>
+          </article>
+        }
+      </div>
+      @if (filtered().length > rows().length) {
+        <div class="more-wrap"><button type="button" class="btn-ghost" (click)="more()">Show more ({{ filtered().length - rows().length }})</button></div>
+      }
+    }
+
+    <p class="price-note rise" style="--d:5">
+      Need a PDF copy of an invoice? <button type="button" class="link" (click)="askCopy()">Raise a ticket</button> and our team will send it.
+    </p>
+  }
+</section>
+
+<!-- ============ Detail drawer ============ -->
+@if (selected(); as i) {
+  <div class="overlay" (click)="close()"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" [attr.aria-label]="'Payment details'">
+    <header class="d-head">
+      <span class="a-ico lg"><p-icon name="invoice" [size]="26" /></span>
+      <div class="d-title">
+        <h2>{{ i.invoiceNumber || (i.type + ' attempt') }}</h2>
+        <span class="status" [ngClass]="pill(i.status)">{{ i.statusLabel }}</span>
+      </div>
+      <button type="button" class="x" aria-label="Close" (click)="close()"><p-icon name="close" [size]="20" /></button>
+    </header>
+
+    <div class="d-body">
+      @if (i.kind === 'incomplete') {
+        <p class="intro">This checkout was started on {{ date(i.date) }} but the payment did not complete. If money was deducted from your account, please raise a ticket with the details below.</p>
+      }
+
+      <div class="panel">
+        <h4>Summary</h4>
+        <dl>
+          <div><dt>Date</dt><dd>{{ date(i.date) }}</dd></div>
+          <div><dt>Type</dt><dd>{{ i.type }}</dd></div>
+          @if (i.method) { <div><dt>Payment method</dt><dd>{{ i.method }}</dd></div> }
+          @if (i.promo) { <div><dt>Promo code</dt><dd>{{ i.promo }}</dd></div> }
+          @if (i.reference) { <div><dt>Payment ID</dt><dd class="hide">{{ i.reference }}</dd></div> }
+          @if (i.orderRef) { <div><dt>Order ID</dt><dd class="hide">{{ i.orderRef }}</dd></div> }
+        </dl>
+      </div>
+
+      <div class="panel">
+        <h4>{{ i.kind === 'incomplete' ? 'Amount' : 'Breakdown' }}</h4>
+        <div class="lines">
+          @for (it of i.items; track it.label) {
+            <div class="line"><span>{{ it.label }}</span><span>{{ money(it.amount, i.symbol) }}</span></div>
+          }
+          @if (i.items.length === 0) { <div class="line"><span>Subtotal</span><span>{{ money(i.subtotal, i.symbol) }}</span></div> }
+          @if (i.items.length > 0) { <div class="line sub"><span>Subtotal</span><span>{{ money(i.subtotal, i.symbol) }}</span></div> }
+          @if (i.tax > 0) { <div class="line sub"><span>Tax (GST)</span><span>{{ money(i.tax, i.symbol) }}</span></div> }
+          @if (i.discount > 0) { <div class="line sub"><span>Discount applied</span><span>{{ money(i.discount, i.symbol) }}</span></div> }
+          @if (i.dues > 0) { <div class="line sub"><span>Previous dues on this invoice</span><span>{{ money(i.dues, i.symbol) }}</span></div> }
+          <div class="line total"><span>{{ i.kind === 'incomplete' ? 'Amount attempted' : 'Total paid' }}</span><span>{{ amount(i) }}</span></div>
+        </div>
+      </div>
+
+      @if (i.notes.length) {
+        <h4 class="sec">Details</h4>
+        <ul class="notes">@for (n of i.notes; track n) { <li>{{ n }}</li> }</ul>
+      }
+
+      @if (i.billedTo.name || i.billedTo.gstin || i.billedTo.city) {
+        <div class="panel">
+          <h4>Billed to</h4>
+          <dl>
+            @if (i.billedTo.name) { <div><dt>Name</dt><dd>{{ i.billedTo.name }}</dd></div> }
+            @if (i.billedTo.city) { <div><dt>City</dt><dd>{{ i.billedTo.city }}</dd></div> }
+            @if (i.billedTo.gstin) { <div><dt>GSTIN</dt><dd>{{ i.billedTo.gstin }}</dd></div> }
+          </dl>
+        </div>
+      }
+    </div>
+
+    <footer class="d-foot">
+      <span class="copy-hint">Need a PDF copy? <button type="button" (click)="askCopy()">Raise a ticket</button></span>
+    </footer>
+  </aside>
+}

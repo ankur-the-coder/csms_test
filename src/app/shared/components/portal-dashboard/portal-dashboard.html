@@ -53,7 +53,10 @@
               <circle class="val green" cx="50" cy="50" r="38" [attr.stroke-dasharray]="C" [attr.stroke-dashoffset]="offset(d.implementation.percentage)" /></svg>
             <span class="ring-num"><b [pCountUp]="d.implementation.percentage" pSuffix="%"></b></span>
           </div>
-          <div class="ring-side"><strong>{{ d.implementation.completed }} of {{ d.implementation.total }}</strong><small>completed</small></div>
+          <div class="ring-side">
+            @if (d.implementation.started) { <strong>{{ d.implementation.completed }} of {{ d.implementation.total }}</strong><small>steps completed</small> }
+            @else { <strong>Not started</strong><small>Your team will kick off soon</small> }
+          </div>
         </div>
       </article>
 
@@ -96,42 +99,81 @@
         @if (d.tracker.length === 0) {
           <div class="empty"><p-icon name="implementation" [size]="30" /><p>No implementation modules assigned yet.</p></div>
         } @else {
-          <ul class="tracker">
+          <div class="imp-hero">
+            <div class="imp-hero-top">
+              <span class="imp-pct">{{ d.implementation.percentage }}<small>%</small></span>
+              <span class="health" [ngClass]="'h-' + d.implementation.health">{{ healthLabel(d.implementation.health) }}</span>
+            </div>
+            <div class="imp-bar"><i [style.width.%]="animate() ? d.implementation.percentage : 0"></i></div>
+            <small class="muted">{{ d.implementation.started ? d.implementation.completed + ' of ' + d.implementation.total + ' setup steps completed' : 'Setup has not started yet. Your implementation team will begin shortly.' }}</small>
+          </div>
+
+          <div class="chips" role="tablist" aria-label="Implementation modules">
             @for (t of d.tracker; track t.tabId; let i = $index) {
-              <li class="t-row" [style.--i]="i">
-                <span class="t-mark" [ngClass]="t.status">
-                  @if (t.status === 'completed') { <p-icon name="check" [size]="13" /> }
-                  @else if (t.status === 'in_progress') { <i class="pulse"></i> }
+              <button type="button" role="tab" class="chip" [ngClass]="t.status" [class.sel]="selected()?.tabId === t.tabId"
+                [attr.aria-selected]="selected()?.tabId === t.tabId" [style.--i]="i" (click)="select(t.tabId)">
+                <span class="ring" [style.--p]="animate() && t.total ? (t.approved / t.total) * 100 : 0">
+                  @if (t.status === 'completed') { <p-icon name="check" [size]="11" /> }
                 </span>
-                <div class="t-main">
-                  <strong>{{ t.label }}</strong>
-                  <div class="t-bar"><i [ngClass]="t.status" [style.width.%]="animate() && t.total ? (t.approved / t.total) * 100 : 0"></i></div>
-                </div>
-                <span class="pill" [ngClass]="'p-' + t.status">{{ t.status === 'completed' ? 'Completed' : t.status === 'in_progress' ? 'In Progress' : 'Pending' }}</span>
-                <span class="t-date">{{ fmtDate(t.date) || '--' }}</span>
-              </li>
+                <span class="c-txt"><strong>{{ t.label }}</strong><small>{{ t.total ? t.approved + '/' + t.total : 'New' }}</small></span>
+              </button>
             }
-          </ul>
+          </div>
+
+          @for (t of [selected()]; track t?.tabId) {
+            @if (t) {
+              <section class="detail" [ngClass]="t.status">
+                <header class="d-head">
+                  <div class="d-title">
+                    <strong>{{ t.label }}</strong>
+                    <em>{{ t.total ? t.approved + ' of ' + t.total + ' steps done' : 'Waiting for kickoff' }}@if (t.date) { · {{ fmtDate(t.date) }} }</em>
+                  </div>
+                  <span class="pill" [ngClass]="'p-' + t.status">{{ statusLabel(t.status) }}</span>
+                  <div class="d-nav">
+                    <button type="button" aria-label="Previous module" [disabled]="trackerIndex(t.tabId) <= 0" (click)="stepModule(-1)"><i class="arr l"></i></button>
+                    <button type="button" aria-label="Next module" [disabled]="trackerIndex(t.tabId) >= d.tracker.length - 1" (click)="stepModule(1)"><i class="arr r"></i></button>
+                  </div>
+                </header>
+                @if (t.steps.length) {
+                  <ul class="steps">
+                    @for (st of t.steps; track st.name; let k = $index) {
+                      <li [class.done]="st.done" [style.--k]="k">
+                        <span class="dot">@if (st.done) { <p-icon name="check" [size]="10" /> }</span>
+                        <span class="s-name">{{ st.name }}</span>
+                        <small>{{ st.done ? 'Done' : 'Pending' }}@if (st.date) { · {{ fmtDate(st.date) }} }</small>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="d-empty">Your implementation team will add the setup steps for this module soon.</p>
+                }
+              </section>
+            }
+          }
         }
       </article>
 
       <article class="card panel rise" style="--d:7">
         <header class="panel-head"><span class="badge-ico purple"><p-icon name="addons" [size]="19" /></span><h2>Suggested Add-ons</h2>
-          <span class="tally">{{ d.addons.enabledCount }} active</span></header>
+          <span class="tally">{{ d.addons.suggested.length }} to explore</span></header>
 
         @if (d.addons.suggested.length === 0) {
-          <div class="empty good"><p-icon name="check" [size]="30" /><p>You have every add-on enabled. Nice!</p></div>
+          <div class="empty good"><p-icon name="check" [size]="30" /><p>You have every module and add-on. Nice!</p></div>
         } @else {
           <div class="addon-grid">
-            @for (a of d.addons.suggested; track a.name; let i = $index) {
+            @for (a of visibleAddons(); track a.key; let i = $index) {
               <div class="addon" [style.--i]="i">
-                <span class="a-ico"><p-icon [name]="addonIcon(a.name)" [size]="21" /></span>
+                <span class="a-ico"><p-icon [name]="addonIcon(a)" [size]="21" /></span>
                 <strong>{{ a.name }}</strong>
+                <em class="a-type">{{ a.type === 'module' ? 'Module' : 'Add-on' }}</em>
                 <small>{{ a.description }}</small>
-                <button type="button" class="btn-tiny">Explore</button>
+                <button type="button" class="btn-tiny" (click)="explore(a)">Explore</button>
               </div>
             }
           </div>
+          @if (d.addons.suggested.length > 8) {
+            <button type="button" class="link more" (click)="showAllAddons.set(!showAllAddons())">{{ showAllAddons() ? 'Show less' : 'Show all ' + d.addons.suggested.length }}</button>
+          }
         }
       </article>
     </div>
@@ -194,7 +236,20 @@
             @for (t of d.support.recentTickets; track t.ticketUid; let i = $index) {
               <li [style.--i]="i" (click)="openTicket(t)" tabindex="0" (keydown.enter)="openTicket(t)">
                 <span class="tk-ico"><p-icon name="ticket" [size]="17" /></span>
-                <div class="tk-main"><strong>#{{ t.ticketUid }}</strong><small>{{ t.subject }}</small></div>
+                <div class="tk-main"><strong>#{{ t.ticketUid }}</strong><small>{{ t.subject }}</small>
+                  @if (t.canRate) {
+                    <span class="tk-rate-wrap" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+                      <span class="tk-rate" role="group" aria-label="Rate your experience">
+                        @for (n of starsRev; track n) { <button type="button" class="star" [attr.aria-label]="n + ' star'" [attr.title]="n + ' / 5'" (click)="rate(t, n, $event)">★</button> }
+                      </span>
+                      <em>Rate your experience</em>
+                    </span>
+                  } @else if (t.rating) {
+                    <span class="tk-rate-wrap"><span class="tk-rate done" [attr.title]="'You rated ' + t.rating + ' / 5'">
+                      @for (n of stars; track n) { <span class="star" [class.on]="n <= t.rating!">★</span> }
+                    </span></span>
+                  }
+                </div>
                 <span class="pill" [ngClass]="ticketClass(t.status)">{{ ticketLabel(t.status) }}</span>
                 <span class="tk-date">{{ fmtDate(t.createdAt) }}</span>
               </li>

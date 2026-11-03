@@ -1,0 +1,149 @@
+<section class="plan-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="plan" [size]="26" /></div>
+    <div class="head-text">
+      <h1>My Plan</h1>
+      <p>Your subscription, licence usage and everything you have purchased.</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load your plan</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="card sk-hero"><div class="sk sk-line w40"></div><div class="sk sk-big"></div><div class="sk sk-line w60"></div></div>
+    <div class="grid">
+      @for (s of skeletons; track s) { <div class="card sk-tile"><div class="sk sk-line w60"></div><div class="sk sk-line w40"></div></div> }
+    </div>
+  } @else if (data(); as d) {
+    @if (plan(); as p) {
+
+      @if (notice(); as n) {
+        <div class="notice rise" [ngClass]="'n-' + n.tone" style="--d:1">
+          <span class="n-ico"><p-icon [name]="n.tone === 'info' ? 'info' : 'alert'" [size]="20" /></span>
+          <div><strong>{{ n.title }}</strong><p>{{ n.text }}</p></div>
+          <button type="button" class="btn-solid sm" (click)="contactSupport()">{{ p.state === 'trial' ? 'Talk to us' : 'Request renewal' }}</button>
+        </div>
+      }
+
+      <!-- ============ Plan overview ============ -->
+      <div class="hero-grid">
+        <article class="card hero rise" style="--d:2">
+          <header class="hero-head">
+            <span class="badge-ico"><p-icon name="plan" [size]="22" /></span>
+            <div class="hero-title">
+              <h2>{{ d.product }}@if (p.edition) { <span class="edition"> {{ p.edition }}</span> }</h2>
+              <small>{{ d.orgName }}</small>
+            </div>
+            <span class="state" [ngClass]="'s-' + p.state">{{ stateLabel() }}</span>
+          </header>
+
+          <div class="validity">
+            <div class="dates">
+              <div><small>Start date</small><strong>{{ p.startDate ? (p.startDate | date:'dd MMM yyyy') : '--' }}</strong></div>
+              <div class="end"><small>{{ p.state === 'expired' ? 'Expired on' : 'Valid until' }}</small><strong>{{ p.endDate ? (p.endDate | date:'dd MMM yyyy') : '--' }}</strong></div>
+            </div>
+            <div class="bar" [ngClass]="'s-' + p.state" role="progressbar" [attr.aria-valuenow]="p.termPercent" aria-valuemin="0" aria-valuemax="100" aria-label="Plan term used">
+              <i [style.width.%]="animate() ? p.termPercent : 0"></i>
+            </div>
+            <div class="bar-foot">
+              <span class="muted">{{ p.termPercent }}% of term used</span>
+              @if (p.daysLeft !== null) {
+                <b [class.bad]="p.daysLeft < 0">{{ p.daysLeft < 0 ? (-p.daysLeft) + ' days ago' : p.daysLeft + ' days left' }}</b>
+              }
+            </div>
+          </div>
+
+          <dl class="facts">
+            <div><dt>Customer since</dt><dd>{{ p.memberSince ? (p.memberSince | date:'MMM yyyy') : '--' }}</dd></div>
+            @if (p.premiumSince) { <div><dt>Premium since</dt><dd>{{ p.premiumSince | date:'dd MMM yyyy' }}</dd></div> }
+            <div><dt>Modules</dt><dd>{{ d.modules.length }}</dd></div>
+            <div><dt>Add-ons</dt><dd>{{ d.addons.length }}</dd></div>
+          </dl>
+
+          @if (p.dueAmount > 0) {
+            <div class="due"><p-icon name="invoice" [size]="18" />
+              <span>Outstanding amount <b>{{ p.currencySymbol }}{{ p.dueAmount | number:'1.0-2' }}</b></span></div>
+          }
+        </article>
+
+        <article class="card seats rise" style="--d:3">
+          <header class="seat-head"><span class="badge-ico blue"><p-icon name="employee" [size]="20" /></span><h3>Licence usage</h3></header>
+          <div class="ring-row">
+            <div class="donut">
+              <svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="38" />
+                <circle class="val" [class.over]="p.overLimit" cx="50" cy="50" r="38" [attr.stroke-dasharray]="C" [attr.stroke-dashoffset]="animate() ? offset(p.seatPercent) : C" /></svg>
+              <span class="ring-num"><b [pCountUp]="p.seatPercent" pSuffix="%"></b></span>
+            </div>
+            <div class="ring-side">
+              <strong>{{ p.registeredEmployees | number }} <span>/ {{ p.userLimit | number }}</span></strong>
+              <small>employees registered</small>
+            </div>
+          </div>
+          @if (p.overLimit) {
+            <p class="seat-note bad">You are over your licence by {{ p.registeredEmployees - p.userLimit | number }} employee(s). Contact us to extend your licence.</p>
+          } @else {
+            <p class="seat-note">{{ p.seatsLeft | number }} seat{{ p.seatsLeft === 1 ? '' : 's' }} remaining</p>
+          }
+        </article>
+      </div>
+
+      <!-- ============ Purchased modules ============ -->
+      <article class="card panel rise" style="--d:4">
+        <header class="panel-head"><span class="badge-ico"><p-icon name="check" [size]="19" /></span><h2>Purchased Modules</h2>
+          <span class="tally">{{ d.modules.length }} active</span></header>
+        @if (d.modules.length === 0) {
+          <p class="empty">No modules found on your plan yet.</p>
+        } @else {
+          <div class="grid">
+            @for (m of d.modules; track m.key; let i = $index) {
+              <a class="item" [href]="m.url" target="_blank" rel="noopener noreferrer" [style.--i]="i">
+                <span class="i-ico"><p-icon [name]="icon(m)" [size]="21" /></span>
+                <div class="i-main"><strong>{{ m.name }}</strong><small>{{ m.description }}</small></div>
+                <span class="tag">Active</span>
+              </a>
+            }
+          </div>
+        }
+      </article>
+
+      <!-- ============ Purchased add-ons ============ -->
+      <article class="card panel rise" style="--d:5">
+        <header class="panel-head"><span class="badge-ico purple"><p-icon name="addons" [size]="19" /></span><h2>Purchased Add-ons</h2>
+          <span class="tally">{{ d.addons.length }} active</span></header>
+        @if (d.addons.length === 0) {
+          <p class="empty">You have not purchased any add-ons yet. Browse suggestions on your dashboard.</p>
+        } @else {
+          <div class="grid">
+            @for (a of d.addons; track a.key; let i = $index) {
+              <a class="item" [href]="a.url" target="_blank" rel="noopener noreferrer" [style.--i]="i">
+                <span class="i-ico purple"><p-icon [name]="icon(a)" [size]="21" /></span>
+                <div class="i-main"><strong>{{ a.name }}</strong><small>{{ a.description }}</small></div>
+                <span class="tag">Active</span>
+              </a>
+            }
+          </div>
+        }
+      </article>
+
+      <!-- ============ Enabled attendance features + extras ============ -->
+      @if (d.attendanceFeatures.length || d.extras.length) {
+        <article class="card panel rise" style="--d:6">
+          <header class="panel-head"><span class="badge-ico teal"><p-icon name="bolt" [size]="19" /></span><h2>Enabled Features</h2></header>
+          @if (d.attendanceFeatures.length) {
+            <h4 class="sub">Attendance app</h4>
+            <div class="chips">@for (f of d.attendanceFeatures; track f) { <span class="chip"><p-icon name="check" [size]="13" />{{ f }}</span> }</div>
+          }
+          @if (d.extras.length) {
+            <h4 class="sub">Integrations &amp; extras</h4>
+            <div class="chips">@for (f of d.extras; track f) { <span class="chip"><p-icon name="check" [size]="13" />{{ f }}</span> }</div>
+          }
+        </article>
+      }
+    }
+  }
+</section>

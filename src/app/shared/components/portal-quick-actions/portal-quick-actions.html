@@ -19,7 +19,7 @@
               <h3>{{ s.title }}</h3>
               <ul>
                 @for (it of s.items; track it.label) {
-                  <li><button type="button" [class.live]="!!it.action" (click)="run(it)"><i></i>{{ it.label }}</button></li>
+                  <li><button type="button" [class.live]="!!(it.action || it.route)" (click)="run(it)"><i></i>{{ it.label }}</button></li>
                 }
               </ul>
             </div>

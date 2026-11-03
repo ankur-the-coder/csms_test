@@ -39,6 +39,23 @@ export class PortalState {
     this.selectedTicketUid.set(null);
   }
 
+  // Star-rating / feedback modal
+  feedbackTicketUid = signal<string | null>(null);
+  feedbackSubject = signal<string>('');
+  feedbackInitialRating = signal(0);
+  /** Set after a successful submit so the dashboard / detail modal can refresh themselves. */
+  lastFeedback = signal<{ ticketUid: string; rating: number; reopened: boolean } | null>(null);
+
+  openFeedback(ticketUid: string, rating = 0, subject = ''): void {
+    this.feedbackInitialRating.set(rating);
+    this.feedbackSubject.set(subject);
+    this.feedbackTicketUid.set(ticketUid);
+  }
+
+  closeFeedback(): void {
+    this.feedbackTicketUid.set(null);
+  }
+
   openRaiseTicket(): void {
     this.raiseTicketModalOpen.set(true);
   }

@@ -13,14 +13,14 @@ export interface PortalNavItem {
 
 export const PORTAL_NAV: PortalNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'home', route: '/client-portal/dashboard' },
-  { id: 'plan', label: 'My Plan', icon: 'plan' },
-  { id: 'addons', label: 'Add-ons', icon: 'addons' },
-  { id: 'implementation', label: 'Implementation', icon: 'implementation' },
+  { id: 'plan', label: 'My Plan', icon: 'plan', route: '/client-portal/my-plan' },
+  { id: 'addons', label: 'Add-ons', icon: 'addons', route: '/client-portal/addons' },
+  { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/client-portal/implementation' },
   { id: 'training', label: 'Training Center', icon: 'training' },
-  { id: 'support', label: 'Support', icon: 'support' },
+  { id: 'support', label: 'Support', icon: 'support', route: '/client-portal/support' },
   // { id: 'downloads', label: 'Downloads', icon: 'download' },
-  { id: 'invoices', label: 'Invoices & Payments', icon: 'invoice' },
-  { id: 'usage', label: 'Usage Analytics', icon: 'analytics' },
+  { id: 'invoices', label: 'Invoices & Payments', icon: 'invoice', route: '/client-portal/invoices' },
+  { id: 'usage', label: 'Usage Analytics', icon: 'analytics', route: '/client-portal/usage' },
   { id: 'manager', label: 'Account Manager', icon: 'manager' },
   { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
@@ -35,6 +35,10 @@ export const PORTAL_NAV: PortalNavItem[] = [
 export class PortalSidebar {
   private auth = inject(AuthService);
   private router = inject(Router);
+
+  /** logged-in user (same source as the top bar) */
+  userName = this.auth.getUserName();
+  initial = (this.userName || 'U').trim().charAt(0).toUpperCase();
 
   @Input() open = false;                    // mobile drawer state
   @Input() orgName = '';

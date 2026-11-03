@@ -23,13 +23,13 @@
 
         <div class="profile">
           <button class="who" type="button" (click)="toggleProfile($event)" [attr.aria-expanded]="profileOpen()">
-            <span class="avatar">{{ initial }}</span>
+            @if (profileImage && !imgFailed()) { <img class="avatar" [src]="profileImage" alt="" (error)="imgFailed.set(true)" /> } @else { <span class="avatar">{{ initial }}</span> }
             <span class="who-text"><strong>{{ userName }}</strong><small>{{ designation || 'Client' }}</small></span>
             <span class="chev" [class.up]="profileOpen()"><p-icon name="chevron" [size]="16" /></span>
           </button>
           @if (profileOpen()) {
             <div class="menu" (click)="$event.stopPropagation()">
-              <div class="menu-head"><span class="avatar big">{{ initial }}</span><div><strong>{{ userName }}</strong><small>{{ state.orgName() }}</small></div></div>
+              <div class="menu-head">@if (profileImage && !imgFailed()) { <img class="avatar big" [src]="profileImage" alt="" (error)="imgFailed.set(true)" /> } @else { <span class="avatar big">{{ initial }}</span> }<div><strong>{{ userName }}</strong><small>{{ state.orgName() }}</small></div></div>
               <button type="button" (click)="logout()"><p-icon name="logout" [size]="17" /> Sign out</button>
             </div>
           }
@@ -43,5 +43,6 @@
   <app-portal-tickets-modal />
   <app-portal-ticket-detail-modal />
   <app-portal-raise-ticket-modal />
+  <app-portal-feedback-modal />
   <app-portal-quick-actions />
 </div>

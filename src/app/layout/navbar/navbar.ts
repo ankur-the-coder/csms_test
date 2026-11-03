@@ -38,6 +38,8 @@ export class Navbar implements OnInit, OnDestroy {
   isImplementationRoute = true;
   adminName = signal<string>('');
   designation = signal<string>('');
+  profileImage = signal<string>('');
+  imgFailed = signal(false);
 
   // Upcoming meeting notification
   upcomingMeeting = signal<MeetingRow | null>(null);
@@ -69,6 +71,7 @@ private isAdminView(): boolean {
   this.designation.set(
     this.authService.getDesignation()
   );
+  this.profileImage.set(this.authService.getProfileImage());
 
   // Meeting notifications are per-employee only — admins (adminSts === '1')
   // never see this widget, so don't even fetch or tick for it.

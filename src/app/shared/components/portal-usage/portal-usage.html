@@ -1,0 +1,209 @@
+<section class="usage-page">
+
+  <div class="head rise" style="--d:0">
+    <div class="head-ico"><p-icon name="analytics" [size]="26" /></div>
+    <div class="head-text">
+      <h1>Usage Analytics</h1>
+      <p>See how your team is using {{ data()?.product || 'your product' }} and where you can get more value.</p>
+    </div>
+    @if (data()) { <span class="asof"><p-icon name="clock" [size]="15" /> As of {{ asOf() }}</span> }
+  </div>
+
+  @if (error()) {
+    <div class="error rise" style="--d:1">
+      <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+      <div><h3>We couldn't load your analytics</h3><p>{{ error() }}</p></div>
+      <button type="button" class="btn-solid" (click)="load()">Try again</button>
+    </div>
+  } @else if (loading()) {
+    <div class="kpis">
+      @for (s of skeletons; track s) { <div class="card sk-tile"><div class="sk sk-line w40"></div><div class="sk sk-big"></div><div class="sk sk-line w60"></div></div> }
+    </div>
+    <div class="card sk-tile tall"><div class="sk sk-line w40"></div><div class="sk sk-big"></div></div>
+  } @else if (data(); as d) {
+
+    <!-- ============ Insights ============ -->
+    <div class="insights rise" style="--d:1">
+      @for (i of d.insights; track i.title) {
+        <div class="insight" [ngClass]="'t-' + i.tone">
+          <span class="in-ico"><p-icon [name]="insightIcon(i.tone)" [size]="18" /></span>
+          <div><strong>{{ i.title }}</strong><p>{{ i.text }}</p></div>
+        </div>
+      }
+    </div>
+
+    <!-- ============ Adoption cards ============ -->
+    <div class="kpis">
+      @for (c of d.cards; track c.key; let n = $index) {
+        <article class="card kpi rise" [ngClass]="'lv-' + c.level" [style.--d]="2 + n">
+          <header>
+            <span class="badge-ico"><p-icon [name]="icon(c.key)" [size]="20" /></span>
+            <h3>{{ c.label }}</h3>
+            <span class="lv-chip">{{ levelLabel[c.level] }}</span>
+          </header>
+          <div class="kpi-body">
+            <svg viewBox="0 0 100 100" class="gauge" aria-hidden="true">
+              <circle cx="50" cy="50" r="38" class="ring-bg" />
+              <circle cx="50" cy="50" r="38" class="ring-fg" transform="rotate(-90 50 50)"
+                [attr.stroke-dasharray]="C" [attr.stroke-dashoffset]="animate() ? offset(c.percent) : C" />
+            </svg>
+            <div class="kpi-num">
+              <b><span [pCountUp]="c.percent" pSuffix="%"></span></b>
+              @if (c.delta !== null && c.delta !== 0) {
+                <small class="delta" [class.up]="c.delta > 0" [class.down]="c.delta < 0">{{ c.delta > 0 ? '▲' : '▼' }} {{ c.delta > 0 ? '+' : '' }}{{ c.delta }} pts vs last month</small>
+              } @else if (c.key !== 'employee') { <small class="delta">same as last month</small> }
+            </div>
+          </div>
+          <p class="cap">{{ c.caption }}</p>
+        </article>
+      }
+
+      <article class="card kpi rise" [style.--d]="2 + d.cards.length">
+        <header>
+          <span class="badge-ico teal"><p-icon name="clock" [size]="20" /></span>
+          <h3>Daily activity</h3>
+        </header>
+        <div class="stat-big"><b><span [pCountUp]="d.summary.avgDailyPresent"></span></b><small>employees present on an average working day</small></div>
+        <p class="cap">Last 30 days · {{ d.summary.active30 }} of {{ d.summary.activeEmployees }} active employees marked attendance at least once</p>
+      </article>
+    </div>
+
+    <!-- ============ Module tabs ============ -->
+    @if (tabs().length) {
+      <div class="tabs rise" style="--d:4" role="tablist" aria-label="Usage by module">
+        @for (t of tabs(); track t.key) {
+          <button type="button" role="tab" class="tab" [class.on]="activeTab() === t.key" [attr.aria-selected]="activeTab() === t.key" (click)="selectTab(t.key)">
+            <p-icon [name]="t.icon" [size]="17" /> {{ t.label }}
+          </button>
+        }
+      </div>
+
+      <!-- ============ Attendance: Daily attendance (2/3) + Busiest days (1/3) ============ -->
+      @if (activeTab() === 'attendance' && d.modules.hasAttendance) {
+        <div class="att-grid rise" style="--d:5">
+          <article class="card chart">
+            <header class="c-head">
+              <div><h3>Daily attendance</h3><small>Employees who marked attendance · last 30 days</small></div>
+            </header>
+        <span class="legend end"><i class="lg-bar"></i> Present <i class="lg-line"></i> All active</span>
+        <div class="svg-wrap">
+          @if (hovered(); as h) {
+            <div class="tip" [style.left.%]="(h.cx / DW) * 100">
+              <strong>{{ dateLabel(h.date) }}</strong>
+              <span>{{ h.off ? 'No attendance (day off)' : h.present + ' present · ' + h.pct + '%' }}</span>
+            </div>
+          }
+          <svg [attr.viewBox]="'0 0 ' + DW + ' ' + (DH + 4)" preserveAspectRatio="none" class="bars" role="img" aria-label="Daily attendance for the last 30 days">
+            <line x1="0" x2="600" [attr.y1]="limitY()" [attr.y2]="limitY()" class="limit" />
+            @for (b of bars(); track b.date; let i = $index) {
+              <rect class="hit" [attr.x]="b.cx - 10" y="0" width="20" [attr.height]="DH" (mouseenter)="hover.set(i)" (mouseleave)="hover.set(null)" (click)="hover.set(i)" />
+              <rect class="bar" [class.off]="b.off" [class.on]="hover() === i" [attr.x]="b.x" [attr.width]="b.w" rx="3"
+                [attr.y]="animate() ? b.y : DH - 2" [attr.height]="animate() ? b.h : 2" [style.transition-delay.ms]="i * 14" />
+            }
+          </svg>
+          <div class="axis"><span>{{ dateLabel(d.daily[0].date) }}</span><span>{{ dateLabel(d.daily[14].date) }}</span><span>{{ dateLabel(d.daily[29].date) }}</span></div>
+        </div>
+          </article>
+
+          <article class="card chart">
+            <header class="c-head">
+              <div><h3>Busiest days</h3><small>Average present per weekday · last 90 days</small></div>
+            </header>
+        <ul class="wk">
+          @for (w of d.weekday; track w.day) {
+            <li [class.top]="w.day === busiestDay()">
+              <span class="wd">{{ w.day }}</span>
+              <span class="track"><i [style.width.%]="animate() ? (w.avg / maxWeekday()) * 100 : 0"></i></span>
+              <span class="wv">{{ w.days ? w.avg : '—' }}</span>
+            </li>
+          }
+        </ul>
+        <p class="cap">Days with no attendance (weekly offs, holidays) are left out of the average.</p>
+          </article>
+        </div>
+      }
+
+      <!-- ============ Trend of the selected module (day / week / month by plan age) ============ -->
+      @if (trendLoading()) {
+        <div class="card sk-tile tall"><div class="sk sk-line w40"></div><div class="sk sk-big"></div><div class="sk sk-line w60"></div></div>
+      } @else if (trendError()) {
+        <div class="error rise" style="--d:0">
+          <div class="err-ico"><p-icon name="close" [size]="22" /></div>
+          <div><h3>We couldn't load {{ activeTabLabel() }} analytics</h3><p>{{ trendError() }}</p></div>
+          <button type="button" class="btn-solid" (click)="retryTrend()">Try again</button>
+        </div>
+      } @else if (currentTrend(); as t) {
+        @if (chart(); as c) {
+          <article class="card chart rise" style="--d:6">
+            <header class="c-head">
+              <div><h3>{{ activeTabLabel() }} · {{ trendTitle() }}</h3><small>{{ trendSub() }}</small></div>
+              <span class="legend">
+                @for (m of t.metrics; track m.key) {
+                  @if (m.plot) { <i class="lg-dot" [ngClass]="seriesClass(t, m)"></i> {{ m.label }} }
+                }
+              </span>
+            </header>
+            <div class="svg-wrap">
+              @if (tip(); as tp) {
+                <div class="tip" [style.left.%]="tp.left">
+                  <strong>{{ tp.title }}</strong>
+                  @for (r of tp.rows; track r.label) { <span><i class="tip-dot" [ngClass]="r.cls"></i>{{ r.label }}: {{ r.text }}</span> }
+                  <span class="tip-dim">Tickets raised: {{ tp.tickets }}</span>
+                </div>
+              }
+              <svg [attr.viewBox]="'0 0 ' + TW + ' ' + TH" class="trend" role="img" [attr.aria-label]="activeTabLabel() + ' ' + trendTitle()">
+                @for (g of c.grid; track g.y) {
+                  <line [attr.x1]="PAD" [attr.x2]="TW - PAD" [attr.y1]="g.y" [attr.y2]="g.y" class="grid" />
+                  <text x="0" [attr.y]="g.y + 4" class="gl">{{ g.text }}</text>
+                }
+                @for (l of c.lines; track l.key; let li = $index) {
+                  @if (l.area) { <path [attr.d]="l.area" class="area" [ngClass]="l.cls" /> }
+                  <path [attr.d]="l.line" pathLength="1" class="ln" [ngClass]="l.cls" [class.draw]="trendAnimate()" />
+                  @for (p of l.pts; track $index) {
+                    <circle [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="c.dotR" class="dot" [ngClass]="l.cls" />
+                    @if (li === 0 && c.showValues) { <text [attr.x]="p.x" [attr.y]="p.y - 10" class="vl" [ngClass]="l.cls" text-anchor="middle">{{ p.v }}{{ c.suffix }}</text> }
+                  }
+                }
+                @for (x of c.xl; track x.x) { <text [attr.x]="x.x" [attr.y]="TH - 6" class="xl" [class.cur]="x.cur" text-anchor="middle">{{ x.label }}</text> }
+                @for (h of c.hits; track $index; let i = $index) {
+                  <rect class="hit" [attr.x]="h.x" y="0" [attr.width]="h.w" [attr.height]="TH - 24"
+                    (mouseenter)="hoverT.set(i)" (mouseleave)="hoverT.set(null)" (click)="hoverT.set(i)" />
+                }
+              </svg>
+            </div>
+            @if (c.empty) { <p class="cap">No {{ activeTabLabel().toLowerCase() }} activity recorded in this period yet.</p> }
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{{ t.granularity === 'month' ? 'Month' : t.granularity === 'week' ? 'Week' : 'Day' }}</th>
+                    @for (m of t.metrics; track m.key) { <th>{{ m.label }}</th> }
+                    <th>Tickets raised</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of reversed(t.points); track p.key) {
+                    <tr [class.cur]="p.current">
+                      <td>{{ rowLabel(p, t) }}@if (p.current) { <em>{{ curTag(t) }}</em> }</td>
+                      @for (m of t.metrics; track m.key) {
+                        <td>{{ p.values[m.key] }}@if (m.unit === 'pct') { <small> ({{ p.pcts[m.key] }}%)</small> }</td>
+                      }
+                      <td>{{ p.tickets }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </article>
+        }
+      }
+    }
+
+    <!-- ============ Help CTA ============ -->
+    <div class="cta-strip rise" style="--d:8">
+      <div><strong>Want better adoption?</strong><p>Our team can help you onboard remaining employees and set up the modules you already own.</p></div>
+      <button type="button" class="btn-solid" (click)="contactSupport()">Talk to us</button>
+    </div>
+  }
+</section>

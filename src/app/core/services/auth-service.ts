@@ -86,6 +86,7 @@ export class AuthService {
           window.localStorage.setItem('userName', d.userName || '');
           if (d.empId) window.localStorage.setItem('empId', d.empId);
           if (d.designation) window.localStorage.setItem('designation', d.designation);
+          window.localStorage.setItem('profileImage', d.profileImage || '');
           if (d.adminSts !== undefined) window.localStorage.setItem('adminSts', String(d.adminSts));
           // if (d.hrSts !== undefined) window.localStorage.setItem('hrSts', String(d.hrSts));
           if (d.orgId) window.localStorage.setItem('orgId', d.orgId);
@@ -143,6 +144,7 @@ export class AuthService {
     window.localStorage.removeItem('userName');
     window.localStorage.removeItem('empId');
     window.localStorage.removeItem('designation');
+    window.localStorage.removeItem('profileImage');
     window.localStorage.removeItem('isLoggedIn');
     window.localStorage.removeItem('password'); // never stored anymore
     window.localStorage.removeItem('email');
@@ -164,6 +166,10 @@ export class AuthService {
 
   getDesignation(): string {
     return this.isBrowser ? (window.localStorage.getItem('designation') ?? '') : '';
+  }
+
+  getProfileImage(): string {
+    return this.isBrowser ? (window.localStorage.getItem('profileImage') ?? '') : '';
   }
 
   getOrgId(): string {
@@ -208,6 +214,7 @@ export class AuthService {
     window.localStorage.setItem('userName', data.userName || '');
     if (data.empId) window.localStorage.setItem('empId', data.empId);
     if (data.designation) window.localStorage.setItem('designation', data.designation);
+    window.localStorage.setItem('profileImage', data.profileImage || '');
     if (data.adminSts !== undefined) window.localStorage.setItem('adminSts', data.adminSts.toString());
     // if (data.hrSts !== undefined) window.localStorage.setItem('hrSts', data.hrSts.toString());
     if (data.orgId) window.localStorage.setItem('orgId', data.orgId);

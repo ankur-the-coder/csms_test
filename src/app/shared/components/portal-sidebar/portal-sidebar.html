@@ -29,13 +29,8 @@
     }
   </nav>
 
-  <div class="help">
-    <div class="help-ico"><p-icon name="support" [size]="20" /></div>
-    <h4>Need help?</h4>
-    <p>Our support team is always here for you.</p>
-    <button type="button" class="help-btn" (click)="helpClicked.emit()">
-      Contact Support <p-icon name="arrow" [size]="15" />
-    </button>
+  <div class="foot">
+    <span class="me" [attr.title]="userName" aria-hidden="true">{{ initial }}</span>
     <button type="button" class="out" (click)="logout()"><p-icon name="logout" [size]="16" /> Sign out</button>
   </div>
 </aside>
