@@ -16,6 +16,7 @@ export interface CallHistoryRow {
   toNumber: string;
   receivedOnNumber: string;
   clientName: string;
+  supportName?: string;
   status: string;
   duration: string;
   createdAt: string;
@@ -39,7 +40,7 @@ export class History implements OnInit {
 
   private readonly voiceApiBase = `${environment.apiUrl}/api/voice`;
 
-readonly defaultFilters: Record<string, any> = { country: '1' };
+
   historyTableConfig!: SmartTableConfig<CallHistoryRow>;
 
   callNumber(row: CallHistoryRow): void {
@@ -100,6 +101,7 @@ readonly defaultFilters: Record<string, any> = { country: '1' };
       { key: 'customerNumber', label: 'Customer Number' },
       { key: 'direction', label: 'Direction', type: 'template', cellTemplate: this.directionCellTemplate },
       // { key: 'receivedOnNumber', label: 'Line / DID', type: 'template', cellTemplate: this.didCellTemplate },
+      {key : 'supportName' , label : 'Support Name'},
       { key: 'status', label: 'Status', type: 'template', cellTemplate: this.statusCellTemplate },
       { key: 'duration', label: 'Duration', type: 'template', cellTemplate: this.durationCellTemplate },
       { key: 'createdAt', label: 'Date', type: 'template', cellTemplate: this.dateCellTemplate },
@@ -148,15 +150,7 @@ readonly defaultFilters: Record<string, any> = { country: '1' };
           { label: 'Outgoing', value: 'outbound' },
         ],
       },
-       {
-        key: 'country',
-        label: 'Country',
-        type: 'select',
-        options: [
-          { label: 'International', value: '1' },
-          { label: 'National', value: '2' },
-        ],
-      },
+       
     ],
 
     toolbarButtons: [
@@ -188,7 +182,7 @@ buildRequest: (ctx: RequestContext) => {
 
   params.set('page', String(ctx.page + 1));
   params.set('limit', String(ctx.pageSize));
-  params.set('country', ctx.filters['country'] || '1');
+  // params.set('country', ctx.filters['country'] || '1');
 
   const currentEmpId = localStorage.getItem('empId');
   const isAdmin = localStorage.getItem('adminSts') === '1';
@@ -209,9 +203,9 @@ buildRequest: (ctx: RequestContext) => {
     params.set('direction', ctx.filters['direction']);
   }
 
-  if (ctx.filters['country']) {
-    params.set('country', ctx.filters['country']);
-  }
+  // if (ctx.filters['country']) {
+  //   params.set('country', ctx.filters['country']);
+  // }
 
   return {
     method: 'GET' as const,
@@ -334,6 +328,7 @@ transformRow: (raw: any): CallHistoryRow | null => {
       raw.client_name ||
       raw.customer_name ||
       '—',
+    supportName: raw.support_name || raw.supportName || '—',
     status: raw.status,
     duration: this.voiceService.formatDuration(
       Number(raw.duration) || 0
