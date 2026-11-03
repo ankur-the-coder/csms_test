@@ -310,7 +310,7 @@ export class DataTableService {
         case 'countryType':
         return of({
           key: 'countryType',
-          label: 'Country Type',
+          label: 'Country',
           options: [
             { label: 'International',    value: '1' },
             { label: 'National',   value: '2' },
