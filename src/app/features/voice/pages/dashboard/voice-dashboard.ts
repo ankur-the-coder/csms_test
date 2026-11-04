@@ -393,4 +393,29 @@ export class VoiceAnalyticsDashboard implements OnInit {
     const total = this.stats()?.kpis?.totalCallsToday || 0;
     return { line1: String(total), line2: 'Total', line3: 'Calls' };
   }
+
+  private shiftDate(date: Date, days: number): Date {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+}
+
+private startOfDay(date: Date): Date {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// Next sirf tab chalega jab shift ke baad To, aaj se aage na jaye
+canShiftRange(days: number): boolean {
+  if (days <= 0) return true;
+  const nextTo = this.shiftDate(this.toDate(), days);
+  return nextTo.getTime() <= this.startOfDay(this.today).getTime();
+}
+
+// From aur To dono ko saath same din aage/peeche karta hai
+shiftRange(days: number): void {
+  if (!this.canShiftRange(days)) return;
+  this.fromDate.set(this.shiftDate(this.fromDate(), days));
+  this.toDate.set(this.shiftDate(this.toDate(), days));
+  this.loadDashboardData();
+}
 }
