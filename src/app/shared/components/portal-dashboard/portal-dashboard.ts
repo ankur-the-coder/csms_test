@@ -41,8 +41,8 @@ export class PortalDashboard implements OnInit {
   // ring geometry (r = 38)
   readonly C = 2 * Math.PI * 38;
 
-  readonly skeletonCards = [1, 2, 3, 4, 5];
-  readonly skeletonRows = [1, 2, 3, 4, 5];
+  readonly skeletonCards = [1, 2, 3, 4];
+  readonly skeletonRows = [1, 2, 3, 4];
 
   today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
   greeting = (() => {
