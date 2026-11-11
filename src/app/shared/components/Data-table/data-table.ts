@@ -725,6 +725,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       this.dateTo.set(to);
     }
     this.page.set(0);
+    this.dropdownSearch.set({});
   }
 
   private getDefaultDateRange(): { from: string; to: string } {
@@ -792,6 +793,7 @@ export class DataTable<T extends object> implements AfterContentInit {
       return u;
     });
     this.page.set(0);
+    this.dropdownSearch.set({});
   }
 
   updateTempFilter(key: string, value: any): void {

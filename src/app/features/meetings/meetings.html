@@ -7,7 +7,12 @@
           Meetings
         </h1>
       </div>
-      <div class="flex flex-wrap gap-3">
+      <div class="flex flex-wrap items-end gap-3">
+        <div class="w-72 max-w-full">
+          <app-custom-date-selector placeholder="Select date range" defaultPreset="currentMonth"
+            [initialDates]="dateRangeForPicker()" (onApplyDate)="onDateApplied($event)">
+          </app-custom-date-selector>
+        </div>
         <button (click)="openScheduleModal()"
           class="inline-flex schedule-shine-btn items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2.5 cursor-pointer text-sm font-semibold text-white transition-colors shadow-sm">
           <i class="fas fa-plus-circle"></i> Schedule Meeting
@@ -20,9 +25,8 @@
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
 
     <!-- All Meetings -->
-    <div (click)="filterByAllMeetings()" (keydown.enter)="filterByAllMeetings()" (keydown.space)="filterByAllMeetings()"
-      role="button" tabindex="0"
-      class="card flex items-center justify-between gap-6 border border-violet-300 bg-violet-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
+    <div (keydown.enter)="filterByAllMeetings()" (keydown.space)="filterByAllMeetings()" role="button" tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-pink-300 bg-pink-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getAllMeetings()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">All Meetings</span>
@@ -35,8 +39,7 @@
     </div>
 
     <!-- Today's Meetings -->
-    <div (click)="filterByToday()" (keydown.enter)="filterByToday()" (keydown.space)="filterByToday()" role="button"
-      tabindex="0"
+    <div (keydown.enter)="filterByToday()" (keydown.space)="filterByToday()" role="button" tabindex="0"
       class="card flex items-center justify-between gap-6 border border-cyan-300 bg-cyan-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getTodayMeetings()"></div>
@@ -51,8 +54,7 @@
     </div>
 
     <!-- Upcoming Meetings -->
-    <div (click)="filterByUpcoming()" (keydown.enter)="filterByUpcoming()" (keydown.space)="filterByUpcoming()"
-      role="button" tabindex="0"
+    <div (keydown.enter)="filterByUpcoming()" (keydown.space)="filterByUpcoming()" role="button" tabindex="0"
       class="card flex items-center justify-between gap-6 border border-brand-300 bg-brand-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getUpcomingMeetings()"></div>
@@ -67,9 +69,8 @@
     </div>
 
     <!-- Completed Meetings -->
-    <div (click)="filterByCompleted()" (keydown.enter)="filterByCompleted()" (keydown.space)="filterByCompleted()"
-      role="button" tabindex="0"
-      class="card flex items-center justify-between gap-6 border border-emerald-300 bg-emerald-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
+    <div (keydown.enter)="filterByCompleted()" (keydown.space)="filterByCompleted()" role="button" tabindex="0"
+      class="card flex items-center justify-between gap-6 border border-indigo-300 bg-indigo-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getCompletedCount()"></div>
         <span class="text-lg font-semibold text-text-secondary whitespace-nowrap">Completed</span>
@@ -83,8 +84,8 @@
     </div>
 
     <!-- Pending Follow-ups -->
-    <div (click)="filterByPendingFollowUps()" (keydown.enter)="filterByPendingFollowUps()"
-      (keydown.space)="filterByPendingFollowUps()" role="button" tabindex="0"
+    <div (keydown.enter)="filterByPendingFollowUps()" (keydown.space)="filterByPendingFollowUps()" role="button"
+      tabindex="0"
       class="card flex items-center justify-between gap-6 border border-red-300 bg-red-50 rounded-xl p-4 overflow-hidden cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.99] select-none">
       <div class="min-w-0">
         <div class="text-2xl font-bold mt-1" [appCountUp]="getPendingFollowUps()"></div>
@@ -145,7 +146,7 @@
 
     <!-- Meeting Types Distribution (using custom app-charts doughnut) -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
-      <app-charts chartId="meetingTypesChart" [chartType]="'doughnut'" [chartData]="meetingTypeChartData"
+      <app-charts chartId="meetingTypesChart" [chartType]="'area'" [chartData]="meetingTypeChartData"
         [chartLabels]="meetingTypeChartLabels" [backgroundColors]="meetingTypeChartColors"
         [headingText]="'Meeting Types'" [hoverLabel]="'Meetings'" [donutCenterText]="meetingTypeDonutCenter"
         [leaveChart]="true"></app-charts>
@@ -611,14 +612,6 @@
               placeholder="Search meeting, org, organizer..." [(ngModel)]="flowSearchTerm"
               (ngModelChange)="onFlowSearchChange()" />
           </div>
-
-          <!-- Custom Date Picker -->
-          <div class="w-48">
-            <app-date-picker [placeHolder]="'Select Date'" [showClearButton]="true" [useFixedPosition]="true"
-              [(ngModel)]="flowSelectedDate" (onSelectDate)="onFlowDateSelect($event)">
-            </app-date-picker>
-          </div>
-
 
           <!-- Custom Status Dropdown -->
           <div class="w-44">
