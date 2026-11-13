@@ -1359,14 +1359,14 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     const labels = counts.map(entry => entry.meetingType);
     const data = counts.map(entry => entry.total);
 
-    const colorPalette = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6', '#06b6d4', '#ec4899', '#84cc16'];
+    const colorPalette = ['#4f46e5', '#f97316', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#eab308', '#ec4899', '#3b82f6'];
     const colorMap: Record<string, string> = {
-      'Kickoff': '#6366f1',
-      'Review': '#8b5cf6',
+      'Kickoff': '#4f46e5',
+      'Review': '#f97316',
       'Training': '#10b981',
-      'QBR': '#f59e0b',
-      'Renewal': '#f43f5e',
-      'Go Live': '#3b82f6'
+      'QBR': '#eab308',
+      'Renewal': '#ef4444',
+      'Go Live': '#06b6d4'
     };
     const colors = labels.map((l, i) => colorMap[l] || colorPalette[i % colorPalette.length]);
 
