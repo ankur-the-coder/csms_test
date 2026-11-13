@@ -226,11 +226,13 @@
 
  <ng-template #addonCard let-a let-i="i">
   <div class="addon" [class.is-module]="a.type === 'module'" [style.--i]="i" [attr.title]="a.description">
+  <div class="a-top">
     <span class="a-ico"><p-icon [name]="addonIcon(a)" [size]="19" /></span>
     <div class="a-head">
       <strong>{{ a.name }}</strong>
       <em class="a-type">{{ a.type === 'module' ? 'Module' : 'Add-on' }}</em>
     </div>
+  </div>
     <small>{{ a.description }}</small>
     <div class="a-actions">
       <a class="wa-btn" href="https://wa.me/917987525285" target="_blank" rel="noopener noreferrer"
