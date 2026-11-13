@@ -5,17 +5,17 @@
     <header class="top">
       <button class="burger" type="button" (click)="drawer.set(true)" aria-label="Open menu"><p-icon name="menu" [size]="22" /></button>
 
-      <label class="search">
+      <!-- <label class="search">
         <p-icon name="search" [size]="18" />
         <input type="text" placeholder="Search anything... (ticket, add-on, meeting)" aria-label="Search" />
-        <!-- <kbd>Ctrl K</kbd> -->
-      </label>
+        <kbd>Ctrl K</kbd>
+      </label> -->
 
       <div class="actions">
-        <button class="icon-btn" type="button" aria-label="Notifications">
+        <!-- <button class="icon-btn" type="button" aria-label="Notifications">
           <p-icon name="bell" [size]="20" />
           @if (state.unread() > 0) { <span class="dot">{{ state.unread() }}</span> }
-        </button>
+        </button> -->
 
         <button class="cta" type="button" (click)="raiseTicket()">
           <p-icon name="ticket" [size]="18" /> <span>Raise Ticket</span>
