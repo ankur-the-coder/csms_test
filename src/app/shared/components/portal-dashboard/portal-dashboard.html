@@ -224,24 +224,27 @@
     </article>
   </div>
 
-  <ng-template #addonCard let-a let-i="i">
-    <div class="addon" [class.is-module]="a.type === 'module'" [style.--i]="i">
-      <span class="a-ico"><p-icon [name]="addonIcon(a)" [size]="21" /></span>
+ <ng-template #addonCard let-a let-i="i">
+  <div class="addon" [class.is-module]="a.type === 'module'" [style.--i]="i" [attr.title]="a.description">
+  <div class="a-top">
+    <span class="a-ico"><p-icon [name]="addonIcon(a)" [size]="19" /></span>
+    <div class="a-head">
       <strong>{{ a.name }}</strong>
       <em class="a-type">{{ a.type === 'module' ? 'Module' : 'Add-on' }}</em>
-      <small>{{ a.description }}</small>
-      <div class="a-actions">
-        <a class="wa-btn" href="https://wa.me/917987525285" target="_blank" rel="noopener noreferrer"(click)="showAllAddons.set(false)"
-          aria-label="Chat on WhatsApp" title="Chat on WhatsApp">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path
-              d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3ZM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Z" />
-          </svg>
-        </a>
-        <button type="button" class="btn-tiny" (click)="explore(a);showAllAddons.set(false)">Explore</button>
-      </div>
     </div>
-  </ng-template>
+  </div>
+    <small>{{ a.description }}</small>
+    <div class="a-actions">
+      <a class="wa-btn" href="https://wa.me/917987525285" target="_blank" rel="noopener noreferrer"
+        (click)="showAllAddons.set(false)" aria-label="Chat on WhatsApp" title="Chat on WhatsApp">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3ZM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Z" />
+        </svg>
+      </a>
+      <button type="button" class="btn-tiny" (click)="explore(a); showAllAddons.set(false)">Explore</button>
+    </div>
+  </div>
+</ng-template>
 
   @if (showAllAddons()) {
   <div class="am-backdrop" (click)="showAllAddons.set(false)">
