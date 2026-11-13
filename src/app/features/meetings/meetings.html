@@ -8,7 +8,7 @@
         </h1>
       </div>
       <div class="flex w-full sm:w-auto flex-col sm:flex-row sm:items-end gap-3">
-        <div class="w-full sm:w-72">
+         <div class="w-full md:w-64 lg:w-64">
           <app-custom-date-selector class="block w-full" placeholder="Select date range" defaultPreset="currentMonth"
             [initialDates]="dateRangeForPicker()" (onApplyDate)="onDateApplied($event)">
           </app-custom-date-selector>
