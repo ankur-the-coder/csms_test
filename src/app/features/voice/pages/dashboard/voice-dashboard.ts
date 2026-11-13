@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../../environments/environment';
@@ -372,27 +372,20 @@ export class VoiceAnalyticsDashboard implements OnInit {
 
   /** Disposition breakdown reshaped for <app-charts type="donut">. */
   /** Labels for the donut chart segments (e.g. Answered, Missed, Busy, Failed). */
-  get dispositionLabels(): string[] {
-    return (this.stats()?.disposition || []).map(d => d.label);
-  }
+  readonly dispositionLabels = computed(() =>
+  (this.stats()?.disposition || []).map(d => d.label));
 
-  /** Values for the donut chart segments. */
-  get dispositionData(): number[] {
-    return (this.stats()?.disposition || []).map(d => d.count);
-  }
+readonly dispositionData = computed(() =>
+  (this.stats()?.disposition || []).map(d => d.count));
 
-  /** Hex colors for the donut chart segments — matched to app semantic tokens. */
-  get dispositionColors(): string[] {
-    return (this.stats()?.disposition || []).map(d =>
-      this.dispositionColorHex[d.label] ?? d.color
-    );
-  }
+readonly dispositionColors = computed(() =>
+  (this.stats()?.disposition || []).map(d =>
+    this.dispositionColorHex[d.label] ?? d.color));
 
-  /** Center text shown inside the doughnut hole. */
-  get donutCenter(): { line1: string; line2: string; line3: string } {
-    const total = this.stats()?.kpis?.totalCallsToday || 0;
-    return { line1: String(total), line2: 'Total', line3: 'Calls' };
-  }
+readonly donutCenter = computed(() => {
+  const total = this.stats()?.kpis?.totalCallsToday || 0;
+  return { line1: String(total), line2: 'Total', line3: 'Calls' };
+});
 
   private shiftDate(date: Date, days: number): Date {
   const d = new Date(date);
