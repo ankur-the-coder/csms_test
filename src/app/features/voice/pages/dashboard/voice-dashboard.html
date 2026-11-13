@@ -319,14 +319,14 @@
     <!-- Call Outcome Breakdown -->
     <div class="flex h-full flex-col">
       <app-charts
-        class="flex h-full flex-1 flex-col"
-        chartType="doughnut"
-        hoverLabel="Calls"
-        [chartData]="dispositionData"
-        [chartLabels]="dispositionLabels"
-        [backgroundColors]="dispositionColors"
-        [donutCenterText]="donutCenter">
-      </app-charts>
+  class="flex h-full flex-1 flex-col"
+  chartType="doughnut"
+  hoverLabel="Calls"
+  [chartData]="dispositionData()"
+  [chartLabels]="dispositionLabels()"
+  [backgroundColors]="dispositionColors()"
+  [donutCenterText]="donutCenter()">
+</app-charts>
     </div>
    </div>
 </div>

@@ -2,7 +2,7 @@
 
 <aside class="h-screen bg-white text-slate-600 flex flex-col transition-all
   duration-300 select-none shrink-0 fixed inset-y-0 left-0 z-50 lg:relative lg:z-auto lg:translate-x-0" [ngClass]="{
-    'w-56': !collapsed,
+    'w-60': !collapsed,
     'w-56 lg:w-20': collapsed,
     'translate-x-0': mobileOpen,
     '-translate-x-full': !mobileOpen
@@ -16,7 +16,7 @@
        font-extrabold text-lg shrink-0">
         <img src="onlyLogo.png" alt="logo" />
       </div>
-      <div class="flex flex-col" [ngClass]="collapsed ? 'lg:hidden' : ''">
+      <div class="flex flex-col" [ngClass]="collapsed ? 'lg:hidden' : ''"> 
         <span class="font-extrabold   text-x ">ubi<span class="font-bold text-emerald-600">Client</span></span>
       </div>
     </div>
