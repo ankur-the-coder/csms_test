@@ -1,3 +1,4 @@
+import { storageCfg } from '../storage-prefix';
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
@@ -11,7 +12,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const router = inject(Router);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('session_token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem(storageCfg.prefix + 'session_token') : null;
 
   const authReq = token
     ? req.clone({
@@ -38,9 +39,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
             : 'expired';
 
           sessionStorage.setItem('logout_reason', reason);
-          localStorage.removeItem('session_token');
-          localStorage.removeItem('isLoggedIn');
-          localStorage.removeItem('password');
+          localStorage.removeItem(storageCfg.prefix + 'session_token');
+          localStorage.removeItem(storageCfg.prefix + 'isLoggedIn');
+          localStorage.removeItem(storageCfg.prefix + 'password');
           router.navigate(['/login']);
         }
       }

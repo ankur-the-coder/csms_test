@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./out-tsc/embed", "types": ["node"] },
+  "files": ["src/main.embed.ts"],
+  "include": ["src/**/*.d.ts"]
+}

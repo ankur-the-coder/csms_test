@@ -1,3 +1,4 @@
+import { storageCfg } from '../storage-prefix';
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -24,8 +25,8 @@ export class AuthService {
     if (!this.isBrowser) {
       return false;
     }
-    const hasToken = !!window.localStorage.getItem('session_token');
-    const wasLoggedIn = window.localStorage.getItem('isLoggedIn') === 'true';
+    const hasToken = !!window.localStorage.getItem(storageCfg.prefix + 'session_token');
+    const wasLoggedIn = window.localStorage.getItem(storageCfg.prefix + 'isLoggedIn') === 'true';
 
     // Wipe legacy session without secure session_token
     if (wasLoggedIn && !hasToken) {
@@ -48,7 +49,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return this.isBrowser ? window.localStorage.getItem('session_token') : null;
+    return this.isBrowser ? window.localStorage.getItem(storageCfg.prefix + 'session_token') : null;
   }
 
   login(userName: string, password: string, logoutOthers: boolean = false): Observable<LoginResponse> {
@@ -83,18 +84,18 @@ export class AuthService {
       map((res) => {
         if (res?.status && res?.data) {
           const d = res.data;
-          window.localStorage.setItem('userName', d.userName || '');
-          if (d.empId) window.localStorage.setItem('empId', d.empId);
-          if (d.designation) window.localStorage.setItem('designation', d.designation);
-          window.localStorage.setItem('profileImage', d.profileImage || '');
-          if (d.adminSts !== undefined) window.localStorage.setItem('adminSts', String(d.adminSts));
-          // if (d.hrSts !== undefined) window.localStorage.setItem('hrSts', String(d.hrSts));
-          if (d.orgId) window.localStorage.setItem('orgId', d.orgId);
-          if (d.email) window.localStorage.setItem('email', d.email);
-          if (d.phone) window.localStorage.setItem('phone', d.phone);
-          if (d.usermasterEmpId) window.localStorage.setItem('usermasterEmpId', d.usermasterEmpId);
-          if (d.userType) window.localStorage.setItem('userType', d.userType);
-          window.localStorage.setItem('isLoggedIn', 'true');
+          window.localStorage.setItem(storageCfg.prefix + 'userName', d.userName || '');
+          if (d.empId) window.localStorage.setItem(storageCfg.prefix + 'empId', d.empId);
+          if (d.designation) window.localStorage.setItem(storageCfg.prefix + 'designation', d.designation);
+          window.localStorage.setItem(storageCfg.prefix + 'profileImage', d.profileImage || '');
+          if (d.adminSts !== undefined) window.localStorage.setItem(storageCfg.prefix + 'adminSts', String(d.adminSts));
+          // if (d.hrSts !== undefined) window.localStorage.setItem(storageCfg.prefix + 'hrSts', String(d.hrSts));
+          if (d.orgId) window.localStorage.setItem(storageCfg.prefix + 'orgId', d.orgId);
+          if (d.email) window.localStorage.setItem(storageCfg.prefix + 'email', d.email);
+          if (d.phone) window.localStorage.setItem(storageCfg.prefix + 'phone', d.phone);
+          if (d.usermasterEmpId) window.localStorage.setItem(storageCfg.prefix + 'usermasterEmpId', d.usermasterEmpId);
+          if (d.userType) window.localStorage.setItem(storageCfg.prefix + 'userType', d.userType);
+          window.localStorage.setItem(storageCfg.prefix + 'isLoggedIn', 'true');
           this.isLoggedIn.set(true);
           return true;
         }
@@ -140,45 +141,45 @@ export class AuthService {
   private clearStorage(): void {
     if (!this.isBrowser) return;
 
-    window.localStorage.removeItem('session_token');
-    window.localStorage.removeItem('userName');
-    window.localStorage.removeItem('empId');
-    window.localStorage.removeItem('designation');
-    window.localStorage.removeItem('profileImage');
-    window.localStorage.removeItem('isLoggedIn');
-    window.localStorage.removeItem('password'); // never stored anymore
-    window.localStorage.removeItem('email');
-    window.localStorage.removeItem('phone');
-    window.localStorage.removeItem('usermasterEmpId');
-    window.localStorage.removeItem('userType');
-    window.localStorage.removeItem('adminSts');
-    // window.localStorage.removeItem('hrSts');
-    window.localStorage.removeItem('orgId');
+    window.localStorage.removeItem(storageCfg.prefix + 'session_token');
+    window.localStorage.removeItem(storageCfg.prefix + 'userName');
+    window.localStorage.removeItem(storageCfg.prefix + 'empId');
+    window.localStorage.removeItem(storageCfg.prefix + 'designation');
+    window.localStorage.removeItem(storageCfg.prefix + 'profileImage');
+    window.localStorage.removeItem(storageCfg.prefix + 'isLoggedIn');
+    window.localStorage.removeItem(storageCfg.prefix + 'password'); // never stored anymore
+    window.localStorage.removeItem(storageCfg.prefix + 'email');
+    window.localStorage.removeItem(storageCfg.prefix + 'phone');
+    window.localStorage.removeItem(storageCfg.prefix + 'usermasterEmpId');
+    window.localStorage.removeItem(storageCfg.prefix + 'userType');
+    window.localStorage.removeItem(storageCfg.prefix + 'adminSts');
+    // window.localStorage.removeItem(storageCfg.prefix + 'hrSts');
+    window.localStorage.removeItem(storageCfg.prefix + 'orgId');
   }
 
   getUserName(): string {
-    return this.isBrowser ? (window.localStorage.getItem('userName') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'userName') ?? '') : '';
   }
 
   getEmpId(): string {
-    return this.isBrowser ? (window.localStorage.getItem('empId') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'empId') ?? '') : '';
   }
 
   getDesignation(): string {
-    return this.isBrowser ? (window.localStorage.getItem('designation') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'designation') ?? '') : '';
   }
 
   getProfileImage(): string {
-    return this.isBrowser ? (window.localStorage.getItem('profileImage') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'profileImage') ?? '') : '';
   }
 
   getOrgId(): string {
-    return this.isBrowser ? (window.localStorage.getItem('orgId') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'orgId') ?? '') : '';
   }
 
   /** Sessions created before this field existed are treated as agents. */
   getUserType(): 'agent' | 'client' {
-    return this.isBrowser && window.localStorage.getItem('userType') === 'client' ? 'client' : 'agent';
+    return this.isBrowser && window.localStorage.getItem(storageCfg.prefix + 'userType') === 'client' ? 'client' : 'agent';
   }
 
   isClient(): boolean {
@@ -186,21 +187,21 @@ export class AuthService {
   }
 
   adminSts(): string {
-    return this.isBrowser ? (window.localStorage.getItem('adminSts') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'adminSts') ?? '') : '';
   }
   // hrSts(): string {
-  //   return this.isBrowser ? (window.localStorage.getItem('hrSts') ?? '') : '';
+  //   return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'hrSts') ?? '') : '';
   // }
 
   email(): string {
-    return this.isBrowser ? (window.localStorage.getItem('email') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'email') ?? '') : '';
   }
 
   phone(): string {
-    return this.isBrowser ? (window.localStorage.getItem('phone') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'phone') ?? '') : '';
   }
   usermasterEmpId(): string {
-    return this.isBrowser ? (window.localStorage.getItem('usermasterEmpId') ?? '') : '';
+    return this.isBrowser ? (window.localStorage.getItem(storageCfg.prefix + 'usermasterEmpId') ?? '') : '';
   }
 
   private persistSession(data: Data): void {
@@ -209,22 +210,22 @@ export class AuthService {
     }
 
     if (data.token) {
-      window.localStorage.setItem('session_token', data.token);
+      window.localStorage.setItem(storageCfg.prefix + 'session_token', data.token);
     }
-    window.localStorage.setItem('userName', data.userName || '');
-    if (data.empId) window.localStorage.setItem('empId', data.empId);
-    if (data.designation) window.localStorage.setItem('designation', data.designation);
-    window.localStorage.setItem('profileImage', data.profileImage || '');
-    if (data.adminSts !== undefined) window.localStorage.setItem('adminSts', data.adminSts.toString());
-    // if (data.hrSts !== undefined) window.localStorage.setItem('hrSts', data.hrSts.toString());
-    if (data.orgId) window.localStorage.setItem('orgId', data.orgId);
-    if (data.email) window.localStorage.setItem('email', data.email);
-    if (data.phone) window.localStorage.setItem('phone', data.phone);
-    if (data.usermasterEmpId) window.localStorage.setItem('usermasterEmpId', data.usermasterEmpId);
-    window.localStorage.setItem('userType', data.userType === 'client' ? 'client' : 'agent');
-    window.localStorage.setItem('isLoggedIn', 'true');
+    window.localStorage.setItem(storageCfg.prefix + 'userName', data.userName || '');
+    if (data.empId) window.localStorage.setItem(storageCfg.prefix + 'empId', data.empId);
+    if (data.designation) window.localStorage.setItem(storageCfg.prefix + 'designation', data.designation);
+    window.localStorage.setItem(storageCfg.prefix + 'profileImage', data.profileImage || '');
+    if (data.adminSts !== undefined) window.localStorage.setItem(storageCfg.prefix + 'adminSts', data.adminSts.toString());
+    // if (data.hrSts !== undefined) window.localStorage.setItem(storageCfg.prefix + 'hrSts', data.hrSts.toString());
+    if (data.orgId) window.localStorage.setItem(storageCfg.prefix + 'orgId', data.orgId);
+    if (data.email) window.localStorage.setItem(storageCfg.prefix + 'email', data.email);
+    if (data.phone) window.localStorage.setItem(storageCfg.prefix + 'phone', data.phone);
+    if (data.usermasterEmpId) window.localStorage.setItem(storageCfg.prefix + 'usermasterEmpId', data.usermasterEmpId);
+    window.localStorage.setItem(storageCfg.prefix + 'userType', data.userType === 'client' ? 'client' : 'agent');
+    window.localStorage.setItem(storageCfg.prefix + 'isLoggedIn', 'true');
     // Ensure legacy password is purged
-    window.localStorage.removeItem('password');
+    window.localStorage.removeItem(storageCfg.prefix + 'password');
     this.isLoggedIn.set(true);
   }
 }

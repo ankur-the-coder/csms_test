@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { PortalAddon, PortalDashboardData, PortalTicket, PortalTraining } from '../../../core/models/client-portal.model';
+import { PortalAddon, PortalDashboardData, PortalMeeting, PortalTicket, PortalTraining } from '../../../core/models/client-portal.model';
 import { ClientPortalService } from '../../../core/services/client-portal.service';
 import { PortalState } from '../../../core/services/portal-state';
 import { PortalCountUp } from '../../count-up.directive';
@@ -25,7 +25,21 @@ export class PortalDashboard implements OnInit {
   data = signal<PortalDashboardData | null>(null);
   /** flips true a beat after data arrives so rings / bars animate from 0 */
   animate = signal(false);
-  tab = signal<'trainings' | 'meetings'>('trainings');
+  selectedMeeting = signal<PortalMeeting | null>(null);
+  mtab = signal<'upcoming' | 'past' | 'all'>('upcoming');
+  isUpcomingMeeting(m: PortalMeeting) { return new Date(m.startTime).getTime() >= Date.now() - 3600000 && [0, 2, 3].includes(m.status); }
+  upcomingMeetings = computed(() => (this.data()?.meetings ?? []).filter(m => this.isUpcomingMeeting(m)).sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)));
+  pastMeetings = computed(() => (this.data()?.meetings ?? []).filter(m => !this.isUpcomingMeeting(m)));
+  completedCount = computed(() => (this.data()?.meetings ?? []).filter(m => m.status === 1).length);
+  shownMeetings = computed(() => this.mtab() === 'upcoming' ? this.upcomingMeetings() : this.mtab() === 'past' ? this.pastMeetings() : [...this.upcomingMeetings(), ...this.pastMeetings()]);
+  mDay(v: string) { const d = new Date(v); return isNaN(d.getTime()) ? '' : String(d.getDate()).padStart(2, '0'); }
+  mMon(v: string) { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { month: 'short' }); }
+  mTime(v: string) { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); }
+  /** DB keeps 'scheduled' after the slot passes; show 'Ended' for past, non-cancelled meetings. */
+  mLabel(m: PortalMeeting) { return !this.isUpcomingMeeting(m) && [0, 2, 3].includes(m.status) ? 'Ended' : this.meetingLabel(m.status); }
+  mCls(m: PortalMeeting) { return !this.isUpcomingMeeting(m) && [0, 2, 3].includes(m.status) ? 'st-hold' : this.mClass(m.status); }
+  mFull(v: string) { const d = new Date(v); return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+  mClass(s: number) { return s === 1 ? 'p-completed' : s === 4 || s === 5 || s === 6 ? 'st-esc' : s === 2 ? 'st-open' : 'p-in_progress'; }
   /** tabId of the tracker module shown in the detail panel */
   selectedTab = signal<number | null>(null);
   selected = computed(() => {

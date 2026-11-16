@@ -66,6 +66,12 @@ export interface PortalMeeting {
   host: string;
   status: number;
   link: string | null;
+  type?: string | null;
+  endTime?: string | null;
+  duration?: number | null;
+  summary?: string | null;
+  actionItems?: string[];
+  recordingUrl?: string | null;
 }
 
 export interface PortalTraining {
