@@ -1,7 +1,7 @@
 <div class="space-y-6">
   <div class="card p-0 overflow-hidden">
     <app-data-table [config]="historyTableConfig"
-    [initialFilters]="defaultFilters"></app-data-table>
+    ></app-data-table>
   </div>
 </div>
 
@@ -33,7 +33,6 @@
   </span>
 </ng-template>
 
-
 <ng-template #statusCell let-row>
   <span class="inline-flex items-center gap-1.5" [ngClass]="getStatusTextClass(row.status)">
     <span class="w-1.5 h-1.5 rounded-full shrink-0" [ngClass]="getStatusDotClass(row.status)"></span>
@@ -44,7 +43,6 @@
 <ng-template #dateCell let-row>
   <span class="font-mono text-xs tabular-nums">{{ row.createdAt | date:'dd MMM yyyy, h:mm a' }}</span>
 </ng-template>
-
 
 <ng-template #durationCell let-row>
   <span *ngIf="row.duration === '00:00'; else realDuration" class="font-mono text-xs text-text-muted">&mdash;</span>

@@ -69,6 +69,7 @@ export interface DashboardStats {
   overdueCount: number;
   completionRate: number;
   totalMeetings: number;
+  meetingTypeCounts: { meetingType: string; total: number }[];
 }
 
 interface DashboardStatsApiResponse {
@@ -240,8 +241,17 @@ export class MeetingService {
    * The 4 dashboard KPI card counts (today / upcoming 7 days / completed
    * this month / follow-ups pending). Not cached — always fetch fresh.
    */
-  getDashboardStats(userId?: number | string): Observable<DashboardStats> {
-    const query = userId ? `?userId=${userId}` : '';
+  getDashboardStats(
+    userId?: number | string,
+    fromDate?: string,
+    toDate?: string
+  ): Observable<DashboardStats> {
+    const params = new URLSearchParams();
+    if (userId) params.set('userId', String(userId));
+    if (fromDate) params.set('fromDate', fromDate);
+    if (toDate) params.set('toDate', toDate);
+    const queryString = params.toString();
+    const query = queryString ? `?${queryString}` : '';
     return this.http
       .get<DashboardStatsApiResponse>(`${this.imp}/meetings/dashboard-stats${query}`)
       .pipe(map(res => res.data));

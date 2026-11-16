@@ -51,7 +51,7 @@ interface AdminClientRaw {
   templateUrl: './clients.html',
 })
 export class Clients  {
-
+  readonly defaultFilters: Record<string, any> = { countryType: '1' };
  
   private router = inject(Router);
   private readonly tableEndpoint = `${environment.apiUrl}/api/voice/admin-clients-table`;
@@ -105,6 +105,19 @@ export class Clients  {
       { key: 'rating', label: 'Rating', sortable: false ,hideable:false},
       { key: 'country', label: 'Country', sortable: false , hideable:false },
     ] as SmartColumn<AdminClientRow>[],
+
+
+     filters: [
+    {
+      key: 'countryType',
+      label: 'Country',
+      type: 'select',
+      options: [
+        { label: 'International', value: '1' },
+        { label: 'National', value: '2' },
+      ],
+    },
+  ],
 
     apiConfig: {
       endpoint: this.tableEndpoint,

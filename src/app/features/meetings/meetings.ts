@@ -11,6 +11,7 @@ import { Utils } from '../../shared/utils/utils';
 
 import { SingleInput, SelectOption } from '../../shared/components/inputs/single-input/single-input';
 import { DatePicker } from '../../shared/components/inputs/date-picker/date-picker';
+import { CustomDateSelector } from '../../shared/components/inputs/custom-date-selector/custom-date-selector';
 import { DatePicker as DatePickerService } from '../../shared/service/date-picker/date-picker';
 import { TimePickerComponent } from '../../shared/components/inputs/time-picker/time-picker';
 
@@ -26,7 +27,7 @@ import * as QRCode from 'qrcode';
   selector: 'app-meetings',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  imports: [CommonModule, FormsModule, SingleInput, DatePicker, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent, CountUpDirective, MeetingFlowComponent],
+  imports: [CommonModule, FormsModule, SingleInput, DatePicker, CustomDateSelector, TimePickerComponent, DataTable, CustomColumnDirective, Calendar, ChartComponent, CountUpDirective, MeetingFlowComponent],
   templateUrl: './meetings.html',
   styles: [`
     .modal-overlay {
@@ -146,7 +147,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   flowZoomLabel = '100%';
   flowSearchTerm = '';
   flowStatusFilter = 'All';
-  flowSelectedDate: Date | null = null;
   flowIsFullScreen = false;
   flowStatusOptions: SelectOption[] = [
     { label: 'All Statuses', value: 'All' },
@@ -156,8 +156,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     { label: 'Pending', value: 'Pending' },
     { label: 'Rescheduled', value: 'Rescheduled' }
   ];
-  flowMonth = new Date().getMonth();
-  flowYear = new Date().getFullYear();
   flowIsPanning = false;
   private readonly FLOW_COLORS = ['#0ea371', '#f59e0b', '#ef4444', '#3b82f6', '#a855f7', '#14b8a6'];
   private readonly FLOW_K = 0.1;
@@ -185,6 +183,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   filterDateTo: string = '';
   initialDateFrom = signal<string>('');
   initialDateTo = signal<string>('');
+  dateRangeForPicker = computed(() => ({
+    from: this.initialDateFrom(),
+    to: this.initialDateTo()
+  }));
   initialFilters = signal<Record<string, any>>({});
 
   showCancelModal = signal(false);
@@ -215,7 +217,8 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     thisWeekMeetings: 0,
     overdueCount: 0,
     completionRate: 0,
-    totalMeetings: 0
+    totalMeetings: 0,
+    meetingTypeCounts: []
   });
   loadingDashboardStats = false;
 
@@ -438,7 +441,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     emptyMessage: 'No meetings found.',
     clickable: true,
     toolbarButtons: [
-      { id: 'datePicker', type: 'datePicker' },
       { id: 'filter', type: 'filter', label: 'Filter' },
       { id: 'export', type: 'export', label: 'Export' },
       { id: 'refresh', type: 'refresh' },
@@ -1332,27 +1334,17 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
               this.calendarYear.set(firstDate.getFullYear());
             }
           }
-          this.updateMeetingTypesChartFromApi(decodedMeetings, res.meta?.total || decodedMeetings.length);
+          if (this.activeView === 'flow') {
+            setTimeout(() => this.renderFlowCanvas(), 0);
+          }
         }
       },
       error: (err) => console.error('Failed to fetch API meetings for non-table views:', err)
     });
   }
 
-  updateMeetingTypesChartFromApi(rows: MeetingRow[], totalCount: number): void {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    const currentMonthRows = (rows || []).filter(r => {
-      const dateStr = r.startTime || r.createdDate;
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return false;
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    });
-
-    if (currentMonthRows.length === 0) {
+  updateMeetingTypeChart(counts: { meetingType: string; total: number }[]): void {
+    if (counts.length === 0) {
       this.meetingTypeChartData = [];
       this.meetingTypeChartLabels = [];
       this.meetingTypeChartColors = [];
@@ -1364,23 +1356,17 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
-    const counts: Record<string, number> = {};
-    for (const r of currentMonthRows) {
-      const type = (r.meetingType && r.meetingType.trim()) ? r.meetingType.trim() : 'Kickoff';
-      counts[type] = (counts[type] || 0) + 1;
-    }
+    const labels = counts.map(entry => entry.meetingType);
+    const data = counts.map(entry => entry.total);
 
-    const labels = Object.keys(counts);
-    const data = labels.map(l => counts[l]);
-
-    const colorPalette = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6', '#06b6d4', '#ec4899', '#84cc16'];
+    const colorPalette = ['#4f46e5', '#f97316', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#eab308', '#ec4899', '#3b82f6'];
     const colorMap: Record<string, string> = {
-      'Kickoff': '#6366f1',
-      'Review': '#8b5cf6',
+      'Kickoff': '#4f46e5',
+      'Review': '#f97316',
       'Training': '#10b981',
-      'QBR': '#f59e0b',
-      'Renewal': '#f43f5e',
-      'Go Live': '#3b82f6'
+      'QBR': '#eab308',
+      'Renewal': '#ef4444',
+      'Go Live': '#06b6d4'
     };
     const colors = labels.map((l, i) => colorMap[l] || colorPalette[i % colorPalette.length]);
 
@@ -1388,7 +1374,7 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     this.meetingTypeChartData = data;
     this.meetingTypeChartColors = colors;
     this.meetingTypeDonutCenter = {
-      line1: currentMonthRows.length.toString(),
+      line1: data.reduce((total, count) => total + count, 0).toString(),
       line2: 'total',
       line3: ''
     };
@@ -1398,9 +1384,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   fetchDashboardStats(): void {
     this.loadingDashboardStats = true;
     const empId = this.getScopedEmpId();
-    this.meetingService.getDashboardStats(empId).subscribe({
+    this.meetingService.getDashboardStats(empId, this.filterDateFrom, this.filterDateTo).subscribe({
       next: (stats) => {
         this.dashboardStats.set(stats);
+        this.updateMeetingTypeChart(stats.meetingTypeCounts || []);
         this.loadingDashboardStats = false;
       },
       error: (err) => {
@@ -1478,9 +1465,23 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onDateApplied(event: { from: string; to: string }): void {
-    this.filterDateFrom = event.from;
-    this.filterDateTo = event.to;
+    this.setDashboardDateRange(event.from, event.to);
+  }
+
+  private setDashboardDateRange(from: string, to: string): void {
+    this.filterDateFrom = from;
+    this.filterDateTo = to;
+    this.initialDateFrom.set(from);
+    this.initialDateTo.set(to);
+
+    if (this.meetingsTable) {
+      this.meetingsTable.dateFrom.set(from);
+      this.meetingsTable.dateTo.set(to);
+      this.meetingsTable.page.set(0);
+    }
+
     this.fetchApiMeetings();
+    this.fetchDashboardStats();
   }
 
   fetchOrganizations(): void {
@@ -1542,15 +1543,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   filterByToday(): void {
     const today = this.formatLocalDate(new Date());
-    this.initialDateFrom.set(today);
-    this.initialDateTo.set(today);
-    this.filterDateFrom = today;
-    this.filterDateTo = today;
     this.initialFilters.set({ meetingStatus: [] });
+    this.setDashboardDateRange(today, today);
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(today);
-      this.meetingsTable.dateTo.set(today);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
       this.meetingsTable.tempFilters.set({ meetingStatus: [] });
       this.meetingsTable.page.set(0);
@@ -1569,15 +1565,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     const from = this.formatLocalDate(now);
     const to = this.formatLocalDate(next7);
 
-    this.initialDateFrom.set(from);
-    this.initialDateTo.set(to);
-    this.filterDateFrom = from;
-    this.filterDateTo = to;
     this.initialFilters.set({ meetingStatus: [0,2] });
+    this.setDashboardDateRange(from, to);
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(from);
-      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
       this.meetingsTable.tempFilters.set({ meetingStatus: [] });
       this.meetingsTable.page.set(0);
@@ -1595,15 +1586,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     const from = this.formatLocalDate(firstDay);
     const to = this.formatLocalDate(lastDay);
 
-    this.initialDateFrom.set(from);
-    this.initialDateTo.set(to);
-    this.filterDateFrom = from;
-    this.filterDateTo = to;
     this.initialFilters.set({ meetingStatus: ['1'] });
+    this.setDashboardDateRange(from, to);
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(from);
-      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['1'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['1'] });
       this.meetingsTable.page.set(0);
@@ -1629,15 +1615,10 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   const to = fmt(lastDay);
 
 
-    this.initialDateFrom.set(from);
-    this.initialDateTo.set(to);
-    this.filterDateFrom = from;
-    this.filterDateTo = to;
     this.initialFilters.set({ meetingStatus: ['3'] });
+    this.setDashboardDateRange(from, to);
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(from);
-      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: ['3'] });
       this.meetingsTable.tempFilters.set({ meetingStatus: ['3'] });
       this.meetingsTable.page.set(0);
@@ -1649,18 +1630,13 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   filterByAllMeetings(): void {
-    const _n  = new Date();
-    const from = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth(), 1));
-    const to   = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth() + 1, 0));
-    this.initialDateFrom.set(from);
-    this.initialDateTo.set(to);
-    this.filterDateFrom = from;
-    this.filterDateTo   = to;
-    this.initialFilters.set({ meetingStatus: [] });
+    // const _n  = new Date();
+    // const from = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth(), 1));
+    // const to   = this.formatLocalDate(new Date(_n.getFullYear(), _n.getMonth() + 1, 0));
+    // this.initialFilters.set({ meetingStatus: [] });
+    // this.setDashboardDateRange(from, to);
 
     if (this.meetingsTable) {
-      this.meetingsTable.dateFrom.set(from);
-      this.meetingsTable.dateTo.set(to);
       this.meetingsTable.activeFilters.set({ search: '', meetingStatus: [] });
       this.meetingsTable.tempFilters.set({ meetingStatus: [] });
       this.meetingsTable.page.set(0);
@@ -2009,38 +1985,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ============ Flow Canvas Engine ============
 
-  private readonly MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  getFlowMonthLabel(): string {
-    const last = new Date(this.flowYear, this.flowMonth + 1, 0).getDate();
-    return `01 ${this.MONTHS_SHORT[this.flowMonth]} ${this.flowYear} - ${last} ${this.MONTHS_SHORT[this.flowMonth]} ${this.flowYear}`;
-  }
-
-  flowMonthNav(dir: number): void {
-    this.flowMonth += dir;
-    if (this.flowMonth < 0) { this.flowMonth = 11; this.flowYear--; }
-    if (this.flowMonth > 11) { this.flowMonth = 0; this.flowYear++; }
-    this.flowSelectedDate = null;
-    this.renderFlowCanvas();
-  }
-
-  onFlowDateSelect(d: Date): void {
-    this.flowSelectedDate = d;
-    if (d) {
-      const parsed = new Date(d);
-      if (!isNaN(parsed.getTime())) {
-        this.flowYear = parsed.getFullYear();
-        this.flowMonth = parsed.getMonth();
-      }
-    }
-    this.renderFlowCanvas();
-  }
-
-  onFlowClearDate(): void {
-    this.flowSelectedDate = null;
-    this.renderFlowCanvas();
-  }
-
   toggleFlowFullScreen(): void {
     const vp = this.flowViewportRef?.nativeElement;
     if (!vp) return;
@@ -2061,9 +2005,6 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
   flowResetFilters(): void {
     this.flowSearchTerm = '';
     this.flowStatusFilter = 'All';
-    this.flowSelectedDate = null;
-    this.flowMonth = new Date().getMonth();
-    this.flowYear = new Date().getFullYear();
     this.renderFlowCanvas();
   }
 
@@ -2082,18 +2023,9 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
       const d = m.startTime ? new Date(m.startTime) : null;
       if (!d || isNaN(d.getTime())) return false;
 
-      if (this.flowSelectedDate) {
-        const sel = new Date(this.flowSelectedDate);
-        if (
-          d.getFullYear() !== sel.getFullYear() ||
-          d.getMonth() !== sel.getMonth() ||
-          d.getDate() !== sel.getDate()
-        ) {
-          return false;
-        }
-      } else {
-        if (d.getFullYear() !== this.flowYear || d.getMonth() !== this.flowMonth) return false;
-      }
+      const meetingDate = this.formatLocalDate(d);
+      if (this.filterDateFrom && meetingDate < this.filterDateFrom) return false;
+      if (this.filterDateTo && meetingDate > this.filterDateTo) return false;
 
       // Status filter
       if (this.flowStatusFilter && this.flowStatusFilter !== 'All') {
@@ -2593,4 +2525,3 @@ export class MeetingsComponent implements OnInit, OnDestroy, AfterViewInit {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }
-

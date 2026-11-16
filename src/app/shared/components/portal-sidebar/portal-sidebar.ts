@@ -15,14 +15,14 @@ export const PORTAL_NAV: PortalNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'home', route: '/client-portal/dashboard' },
   { id: 'plan', label: 'My Plan', icon: 'plan', route: '/client-portal/my-plan' },
   { id: 'addons', label: 'Add-ons', icon: 'addons', route: '/client-portal/addons' },
-  { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/client-portal/implementation' },
-  { id: 'training', label: 'Training Center', icon: 'training' },
-  { id: 'support', label: 'Support', icon: 'support', route: '/client-portal/support' },
-  // { id: 'downloads', label: 'Downloads', icon: 'download' },
-  { id: 'invoices', label: 'Invoices & Payments', icon: 'invoice', route: '/client-portal/invoices' },
-  { id: 'usage', label: 'Usage Analytics', icon: 'analytics', route: '/client-portal/usage' },
-  { id: 'manager', label: 'Account Manager', icon: 'manager' },
-  { id: 'settings', label: 'Settings', icon: 'settings' },
+  // { id: 'implementation', label: 'Implementation', icon: 'implementation', route: '/client-portal/implementation' },
+  // { id: 'training', label: 'Training Center', icon: 'training' },
+  // { id: 'support', label: 'Support', icon: 'support', route: '/client-portal/support' },
+  // // { id: 'downloads', label: 'Downloads', icon: 'download' },
+  // { id: 'invoices', label: 'Invoices & Payments', icon: 'invoice', route: '/client-portal/invoices' },
+  // { id: 'usage', label: 'Usage Analytics', icon: 'analytics', route: '/client-portal/usage' },
+  // { id: 'manager', label: 'Account Manager', icon: 'manager' },
+  // { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
 @Component({
