@@ -371,3 +371,10 @@ h1,h2,h3,strong,.big b { font-family: "Manrope", sans-serif; }
 
 
 .row-2 .link.more { align-self: flex-start; width: auto; margin-top: 12px; }
+
+/* ---------- layout fixes: full-width summary cards + aligned columns ---------- */
+.top-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.row-2, .row-3 { grid-template-columns: 1.15fr 1fr; }   /* same split in both rows so the cards line up */
+@media (max-width: 1100px) { .top-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1180px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .top-grid { grid-template-columns: 1fr; } }
