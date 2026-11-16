@@ -178,50 +178,34 @@
       </article>
     </div>
 
-    <!-- ============ Trainings/Meetings + Tickets ============ -->
+    <!-- ============ Meetings + Tickets ============ -->
     <div class="row-3">
       <article class="card panel rise" style="--d:8">
         <header class="panel-head">
-          <span class="badge-ico blue"><p-icon [name]="tab() === 'trainings' ? 'training' : 'video'" [size]="19" /></span>
-          <h2>{{ tab() === 'trainings' ? 'Upcoming Trainings' : 'Upcoming Meetings' }}</h2>
-          <div class="seg" [attr.data-tab]="tab()" role="tablist">
-            <span class="seg-thumb"></span>
-            <button type="button" role="tab" [class.on]="tab() === 'trainings'" (click)="tab.set('trainings')">Trainings</button>
-            <button type="button" role="tab" [class.on]="tab() === 'meetings'" (click)="tab.set('meetings')">Meetings</button>
+          <span class="badge-ico blue"><p-icon name="video" [size]="19" /></span>
+          <h2>Meetings</h2>
+          <div class="mseg" role="tablist">
+            <button type="button" role="tab" [class.on]="mtab() === 'upcoming'" (click)="mtab.set('upcoming')">Upcoming <b>{{ upcomingMeetings().length }}</b></button>
+            <button type="button" role="tab" [class.on]="mtab() === 'past'" (click)="mtab.set('past')">Past <b>{{ pastMeetings().length }}</b></button>
+            <button type="button" role="tab" [class.on]="mtab() === 'all'" (click)="mtab.set('all')">All <b>{{ d.meetings.length }}</b></button>
           </div>
         </header>
-
-        @if (tab() === 'trainings') {
-          @if (isSample('upcomingTrainings')) { <div class="sample-line">Sample data. Training scheduling isn't connected yet.</div> }
-          @if (d.upcomingTrainings.length === 0) {
-            <div class="empty swap"><p-icon name="training" [size]="30" /><p>No upcoming trainings scheduled.</p></div>
-          } @else {
-            <div class="tbl swap">
-              <div class="tr th"><span>Training</span><span>Date & Time</span><span>Trainer</span><span>Status</span><span>Action</span></div>
-              @for (t of d.upcomingTrainings; track t.startTime + t.title; let i = $index) {
-                <div class="tr" [style.--i]="i">
-                  <span class="strong">{{ t.title }}</span><span>{{ fmtDateTime(t.startTime) }}</span><span>{{ t.trainer }}</span>
-                  <span><em class="pill p-pending">{{ t.status }}</em></span>
-                  <span><button type="button" class="btn-tiny solid" [disabled]="!t.canJoin" (click)="openTraining(t)">Join</button></span>
-                </div>
-              }
-            </div>
-          }
+        @if (shownMeetings().length === 0) {
+          <div class="empty swap"><p-icon name="calendar" [size]="30" /><p>{{ mtab() === 'upcoming' ? 'No upcoming meetings scheduled.' : 'No meetings found.' }}</p></div>
         } @else {
-          @if (d.meetings.length === 0) {
-            <div class="empty swap"><p-icon name="calendar" [size]="30" /><p>No upcoming meetings scheduled.</p></div>
-          } @else {
-            <div class="tbl swap">
-              <div class="tr th"><span>Meeting</span><span>Date & Time</span><span>Organizer</span><span>Status</span><span>Action</span></div>
-              @for (m of d.meetings; track m.startTime + m.title; let i = $index) {
-                <div class="tr" [style.--i]="i">
-                  <span class="strong">{{ m.title }}</span><span>{{ fmtDateTime(m.startTime) }}</span><span>{{ m.host || '--' }}</span>
-                  <span><em class="pill p-pending">{{ meetingLabel(m.status) }}</em></span>
-                  <span><button type="button" class="btn-tiny solid" [disabled]="!m.link" (click)="join(m.link)">Join</button></span>
+          <div class="mlist swap">
+            @for (m of shownMeetings(); track m.startTime + m.title; let i = $index) {
+              <div class="mrow" role="button" tabindex="0" [class.done]="!isUpcomingMeeting(m)" [style.--i]="i" (click)="selectedMeeting.set(m)" (keydown.enter)="selectedMeeting.set(m)">
+                <div class="mdate"><b>{{ mDay(m.startTime) }}</b><span>{{ mMon(m.startTime) }}</span></div>
+                <div class="minfo">
+                  <strong>{{ m.title || 'Meeting' }}</strong>
+                  <small>{{ mTime(m.startTime) }} · {{ m.host || 'ubiHRM team' }}@if (m.type) { · {{ m.type }} }</small>
                 </div>
-              }
-            </div>
-          }
+                <em class="pill {{ mCls(m) }}">{{ mLabel(m) }}</em>
+                @if (m.link && isUpcomingMeeting(m)) { <button type="button" class="btn-tiny solid" (click)="$event.stopPropagation(); join(m.link)">Join</button> }
+              </div>
+            }
+          </div>
         }
       </article>
 
@@ -264,6 +248,31 @@
           </div>
         }
       </article>
+    </div>
+  }
+  @if (selectedMeeting(); as m) {
+    <div class="mm-scrim" (click)="selectedMeeting.set(null)">
+      <div class="mm" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <header class="mm-head">
+          <span class="mdate"><b>{{ mDay(m.startTime) }}</b><span>{{ mMon(m.startTime) }}</span></span>
+          <div class="minfo"><strong>{{ m.title || 'Meeting' }}</strong><small>{{ mFull(m.startTime) }}</small></div>
+          <em class="pill {{ mCls(m) }}">{{ mLabel(m) }}</em>
+          <button type="button" class="mm-x" (click)="selectedMeeting.set(null)" aria-label="Close"><p-icon name="close" [size]="18" /></button>
+        </header>
+        <dl class="mm-grid">
+          <div><dt>Time</dt><dd>{{ mTime(m.startTime) }}@if (m.endTime) { – {{ mTime(m.endTime) }} }</dd></div>
+          <div><dt>Duration</dt><dd>{{ m.duration || 30 }} min</dd></div>
+          <div><dt>Host</dt><dd>{{ m.host || 'ubiHRM team' }}</dd></div>
+          <div><dt>Platform</dt><dd>{{ m.type || 'Online meeting' }}</dd></div>
+        </dl>
+        @if (m.summary) { <h4>Summary</h4><p class="mm-sum">{{ m.summary }}</p> }
+        @if (m.actionItems?.length) { <h4>Action items</h4><ul class="mm-ai">@for (a of m.actionItems; track $index) { <li>{{ a }}</li> }</ul> }
+        <footer class="mm-foot">
+          @if (m.recordingUrl) { <button type="button" class="btn-tiny" (click)="join(m.recordingUrl)">Recording</button> }
+          @if (m.link && isUpcomingMeeting(m)) { <button type="button" class="btn-tiny solid" (click)="join(m.link)">Join meeting</button> }
+          <button type="button" class="btn-tiny" (click)="selectedMeeting.set(null)">Close</button>
+        </footer>
+      </div>
     </div>
   }
 </section>

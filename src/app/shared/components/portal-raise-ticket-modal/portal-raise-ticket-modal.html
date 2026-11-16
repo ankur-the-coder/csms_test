@@ -1,4 +1,7 @@
 @if (state.raiseTicketModalOpen()) {
+  @if (editing(); as shot) {
+    <portal-screenshot-editor [source]="shot" (done)="onEdited($event)" (cancelled)="editing.set(null)" (retake)="retakePhoto()" />
+  }
   <div class="scrim" [class.ghost]="recording() || hideModal()" (click)="close()">
     <div class="dialog md" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="rt-title">
 

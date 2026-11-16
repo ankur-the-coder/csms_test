@@ -57,17 +57,6 @@
                 }
               </section>
             }
-
-            @if (t.assignmentHistory && t.assignmentHistory.length > 0) {
-              <section class="box">
-                <h3>Assignment History</h3>
-                <ul class="hist">
-                  @for (h of t.assignmentHistory; track $index) {
-                    <li><span class="h-dot"></span><div><strong>{{ h.agent_name }}</strong><small>{{ h.created_at | date:'dd MMM yyyy, hh:mm a' }}</small></div></li>
-                  }
-                </ul>
-              </section>
-            }
           </aside>
 
           <!-- RIGHT: timeline -->

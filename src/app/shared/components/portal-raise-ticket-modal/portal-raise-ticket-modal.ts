@@ -7,6 +7,7 @@ import { ClientPortalService } from '../../../core/services/client-portal.servic
 import { AuthService } from '../../../core/services/auth-service';
 import { PortalState } from '../../../core/services/portal-state';
 import { PortalIcon } from '../../portal-icon';
+import { PortalScreenshotEditor } from '../portal-screenshot-editor/portal-screenshot-editor';
 
 export interface UploadedAttachment {
   fileName: string;
@@ -38,7 +39,7 @@ const VIDEO_MIME_CANDIDATES = [
 @Component({
   selector: 'app-portal-raise-ticket-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, PortalIcon],
+  imports: [CommonModule, FormsModule, PortalIcon, PortalScreenshotEditor],
   templateUrl: './portal-raise-ticket-modal.html',
   styleUrls: ['../portal-ui.css', './portal-raise-ticket-modal.css'],
 })
@@ -61,6 +62,7 @@ export class PortalRaiseTicketModal implements OnDestroy {
 
   // ---- screen capture (photo / video) ----
   captures = signal<LocalCapture[]>([]);
+  editing = signal<Blob | null>(null);   // screenshot being cropped / annotated
   capturing = signal(false);   // picking a screen / grabbing a frame
   recording = signal(false);
   hideModal = signal(false);   // modal tucks away while grabbing a frame
@@ -78,7 +80,7 @@ export class PortalRaiseTicketModal implements OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscape() {
-    if (this.state.raiseTicketModalOpen() && !this.recording()) {
+    if (this.state.raiseTicketModalOpen() && !this.recording() && !this.editing()) {
       this.close();
     }
   }
@@ -93,6 +95,7 @@ export class PortalRaiseTicketModal implements OnDestroy {
   resetForm(): void {
     this.subject.set('');
     this.description.set('');
+    this.editing.set(null);
     this.revokeAll();
     this.attachments.set([]);
     this.pickedFiles.clear();
@@ -171,7 +174,7 @@ export class PortalRaiseTicketModal implements OnDestroy {
       canvas.getContext('2d')!.drawImage(video, 0, 0);
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
       if (!blob) throw new Error('empty frame');
-      this.addCapture('photo', blob, 'jpg');
+      this.editing.set(blob);                         // open the crop / highlight editor first
     } catch (e: any) {
       if (e?.name !== 'NotAllowedError' && e?.name !== 'AbortError') this.errorMessage.set('Could not capture the screenshot. Please try again.');
     } finally {
@@ -180,6 +183,9 @@ export class PortalRaiseTicketModal implements OnDestroy {
       this.capturing.set(false);
     }
   }
+
+  onEdited(blob: Blob): void { this.addCapture('photo', blob, 'jpg'); this.editing.set(null); }
+  retakePhoto(): void { this.editing.set(null); void this.capturePhoto(); }
 
   /** Record any tab / window / screen (max 1 min) with tab/system audio and microphone mixed in. */
   async startVideo(): Promise<void> {
