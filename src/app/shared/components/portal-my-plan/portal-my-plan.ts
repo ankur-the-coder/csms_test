@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { PortalPlanData, PortalPlanItem } from '../../../core/models/client-portal.model';
 import { ClientPortalService } from '../../../core/services/client-portal.service';
 import { PortalState } from '../../../core/services/portal-state';
-import { PortalCountUp } from '../../count-up.directive';
 import { PortalIcon } from '../../portal-icon';
 
 const STATE_LABEL: Record<string, string> = {
@@ -13,7 +12,7 @@ const STATE_LABEL: Record<string, string> = {
 @Component({
   selector: 'portal-my-plan',
   standalone: true,
-  imports: [CommonModule, PortalIcon, PortalCountUp],
+  imports: [CommonModule, PortalIcon],
   templateUrl: './portal-my-plan.html',
   styleUrl: './portal-my-plan.css',
 })
@@ -26,7 +25,6 @@ export class PortalMyPlan implements OnInit {
   data = signal<PortalPlanData | null>(null);
   animate = signal(false);
 
-  readonly C = 2 * Math.PI * 38;
   readonly skeletons = [1, 2, 3, 4, 5, 6];
 
   plan = computed(() => this.data()?.plan ?? null);
@@ -74,8 +72,6 @@ export class PortalMyPlan implements OnInit {
     });
   }
 
-  offset(p: number): number { return this.C * (1 - Math.max(0, Math.min(100, p)) / 100); }
-
   /** Same icon keys as the dashboard (backend catalog `key`). */
   private static readonly ICONS: Record<string, string> = {
     employee: 'employee', attendance: 'attendance', leave: 'leave', salary: 'salary',
@@ -86,4 +82,10 @@ export class PortalMyPlan implements OnInit {
   icon(i: PortalPlanItem): string { return PortalMyPlan.ICONS[i.key] ?? 'addons'; }
 
   contactSupport(): void { this.state.openRaiseTicket(); }
+termDays = computed<number | null>(() => {
+  const p = this.plan();
+  if (!p?.startDate || !p?.endDate) return null;
+  const ms = new Date(p.endDate).getTime() - new Date(p.startDate).getTime();
+  return Math.max(0, Math.round(ms / 86_400_000));
+});
 }

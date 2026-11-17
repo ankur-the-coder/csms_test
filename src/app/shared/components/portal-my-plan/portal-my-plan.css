@@ -31,7 +31,7 @@ h1,h2,h3,strong { font-family: "Manrope", sans-serif; }
 .n-info { background: #eef4ff; border-color: #cddcfb; color: #1d4fd8; }
 
 /* hero */
-.hero-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 18px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .hero { padding: 24px; display: flex; flex-direction: column; gap: 20px; background: linear-gradient(160deg, #fff 0%, #f1f9e8 100%); }
 .hero-head { display: flex; align-items: center; gap: 14px; }
 .hero-title h2 { font-size: 22px; letter-spacing: -.6px; font-weight: 800; }
