@@ -4,8 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../../environments/environment';
 import { WebRtcVoiceService } from '../../voice.service';
 import { ChartComponent } from '../../../../shared/components/inputs/charts/charts';
-import { DatePicker } from '../../../../shared/components/inputs/date-picker/date-picker';
-import { CustomButton } from '../../../../shared/components/inputs/custom-button/custom-button';
+import { CustomDateSelector } from '../../../../shared/components/inputs/custom-date-selector/custom-date-selector';
 
 
 interface VoiceDashboardData {
@@ -37,7 +36,7 @@ interface VoiceDashboardData {
 @Component({
   selector: 'app-voice-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePicker, CustomButton, ChartComponent],
+  imports: [CommonModule, FormsModule, CustomDateSelector, ChartComponent],
   templateUrl: './voice-dashboard.html',
   styles: [`
     :host {
@@ -100,62 +99,14 @@ export class VoiceAnalyticsDashboard implements OnInit {
     return `${y}-${m}-${day}`;
   }
 
-  /** From/To filter state -- defaults to "today" on both ends, matching the dashboard's original default range. */
-  fromDate = signal<Date>(new Date());
-  toDate = signal<Date>(new Date());
+  /** From/To filter state -- defaults to "today", stored as YYYY-MM-DD strings. */
+  readonly appliedFrom = signal(this.toDateStr(new Date()));
+  readonly appliedTo = signal(this.toDateStr(new Date()));
 
-  onFromDateChange(date: Date): void {
-    this.fromDate.set(date);
+  onDateApplied(from: string, to: string): void {
+    this.appliedFrom.set(from);
+    this.appliedTo.set(to);
     this.loadDashboardData();
-  }
-
-  onToDateChange(date: Date): void {
-    this.toDate.set(date);
-    this.loadDashboardData();
-  }
-
-  /** Whether the selected range is exactly today -- used only for the "Today" quick-reset button's active state. */
-  get isTodayRange(): boolean {
-    const today = this.toDateStr(new Date());
-    return this.toDateStr(this.fromDate()) === today && this.toDateStr(this.toDate()) === today;
-  }
-
-  /** Caps both pickers at "now" -- no point filtering for calls that haven't happened yet. */
-  readonly today: Date = new Date();
-
-  resetToToday(): void {
-    const today = new Date();
-    this.fromDate.set(today);
-    this.toDate.set(today);
-    this.loadDashboardData();
-  }
-
-  selectDaysAgo(days: number): void {
-    const end = new Date();
-    const start = new Date();
-    if (days > 0) {
-      start.setDate(end.getDate() - days);
-    }
-    this.fromDate.set(start);
-    this.toDate.set(end);
-    this.loadDashboardData();
-  }
-
-  get activePreset(): 'today' | '7d' | '30d' | 'custom' {
-    const start = this.toDateStr(this.fromDate());
-    const end = this.toDateStr(this.toDate());
-    const todayStr = this.toDateStr(new Date());
-    if (start === todayStr && end === todayStr) return 'today';
-
-    const d7 = new Date();
-    d7.setDate(new Date().getDate() - 7);
-    if (start === this.toDateStr(d7) && end === todayStr) return '7d';
-
-    const d30 = new Date();
-    d30.setDate(new Date().getDate() - 30);
-    if (start === this.toDateStr(d30) && end === todayStr) return '30d';
-
-    return 'custom';
   }
 
   ngOnInit(): void {
@@ -165,8 +116,8 @@ export class VoiceAnalyticsDashboard implements OnInit {
   async loadDashboardData(): Promise<void> {
     this.loading.set(true);
     try {
-      const from = this.toDateStr(this.fromDate());
-      const to = this.toDateStr(this.toDate());
+      const from = this.appliedFrom();
+      const to = this.appliedTo();
 
       const params = new URLSearchParams({ from, to });
         const isAdmin = localStorage.getItem('adminSts') == '1';
@@ -387,28 +338,4 @@ readonly donutCenter = computed(() => {
   return { line1: String(total), line2: 'Total', line3: 'Calls' };
 });
 
-  private shiftDate(date: Date, days: number): Date {
-  const d = new Date(date);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
-}
-
-private startOfDay(date: Date): Date {
-  const d = new Date(date);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-// Next sirf tab chalega jab shift ke baad To, aaj se aage na jaye
-canShiftRange(days: number): boolean {
-  if (days <= 0) return true;
-  const nextTo = this.shiftDate(this.toDate(), days);
-  return nextTo.getTime() <= this.startOfDay(this.today).getTime();
-}
-
-// From aur To dono ko saath same din aage/peeche karta hai
-shiftRange(days: number): void {
-  if (!this.canShiftRange(days)) return;
-  this.fromDate.set(this.shiftDate(this.fromDate(), days));
-  this.toDate.set(this.shiftDate(this.toDate(), days));
-  this.loadDashboardData();
-}
 }
