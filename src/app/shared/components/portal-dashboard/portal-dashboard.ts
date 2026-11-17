@@ -59,7 +59,7 @@ export class PortalDashboard implements OnInit {
   /** 'all' or a tracker tabId */
   drawerTab = signal<number | 'all'>('all');
   /** how many steps the widget preview shows before "View all" */
-  readonly PREVIEW_STEPS = 2;
+  readonly PREVIEW_STEPS = 1;
   drawerModules = computed(() => {
     const list = this.data()?.tracker ?? [];
     const t = this.drawerTab();
