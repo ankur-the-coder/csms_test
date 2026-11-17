@@ -38,21 +38,23 @@
   <!-- ============ Summary ============ -->
   <div class="stats rise" style="--d: 1">
     <div class="card stat">
+      <span class="badge-ico blue"><p-icon name="clock" [size]="20" /></span>
+      <div>
+        <b>{{ s.active+s.available + s.expired }}</b><small>Total add-ons</small>
+      </div>
+    </div>
+    <div class="card stat">
       <span class="badge-ico"><p-icon name="check" [size]="20" /></span>
       <div>
         <b>{{ s.active }}</b><small>Active add-ons</small>
       </div>
     </div>
-    <!-- <div class="card stat">
-      <span class="badge-ico blue"><p-icon name="clock" [size]="20" /></span>
-      <div>
-        <b>{{ s.trial }}</b><small>On free trial</small>
-      </div>
-    </div> -->
+
     <div class="card stat">
       <span class="badge-ico purple"><p-icon name="plus" [size]="20" /></span>
       <div>
         <b>{{ s.available + s.expired }}</b><small>Available to add</small>
+        <!-- <p class="text-sm">Available + Expired</p> -->
       </div>
     </div>
   </div>
