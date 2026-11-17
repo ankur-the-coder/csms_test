@@ -7,70 +7,14 @@
       <p class="mt-0.5 text-xs text-text-muted">Performance metrics for the selected date range</p>
     </div>
 
-<div
-  class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 w-full sm:w-auto rounded-xl border border-card-border bg-surface-50 shadow-xs p-2 sm:p-0">
-
-  <!-- PREV: From ke pehle -->
-  <div class="px-1 sm:pl-2.5 sm:pr-1 flex items-center">
-    <button type="button" (click)="shiftRange(-1)" title="Previous day"
-      class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-card-border bg-card-bg text-text-secondary transition hover:bg-surface-100">
-      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-      </svg>
-    </button>
-  </div>
-
-  <div class="hidden sm:block h-4 w-px bg-card-border"></div>
-
-  <!-- FROM -->
-  <div class="flex items-center gap-2 px-1 sm:px-3 py-1 sm:py-2 w-full sm:w-auto">
-    <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted shrink-0">From</span>
-    <app-date-picker [ngModel]="fromDate()" (onSelectDate)="onFromDateChange($event)" [maxDate]="toDate()"
-      placeHolder="Start date" addClass="min-w-0 flex-1 sm:w-36">
-    </app-date-picker>
-  </div>
-
-  <div class="hidden sm:block h-4 w-px bg-card-border"></div>
-  <div class="block sm:hidden h-px w-full bg-card-border"></div>
-
-  <!-- TO -->
-  <div class="flex items-center gap-2 px-1 sm:px-3 py-1 sm:py-2 w-full sm:w-auto">
-    <span class="text-[10px] font-semibold uppercase tracking-widest text-text-muted shrink-0">To</span>
-    <app-date-picker [ngModel]="toDate()" (onSelectDate)="onToDateChange($event)" [minDate]="fromDate()"
-      [maxDate]="today" placeHolder="End date" addClass="min-w-0 flex-1 sm:w-36">
-    </app-date-picker>
-  </div>
-
-  <div class="hidden sm:block h-4 w-px bg-card-border"></div>
-
-  <!-- NEXT: To ke baad -->
-  <div class="px-1 sm:px-1 flex items-center">
-    <button type="button" (click)="shiftRange(1)" [disabled]="!canShiftRange(1)" title="Next day"
-      class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-card-border bg-card-bg text-text-secondary transition hover:bg-surface-100 disabled:cursor-not-allowed disabled:opacity-40">
-      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  </div>
-
-  <div class="hidden sm:block h-4 w-px bg-card-border"></div>
-  <div class="block sm:hidden h-px w-full bg-card-border"></div>
-
-  <!-- Search button (pehle jaisa) -->
-  <div class="px-1 sm:px-2.5 flex justify-end sm:block">
-    <custom-button
-      (btnClick)="loadDashboardData()"
-      [disabled]="loading()"
-      variant="primary"
-      size="xs"
-      title="Apply date range">
-      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M21 21l-4.35-4.35m0 0a7.5 7.5 0 10-10.6 0 7.5 7.5 0 0010.6 0z" />
-      </svg>
-    </custom-button>
-  </div>
-</div>
+<div class="w-full md:w-64 lg:w-64">
+      <app-custom-date-selector
+        [initialDates]="{ from: appliedFrom(), to: appliedTo() }"
+        [defaultPreset]="'today'"
+        (onApplyDate)="onDateApplied($event.from, $event.to)"
+        [disableFutureDates]="true">
+      </app-custom-date-selector>
+    </div>
 
   </div>
 
