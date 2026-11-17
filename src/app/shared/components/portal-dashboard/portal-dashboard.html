@@ -133,6 +133,9 @@
       <header class="panel-head"><span class="badge-ico teal"><p-icon name="implementation" [size]="19" /></span>
         <h2>Implementation Tracker</h2>
         <span class="tally">{{ trackerDone() }}/{{ d.tracker.length }} modules</span>
+        @if (d.tracker.length) {
+        <button type="button" class="link" (click)="openTrackerDrawer('all')">View All <p-icon name="arrow" [size]="14" /></button>
+        }
       </header>
 
       @if (d.tracker.length === 0) {
@@ -184,7 +187,7 @@
         </header>
         @if (t.steps.length) {
         <ul class="steps">
-          @for (st of t.steps; track st.name; let k = $index) {
+          @for (st of t.steps.slice(0, PREVIEW_STEPS); track st.name; let k = $index) {
           <li [class.done]="st.done" [style.--k]="k">
             <span class="dot">@if (st.done) { <p-icon name="check" [size]="10" /> }</span>
             <span class="s-name">{{ st.name }}</span>
@@ -192,6 +195,11 @@
           </li>
           }
         </ul>
+        @if (t.steps.length > PREVIEW_STEPS) {
+        <button type="button" class="link more" (click)="openTrackerDrawer(t.tabId)">
+          View all {{ t.steps.length }} steps <p-icon name="arrow" [size]="14" />
+        </button>
+        }
         } @else {
         <p class="d-empty">Your implementation team will add the setup steps for this module soon.</p>
         }
@@ -261,6 +269,68 @@
         }
       </div>
     </div>
+  </div>
+  }
+
+  <!-- ============ Implementation tracker drawer ============ -->
+  @if (showTrackerDrawer()) {
+  <div class="td-backdrop" (click)="closeTrackerDrawer()">
+    <aside class="td-panel" role="dialog" aria-modal="true" aria-label="Implementation tracker"
+      (click)="$event.stopPropagation()">
+
+      <header class="td-head">
+        <span class="td-av">{{ initials(drawerOrg()) }}</span>
+        <div class="td-title">
+          <h2>{{ drawerOrg() || 'Implementation' }}</h2>
+          <small>Implementation Tracker</small>
+        </div>
+        <span class="health" [ngClass]="'h-' + d.implementation.health">{{ healthLabel(d.implementation.health) }}</span>
+        <button type="button" class="am-close" aria-label="Close" (click)="closeTrackerDrawer()">
+          <p-icon name="close" [size]="18" />
+        </button>
+      </header>
+
+      <div class="td-progress">
+        <div class="td-prog-row"><span>Overall Implementation Progress</span><b>{{ d.implementation.percentage }}%</b></div>
+        <div class="imp-bar"><i [style.width.%]="d.implementation.percentage"></i></div>
+      </div>
+
+      <div class="td-tabs hide-scrollbar" role="tablist">
+        <button type="button" role="tab" class="td-tab" [class.on]="drawerTab() === 'all'" (click)="drawerTab.set('all')">All Modules</button>
+        @for (m of d.tracker; track m.tabId) {
+        <button type="button" role="tab" class="td-tab" [class.on]="drawerTab() === m.tabId" (click)="drawerTab.set(m.tabId)">{{ m.label }}</button>
+        }
+      </div>
+
+      <div class="td-body">
+        @for (m of drawerModules(); track m.tabId) {
+        <section class="td-mod">
+          <header class="td-mod-head">
+            <strong>{{ m.label }}</strong>
+            <span class="td-count">{{ m.approved }} / {{ m.total }}</span>
+            <span class="td-mini"><i [style.width.%]="m.total ? (m.approved / m.total) * 100 : 0"></i></span>
+          </header>
+          @if (m.steps.length) {
+          <ul class="steps">
+            @for (st of m.steps; track st.name; let k = $index) {
+            <li [class.done]="st.done" [style.--k]="k">
+              <span class="dot">@if (st.done) { <p-icon name="check" [size]="10" /> }</span>
+              <span class="s-name">{{ st.name }}</span>
+              <small>{{ st.done ? 'Done' : 'Pending' }}@if (st.date) { · {{ fmtDate(st.date) }} }</small>
+            </li>
+            }
+          </ul>
+          } @else {
+          <p class="d-empty td-empty">Waiting for kickoff.</p>
+          }
+        </section>
+        }
+      </div>
+
+      <footer class="td-foot">
+        <button type="button" class="btn-tiny" (click)="closeTrackerDrawer()">Close</button>
+      </footer>
+    </aside>
   </div>
   }
 

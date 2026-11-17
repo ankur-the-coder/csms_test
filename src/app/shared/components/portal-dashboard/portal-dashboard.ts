@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, HostListener, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PortalAddon, PortalDashboardData, PortalMeeting, PortalTicket, PortalTraining } from '../../../core/models/client-portal.model';
@@ -51,6 +51,25 @@ export class PortalDashboard implements OnInit {
     const l = this.data()?.addons.suggested ?? [];
     return this.showAllAddons() ? l : l.slice(0, 8);
   });
+
+  // ---- tracker drawer (full steps list, opens from the right) ----
+  /** org name shown in the drawer header (same signal the sidebar uses) */
+  drawerOrg = this.state.orgName;
+  showTrackerDrawer = signal(false);
+  /** 'all' or a tracker tabId */
+  drawerTab = signal<number | 'all'>('all');
+  /** how many steps the widget preview shows before "View all" */
+  readonly PREVIEW_STEPS = 2;
+  drawerModules = computed(() => {
+    const list = this.data()?.tracker ?? [];
+    const t = this.drawerTab();
+    return t === 'all' ? list : list.filter(m => m.tabId === t);
+  });
+  openTrackerDrawer(tab: number | 'all' = 'all') { this.drawerTab.set(tab); this.showTrackerDrawer.set(true); }
+  closeTrackerDrawer() { this.showTrackerDrawer.set(false); }
+
+  @HostListener('document:keydown.escape')
+  onEsc() { if (this.showTrackerDrawer()) this.closeTrackerDrawer(); }
 
   // ring geometry (r = 38)
   readonly C = 2 * Math.PI * 38;
