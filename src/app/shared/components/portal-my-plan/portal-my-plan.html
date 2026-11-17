@@ -61,8 +61,8 @@
           <dl class="facts">
             <div><dt>Customer since</dt><dd>{{ p.memberSince ? (p.memberSince | date:'MMM yyyy') : '--' }}</dd></div>
             @if (p.premiumSince) { <div><dt>Premium since</dt><dd>{{ p.premiumSince | date:'dd MMM yyyy' }}</dd></div> }
-            <div><dt>Modules</dt><dd>{{ d.modules.length }}</dd></div>
-            <div><dt>Add-ons</dt><dd>{{ d.addons.length }}</dd></div>
+            <!-- <div><dt>Modules</dt><dd>{{ d.modules.length }}</dd></div>
+            <div><dt>Add-ons</dt><dd>{{ d.addons.length }}</dd></div> -->
           </dl>
 
           @if (p.dueAmount > 0) {
@@ -71,7 +71,7 @@
           }
         </article>
 
-        <article class="card seats rise" style="--d:3">
+        <!-- <article class="card seats rise" style="--d:3">
           <header class="seat-head"><span class="badge-ico blue"><p-icon name="employee" [size]="20" /></span><h3>Licence usage</h3></header>
           <div class="ring-row">
             <div class="donut">
@@ -89,7 +89,7 @@
           } @else {
             <p class="seat-note">{{ p.seatsLeft | number }} seat{{ p.seatsLeft === 1 ? '' : 's' }} remaining</p>
           }
-        </article>
+        </article> -->
       </div>
 
       <!-- ============ Purchased modules ============ -->
@@ -131,7 +131,7 @@
       </article>
 
       <!-- ============ Enabled attendance features + extras ============ -->
-      @if (d.attendanceFeatures.length || d.extras.length) {
+      <!-- @if (d.attendanceFeatures.length || d.extras.length) {
         <article class="card panel rise" style="--d:6">
           <header class="panel-head"><span class="badge-ico teal"><p-icon name="bolt" [size]="19" /></span><h2>Enabled Features</h2></header>
           @if (d.attendanceFeatures.length) {
@@ -143,7 +143,7 @@
             <div class="chips">@for (f of d.extras; track f) { <span class="chip"><p-icon name="check" [size]="13" />{{ f }}</span> }</div>
           }
         </article>
-      }
+      } -->
     }
   }
 </section>
