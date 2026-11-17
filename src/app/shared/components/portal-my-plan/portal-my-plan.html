@@ -58,13 +58,26 @@
             </div>
           </div>
 
-          <dl class="facts">
-            <div><dt>Customer since</dt><dd>{{ p.memberSince ? (p.memberSince | date:'MMM yyyy') : '--' }}</dd></div>
-            @if (p.premiumSince) { <div><dt>Premium since</dt><dd>{{ p.premiumSince | date:'dd MMM yyyy' }}</dd></div> }
+          <!-- <dl class="facts"> -->
+            <!-- <div><dt>Customer since</dt><dd>{{ p.memberSince ? (p.memberSince | date:'MMM yyyy') : '--' }}</dd></div>
+            @if (p.premiumSince) { <div><dt>Premium since</dt><dd>{{ p.premiumSince | date:'dd MMM yyyy' }}</dd></div> } -->
             <!-- <div><dt>Modules</dt><dd>{{ d.modules.length }}</dd></div>
             <div><dt>Add-ons</dt><dd>{{ d.addons.length }}</dd></div> -->
-          </dl>
-
+          <!-- </dl> -->
+<dl class="facts">
+  <div>
+    <dt>Customer since</dt>
+    <dd [class.na]="!p.memberSince">{{ p.memberSince ? (p.memberSince | date:'MMM yyyy') : '--' }}</dd>
+  </div>
+  <div>
+    <dt>Premium since</dt>
+    <dd [class.na]="!p.premiumSince">{{ p.premiumSince ? (p.premiumSince | date:'dd MMM yyyy') : '--' }}</dd>
+  </div>
+  <!-- <div>
+    <dt>Term length</dt>
+    <dd [class.na]="termDays() === null">{{ termDays() !== null ? termDays() + ' days' : '--' }}</dd>
+  </div> -->
+</dl>
           @if (p.dueAmount > 0) {
             <div class="due"><p-icon name="invoice" [size]="18" />
               <span>Outstanding amount <b>{{ p.currencySymbol }}{{ p.dueAmount | number:'1.0-2' }}</b></span></div>

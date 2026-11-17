@@ -82,4 +82,10 @@ export class PortalMyPlan implements OnInit {
   icon(i: PortalPlanItem): string { return PortalMyPlan.ICONS[i.key] ?? 'addons'; }
 
   contactSupport(): void { this.state.openRaiseTicket(); }
+termDays = computed<number | null>(() => {
+  const p = this.plan();
+  if (!p?.startDate || !p?.endDate) return null;
+  const ms = new Date(p.endDate).getTime() - new Date(p.startDate).getTime();
+  return Math.max(0, Math.round(ms / 86_400_000));
+});
 }
