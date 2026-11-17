@@ -240,9 +240,10 @@
 
 @if (mailModalOpen()) {
 <div class="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" (click)="closeMailModal()">
-  <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+  <div class="bg-white rounded-2xl w-full max-w-6xl h-[92vh] shadow-xl overflow-hidden flex flex-col"
     (click)="$event.stopPropagation()">
 
+    <!-- ── Header ── -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
       <div class="flex items-center gap-3">
         <div
@@ -263,129 +264,228 @@
       </button>
     </div>
 
-    <div class="flex gap-6 px-6 pt-3 border-b border-slate-100 shrink-0">
-      <button (click)="mailTab.set('edit')" class="pb-2.5 text-sm font-medium transition"
-        [class.text-emerald-600]="mailTab() === 'edit'" [class.border-b-2]="mailTab() === 'edit'"
-        [class.border-emerald-600]="mailTab() === 'edit'" [class.text-slate-400]="mailTab() !== 'edit'">Edit</button>
-      <button (click)="mailTab.set('preview')" class="pb-2.5 text-sm font-medium transition"
-        [class.text-emerald-600]="mailTab() === 'preview'" [class.border-b-2]="mailTab() === 'preview'"
-        [class.border-emerald-600]="mailTab() === 'preview'"
-        [class.text-slate-400]="mailTab() !== 'preview'">Preview</button>
-    </div>
+    <!-- ── Body: left = form, right = live preview ── -->
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2">
 
-    <div class="overflow-y-auto flex-1">
-      @if (mailTab() === 'edit') {
-      <div class="px-6 py-5 space-y-4">
-        <div>
-          <label class="text-xs font-medium text-slate-600 block mb-1.5">To</label>
-          <div class="flex flex-wrap gap-1.5 border rounded-xl p-2.5 min-h-[44px] transition-all duration-150"
-            [class.border-slate-200]="!recipientInputInvalid()" [class.shadow-sm]="!recipientInputInvalid()"
-            [class.border-red-300]="recipientInputInvalid()" [class.ring-2]="recipientInputInvalid()"
-            [class.ring-red-100]="recipientInputInvalid()">
-            @for (email of mailRecipients(); track email) {
-            <span
-              class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium pl-2.5 pr-1.5 py-1 rounded-full border border-emerald-200">
-              {{ email }}
-              <button type="button" (click)="removeRecipient(email)"
-                class="w-4 h-4 flex items-center justify-center rounded-full text-emerald-500 hover:bg-emerald-100 hover:text-emerald-800 transition">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                  <path d="M18 6 6 18" />
-                  <path d="M6 6l12 12" />
+      <!-- LEFT: form (scrolls on its own) -->
+      <div class="overflow-y-auto px-6 py-5 space-y-4 lg:border-r border-slate-100">
+
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.5fr)] gap-3 items-start">
+          <!-- Compact custom template selector -->
+          <div class="min-w-0">
+            <label class="text-xs font-medium text-slate-600 block mb-1.5">Template</label>
+            <div class="relative">
+              <button type="button" (click)="toggleMailTemplateDropdown(); $event.stopPropagation()"
+                (keydown.escape)="closeMailTemplateDropdown()"
+                class="w-full min-h-[44px] flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-left text-sm text-slate-800 transition hover:border-slate-400 focus:border-emerald-500 focus:outline-none"
+                role="combobox" aria-haspopup="listbox" [attr.aria-expanded]="mailTemplateDropdownOpen()"
+                aria-controls="mail-template-options">
+                <span class="w-4 h-4 shrink-0 rounded border border-slate-200"
+                  [style.background]="activeTemplate().theme.headerImage || activeTemplate().theme.headerBg"></span>
+                <span class="min-w-0 flex-1 truncate">{{ activeTemplate().name }}</span>
+                <svg class="w-4 h-4 shrink-0 text-slate-400 transition-transform"
+                  [class.rotate-180]="mailTemplateDropdownOpen()" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
-            </span>
-            }
-            <input type="text" name="mail-recipient-field" autocomplete="new-password" autocorrect="off"
-              spellcheck="false" data-lpignore="true" data-form-type="other" [ngModel]="mailRecipientInput"
-              (ngModelChange)="onRecipientInputChange($event)" (keydown)="onRecipientKeyDown($event)"
-              (blur)="onRecipientBlur()" (paste)="onRecipientPaste($event)"
-              placeholder="{{ mailRecipients().length === 0 ? 'Enter email address' : 'Add another' }}"
-              class="flex-1 min-w-[140px] text-sm outline-none border-none bg-transparent placeholder:text-slate-400"
-              style="outline: none; border: none; box-shadow: none; background: transparent;" />
+
+              @if (mailTemplateDropdownOpen()) {
+              <div id="mail-template-options" role="listbox"
+                class="absolute left-0 top-full z-30 mt-1 w-full min-w-[190px] overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                @for (tpl of mailTemplates; track tpl.id) {
+                <button type="button" role="option" [attr.aria-selected]="mailTemplateId() === tpl.id"
+                  (click)="selectMailTemplate(tpl.id); $event.stopPropagation()"
+                  class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition hover:bg-slate-50"
+                  [class.bg-emerald-50]="mailTemplateId() === tpl.id">
+                  <span class="w-4 h-4 shrink-0 rounded border border-slate-200"
+                    [style.background]="tpl.theme.headerImage || tpl.theme.headerBg"></span>
+                  <span class="min-w-0">
+                    <span class="block truncate text-xs font-medium text-slate-800">{{ tpl.name }}</span>
+                    <span class="block truncate text-[10px] text-slate-500">{{ tpl.description }}</span>
+                  </span>
+                </button>
+                }
+              </div>
+              }
+            </div>
           </div>
-          @if (recipientInputInvalid()) {
-          <p class="text-xs text-red-500 mt-1">Enter a valid email address.</p>
-          }
+
+          <!-- Attachments beside the template -->
+          <div class="min-w-0">
+            <label class="text-xs font-medium text-slate-600 block mb-1.5">Attachments</label>
+            <div class="flex flex-wrap items-center gap-2">
+              <label
+                [class.opacity-40]="mailAttachments().length >= 3"
+                [class.pointer-events-none]="mailAttachments().length >= 3"
+                class="inline-flex items-center gap-1.5 h-8 border border-dashed border-slate-300 rounded-full pl-2.5 pr-3 text-xs font-medium text-slate-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/40 transition shrink-0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Attach
+                <input type="file" multiple accept="*/*" class="hidden" (change)="onFilesSelected($event)" />
+              </label>
+
+              @if (mailAttachments().length > 0) {
+              @let file = mailAttachments()[0];
+              <div
+                class="inline-flex items-center gap-1.5 h-8 bg-slate-50 border border-slate-200 rounded-full pl-2.5 pr-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.3"
+                  class="shrink-0">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <path d="M13 2v7h7" />
+                </svg>
+                <span class="text-xs text-slate-700 max-w-[100px] truncate">{{ file.name }}</span>
+                <span class="text-[10.5px] text-slate-400 whitespace-nowrap">{{ formatFileSize(file.size) }}</span>
+                <button type="button" (click)="removeAttachment(file.name)"
+                  class="w-4 h-4 flex items-center justify-center rounded-full bg-slate-200/70 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition shrink-0">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <path d="M18 6 6 18" />
+                    <path d="M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              }
+
+              @if (mailAttachments().length > 1) {
+              <div class="relative group">
+                  <button type="button"
+                    class="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    [attr.aria-label]="mailAttachments().length - 1 + ' more attachments; hover or focus to view'"
+                    aria-describedby="additional-attachments-tooltip">
+                    +{{ mailAttachments().length - 1 }}
+                  </button>
+                  <div id="additional-attachments-tooltip" role="group" aria-label="Additional attachments"
+                    class="absolute right-0 top-full z-50 hidden w-64 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-hover:block group-focus-within:block">
+                    @for (extraFile of mailAttachments().slice(1); track extraFile.name) {
+                    <div class="flex items-center gap-2 rounded-md px-2 py-1.5">
+                      <span class="min-w-0 flex-1 truncate text-xs text-slate-700" [title]="extraFile.name">
+                        {{ extraFile.name }}
+                        <span class="text-[10px] text-slate-400">{{ formatFileSize(extraFile.size) }}</span>
+                      </span>
+                      <button type="button" (click)="removeAttachment(extraFile.name)"
+                        [attr.aria-label]="'Remove ' + extraFile.name"
+                        class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="3.5">
+                          <path d="M18 6 6 18" />
+                          <path d="M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    }
+                  </div>
+              </div>
+              }
+            </div>
+
+            @if (attachmentError()) {
+            <p class="text-xs text-red-500 mt-1.5">{{ attachmentError() }}</p>
+            } @else {
+            <p class="text-[10.5px] text-slate-400 mt-1.5">Max 3 files · 5 MB each · 5 MB total</p>
+            }
+          </div>
         </div>
 
-        <div>
-          <label class="text-xs font-medium text-slate-600 block mb-1.5">Subject</label>
-          <input type="text" [(ngModel)]="mailSubject" class="w-full rounded-lg px-3 py-2.5 text-sm transition"
-            style="border: 1px solid #cbd5e1; outline: none; box-shadow: none;"
-            (focus)="$event.target.style.border = '1px solid #10b981'"
-            (blur)="$event.target.style.border = '1px solid #cbd5e1'" />
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-3 items-start">
+          <!-- To -->
+          <div class="min-w-0">
+            <label class="text-xs font-medium text-slate-600 block mb-1.5">To</label>
+            <div class="flex flex-wrap gap-1.5 border rounded-xl p-2.5 min-h-[44px] transition-all duration-150"
+              [class.border-slate-200]="!recipientInputInvalid()" [class.shadow-sm]="!recipientInputInvalid()"
+              [class.border-red-300]="recipientInputInvalid()" [class.ring-2]="recipientInputInvalid()"
+              [class.ring-red-100]="recipientInputInvalid()">
+              @for (email of mailRecipients(); track email) {
+              <span
+                class="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium pl-2.5 pr-1.5 py-1 rounded-full border border-emerald-200">
+                {{ email }}
+                <button type="button" (click)="removeRecipient(email)"
+                  class="w-4 h-4 flex items-center justify-center rounded-full text-emerald-500 hover:bg-emerald-100 hover:text-emerald-800 transition">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <path d="M18 6 6 18" />
+                    <path d="M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+              }
+              <input type="text" name="mail-recipient-field" autocomplete="new-password" autocorrect="off"
+                spellcheck="false" data-lpignore="true" data-form-type="other" [ngModel]="mailRecipientInput"
+                (ngModelChange)="onRecipientInputChange($event)" (keydown)="onRecipientKeyDown($event)"
+                (blur)="onRecipientBlur()" (paste)="onRecipientPaste($event)"
+                placeholder="{{ mailRecipients().length === 0 ? 'Enter email address' : 'Add another' }}"
+                class="flex-1 min-w-[140px] text-sm outline-none border-none bg-transparent placeholder:text-slate-400"
+                style="outline: none; border: none; box-shadow: none; background: transparent;" />
+            </div>
+            @if (recipientInputInvalid()) {
+            <p class="text-xs text-red-500 mt-1">Enter a valid email address.</p>
+            }
+          </div>
+
+          <!-- Subject -->
+          <div class="min-w-0">
+            <label class="text-xs font-medium text-slate-600 block mb-1.5">Subject</label>
+            <input type="text" [(ngModel)]="mailSubject" class="w-full rounded-lg px-3 py-2.5 text-sm transition"
+              style="border: 1px solid #cbd5e1; outline: none; box-shadow: none;"
+              (focus)="$event.target.style.border = '1px solid #10b981'"
+              (blur)="$event.target.style.border = '1px solid #cbd5e1'" />
+          </div>
         </div>
 
+        <!-- Message -->
         <div>
           <label class="text-xs font-medium text-slate-600 block mb-1.5">Message</label>
+          @for (k of [editorKey()]; track k) {
           <app-rich-text-editor [initialContent]="mailBody"
             (contentChange)="onEditorChange($event)"></app-rich-text-editor>
-        </div>
-
-        <div>
-          <label class="text-xs font-medium text-slate-600 block mb-1.5">Attachments</label>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <label
-              [class.opacity-40]="mailAttachments().length >= 3"
-              [class.pointer-events-none]="mailAttachments().length >= 3"
-              class="inline-flex items-center gap-1.5 h-8 border border-dashed border-slate-300 rounded-full pl-2.5 pr-3 text-xs font-medium text-slate-500 cursor-pointer hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/40 transition shrink-0">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Attach
-              <input type="file" multiple accept="*/*" class="hidden" (change)="onFilesSelected($event)" />
-            </label>
-
-            @for (file of mailAttachments(); track file.name) {
-            <div
-              class="inline-flex items-center gap-1.5 h-8 bg-slate-50 border border-slate-200 rounded-full pl-2.5 pr-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.3"
-                class="shrink-0">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                <path d="M13 2v7h7" />
-              </svg>
-              <span class="text-xs text-slate-700 max-w-[100px] truncate">{{ file.name }}</span>
-              <span class="text-[10.5px] text-slate-400 whitespace-nowrap">{{ formatFileSize(file.size) }}</span>
-              <button type="button" (click)="removeAttachment(file.name)"
-                class="w-4 h-4 flex items-center justify-center rounded-full bg-slate-200/70 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition shrink-0">
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
-                  <path d="M18 6 6 18" />
-                  <path d="M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            }
-          </div>
-
-          @if (attachmentError()) {
-          <p class="text-xs text-red-500 mt-1.5">{{ attachmentError() }}</p>
-          } @else {
-          <p class="text-[10.5px] text-slate-400 mt-1.5">Max 3 files · 5 MB each · 5 MB total</p>
           }
         </div>
-      </div>
-      }
 
-      @if (mailTab() === 'preview') {
-      <div class="px-6 py-5">
-        <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-[420px] flex flex-col">
-          <div class="bg-white px-2 py-3 text-center shrink-0 border-b border-slate-100">
-            <div class="flex items-center justify-center gap-2 mb-2">
-              <img src="/onlyLogo.png" alt="" class="h-15 w-18" />
-              <span class="text-lg font-bold tracking-tight">
-                <span class="text-slate-800">Ubi</span><span class="text-teal-500">Hrm</span>
-              </span>
+      </div>
+
+      <!-- RIGHT: live preview (hidden on small screens) -->
+      <div class="hidden lg:flex flex-col min-h-0 bg-slate-50">
+        <div class="px-6 pt-4 pb-2 shrink-0 flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-600">Live Preview</span>
+          <span class="text-[11px] text-slate-400 truncate max-w-[60%]">Subject: {{ mailSubject }}</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 pb-6">
+          @let t = activeTemplate().theme;
+          <div class="rounded-xl border border-slate-200 p-4" [style.background]="t.pageBg">
+            <div class="mx-auto max-w-[560px] overflow-hidden shadow-sm"
+              [style.background]="t.cardBg" [style.borderRadius]="t.cardRadius" [style.border]="t.cardBorder">
+
+              @if (t.topBar) { <div class="h-1" [style.background]="t.topBar"></div> }
+
+              <div class="px-6 py-5" [style.background]="t.headerImage || t.headerBg"
+                [style.textAlign]="t.headerAlign" [style.borderBottom]="t.headerBorder">
+                @if (t.showLogo) {
+                <img src="/onlyLogo.png" alt="" class="h-10 mb-1.5"
+                  [class.mx-auto]="t.headerAlign === 'center'"
+                  [style.background]="t.logoBg || 'transparent'"
+                  [style.borderRadius]="t.logoBg ? '10px' : '0'"
+                  [style.padding]="t.logoBg ? '4px' : '0'" />
+                }
+                <p class="m-0 text-lg font-bold">
+                  <span [style.color]="t.headerColor">Ubi</span><span [style.color]="t.headerAccent">Hrm</span>
+                </p>
+              </div>
+
+              <div class="px-6 py-6 text-sm leading-relaxed" [style.color]="t.bodyColor"
+                [innerHTML]="mailBody"></div>
+
+              <div class="px-6 py-4 text-center text-xs" [style.background]="t.footerBg"
+                [style.color]="t.footerColor">
+                © {{ today.getFullYear() }} UbiHrm. All rights reserved.
+              </div>
             </div>
-            <p class="text-slate-400 text-xs">{{ mailModalRow()?.name }}</p>
           </div>
-          <div class="px-5 py-4 text-sm text-slate-700 leading-relaxed overflow-y-auto" [innerHTML]="mailBody"></div>
         </div>
       </div>
-      }
     </div>
 
+    <!-- ── Footer ── -->
     <div class="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
       <button (click)="closeMailModal()"
         class="px-4 py-2 cursor-pointer text-sm font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-white transition">
