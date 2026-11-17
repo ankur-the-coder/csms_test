@@ -305,10 +305,19 @@ export class ScheduleMeeting implements OnInit {
     this.isEditingOrgEmail = false;
   }
 
-  onOrganizationSelect(orgIdValue: any): void {
+    onOrganizationSelect(orgIdValue: any): void {
     const orgId = Number(orgIdValue);
     const org = this.organizations.find(o => o.orgId === orgId);
-    this.newMeeting.orgId = org ? org.orgId : null;
+    const newId = org ? org.orgId : null;
+
+    // a different client means a different set of participants
+    if (newId !== this.newMeeting.orgId) {
+      this.participantEmails = [];
+      this.participantInput = '';
+      this.participantError = '';
+    }
+
+    this.newMeeting.orgId = newId;
     this.newMeeting.orgName = org ? org.name : '';
     this.newMeeting.orgEmail = org ? org.email : '';
     this.isEditingOrgEmail = false;
@@ -325,6 +334,97 @@ enableOrgEmailEdit(): void {
   this.orgEmailBeforeEdit = this.newMeeting.orgEmail;
   this.isEditingOrgEmail = true;
 }
+
+  // ---------- Additional participants ----------
+  readonly maxParticipants = 10;
+  participantEmails: string[] = [];
+  participantInput = '';
+  participantError = '';
+
+  onParticipantInputChange(value: string): void {
+    this.participantInput = value;
+    this.participantError = '';
+
+    // typing a space, comma or semicolon (or pasting a list) turns the text into chips
+    if (/[,;\s]/.test(value)) {
+      this.commitParticipantInput();
+    }
+  }
+
+  onParticipantKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && this.participantInput.trim()) {
+      event.preventDefault();
+      this.commitParticipantInput();
+    }
+  }
+
+  commitParticipantInput(): void {
+    const text = this.participantInput.trim();
+    if (!text) {
+      this.participantError = '';
+      return;
+    }
+
+    const orgEmail = (this.newMeeting.orgEmail || '').trim().toLowerCase();
+    const hostEmail = (this.newMeeting.hostEmail || '').trim().toLowerCase();
+    const candidates = text.split(/[,;\s]+/).filter(Boolean);
+
+    let error = '';
+    const rejected: string[] = [];
+
+    for (const raw of candidates) {
+      const email = raw.replace(/[,;]$/, '');
+      const key = email.toLowerCase();
+
+      if (this.participantEmails.length >= this.maxParticipants) {
+        error = `You can add a maximum of ${this.maxParticipants} participants.`;
+        rejected.push(email);
+        continue;
+      }
+      if (!this.isValidEmail(email)) {
+        error = `"${email}" is not a valid email address.`;
+        rejected.push(email);
+        continue;
+      }
+      if (key === orgEmail) {
+        error = 'This is the organization email, it is already invited.';
+        continue;
+      }
+      if (key === hostEmail) {
+        error = 'The host is already the organizer of this meeting.';
+        continue;
+      }
+      if (this.participantEmails.some(e => e.toLowerCase() === key)) {
+        error = `"${email}" is already added.`;
+        continue;
+      }
+      this.participantEmails = [...this.participantEmails, email];
+    }
+
+    // keep only the invalid text in the box so the user can fix it
+    this.participantInput = rejected.join(' ');
+    this.participantError = error;
+  }
+
+  removeParticipant(email: string): void {
+    this.participantEmails = this.participantEmails.filter(e => e !== email);
+    this.participantError = '';
+  }
+
+  /** Org email first, then the extra participants, with duplicates removed. */
+  private buildClientEmails(): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const e of [this.newMeeting.orgEmail, ...this.participantEmails]) {
+      const email = (e || '').trim();
+      const key = email.toLowerCase();
+      if (email && !seen.has(key)) {
+        seen.add(key);
+        result.push(email);
+      }
+    }
+    return result;
+  }
 
 saveOrgEmailEdit(): void {
   if (!this.isValidEmail(this.newMeeting.orgEmail)) return;
@@ -350,7 +450,14 @@ cancelOrgEmailEdit(): void {
     this.goBack();
   }
 
-  onScheduleClick(): void {
+    onScheduleClick(): void {
+    // turn any half-typed participant email into a chip first
+    this.commitParticipantInput();
+    if (this.participantInput.trim()) {
+      this.toastr.warning('Fix or remove the invalid participant email.', 'Validation Warning');
+      return;
+    }
+
     if (!this.isFormValid()) {
       this.submitted = true;
       this.toastr.warning('Please fill in all required fields before scheduling.', 'Validation Warning');
@@ -383,11 +490,7 @@ cancelOrgEmailEdit(): void {
 
         hostEmail: this.newMeeting.hostEmail,
 
-        clientEmails: [
-
-            this.newMeeting.orgEmail
-
-        ],
+                clientEmails: this.buildClientEmails(),
 
         title: this.newMeeting.title,
 
