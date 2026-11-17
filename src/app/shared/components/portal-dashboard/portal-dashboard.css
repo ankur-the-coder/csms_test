@@ -307,7 +307,7 @@ h1,h2,h3,strong,.big b { font-family: "Manrope", sans-serif; }
 .row-2 .addon-grid { flex: 1 1 auto; grid-auto-rows: 1fr; align-content: stretch; }
 .row-2 .addon { height: 100%; }
 .row-2 .addon-grid { flex: 0 0 auto; grid-auto-rows: auto; align-content: start; }
-.row-2 .addon { height: auto; min-height: 150px; }
+.row-2 .addon { min-height: 150px; }
 
 
 /* skeleton matches the real layout */
@@ -378,3 +378,30 @@ h1,h2,h3,strong,.big b { font-family: "Manrope", sans-serif; }
 @media (max-width: 1100px) { .top-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 1180px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .top-grid { grid-template-columns: 1fr; } }
+/* ---- fixed-height tracker detail: no jumping between modules ---- */
+:host { --detail-h: 150px; }
+
+.row-2 .detail {
+  flex: 0 0 auto;              /* stop growing with content */
+  height: var(--detail-h);     /* same height for every module */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-2 .detail .d-head { flex: 0 0 auto; }
+
+.row-2 .detail .steps {
+  flex: 1 1 auto;
+  min-height: 0;               /* required so flex child can scroll */
+  overflow-y: auto;            /* only the steps list scrolls */
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+.row-2 .detail .d-empty { flex: 0 0 auto; }
+
+/* smaller screens: let it size naturally but cap it */
+@media (max-width: 1180px) {
+  .row-2 .detail { height: auto; max-height: 150px; }
+}
