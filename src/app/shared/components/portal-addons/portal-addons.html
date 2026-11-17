@@ -88,12 +88,12 @@
       </label>
     </div>
 
-    @if (s.users > 0) {
+    <!-- @if (s.users > 0) {
       <p class="price-note rise" style="--d: 2">
         Prices are shown <strong>per user, per year</strong> in {{ s.currency }}, for your plan size
         ({{ s.users }} users{{ s.band ? ', band ' + s.band : '' }}).
       </p>
-    }
+    } -->
 
     <!-- ============ Cards ============ -->
     @if (cards().length === 0) {
@@ -132,7 +132,8 @@
 
                 <a  [href]="c.learnMoreUrl"
 target="_blank" rel="noopener noreferrer" [style.--i]="i"
-                type="button" class="inline-flex w-full sm:w-auto justify-center schedule-shine-btn items-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-600 px-4 py-2.5 cursor-pointer text-sm font-semibold text-white transition-colors shadow-sm">
+                type="button" class="inline-flex w-full sm:w-auto justify-center schedule-shine-btn items-center gap-2 rounded-xl bg-[#C4F488] hover:bg-[#B8EB70] px-4 py-2 cursor-pointer text-sm font-semibold text-black transition-colors shadow-sm"
+                >
           Talk To Sales </a
              >
                 <!-- <span class="foot price"
