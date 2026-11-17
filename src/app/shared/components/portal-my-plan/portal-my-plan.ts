@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { PortalPlanData, PortalPlanItem } from '../../../core/models/client-portal.model';
 import { ClientPortalService } from '../../../core/services/client-portal.service';
 import { PortalState } from '../../../core/services/portal-state';
-import { PortalCountUp } from '../../count-up.directive';
 import { PortalIcon } from '../../portal-icon';
 
 const STATE_LABEL: Record<string, string> = {
@@ -13,7 +12,7 @@ const STATE_LABEL: Record<string, string> = {
 @Component({
   selector: 'portal-my-plan',
   standalone: true,
-  imports: [CommonModule, PortalIcon, PortalCountUp],
+  imports: [CommonModule, PortalIcon],
   templateUrl: './portal-my-plan.html',
   styleUrl: './portal-my-plan.css',
 })
@@ -26,7 +25,6 @@ export class PortalMyPlan implements OnInit {
   data = signal<PortalPlanData | null>(null);
   animate = signal(false);
 
-  readonly C = 2 * Math.PI * 38;
   readonly skeletons = [1, 2, 3, 4, 5, 6];
 
   plan = computed(() => this.data()?.plan ?? null);
@@ -73,8 +71,6 @@ export class PortalMyPlan implements OnInit {
       error: () => { this.error.set('Could not load your plan. Please try again.'); this.loading.set(false); },
     });
   }
-
-  offset(p: number): number { return this.C * (1 - Math.max(0, Math.min(100, p)) / 100); }
 
   /** Same icon keys as the dashboard (backend catalog `key`). */
   private static readonly ICONS: Record<string, string> = {

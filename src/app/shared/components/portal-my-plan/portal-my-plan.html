@@ -4,7 +4,7 @@
     <div class="head-ico"><p-icon name="plan" [size]="26" /></div>
     <div class="head-text">
       <h1>My Plan</h1>
-      <p>Your subscription, licence usage and everything you have purchased.</p>
+      <p>Your subscription and everything you have purchased.</p>
     </div>
   </div>
 
@@ -71,33 +71,14 @@
           }
         </article>
 
-        <!-- <article class="card seats rise" style="--d:3">
-          <header class="seat-head"><span class="badge-ico blue"><p-icon name="employee" [size]="20" /></span><h3>Licence usage</h3></header>
-          <div class="ring-row">
-            <div class="donut">
-              <svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="38" />
-                <circle class="val" [class.over]="p.overLimit" cx="50" cy="50" r="38" [attr.stroke-dasharray]="C" [attr.stroke-dashoffset]="animate() ? offset(p.seatPercent) : C" /></svg>
-              <span class="ring-num"><b [pCountUp]="p.seatPercent" pSuffix="%"></b></span>
-            </div>
-            <div class="ring-side">
-              <strong>{{ p.registeredEmployees | number }} <span>/ {{ p.userLimit | number }}</span></strong>
-              <small>employees registered</small>
-            </div>
-          </div>
-          @if (p.overLimit) {
-            <p class="seat-note bad">You are over your licence by {{ p.registeredEmployees - p.userLimit | number }} employee(s). Contact us to extend your licence.</p>
-          } @else {
-            <p class="seat-note">{{ p.seatsLeft | number }} seat{{ p.seatsLeft === 1 ? '' : 's' }} remaining</p>
-          }
-        </article> -->
       </div>
 
-      <!-- ============ Purchased modules ============ -->
-      <article class="card panel rise" style="--d:4">
-        <header class="panel-head"><span class="badge-ico"><p-icon name="check" [size]="19" /></span><h2>Purchased Modules</h2>
-          <span class="tally">{{ d.modules.length }} active</span></header>
-        @if (d.modules.length === 0) {
-          <p class="empty">No modules found on your plan yet.</p>
+      <!-- ============ Purchased modules & add-ons (combined) ============ -->
+      <article class="card panel rise" style="--d:3">
+        <header class="panel-head"><span class="badge-ico"><p-icon name="check" [size]="19" /></span><h2>Purchased Modules &amp; Add-ons</h2>
+          <span class="tally">{{ totalPurchased() }} active</span></header>
+        @if (totalPurchased() === 0) {
+          <p class="empty">No modules or add-ons found on your plan yet.</p>
         } @else {
           <div class="grid">
             @for (m of d.modules; track m.key; let i = $index) {
@@ -107,20 +88,8 @@
                 <span class="tag">Active</span>
               </a>
             }
-          </div>
-        }
-      </article>
-
-      <!-- ============ Purchased add-ons ============ -->
-      <article class="card panel rise" style="--d:5">
-        <header class="panel-head"><span class="badge-ico purple"><p-icon name="addons" [size]="19" /></span><h2>Purchased Add-ons</h2>
-          <span class="tally">{{ d.addons.length }} active</span></header>
-        @if (d.addons.length === 0) {
-          <p class="empty">You have not purchased any add-ons yet. Browse suggestions on your dashboard.</p>
-        } @else {
-          <div class="grid">
             @for (a of d.addons; track a.key; let i = $index) {
-              <a class="item" [href]="a.url" target="_blank" rel="noopener noreferrer" [style.--i]="i">
+              <a class="item" [href]="a.url" target="_blank" rel="noopener noreferrer" [style.--i]="d.modules.length + i">
                 <span class="i-ico purple"><p-icon [name]="icon(a)" [size]="21" /></span>
                 <div class="i-main"><strong>{{ a.name }}</strong><small>{{ a.description }}</small></div>
                 <span class="tag">Active</span>
@@ -129,10 +98,25 @@
           </div>
         }
       </article>
-
+ <!-- <article class="card seats rise" style="--d:3">
+        <span class="badge-ico blue"><p-icon name="employee" [size]="20" /></span>
+        <div class="seat-main">
+          <h3>Licence usage</h3>
+          @if (p.overLimit) {
+            <p class="seat-note bad">Over your licence by {{ p.registeredEmployees - p.userLimit | number }} employee(s). Contact us to extend your licence.</p>
+          } @else {
+            <p class="seat-note">{{ p.seatsLeft | number }} seat{{ p.seatsLeft === 1 ? '' : 's' }} remaining</p>
+          }
+        </div>
+        <div class="seat-meter">
+          <strong>{{ p.registeredEmployees | number }} <span>/ {{ p.userLimit | number }}</span></strong>
+          <div class="bar blue" [class.over]="p.overLimit"><i [style.width.%]="animate() ? (p.seatPercent > 100 ? 100 : p.seatPercent) : 0"></i></div>
+        </div>
+        <b class="seat-pct" [class.bad]="p.overLimit" [pCountUp]="p.seatPercent" pSuffix="%"></b>
+      </article> -->
       <!-- ============ Enabled attendance features + extras ============ -->
       <!-- @if (d.attendanceFeatures.length || d.extras.length) {
-        <article class="card panel rise" style="--d:6">
+        <article class="card panel rise" style="--d:4">
           <header class="panel-head"><span class="badge-ico teal"><p-icon name="bolt" [size]="19" /></span><h2>Enabled Features</h2></header>
           @if (d.attendanceFeatures.length) {
             <h4 class="sub">Attendance app</h4>
