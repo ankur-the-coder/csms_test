@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { DataTable } from '../../../shared/components/Data-table/data-table';
 import { CustomColumnDirective } from '../../../shared/components/Data-table/custom-column.directive';
+import { MAIL_TEMPLATES, MailTemplateId, getMailTemplate } from './mail-templates';
 import {
   BulkAction,
   RequestContext,
@@ -88,21 +89,52 @@ export class Client implements OnInit, OnDestroy {
   mailSubject = '';
   mailBody = '';
   mailSending = signal(false);
+  readonly mailTemplates = MAIL_TEMPLATES;
+mailTemplateId = signal<MailTemplateId>('classic');
+activeTemplate = computed(() => getMailTemplate(this.mailTemplateId()));
+editorKey = signal(0);
+private lastGeneratedBody = '';
+readonly today = new Date();
   timelineLoading = signal(false);
   timelineError = signal('');
 
-  openMailModal(row: ClientRow): void {
-    this.closeActionMenu();
-    this.mailModalRow.set(row);
-    this.mailTab.set('edit');
-    this.mailRecipients.set(row.email ? [row.email.trim()] : []);
-    this.mailSubject = `Welcome to UbiHrm, ${row.name}!`;
-    this.mailBody =
-      `<p>Hi ${row.contactPerson || row.name},</p>` +
-      `<p>Welcome aboard! We're excited to have ${row.name} on UbiHrm. Your account has been set up and the portal is ready whenever you are.</p>` +
-      `<p>Best,<br>The UbiHrm Team</p>`;
-    this.mailModalOpen.set(true);
+  private cleanName(v?: string): string {
+  const t = (v ?? '').trim();
+  return t && t !== '-' && t !== '—' ? t : '';
+}
+
+selectMailTemplate(id: MailTemplateId): void {
+  const row = this.mailModalRow();
+  if (!row) return;
+
+  this.mailTemplateId.set(id);
+  const tpl = getMailTemplate(id);
+  const contact = this.cleanName(row.contactPerson) || row.name;
+
+  const untouched = !this.mailBody || this.mailBody === this.lastGeneratedBody;
+  if (untouched) {
+    this.mailSubject = tpl.subject(row.name);
+    this.mailBody = tpl.body(contact, row.name);
+    this.lastGeneratedBody = this.mailBody;
+    this.editorKey.update((k) => k + 1);
   }
+}
+
+  openMailModal(row: ClientRow): void {
+  this.closeActionMenu();
+  this.mailModalRow.set(row);
+  this.mailTab.set('edit');
+  this.mailRecipients.set(row.email ? [row.email.trim()] : []);
+  this.mailTemplateId.set('classic');
+
+  const tpl = getMailTemplate('classic');
+  const contact = this.cleanName(row.contactPerson) || row.name;
+  this.mailSubject = tpl.subject(row.name);
+  this.mailBody = tpl.body(contact, row.name);
+  this.lastGeneratedBody = this.mailBody;
+  this.editorKey.update((k) => k + 1);
+  this.mailModalOpen.set(true);
+}
 
   onEditorChange(html: string): void {
     this.mailBody = html;
@@ -258,6 +290,7 @@ export class Client implements OnInit, OnDestroy {
         toEmails: this.mailRecipients(),
         subject: this.mailSubject,
         message: this.mailBody,
+        templateId: this.mailTemplateId(),
         companyName: row.name,
         orgId: row.orgId,
         empId: empId,

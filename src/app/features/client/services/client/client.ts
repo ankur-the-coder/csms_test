@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ClientDataTableResponse } from '../../models/client/client.model';
 import { environment } from '../../../../../environments/environment';
+import { MailTemplateId } from '../../client/mail-templates';
 export interface DataTablePayload {
   start: number;
   length: number;
@@ -31,6 +32,7 @@ export interface SendCustomMailPayload {
   toEmails: string[];
   subject: string;
   message: string;
+  templateId: MailTemplateId;
   companyName?: string;
   orgId?: number;
   empId?: number|string;

@@ -240,9 +240,10 @@
 
 @if (mailModalOpen()) {
 <div class="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" (click)="closeMailModal()">
-  <div class="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+  <div class="bg-white rounded-2xl w-full max-w-6xl h-[92vh] shadow-xl overflow-hidden flex flex-col"
     (click)="$event.stopPropagation()">
 
+    <!-- ── Header ── -->
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
       <div class="flex items-center gap-3">
         <div
@@ -263,19 +264,37 @@
       </button>
     </div>
 
-    <div class="flex gap-6 px-6 pt-3 border-b border-slate-100 shrink-0">
-      <button (click)="mailTab.set('edit')" class="pb-2.5 text-sm font-medium transition"
-        [class.text-emerald-600]="mailTab() === 'edit'" [class.border-b-2]="mailTab() === 'edit'"
-        [class.border-emerald-600]="mailTab() === 'edit'" [class.text-slate-400]="mailTab() !== 'edit'">Edit</button>
-      <button (click)="mailTab.set('preview')" class="pb-2.5 text-sm font-medium transition"
-        [class.text-emerald-600]="mailTab() === 'preview'" [class.border-b-2]="mailTab() === 'preview'"
-        [class.border-emerald-600]="mailTab() === 'preview'"
-        [class.text-slate-400]="mailTab() !== 'preview'">Preview</button>
-    </div>
+    <!-- ── Body: left = form, right = live preview ── -->
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2">
 
-    <div class="overflow-y-auto flex-1">
-      @if (mailTab() === 'edit') {
-      <div class="px-6 py-5 space-y-4">
+      <!-- LEFT: form (scrolls on its own) -->
+      <div class="overflow-y-auto px-6 py-5 space-y-4 lg:border-r border-slate-100">
+
+        <!-- Template picker -->
+    <!-- Template picker (dropdown) -->
+<div>
+  <label class="text-xs font-medium text-slate-600 block mb-1.5">Template</label>
+  <div class="relative flex items-center">
+    <!-- small colour swatch showing the selected template's header -->
+    <span class="absolute left-3 w-5 h-5 rounded-md border border-slate-200 pointer-events-none"
+      [style.background]="activeTemplate().theme.headerImage || activeTemplate().theme.headerBg"></span>
+
+    <select [ngModel]="mailTemplateId()" (ngModelChange)="selectMailTemplate($event)"
+  class="w-full appearance-none rounded-lg pl-11 pr-9 py-2.5 text-sm text-slate-800 bg-white cursor-pointer transition border border-slate-300 outline-none focus:border-emerald-500">
+  @for (tpl of mailTemplates; track tpl.id) {
+  <option [value]="tpl.id">{{ tpl.name }} – {{ tpl.description }}</option>
+  }
+</select>
+
+    <!-- chevron -->
+    <svg class="absolute right-3 w-4 h-4 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </div>
+</div>
+
+        <!-- To -->
         <div>
           <label class="text-xs font-medium text-slate-600 block mb-1.5">To</label>
           <div class="flex flex-wrap gap-1.5 border rounded-xl p-2.5 min-h-[44px] transition-all duration-150"
@@ -308,6 +327,7 @@
           }
         </div>
 
+        <!-- Subject -->
         <div>
           <label class="text-xs font-medium text-slate-600 block mb-1.5">Subject</label>
           <input type="text" [(ngModel)]="mailSubject" class="w-full rounded-lg px-3 py-2.5 text-sm transition"
@@ -316,12 +336,16 @@
             (blur)="$event.target.style.border = '1px solid #cbd5e1'" />
         </div>
 
+        <!-- Message -->
         <div>
           <label class="text-xs font-medium text-slate-600 block mb-1.5">Message</label>
+          @for (k of [editorKey()]; track k) {
           <app-rich-text-editor [initialContent]="mailBody"
             (contentChange)="onEditorChange($event)"></app-rich-text-editor>
+          }
         </div>
 
+        <!-- Attachments -->
         <div>
           <label class="text-xs font-medium text-slate-600 block mb-1.5">Attachments</label>
 
@@ -366,26 +390,50 @@
           }
         </div>
       </div>
-      }
 
-      @if (mailTab() === 'preview') {
-      <div class="px-6 py-5">
-        <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-h-[420px] flex flex-col">
-          <div class="bg-white px-2 py-3 text-center shrink-0 border-b border-slate-100">
-            <div class="flex items-center justify-center gap-2 mb-2">
-              <img src="/onlyLogo.png" alt="" class="h-15 w-18" />
-              <span class="text-lg font-bold tracking-tight">
-                <span class="text-slate-800">Ubi</span><span class="text-teal-500">Hrm</span>
-              </span>
+      <!-- RIGHT: live preview (hidden on small screens) -->
+      <div class="hidden lg:flex flex-col min-h-0 bg-slate-50">
+        <div class="px-6 pt-4 pb-2 shrink-0 flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-600">Live Preview</span>
+          <span class="text-[11px] text-slate-400 truncate max-w-[60%]">Subject: {{ mailSubject }}</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 pb-6">
+          @let t = activeTemplate().theme;
+          <div class="rounded-xl border border-slate-200 p-4" [style.background]="t.pageBg">
+            <div class="mx-auto max-w-[560px] overflow-hidden shadow-sm"
+              [style.background]="t.cardBg" [style.borderRadius]="t.cardRadius" [style.border]="t.cardBorder">
+
+              @if (t.topBar) { <div class="h-1" [style.background]="t.topBar"></div> }
+
+              <div class="px-6 py-5" [style.background]="t.headerImage || t.headerBg"
+                [style.textAlign]="t.headerAlign" [style.borderBottom]="t.headerBorder">
+                @if (t.showLogo) {
+                <img src="/onlyLogo.png" alt="" class="h-10 mb-1.5"
+                  [class.mx-auto]="t.headerAlign === 'center'"
+                  [style.background]="t.logoBg || 'transparent'"
+                  [style.borderRadius]="t.logoBg ? '10px' : '0'"
+                  [style.padding]="t.logoBg ? '4px' : '0'" />
+                }
+                <p class="m-0 text-lg font-bold">
+                  <span [style.color]="t.headerColor">Ubi</span><span [style.color]="t.headerAccent">Hrm</span>
+                </p>
+              </div>
+
+              <div class="px-6 py-6 text-sm leading-relaxed" [style.color]="t.bodyColor"
+                [innerHTML]="mailBody"></div>
+
+              <div class="px-6 py-4 text-center text-xs" [style.background]="t.footerBg"
+                [style.color]="t.footerColor">
+                © {{ today.getFullYear() }} UbiHrm. All rights reserved.
+              </div>
             </div>
-            <p class="text-slate-400 text-xs">{{ mailModalRow()?.name }}</p>
           </div>
-          <div class="px-5 py-4 text-sm text-slate-700 leading-relaxed overflow-y-auto" [innerHTML]="mailBody"></div>
         </div>
       </div>
-      }
     </div>
 
+    <!-- ── Footer ── -->
     <div class="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50 shrink-0">
       <button (click)="closeMailModal()"
         class="px-4 py-2 cursor-pointer text-sm font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-white transition">
