@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist/CSMS/browser",
+  "rewrites": [
+    { "source": "/((?!embed/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/embed/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}
