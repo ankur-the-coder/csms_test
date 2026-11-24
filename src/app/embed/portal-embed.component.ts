@@ -39,6 +39,7 @@ export class EmbedLogoutComponent {
     /* Fit under the HRMS top bar instead of the full viewport */
     .frame { height: var(--ubi-embed-height, calc(100vh - 50px)) !important; }
 
+
     /* ===== HRMS-aligned theme (embedded build only; everything stays inside this shadow root) ===== */
     :host { --hrms-top: 50px; }
     * { --accent: #00a07a !important; --accent-bg: #e3f5ee !important; --border: #e5e5e5 !important;
@@ -55,7 +56,6 @@ export class EmbedLogoutComponent {
     .page { padding: 15px !important; }
     /* sidebar looks like the HRMS left navigation */
     .side { width: 230px !important; height: 100% !important; padding: 0 !important; background: #fff !important; border-right: 1px solid #e5e5e5 !important; }
-    .side::before { content: "Support Navigation"; display: block; background: #00a07a; color: #fff; font-size: 12px; padding: 8px 14px; }
     .side .nav { gap: 0 !important; }
     .side .item { border-radius: 0 !important; border-bottom: 1px solid #eee !important; padding: 12px 14px !important; font-size: 14px !important; font-weight: 400 !important; color: #333 !important; }
     .side .item:hover { transform: none !important; background: #f7fbf9 !important; }
@@ -80,6 +80,19 @@ export class EmbedLogoutComponent {
     .dash .head, .plan-page .head, .addons-page .head, .impl-page .head, .usage-page .head { background: #fff; border-radius: 3px; padding: 8px 14px !important; gap: 10px !important; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
     .dash .head-ico, .plan-page .head-ico, .addons-page .head-ico, .impl-page .head-ico, .usage-page .head-ico { width: auto !important; height: auto !important; background: none !important; border: 0 !important; box-shadow: none !important; color: #333 !important; }
     .dash .head-text h1, .plan-page .head-text h1, .addons-page .head-text h1, .impl-page .head-text h1, .usage-page .head-text h1 { font-size: 20px !important; letter-spacing: 0 !important; font-weight: 700 !important; line-height: 1.2 !important; color: #333 !important; }
+    /* portal name lives in the (otherwise empty) top bar, left side; Raise A Ticket stays right */
+    :host([data-csp]) .top { display: flex !important; align-items: center !important; }
+    :host([data-csp]) .top::before { content: "Client Success Portal"; margin-right: auto; padding-left: 34px; min-height: 26px; display: flex; align-items: center; font-size: 22px; font-weight: 700; letter-spacing: .2px; line-height: 1.15; color: #1f3a33; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300a07a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z'/%3E%3Cpath d='M8.5 12l2.5 2.5 4.5-5'/%3E%3C/svg%3E") no-repeat left center / 26px 26px; }
+    /* same pattern as other HRMS page headers (icon + bold title) with a soft green tint and accent line so it still stands out */
+    :host([data-csp]) .top { background: #f1faf6 !important; border-bottom: 3px solid #00a07a !important; }
+    @media (max-width: 767px) { :host([data-csp]) .top::before { font-size: 18px; padding-left: 30px; background-size: 22px 22px; } }
+    @media (max-width: 480px) { :host([data-csp]) .top::before { font-size: 16px; } }
+    .side::before { content: "Support Navigation"; display: block; background: #00a07a; color: #fff; font-size: 12px; padding: 8px 14px; }
+    /* sidebar like the other HRMS navigation panels: small green label strip, firmer item text */
+    :host([data-csp]) .side::before { content: "Portal Navigation"; }
+    :host([data-csp]) .side .item { color: #222 !important; font-weight: 500 !important; }
+    :host([data-csp]) .side .item.active { font-weight: 700 !important; }
     .dash .head-text p, .plan-page .head-text p, .addons-page .head-text p, .impl-page .head-text p, .usage-page .head-text p { font-size: 12px !important; margin-top: 0 !important; }
     .dash .date-pill { border-radius: 3px !important; height: 30px !important; }
     .dash .card, .plan-page .card, .addons-page .card, .impl-page .card, .usage-page .card { border-radius: 3px !important; border: 1px solid #e5e5e5 !important; box-shadow: 0 1px 1px rgba(0,0,0,.08) !important; }
